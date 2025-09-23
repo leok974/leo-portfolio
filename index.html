@@ -118,9 +118,13 @@
       <p class="muted" style="margin-top:.75rem">Tip: Use the category filters to explore AI Agents, ML/Analytics, 3D & Generative Art, and DevOps/Security projects.</p>
     </div>
     <div class="hero-visual hero-media">
-      <link rel="preload" as="image" href="assets/hero-poster.webp" imagesrcset="assets/hero-poster.webp" imagesizes="100vw" fetchpriority="high">
-      <img id="hero-poster" src="assets/hero-poster.webp" width="1200" height="800" alt="" decoding="async" fetchpriority="high" style="aspect-ratio:3/2;width:100%;height:100%;object-fit:cover;border-radius:16px;display:block">
-      <video id="hero-video" muted playsinline loop width="1200" height="800" aria-hidden="true" style="position:absolute;inset:0;border-radius:16px;opacity:0;transition:opacity .4s ease">
+      <link rel="preload" as="image" href="assets/hero-poster.webp" imagesrcset="assets/hero-poster.avif 1200w, assets/hero-poster.webp 1200w" imagesizes="(max-width: 600px) 100vw, 50vw" fetchpriority="high">
+      <picture>
+        <source type="image/avif" srcset="assets/hero-poster.avif" sizes="(max-width: 600px) 100vw, 50vw">
+        <source type="image/webp" srcset="assets/hero-poster.webp" sizes="(max-width: 600px) 100vw, 50vw">
+        <img id="hero-poster" src="assets/hero-poster.webp" width="1200" height="800" alt="" decoding="async" fetchpriority="high" sizes="(max-width: 600px) 100vw, 50vw" style="aspect-ratio:3/2;width:100%;height:100%;object-fit:cover;border-radius:16px;display:block">
+      </picture>
+      <video id="hero-video" muted playsinline loop preload="none" width="1200" height="800" aria-hidden="true" style="position:absolute;inset:0;border-radius:16px;opacity:0;transition:opacity .4s ease">
         <source data-src="assets/hero-showreel.webm" type="video/webm" />
         <source data-src="assets/hero-showreel.mp4" type="video/mp4" />
       </video>
@@ -233,7 +237,7 @@
           <p>Hey, I’m Leo — I build agentic apps, grounded analytics, and cinematic creative pipelines. I love shipping fast, clean systems that balance reliable infra with playful, art‑driven UX.</p>
           <div class="skills" aria-label="Skills by domain">
             <div class="skill-box">
-              <h4>AI / ML</h4>
+              <h3>AI / ML</h3>
               <ul>
                 <li>PyTorch, TensorFlow, embeddings, RAG</li>
                 <li>Ollama, OpenAI API, evals</li>
@@ -241,7 +245,7 @@
               </ul>
             </div>
             <div class="skill-box">
-              <h4>Backend</h4>
+              <h3>Backend</h3>
               <ul>
                 <li>FastAPI, Postgres, Alembic</li>
                 <li>OAuth/Authlib, JWT cookies + CSRF</li>
@@ -249,14 +253,14 @@
               </ul>
             </div>
             <div class="skill-box">
-              <h4>Frontend</h4>
+              <h3>Frontend</h3>
               <ul>
                 <li>React, Vite, TypeScript, Tailwind</li>
                 <li>shadcn, Recharts, accessibility</li>
               </ul>
             </div>
             <div class="skill-box">
-              <h4>MLOps / Infra</h4>
+              <h3>MLOps / Infra</h3>
               <ul>
                 <li>Docker, GitHub Actions, CI/CD</li>
                 <li>Cloudflare Tunnel, GCP KMS, Nginx</li>
@@ -264,7 +268,7 @@
               </ul>
             </div>
             <div class="skill-box">
-              <h4>3D / Creative</h4>
+              <h3>3D / Creative</h3>
               <ul>
                 <li>Blender, Substance Painter</li>
                 <li>ComfyUI, LoRA/SDXL, Runway</li>
@@ -272,7 +276,7 @@
               </ul>
             </div>
             <div class="skill-box">
-              <h4>Resume</h4>
+              <h3>Resume</h3>
               <ul>
                 <li><a class="btn" href="assets/Leo-Klemet-Resume.pdf" download>Download PDF</a></li>
               </ul>
@@ -386,8 +390,10 @@
   <script src="main.js" defer></script>
   <script>
   (function() {
-    const prefersDataSaver = matchMedia('(prefers-reduced-data: reduce)').matches;
-    const wideEnough = window.innerWidth >= 768;
+  const prefersDataSaver = matchMedia('(prefers-reduced-data: reduce)').matches;
+  const wideEnough = window.innerWidth >= 768;
+  const conn = navigator.connection || navigator.webkitConnection || navigator.mozConnection;
+  const slowNetwork = conn && (/(^2g$|3g)/i.test(conn.effectiveType));
     function loadHeroVideo() {
       const v = document.getElementById('hero-video');
       if (!v || v.dataset.loaded) return;
@@ -399,7 +405,7 @@
       v.play && v.play().catch(()=>{});
       requestAnimationFrame(()=>{ v.style.opacity = '1'; });
     }
-    if (!prefersDataSaver && wideEnough) {
+  if (!prefersDataSaver && wideEnough && !slowNetwork) {
       if ('requestIdleCallback' in window) {
         requestIdleCallback(loadHeroVideo, { timeout: 2000 });
       } else {

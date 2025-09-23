@@ -214,7 +214,7 @@ function initializeProjectModals() {
       const key = btn.getAttribute('data-detail');
       const data = PROJECT_DETAILS[key];
       if (!data) return;
-      document.getElementById('detailTitle').textContent = data.title;
+  document.getElementById('detailTitle').textContent = data.title;
       contentEl.innerHTML = generateProjectHTML(data);
       if (typeof dialogEl.showModal === 'function') dialogEl.showModal();
       else dialogEl.setAttribute('open','');
