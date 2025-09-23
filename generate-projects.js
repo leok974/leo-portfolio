@@ -271,14 +271,57 @@ function generateProjectPage(project, slug) {
 function generateProjectMedia(project) {
   let html = '';
 
+  function findOptimizedVariants(relPath) {
+    try {
+      const ext = path.extname(relPath).toLowerCase();
+      const base = path.basename(relPath, ext);
+      const dir = path.dirname(relPath).replace(/^assets/, 'assets/optimized');
+      const sizes = [
+        { suffix: '-sm', width: 400 },
+        { suffix: '-md', width: 800 },
+        { suffix: '-lg', width: 1200 },
+        { suffix: '-xl', width: 1920 }
+      ];
+      const webp = [];
+      const avif = [];
+      sizes.forEach(s => {
+        const webpPath = path.join(__dirname, dir, `${base}${s.suffix}.webp`);
+        const avifPath = path.join(__dirname, dir, `${base}${s.suffix}.avif`);
+        if (fs.existsSync(webpPath)) webp.push({ width: s.width, url: path.posix.join('/', dir, `${base}${s.suffix}.webp`).replace(/\\/g,'/') });
+        if (fs.existsSync(avifPath)) avif.push({ width: s.width, url: path.posix.join('/', dir, `${base}${s.suffix}.avif`).replace(/\\/g,'/') });
+      });
+      return { webp, avif };
+    } catch(_) {
+      return { webp: [], avif: [] };
+    }
+  }
+
+  function renderResponsivePicture(relPath, alt, attrs = '', idx) {
+    const variants = findOptimizedVariants(relPath);
+    const src = `../${relPath}`;
+    const sizes = '(max-width: 700px) 100vw, 900px';
+    if ((variants.webp && variants.webp.length) || (variants.avif && variants.avif.length)) {
+      const webpSrcset = variants.webp.map(v => `${v.url} ${v.width}w`).join(', ');
+      const avifSrcset = variants.avif.map(v => `${v.url} ${v.width}w`).join(', ');
+      return (
+        `<picture>` +
+        (avifSrcset ? `<source type="image/avif" srcset="${avifSrcset}" sizes="${sizes}">` : '') +
+        (webpSrcset ? `<source type="image/webp" srcset="${webpSrcset}" sizes="${sizes}">` : '') +
+        `<img class="gallery-item" ${typeof idx==='number' ? `data-gallery-index="${idx}"` : ''} src="${src}" alt="${alt}" loading="lazy" decoding="async">` +
+        `</picture>`
+      );
+    }
+    return `<img class="gallery-item" ${typeof idx==='number' ? `data-gallery-index="${idx}"` : ''} src="${src}" alt="${alt}" loading="lazy" decoding="async" ${attrs} />`;
+  }
+
   // Add images
   if (project.images && project.images.length > 0) {
     project.images.forEach((img, idx) => {
-      const base = `<img class=\"gallery-item\" data-gallery-index=\"${idx}\" src=\"../${img.src}\" alt=\"${img.alt}\" loading=\"lazy\" />`;
+      const picture = renderResponsivePicture(img.src, img.alt || '', '', idx);
       if (img.caption) {
-        html += `<figure>${base}<figcaption class="muted">${img.caption}</figcaption></figure>`;
+        html += `<figure>${picture}<figcaption class="muted">${img.caption}</figcaption></figure>`;
       } else {
-        html += base;
+        html += picture;
       }
     });
   }
