@@ -16,6 +16,17 @@ const lastmodPath = path.join(__dirname, '.lastmod.json');
 let lastmodStore = {};
 try { if (fs.existsSync(lastmodPath)) lastmodStore = JSON.parse(fs.readFileSync(lastmodPath,'utf8')); } catch(e){ console.warn('Could not read lastmod store', e); }
 
+function formatDisplayDate(iso) {
+  try {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch(_) {
+    return iso;
+  }
+}
+
 function hashProject(project){
   const relevant = {
     title: project.title,
@@ -129,6 +140,9 @@ function generateProjectPage(project, slug) {
     .project-content {
       padding: 3rem 0;
     }
+    .meta-dates { margin-top:1rem; font-size:.75rem; letter-spacing:.5px; text-transform:uppercase; color: var(--muted); display:flex; gap:1.25rem; flex-wrap:wrap; }
+    .meta-dates time { font-weight:600; color: var(--text); text-transform:none; letter-spacing:0; font-size:.8rem; }
+    .meta-dates span.label { font-weight:500; }
     .breadcrumb { font-size:.8rem; display:flex; flex-wrap:wrap; gap:.35rem; align-items:center; margin-bottom:1rem; color:var(--muted); }
     .breadcrumb a { color: var(--muted); }
     .breadcrumb a:hover { color: var(--text); }
@@ -208,6 +222,10 @@ function generateProjectPage(project, slug) {
         ${project.repo ? `<p><a class="btn" href="${project.repo}" target="_blank" rel="noopener">GitHub Repo ↗</a></p>` : ''}
         <div class="tags">
           ${project.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+        </div>
+        <div class="meta-dates" aria-label="Publication and last update dates">
+          <div><span class="label">Published:</span> <time datetime="${lastmodStore[slug].datePublished}">${formatDisplayDate(lastmodStore[slug].datePublished)}</time></div>
+          <div><span class="label">Updated:</span> <time datetime="${lastmodStore[slug].lastmod}">${formatDisplayDate(lastmodStore[slug].lastmod)}</time></div>
         </div>
       </div>
     </section>
