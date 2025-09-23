@@ -40,7 +40,7 @@ Visit: <http://localhost:5173>
 ### Option A — GitHub Pages (recommended)
 1. Create a new GitHub repo and push this project.
 2. In **Settings → Pages**, pick **GitHub Actions**.
-3. Keep the provided workflow `.github/workflows/deploy.yml` (already included).  
+3. Keep the provided workflow `.github/workflows/deploy.yml` (already included).
    On push to `main`, Pages will publish the site automatically.
 
 ### Option B — Netlify

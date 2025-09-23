@@ -39,32 +39,6 @@
       {"href": "assets/ledgermind-brief.pdf", "label": "One‑pager"}
     ]
   },
-  "finance-agent": {
-    "title": "Finance Agent (OSS)",
-    "slug": "finance-agent",
-    "tags": ["ai", "oss", "ml"],
-    "thumbnail": "assets/finance-agent-thumb.webp",
-    "description": "Open‑source baseline for transaction rules + classifiers with explainable predictions.",
-    "goals": "Open‑source baseline for transaction rules + classifiers with explainable predictions.",
-    "stack": [
-      "FastAPI, SQLite/Postgres",
-      "Sklearn, pandas",
-      "Vite/React UI"
-    ],
-    "outcomes": [
-      "Grounded NL → SQL transaction queries",
-      "One‑click model retrain + feedback",
-      "Charts + reports"
-    ],
-    "images": [
-      {
-        "src": "assets/finance-agent-detail.webp",
-        "alt": "Finance Agent unknowns and suggestions panels"
-      }
-    ],
-    "videos": [],
-    "downloads": []
-  },
   "adgen": {
     "title": "AdGen Studio",
     "slug": "adgen",
