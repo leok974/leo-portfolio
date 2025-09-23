@@ -39,6 +39,35 @@
       {"href": "assets/ledgermind-brief.pdf", "label": "One‑pager"}
     ]
   },
+  "datapipe-ai": {
+    "title": "DataPipe AI",
+    "slug": "datapipe-ai",
+    "tags": ["ai", "devops", "kubernetes", "ml"],
+    "thumbnail": "assets/datapipe-ai-cover.webp",
+    "description": "AI-powered ops agent for GKE deployments with automated data pipeline management and intelligent monitoring.",
+    "goals": "Streamline Kubernetes operations with AI-driven automation, providing intelligent monitoring and automated data pipeline management for GKE deployments.",
+    "stack": [
+      "Google Kubernetes Engine (GKE)",
+      "Python, FastAPI",
+      "Kubernetes API, kubectl",
+      "Prometheus, Grafana",
+      "Docker, CI/CD pipelines"
+    ],
+    "outcomes": [
+      "Automated deployment orchestration",
+      "Intelligent resource scaling",
+      "Proactive issue detection and resolution",
+      "Streamlined data pipeline operations"
+    ],
+    "images": [
+      {
+        "src": "assets/datapipe-ai-detail.webp",
+        "alt": "DataPipe AI dashboard showing GKE cluster management and monitoring"
+      }
+    ],
+    "videos": [],
+    "downloads": []
+  },
   "clarity": {
     "title": "Clarity Companion",
     "slug": "clarity",
