@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DataPipe AI — Leo Klemet Portfolio</title>
+  <meta name="description" content="AI-powered ops agent for GKE deployments with automated data pipeline management and intelligent monitoring." />
+  <meta property="og:title" content="DataPipe AI — Leo Klemet Portfolio" />
+  <meta property="og:description" content="AI-powered ops agent for GKE deployments with automated data pipeline management and intelligent monitoring." />
+  <meta property="og:type" content="article" />
+  <meta property="og:image" content="/assets/datapipe-ai-detail.webp" />
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .project-header {
+      padding: 2rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .project-content {
+      padding: 3rem 0;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: 1rem;
+      color: var(--muted);
+      padding: .5rem .75rem;
+      border-radius: .6rem;
+      border: 1px solid var(--border);
+    }
+    .back-link:hover {
+      color: var(--text);
+      background: color-mix(in oklab, var(--card) 80%, transparent);
+    }
+  </style>
+</head>
+<body>
+  <a class="sr-only" href="#content">Skip to content</a>
+
+  <header>
+    <div class="container nav" role="navigation" aria-label="Primary">
+      <div class="brand"><a href="../">Leo Klemet</a></div>
+      <nav>
+        <ul>
+          <li><a href="../#projects">Projects</a></li>
+          <li><a href="../#about">About</a></li>
+          <li><a href="../#contact">Contact</a></li>
+          <li><a href="../#blog">Blog</a></li>
+        </ul>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" aria-pressed="false" aria-label="Toggle dark/light mode">
+        <span aria-hidden="true">🌙</span>
+        <input id="themeSwitch" type="checkbox" aria-hidden="true" />
+        <span aria-hidden="true">☀️</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="content">
+    <section class="project-header">
+      <div class="container">
+        <a href="../#projects" class="back-link">← Back to Projects</a>
+        <h1>DataPipe AI</h1>
+        <p class="subline">AI-powered ops agent for GKE deployments with automated data pipeline management and intelligent monitoring.</p>
+        
+        <div class="tags">
+          <span class="tag">ai</span><span class="tag">devops</span><span class="tag">kubernetes</span><span class="tag">ml</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="project-content">
+      <div class="container">
+        <div class="detail-grid">
+          <div>
+            <img src="../assets/datapipe-ai-detail.webp" alt="DataPipe AI dashboard showing GKE cluster management and monitoring" />
+          </div>
+          <aside>
+            <h4>Goals</h4><p>Streamline Kubernetes operations with AI-driven automation, providing intelligent monitoring and automated data pipeline management for GKE deployments.</p><h4>Tools / Stack</h4><ul><li>Google Kubernetes Engine (GKE)</li><li>Python, FastAPI</li><li>Kubernetes API, kubectl</li><li>Prometheus, Grafana</li><li>Docker, CI/CD pipelines</li></ul><h4>Outcomes</h4><ul><li>Automated deployment orchestration</li><li>Intelligent resource scaling</li><li>Proactive issue detection and resolution</li><li>Streamlined data pipeline operations</li></ul>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-grid">
+      <div>© <span id="year"></span> Leo Klemet</div>
+      <div class="muted">AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist</div>
+      <div style="text-align:right">
+        <a href="../">Back to portfolio ↑</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../main.js"></script>
+</body>
+</html>

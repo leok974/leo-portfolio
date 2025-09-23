@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LedgerMind — Leo Klemet Portfolio</title>
+  <meta name="description" content="Private-by-default finances with explainable ML suggestions and NL → SQL analytics." />
+  <meta property="og:title" content="LedgerMind — Leo Klemet Portfolio" />
+  <meta property="og:description" content="Private-by-default finances with explainable ML suggestions and NL → SQL analytics." />
+  <meta property="og:type" content="article" />
+  <meta property="og:image" content="/assets/ledgermind-detail.webp" />
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .project-header {
+      padding: 2rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .project-content {
+      padding: 3rem 0;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: 1rem;
+      color: var(--muted);
+      padding: .5rem .75rem;
+      border-radius: .6rem;
+      border: 1px solid var(--border);
+    }
+    .back-link:hover {
+      color: var(--text);
+      background: color-mix(in oklab, var(--card) 80%, transparent);
+    }
+  </style>
+</head>
+<body>
+  <a class="sr-only" href="#content">Skip to content</a>
+
+  <header>
+    <div class="container nav" role="navigation" aria-label="Primary">
+      <div class="brand"><a href="../">Leo Klemet</a></div>
+      <nav>
+        <ul>
+          <li><a href="../#projects">Projects</a></li>
+          <li><a href="../#about">About</a></li>
+          <li><a href="../#contact">Contact</a></li>
+          <li><a href="../#blog">Blog</a></li>
+        </ul>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" aria-pressed="false" aria-label="Toggle dark/light mode">
+        <span aria-hidden="true">🌙</span>
+        <input id="themeSwitch" type="checkbox" aria-hidden="true" />
+        <span aria-hidden="true">☀️</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="content">
+    <section class="project-header">
+      <div class="container">
+        <a href="../#projects" class="back-link">← Back to Projects</a>
+        <h1>LedgerMind</h1>
+        <p class="subline">Private-by-default finances with explainable ML suggestions and NL → SQL analytics.</p>
+        
+        <div class="tags">
+          <span class="tag">ai</span><span class="tag">finance</span><span class="tag">ml</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="project-content">
+      <div class="container">
+        <div class="detail-grid">
+          <div>
+            <figure>
+          <img src="../assets/ledgermind-detail.webp" alt="LedgerMind dashboard overview"/>
+          <figcaption class="muted">Overview dashboard with grounded analytics.</figcaption>
+        </figure><video controls preload="metadata" poster="../assets/ledgermind-detail-poster.webp"><source src="../assets/ledgermind-demo.webm" type="video/webm"/><source src="../assets/ledgermind-demo.mp4" type="video/mp4"/><track label="English" kind="captions" srclang="en" src="../assets/ledgermind-demo.vtt" default></video>
+          </div>
+          <aside>
+            <h4>Goals</h4><p>Private-by-default finances with explainable ML suggestions and NL → SQL analytics.</p><h4>Tools / Stack</h4><ul><li>FastAPI, Postgres, Alembic</li><li>React/Vite (client), Recharts</li><li>OAuth/Authlib, JWT cookies + CSRF</li><li>Docker, Nginx, Cloudflare Tunnel</li></ul><h4>Outcomes</h4><ul><li>Deterministic tools with friendly LLM rephrase</li><li>Explain drawer with grounded references</li><li>Exports to PDF/XLSX</li></ul><div class="downloads"><a href="../assets/ledgermind-case-study.pdf" download>Case Study (PDF)</a><a href="../assets/ledgermind-brief.pdf" download>One‑pager</a></div>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-grid">
+      <div>© <span id="year"></span> Leo Klemet</div>
+      <div class="muted">AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist</div>
+      <div style="text-align:right">
+        <a href="../">Back to portfolio ↑</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../main.js"></script>
+</body>
+</html>
