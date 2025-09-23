@@ -1,0 +1,26 @@
+name: Schema Validation
+
+on:
+  push:
+    branches: [ main, UI-updates ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: |
+          if [ -f package.json ]; then npm ci; else echo 'No package.json, skipping install'; fi
+      - name: Generate project pages
+        run: node generate-projects.js
+      - name: Run schema validator
+        run: node validate-schema.js
