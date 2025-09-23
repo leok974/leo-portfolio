@@ -10,7 +10,7 @@ console.log('🚀 Media Optimization Script Starting...\n');
 const CONFIG = {
   inputDir: './assets',
   outputDir: './assets/optimized',
-  imageFormats: ['.jpg', '.jpeg', '.png', '.tiff', '.bmp'],
+  imageFormats: ['.jpg', '.jpeg', '.png', '.tiff', '.bmp', '.webp'],
   videoFormats: ['.mp4', '.avi', '.mov', '.mkv'],
   imageQuality: {
     webp: 85,
@@ -160,6 +160,7 @@ async function generateResponsiveSizes(inputPath, outputDir) {
 
     for (const size of sizes) {
       if (metadata.width && metadata.width > size.width) {
+        // WebP variant
         const webpPath = `${outputBase}${size.suffix}.webp`;
         await image
           .clone()
@@ -169,8 +170,19 @@ async function generateResponsiveSizes(inputPath, outputDir) {
           })
           .webp({ quality: CONFIG.imageQuality.webp, effort: 6 })
           .toFile(webpPath);
-
         console.log(`   → ${size.width}px: ${path.basename(webpPath)}`);
+
+        // AVIF variant
+        const avifPath = `${outputBase}${size.suffix}.avif`;
+        await image
+          .clone()
+          .resize(size.width, null, {
+            withoutEnlargement: true,
+            kernel: sharp.kernel.lanczos3
+          })
+          .avif({ quality: CONFIG.imageQuality.avif, effort: 6 })
+          .toFile(avifPath);
+        console.log(`   → ${size.width}px: ${path.basename(avifPath)}`);
       }
     }
     console.log('');

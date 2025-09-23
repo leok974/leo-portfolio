@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clarity Companion — Leo Klemet Portfolio</title>
+  <meta name="description" content="On‑device writing clarity assistant with strict coverage gates and localized UI." />
+  <meta property="og:title" content="Clarity Companion — Leo Klemet Portfolio" />
+  <meta property="og:description" content="On‑device writing clarity assistant with strict coverage gates and localized UI." />
+  <meta property="og:type" content="article" />
+  <meta property="og:image" content="/assets/clarity-detail.webp" />
+  <link rel="canonical" href="https://leok974.github.io/leo-portfolio/projects/clarity.html" />
+  <meta name="theme-color" content="#0f172a" />
+  <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareSourceCode",
+      "name": "Clarity Companion",
+      "description": "On‑device writing clarity assistant with strict coverage gates and localized UI.",
+      "url": "https://leok974.github.io/leo-portfolio/projects/clarity.html",
+      "codeRepository": "https://github.com/leok974/clarity-companion",
+      "programmingLanguage": "Chrome MV3, TypeScript, Vitest, CI coverage gates",
+      "image": "https://leok974.github.io/leo-portfolio/assets/clarity-detail.webp",
+      "dateModified": "2025-09-23",
+      "datePublished": "2025-09-23",
+      "author": {
+        "@type": "Person",
+        "name": "Leo Klemet"
+      },
+      "keywords": "dev, extension, productivity"
+    },
+    {
+      "@type": "CreativeWork",
+      "name": "Clarity Companion",
+      "description": "On‑device writing clarity assistant with strict coverage gates and localized UI.",
+      "url": "https://leok974.github.io/leo-portfolio/projects/clarity.html",
+      "dateModified": "2025-09-23",
+      "datePublished": "2025-09-23",
+      "lastReviewed": "2025-09-23",
+      "creator": {
+        "@type": "Person",
+        "name": "Leo Klemet"
+      },
+      "keywords": "dev, extension, productivity",
+      "about": "Writers receive vague style feedback; privacy concerns limit use of cloud AI for iterative editing.",
+      "thumbnailUrl": "https://leok974.github.io/leo-portfolio/assets/clarity-detail.webp"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://leok974.github.io/leo-portfolio/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Projects",
+          "item": "https://leok974.github.io/leo-portfolio/#projects"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Clarity Companion",
+          "item": "https://leok974.github.io/leo-portfolio/projects/clarity.html"
+        }
+      ]
+    }
+  ]
+}</script>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .project-header {
+      padding: 2rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .project-content {
+      padding: 3rem 0;
+    }
+    .meta-dates { margin-top:1rem; font-size:.75rem; letter-spacing:.5px; text-transform:uppercase; color: var(--muted); display:flex; gap:1.25rem; flex-wrap:wrap; }
+    .meta-dates time { font-weight:600; color: var(--text); text-transform:none; letter-spacing:0; font-size:.8rem; }
+    .meta-dates span.label { font-weight:500; }
+    .breadcrumb { font-size:.8rem; display:flex; flex-wrap:wrap; gap:.35rem; align-items:center; margin-bottom:1rem; color:var(--muted); }
+    .breadcrumb a { color: var(--muted); }
+    .breadcrumb a:hover { color: var(--text); }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: 1rem;
+      color: var(--muted);
+      padding: .5rem .75rem;
+      border-radius: .6rem;
+      border: 1px solid var(--border);
+    }
+    .back-link:hover {
+      color: var(--text);
+      background: color-mix(in oklab, var(--card) 80%, transparent);
+    }
+    .project-nav { border-top:1px solid var(--border); margin-top:3rem; padding-top:2rem; display:flex; justify-content:space-between; gap:1rem; }
+    .project-nav a { flex:1; display:flex; flex-direction:column; padding:1rem 1.25rem; border:1px solid var(--border); border-radius:.8rem; background: var(--card); }
+    .project-nav a:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
+    .project-nav span.label { font-size:.7rem; text-transform:uppercase; letter-spacing:.5px; color: var(--muted); margin-bottom:.25rem; }
+    @media (max-width:700px){ .project-nav { flex-direction:column; } }
+  /* Gallery */
+  .gallery-dialog { border:none; padding:0; background:transparent; max-width: min(90vw,1000px); }
+  .gallery-dialog::backdrop { background: rgba(0,0,0,.65); backdrop-filter: blur(4px); }
+  .gallery-frame { position:relative; background: var(--card); padding:1.5rem 2.5rem; border:1px solid var(--border); border-radius:1rem; box-shadow: var(--shadow); display:flex; flex-direction:column; align-items:center; }
+  .gallery-frame img { max-width:100%; height:auto; border-radius:.5rem; }
+  .gallery-close, .gallery-prev, .gallery-next { position:absolute; top: .75rem; background: var(--card); border:1px solid var(--border); width:2.2rem; height:2.2rem; border-radius:.6rem; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.1rem; }
+  .gallery-close { right:.75rem; }
+  .gallery-prev { left:.75rem; top: 50%; transform: translateY(-50%); }
+  .gallery-next { right:.75rem; top: 50%; transform: translateY(-50%); }
+  .gallery-close:hover, .gallery-prev:hover, .gallery-next:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
+  .gallery-item { cursor: zoom-in; }
+  .gallery-thumbs { margin-top:1rem; display:flex; gap:.5rem; flex-wrap:wrap; justify-content:center; }
+  .gallery-thumbs button { border:1px solid var(--border); background: var(--card); padding:0; width:60px; height:40px; border-radius:.4rem; overflow:hidden; cursor:pointer; position:relative; }
+  .gallery-thumbs button img { width:100%; height:100%; object-fit:cover; }
+  .gallery-thumbs button[aria-current="true"] { outline:2px solid var(--accent); outline-offset:2px; }
+  .gallery-thumbs button:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
+  .gallery-thumbs button:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+  .gallery-thumbs button[aria-current="true"]:focus-visible { outline:3px solid var(--accent); }
+  </style>
+</head>
+<body>
+  <a class="sr-only" href="#content">Skip to content</a>
+
+  <header>
+    <div class="container nav" role="navigation" aria-label="Primary">
+      <div class="brand"><a href="../">Leo Klemet</a></div>
+      <nav>
+        <ul>
+          <li><a href="../#projects">Projects</a></li>
+          <li><a href="../#about">About</a></li>
+          <li><a href="../#contact">Contact</a></li>
+          <li><a href="../#blog">Blog</a></li>
+        </ul>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" aria-pressed="false" aria-label="Toggle dark/light mode">
+        <span aria-hidden="true">🌙</span>
+        <input id="themeSwitch" type="checkbox" aria-hidden="true" />
+        <span aria-hidden="true">☀️</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="content">
+    <section class="project-header">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../">Home</a>
+          <span aria-hidden="true">/</span>
+          <a href="../#projects">Projects</a>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">Clarity Companion</span>
+        </nav>
+        <h1>Clarity Companion</h1>
+        <p class="subline">On‑device writing clarity assistant with strict coverage gates and localized UI.</p>
+        <p><a class="btn" href="https://github.com/leok974/clarity-companion" target="_blank" rel="noopener">GitHub Repo ↗</a></p>
+        <div class="tags">
+          <span class="tag">dev</span><span class="tag">extension</span><span class="tag">productivity</span>
+        </div>
+        <div class="meta-dates" aria-label="Publication and last update dates">
+          <div><span class="label">Published:</span> <time datetime="2025-09-23">Sep 22, 2025</time></div>
+          <div><span class="label">Updated:</span> <time datetime="2025-09-23">Sep 22, 2025</time></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="project-content">
+      <div class="container">
+        <article class="case-study"><section><h2>Problem</h2><p>Writers receive vague style feedback; privacy concerns limit use of cloud AI for iterative editing.</p></section><section><h2>Solution</h2><p>Local extension enforces clarity heuristics with coverage gates and offline-friendly analysis loop.</p></section><section><h2>Tech Stack</h2><ul><li>Chrome MV3, TypeScript</li><li>Vitest, CI coverage gates</li></ul></section><section><h2>Screenshots & Media</h2><img class="gallery-item" data-gallery-index="0" src="../assets/clarity-detail.webp" alt="Clarity Companion panel with localized UI" loading="lazy" decoding="async"  /></section><section><h2>Links</h2><div class="card-actions"><a class="btn" href="https://github.com/leok974/clarity-companion" target="_blank" rel="noopener">GitHub Repo ↗</a></div></section></article>
+      </div>
+    </section>
+    <div class="container">
+      <nav class="project-nav" aria-label="Project navigation">
+        <a href="datapipe-ai.html" aria-label="Previous project: DataPipe AI"><span class="label">Previous</span><strong>DataPipe AI</strong></a>
+        <div></div>
+      </nav>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container footer-grid">
+      <div>© <span id="year"></span> Leo Klemet</div>
+      <div class="muted">AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist</div>
+      <div style="text-align:right">
+        <a href="../">Back to portfolio ↑</a>
+      </div>
+    </div>
+  </footer>
+  <dialog id="galleryDialog" class="gallery-dialog" aria-label="Image gallery" aria-modal="true" inert>
+    <div class="gallery-frame">
+      <button class="gallery-close" id="galleryClose" aria-label="Close gallery">×</button>
+      <button class="gallery-prev" id="galleryPrev" aria-label="Previous image">‹</button>
+      <img id="galleryImage" alt="" />
+      <button class="gallery-next" id="galleryNext" aria-label="Next image">›</button>
+      <p id="galleryCaption" class="muted" style="margin-top:.75rem"></p>
+      <div id="galleryThumbs" class="gallery-thumbs" aria-label="Gallery thumbnails" role="list"></div>
+      <div id="galleryAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    </div>
+  </dialog>
+  <script src="../main.js"></script>
+</body>
+</html>

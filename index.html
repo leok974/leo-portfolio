@@ -4,19 +4,88 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist</title>
-  <meta name="description" content="Portfolio of Leo Klemet — building agents, analytics, and cinematic creative pipelines." />
-  <meta property="og:title" content="Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist" />
-  <meta property="og:description" content="Building agents, analytics, and cinematic creative pipelines." />
+  <meta name="description" content="Leo Klemet — AI Engineer & SWE. Building agents, analytics, and cinematic creative pipelines: LedgerMind, DataPipe AI, Clarity Companion." />
+  <link rel="canonical" href="https://leok974.github.io/leo-portfolio/" />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="/assets/og-cover.jpg" />
+  <meta property="og:title" content="Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist" />
+  <meta property="og:description" content="Projects in AI Agents, ML/Analytics, 3D/Generative Art, DevOps." />
+  <meta property="og:image" content="https://leok974.github.io/leo-portfolio/assets/og-cover.png" />
+  <meta property="og:url" content="https://leok974.github.io/leo-portfolio/" />
+  <meta name="twitter:card" content="summary_large_image" />
   <meta name="theme-color" content="#0f172a" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Critical CSS: minimal layout to paint above-the-fold quickly */
+    :root{--bg:#0b1020;--bg-elev:#0f172a;--text:#e5e7eb;--muted:#94a3b8;--border:#1f2937}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;line-height:1.6;color:var(--text);background:var(--bg)}
+    header{position:sticky;top:0;z-index:50;background:#0f172acc;border-bottom:1px solid var(--border)}
+    .container{width:min(1200px,92vw);margin-inline:auto}
+    .nav{display:flex;align-items:center;justify-content:space-between;padding:.85rem 0}
+    nav ul{display:flex;gap:1rem;list-style:none;margin:0;padding:0}
+    .hero{padding:clamp(3rem,6vw + 1rem,7rem) 0;display:grid;grid-template-columns:1.2fr .8fr;gap:2rem;align-items:center}
+    @media(max-width:900px){.hero{grid-template-columns:1fr}}
+    .headline{font-size:clamp(1.8rem,2.3rem + 1.5vw,3.2rem);line-height:1.15;margin:0 0 1rem}
+    .subline{color:var(--muted);margin:0 0 1.5rem}
+    .hero-visual{aspect-ratio:4/3;border:1px solid var(--border);border-radius:1rem;overflow:hidden;background:#111827}
+  </style>
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="fonts/Inter-roman.var.woff2" />
+  <link rel="preload" as="style" href="styles.css">
+  <link rel="stylesheet" href="styles.css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="styles.css"></noscript>
+  <style>
+    @font-face{
+      font-family:"Inter";
+      src:url("fonts/Inter-roman.var.woff2") format("woff2-variations");
+      font-weight:100 900;
+      font-style:normal;
+      font-display:swap;
+    }
+    :root{--font-sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+    html{font-family:var(--font-sans)}
+  </style>
+  <script type="application/ld+json">{
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Person",
+        "@id": "https://leok974.github.io/leo-portfolio/#person",
+        "name": "Leo Klemet",
+        "description": "AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist",
+        "url": "https://leok974.github.io/leo-portfolio/",
+        "jobTitle": "AI Engineer",
+        "sameAs": [
+          "https://github.com/leok974"
+        ]
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://leok974.github.io/leo-portfolio/#org",
+        "name": "Leo Klemet Studio",
+        "url": "https://leok974.github.io/leo-portfolio/",
+        "member": { "@id": "https://leok974.github.io/leo-portfolio/#person" }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://leok974.github.io/leo-portfolio/#website",
+        "url": "https://leok974.github.io/leo-portfolio/",
+        "name": "Leo Klemet Portfolio",
+        "inLanguage": "en",
+        "author": { "@id": "https://leok974.github.io/leo-portfolio/#person" },
+        "publisher": { "@id": "https://leok974.github.io/leo-portfolio/#org" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://leok974.github.io/leo-portfolio/#breadcrumb",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://leok974.github.io/leo-portfolio/" },
+          { "@type": "ListItem", "position": 2, "name": "Projects", "item": "https://leok974.github.io/leo-portfolio/#projects" }
+        ]
+      }
+    ]
+  }</script>
 </head>
 <body>
-  <a class="sr-only skip-link" href="#projects">Skip to content</a>
+  <a class="sr-only skip-link" href="#main">Skip to content</a>
   <header>
     <div class="container nav" role="navigation" aria-label="Primary">
       <div class="brand">Leo Klemet</div>
@@ -30,30 +99,29 @@
       </nav>
       <button class="theme-toggle" id="themeToggle" aria-pressed="false" aria-label="Toggle dark/light mode">
         <span aria-hidden="true">🌙</span>
-        <input id="themeSwitch" type="checkbox" aria-hidden="true" />
         <span aria-hidden="true">☀️</span>
       </button>
     </div>
   </header>
 
   <!-- HERO / LANDING -->
+  <main id="main">
   <section class="hero container" id="home">
     <div>
       <h1 class="headline">Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist</h1>
+      <span class="availability-badge" role="note">Open to roles in AI Engineering, SWE, or Creative Tech</span>
       <p class="subline">Building agents, analytics, and cinematic creative pipelines.</p>
-      <a class="cta" href="#projects">⟶ See My Work</a>
+      <div class="cta-group">
+        <a class="cta" href="#projects">⟶ See My Work</a>
+        <a class="cta secondary" href="assets/Leo-Klemet-Resume.pdf" download title="Download Resume PDF">📄 Download Resume</a>
+      </div>
       <p class="muted" style="margin-top:.75rem">Tip: Use the category filters to explore AI Agents, ML/Analytics, 3D & Generative Art, and DevOps/Security projects.</p>
     </div>
-    <div class="hero-visual" aria-hidden="true">
-      <!-- Optional background video/image (replace poster/src as desired) -->
-      <video playsinline muted loop preload="metadata" poster="assets/hero-poster.webp" aria-label="Showreel background" style="width:100%;height:100%;object-fit:cover;">
-        <source src="assets/hero-showreel.webm" type="video/webm" />
-        <source src="assets/hero-showreel.mp4" type="video/mp4" />
-        <!-- Add captions for accessibility if this video contains meaningful audio/dialog -->
-        <!-- <track label="English" kind="captions" srclang="en" src="assets/hero.vtt"> -->
-      </video>
-      <div class="orb"></div>
-      <div class="orb2"></div>
+    <div class="hero-visual hero-media">
+      <link rel="preload" as="image" href="assets/hero-placeholder.svg" fetchpriority="high">
+      <img id="hero-poster" src="assets/hero-placeholder.svg" width="1200" height="800" alt="" decoding="async" fetchpriority="high" style="aspect-ratio:3/2;width:100%;height:100%;object-fit:cover;border-radius:16px;display:block">
+      <div class="orb" aria-hidden="true"></div>
+      <div class="orb2" aria-hidden="true"></div>
     </div>
   </section>
 
@@ -73,9 +141,13 @@
 
       <div class="grid" id="projectGrid" aria-live="polite">
         <!-- CARD: LedgerMind -->
-        <article class="card" data-cats="agents ml devops">
+  <article class="card card-click" data-slug="ledgermind" data-cats="agents ml devops" role="link" tabindex="0">
           <div class="thumb">
-            <img loading="lazy" src="assets/ledgermind-cover.webp" alt="LedgerMind dashboard with charts and AI assistant" />
+            <picture>
+              <source type="image/avif" srcset="assets/optimized/ledgermind-cover-sm.avif 400w, assets/optimized/ledgermind-cover-md.avif 800w, assets/optimized/ledgermind-cover-lg.avif 1200w, assets/optimized/ledgermind-cover-xl.avif 1920w" sizes="(max-width: 600px) 100vw, 33vw">
+              <source type="image/webp" srcset="assets/optimized/ledgermind-cover-sm.webp 400w, assets/optimized/ledgermind-cover-md.webp 800w, assets/optimized/ledgermind-cover-lg.webp 1200w, assets/optimized/ledgermind-cover-xl.webp 1920w" sizes="(max-width: 600px) 100vw, 33vw">
+              <img loading="lazy" decoding="async" src="assets/ledgermind-cover.webp" alt="LedgerMind dashboard with charts and AI assistant" width="1200" height="675" />
+            </picture>
           </div>
           <div class="card-body">
             <h3 class="card-title">LedgerMind</h3>
@@ -92,10 +164,37 @@
           </div>
         </article>
 
-        <!-- CARD: Clarity Companion (Chrome Ext) -->
-        <article class="card" data-cats="agents devops">
+        <!-- CARD: DataPipe AI -->
+  <article class="card card-click" data-slug="datapipe-ai" data-cats="agents ml devops" role="link" tabindex="0">
           <div class="thumb">
-            <img loading="lazy" src="assets/clarity-companion.webp" alt="Clarity Companion Chrome extension panel UI" />
+            <picture>
+              <source type="image/avif" srcset="assets/optimized/datapipe-ai-cover-sm.avif 400w, assets/optimized/datapipe-ai-cover-md.avif 800w, assets/optimized/datapipe-ai-cover-lg.avif 1200w, assets/optimized/datapipe-ai-cover-xl.avif 1920w" sizes="(max-width: 600px) 100vw, 33vw">
+              <source type="image/webp" srcset="assets/optimized/datapipe-ai-cover-sm.webp 400w, assets/optimized/datapipe-ai-cover-md.webp 800w, assets/optimized/datapipe-ai-cover-lg.webp 1200w, assets/optimized/datapipe-ai-cover-xl.webp 1920w" sizes="(max-width: 600px) 100vw, 33vw">
+              <img loading="lazy" decoding="async" src="assets/datapipe-ai-cover.webp" alt="DataPipe AI ops dashboard with GKE integration" width="1200" height="675" />
+            </picture>
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">DataPipe AI</h3>
+            <p class="muted">AI-powered ops agent for GKE deployments with automated data pipeline management and intelligent monitoring.</p>
+            <div class="tags">
+              <span class="tag">GKE</span><span class="tag">Kubernetes</span><span class="tag">AI Ops</span><span class="tag">Data Pipeline</span>
+            </div>
+            <div class="card-actions">
+              <a class="btn" href="projects/datapipe-ai.html">Case Study</a>
+              <a class="btn" href="#" data-detail="datapipe-ai">Quick View</a>
+              <a class="btn" href="https://github.com/leok974/ai-ops-agent-gke" target="_blank" rel="noopener">GitHub</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- CARD: Clarity Companion (Chrome Ext) -->
+  <article class="card card-click" data-slug="clarity" data-cats="agents devops" role="link" tabindex="0">
+          <div class="thumb">
+            <picture>
+              <source type="image/avif" srcset="assets/optimized/clarity-companion-sm.avif 400w, assets/optimized/clarity-companion-md.avif 800w, assets/optimized/clarity-companion-lg.avif 1200w, assets/optimized/clarity-companion-xl.avif 1920w" sizes="(max-width: 600px) 100vw, 33vw">
+              <source type="image/webp" srcset="assets/optimized/clarity-companion-sm.webp 400w, assets/optimized/clarity-companion-md.webp 800w, assets/optimized/clarity-companion-lg.webp 1200w, assets/optimized/clarity-companion-xl.webp 1920w" sizes="(max-width: 600px) 100vw, 33vw">
+              <img loading="lazy" decoding="async" src="assets/clarity-companion.webp" alt="Clarity Companion Chrome extension panel UI" width="1200" height="675" />
+            </picture>
           </div>
           <div class="card-body">
             <h3 class="card-title">Clarity Companion (Chrome Extension)</h3>
@@ -124,13 +223,13 @@
       </div>
       <div class="about">
         <div>
-          <img class="avatar" src="assets/leo-avatar.webp" alt="Portrait of Leo Klemet" />
+          <img class="avatar" src="assets/leo-avatar.webp" alt="Portrait of Leo Klemet" width="140" height="140" />
         </div>
         <div>
           <p>Hey, I’m Leo — I build agentic apps, grounded analytics, and cinematic creative pipelines. I love shipping fast, clean systems that balance reliable infra with playful, art‑driven UX.</p>
           <div class="skills" aria-label="Skills by domain">
             <div class="skill-box">
-              <h4>AI / ML</h4>
+              <h3>AI / ML</h3>
               <ul>
                 <li>PyTorch, TensorFlow, embeddings, RAG</li>
                 <li>Ollama, OpenAI API, evals</li>
@@ -138,7 +237,7 @@
               </ul>
             </div>
             <div class="skill-box">
-              <h4>Backend</h4>
+              <h3>Backend</h3>
               <ul>
                 <li>FastAPI, Postgres, Alembic</li>
                 <li>OAuth/Authlib, JWT cookies + CSRF</li>
@@ -146,14 +245,14 @@
               </ul>
             </div>
             <div class="skill-box">
-              <h4>Frontend</h4>
+              <h3>Frontend</h3>
               <ul>
                 <li>React, Vite, TypeScript, Tailwind</li>
                 <li>shadcn, Recharts, accessibility</li>
               </ul>
             </div>
             <div class="skill-box">
-              <h4>MLOps / Infra</h4>
+              <h3>MLOps / Infra</h3>
               <ul>
                 <li>Docker, GitHub Actions, CI/CD</li>
                 <li>Cloudflare Tunnel, GCP KMS, Nginx</li>
@@ -161,7 +260,7 @@
               </ul>
             </div>
             <div class="skill-box">
-              <h4>3D / Creative</h4>
+              <h3>3D / Creative</h3>
               <ul>
                 <li>Blender, Substance Painter</li>
                 <li>ComfyUI, LoRA/SDXL, Runway</li>
@@ -169,7 +268,7 @@
               </ul>
             </div>
             <div class="skill-box">
-              <h4>Resume</h4>
+              <h3>Resume</h3>
               <ul>
                 <li><a class="btn" href="assets/Leo-Klemet-Resume.pdf" download>Download PDF</a></li>
               </ul>
@@ -186,6 +285,33 @@
       <div class="section-head">
         <h2 class="section-title">Contact</h2>
         <p class="muted">Let’s collaborate or chat about roles, freelance, and experiments.</p>
+      </div>
+      <div class="work-together" aria-labelledby="workTogetherHeading">
+        <div class="work-together-text">
+          <h3 id="workTogetherHeading">Let’s Work Together</h3>
+          <p class="muted">Have a role, project, or idea you’d like to ship quickly with a strong engineering + creative lens? Reach out directly or connect on platforms below.</p>
+          <div class="cta-buttons" role="group" aria-label="Direct contact links">
+            <a class="cta" href="mailto:leoklemet.pa@gmail.com" aria-label="Email Leo">✉ Email</a>
+            <a class="cta" href="https://calendly.com/leo-klemet/30min" target="_blank" rel="noopener" aria-label="Schedule a call on Calendly">🗓 Schedule</a>
+            <a class="cta" href="assets/Leo-Klemet-Resume.pdf" target="_blank" rel="noopener" aria-label="View Leo's resume PDF">� Resume</a>
+            <a class="cta" href="https://www.linkedin.com/in/leo-klemet-1241662a6/" target="_blank" rel="noopener" aria-label="LinkedIn profile">in LinkedIn</a>
+            <a class="cta" href="https://github.com/leok974" target="_blank" rel="noopener" aria-label="GitHub profile">★ GitHub</a>
+            <a class="cta" href="https://leoklemet3.artstation.com" target="_blank" rel="noopener" aria-label="ArtStation portfolio">🎨 ArtStation</a>
+            <a class="cta" href="tel:+12024401027" aria-label="Call Leo">📞 Call</a>
+          </div>
+        </div>
+        <div class="resume-pane" aria-labelledby="resumeHeading">
+          <h4 id="resumeHeading" style="margin-top:0">Resume</h4>
+          <div class="resume-embed">
+            <object data="assets/Leo-Klemet-Resume.pdf" type="application/pdf" aria-label="Embedded resume PDF" tabindex="0">
+              <p class="muted">PDF preview not supported in this browser. <a class="btn" href="assets/Leo-Klemet-Resume.pdf" download>Download Resume</a></p>
+            </object>
+          </div>
+          <div class="resume-actions">
+            <a class="btn" href="assets/Leo-Klemet-Resume.pdf" download aria-label="Download resume PDF">Download PDF</a>
+            <a class="btn" href="assets/Leo-Klemet-Resume.pdf" target="_blank" rel="noopener" aria-label="Open resume in new tab">Open in New Tab ↗</a>
+          </div>
+        </div>
       </div>
       <form name="contact" method="POST" data-netlify="true" novalidate>
         <input type="hidden" name="form-name" value="contact" />
@@ -206,7 +332,7 @@
         </div>
         <button class="btn submit" type="submit">Send Message</button>
       </form>
-      <p class="muted" style="margin-top:1rem">Find me on <a href="https://www.linkedin.com/in/" target="_blank" rel="noopener">LinkedIn</a> · <a href="https://github.com/leok974" target="_blank" rel="noopener">GitHub</a> · <a href="https://www.artstation.com/" target="_blank" rel="noopener">ArtStation</a> · <a href="#" target="_blank" rel="noopener">Portfolio</a></p>
+  <p class="muted" style="margin-top:1rem">Find me on <a href="https://www.linkedin.com/in/leo-klemet-1241662a6/" target="_blank" rel="noopener">LinkedIn</a> · <a href="https://github.com/leok974" target="_blank" rel="noopener">GitHub</a> · <a href="https://leoklemet3.artstation.com" target="_blank" rel="noopener">ArtStation</a> · <a href="#" target="_blank" rel="noopener">Portfolio</a></p>
     </div>
   </section>
 
@@ -230,6 +356,7 @@
     </div>
   </section>
 
+  </main>
   <!-- FOOTER -->
   <footer>
     <div class="container footer-grid">
@@ -244,7 +371,7 @@
   <!-- PROJECT DETAIL DIALOG (reusable) -->
   <dialog class="project-detail" id="detailDialog" aria-labelledby="detailTitle">
     <div class="detail-header">
-      <h3 id="detailTitle" style="margin:0">Project</h3>
+  <h2 id="detailTitle" style="margin:0">Project</h2>
       <button class="btn" id="detailClose" aria-label="Close project details">✕ Close</button>
     </div>
     <div class="detail-body">
@@ -254,6 +381,7 @@
     </div>
   </dialog>
 
-  <script src="main.js"></script>
+  <script src="main.js" defer></script>
+  <script>/* hero video temporarily disabled pending assets */</script>
 </body>
 </html>

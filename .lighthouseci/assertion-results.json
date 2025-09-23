@@ -1,0 +1,51 @@
+[
+  {
+    "name": "minScore",
+    "expected": 0.93,
+    "actual": 0.87,
+    "values": [
+      0.87,
+      0.85,
+      0.85
+    ],
+    "operator": ">=",
+    "passed": false,
+    "auditProperty": "performance",
+    "auditId": "categories",
+    "level": "error",
+    "url": "https://leok974.github.io/leo-portfolio/"
+  },
+  {
+    "name": "minScore",
+    "expected": 0.98,
+    "actual": 0.94,
+    "values": [
+      0.94,
+      0.94,
+      0.94
+    ],
+    "operator": ">=",
+    "passed": false,
+    "auditProperty": "accessibility",
+    "auditId": "categories",
+    "level": "error",
+    "url": "https://leok974.github.io/leo-portfolio/"
+  },
+  {
+    "name": "maxNumericValue",
+    "expected": 2500,
+    "actual": 2872.384,
+    "values": [
+      3012.745,
+      2872.384,
+      2895.7847
+    ],
+    "operator": "<=",
+    "passed": false,
+    "auditId": "largest-contentful-paint",
+    "level": "error",
+    "url": "https://leok974.github.io/leo-portfolio/",
+    "auditTitle": "Largest Contentful Paint",
+    "auditDocumentationLink": "https://developer.chrome.com/docs/lighthouse/performance/lighthouse-largest-contentful-paint/"
+  }
+]

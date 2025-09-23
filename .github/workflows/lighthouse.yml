@@ -1,0 +1,16 @@
+name: Lighthouse CI
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  lhci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm ci || npm i -D @lhci/cli
+      - name: Run Lighthouse CI
+        run: npx lhci autorun --collect.url=https://leok974.github.io/leo-portfolio/ --upload.target=temporary-public-storage

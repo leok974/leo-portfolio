@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://leok974.github.io/leo-portfolio/sitemap.xml

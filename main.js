@@ -6,15 +6,15 @@
   const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
   const initial = saved || (prefersLight ? 'light' : 'dark');
   document.documentElement.setAttribute('data-theme', initial);
-  const switchEl = document.getElementById('themeSwitch');
-  if (switchEl) {
-    switchEl.checked = (initial === 'light');
-    document.getElementById('themeToggle').setAttribute('aria-pressed', (initial === 'light'));
-    switchEl.addEventListener('change', () => {
-      const mode = switchEl.checked ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', mode);
-      document.getElementById('themeToggle').setAttribute('aria-pressed', (mode === 'light'));
-      localStorage.setItem('theme', mode);
+  const toggleBtn = document.getElementById('themeToggle');
+  if (toggleBtn) {
+    toggleBtn.setAttribute('aria-pressed', (initial === 'light'));
+    toggleBtn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      toggleBtn.setAttribute('aria-pressed', (next === 'light'));
+      localStorage.setItem('theme', next);
     });
   }
 })();
@@ -22,7 +22,8 @@
 // -----------------------------
 // FOOTER YEAR
 // -----------------------------
-document.getElementById('year').textContent = new Date().getFullYear();
+const yearEl = document.getElementById('year');
+if (yearEl) yearEl.textContent = new Date().getFullYear();
 
 // -----------------------------
 // LAZY-LOAD IMAGES/VIDEOS OUT OF VIEW (extra safety beyond native)
@@ -185,6 +186,14 @@ function generateProjectHTML(project) {
     html += '</div>';
   }
 
+  // Repository link
+  if (project.repo) {
+    html += `<div class="repo-link"><a class="btn" href="${project.repo}" target="_blank" rel="noopener">GitHub Repo ↗</a></div>`;
+  }
+  if (project.demo) {
+    html += `<div class="repo-link"><a class="btn" href="${project.demo}" target="_blank" rel="noopener">Live Demo ↗</a></div>`;
+  }
+
   html += '</aside>';
   return html;
 }
@@ -197,6 +206,7 @@ function generateProjectHTML(project) {
 function initializeProjectModals() {
   const dialogEl = document.getElementById('detailDialog');
   const contentEl = document.getElementById('detailContent');
+  if (!dialogEl || !contentEl) return; // Guard on pages without modal
 
   document.querySelectorAll('[data-detail]').forEach(btn => {
     btn.addEventListener('click', (e)=>{
@@ -204,14 +214,15 @@ function initializeProjectModals() {
       const key = btn.getAttribute('data-detail');
       const data = PROJECT_DETAILS[key];
       if (!data) return;
-      document.getElementById('detailTitle').textContent = data.title;
+  document.getElementById('detailTitle').textContent = data.title;
       contentEl.innerHTML = generateProjectHTML(data);
       if (typeof dialogEl.showModal === 'function') dialogEl.showModal();
       else dialogEl.setAttribute('open','');
     });
   });
 
-  document.getElementById('detailClose').addEventListener('click', ()=> dialogEl.close());
+    const closeBtn = document.getElementById('detailClose');
+    if (closeBtn) closeBtn.addEventListener('click', ()=> dialogEl.close());
 
   // -----------------------------
   // ACCESSIBILITY ENHANCEMENTS
@@ -226,6 +237,138 @@ function initializeProjectModals() {
 document.addEventListener('DOMContentLoaded', async function() {
   await loadProjectData();
   initializeProjectModals();
+  // Make project cards clickable to case study pages
+  document.querySelectorAll('.card-click').forEach(card => {
+    card.addEventListener('click', (e)=> {
+      // Avoid triggering if a direct interactive child (buttons/links) was clicked
+      const tag = e.target.tagName.toLowerCase();
+      if (['a','button'].includes(tag)) return;
+      const slug = card.getAttribute('data-slug');
+      if (slug) window.location.href = `projects/${slug}.html`;
+    });
+    card.addEventListener('keydown', (e)=> {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const slug = card.getAttribute('data-slug');
+        if (slug) window.location.href = `projects/${slug}.html`;
+      }
+    });
+  });
+  // Gallery (on project detail pages)
+  function initGallery(){
+    const galleryDialog = document.getElementById('galleryDialog');
+    if (!galleryDialog) return; // Not on project page
+    const imgEl = document.getElementById('galleryImage');
+    const captionEl = document.getElementById('galleryCaption');
+    const announcerEl = document.getElementById('galleryAnnouncer');
+    const prevBtn = document.getElementById('galleryPrev');
+    const nextBtn = document.getElementById('galleryNext');
+    const closeBtnG = document.getElementById('galleryClose');
+    const thumbsWrap = document.getElementById('galleryThumbs');
+    const items = Array.from(document.querySelectorAll('.gallery-item'));
+    if (!items.length) return;
+    let idx = 0;
+    let lastFocusedBeforeOpen = null;
+    let thumbButtons = [];
+
+    function preload(i){
+      const t = items[(i+items.length)%items.length];
+      if (!t) return;
+      const src = t.getAttribute('src');
+      const img = new Image();
+      img.src = src;
+    }
+    function openAt(i){
+      idx = (i+items.length)%items.length;
+      const target = items[idx];
+      imgEl.src = target.getAttribute('src');
+      imgEl.alt = target.getAttribute('alt') || '';
+      // Get caption if inside figure
+      const fig = target.closest('figure');
+      captionEl.textContent = fig ? (fig.querySelector('figcaption')?.textContent || '') : '';
+      if (typeof galleryDialog.showModal === 'function') galleryDialog.showModal(); else galleryDialog.setAttribute('open','');
+      // mark current thumb
+      if (thumbsWrap) {
+        thumbButtons.forEach((b,bi)=>{
+          b.setAttribute('aria-current', bi===idx ? 'true':'false');
+          // roving tabindex
+          b.tabIndex = bi===idx ? 0 : -1;
+        });
+      }
+      // Announce slide change
+      if (announcerEl) {
+        const total = items.length;
+        const slideNum = idx + 1;
+        const caption = captionEl.textContent ? `: ${captionEl.textContent}` : '';
+        announcerEl.textContent = `Slide ${slideNum} of ${total}${caption}`;
+      }
+      // focus trap start
+      lastFocusedBeforeOpen = document.activeElement;
+      closeBtnG.focus();
+      // Preload neighbors
+      preload(idx+1); preload(idx-1);
+    }
+    items.forEach(it=>{
+      it.addEventListener('click', ()=> openAt(parseInt(it.dataset.galleryIndex,10)) );
+      it.addEventListener('keydown', (e)=> { if(e.key==='Enter'){ openAt(parseInt(it.dataset.galleryIndex,10)); } });
+      it.setAttribute('tabindex','0');
+    });
+    function prev(){ openAt(idx-1); }
+    function next(){ openAt(idx+1); }
+    prevBtn?.addEventListener('click', prev);
+    nextBtn?.addEventListener('click', next);
+    closeBtnG?.addEventListener('click', ()=> galleryDialog.close());
+    galleryDialog.addEventListener('keydown', (e)=>{ if(e.key==='ArrowLeft'){ prev(); } else if(e.key==='ArrowRight'){ next(); } else if(e.key==='Escape'){ galleryDialog.close(); } });
+
+    // Focus trap enforcement
+    galleryDialog.addEventListener('keydown', (e)=>{
+      if (e.key==='Tab') {
+        const focusable = Array.from(galleryDialog.querySelectorAll('button, [href], img[tabindex="0"]')).filter(el=> !el.hasAttribute('disabled'));
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length-1];
+        if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+      }
+    });
+    galleryDialog.addEventListener('close', ()=> { if(lastFocusedBeforeOpen) lastFocusedBeforeOpen.focus(); });
+
+    // Build thumbnails
+    if (thumbsWrap) {
+      items.forEach((it,i)=>{
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.setAttribute('role','listitem');
+        btn.setAttribute('aria-label', `Slide ${i+1}`);
+        btn.innerHTML = `<img src="${it.getAttribute('src')}" alt="">`;
+        btn.addEventListener('click', ()=> openAt(i));
+        btn.addEventListener('keydown', (e)=>{
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAt(i); }
+          if (['ArrowRight','ArrowLeft','Home','End'].includes(e.key)) {
+            e.preventDefault();
+            let newIndex = i;
+            if (e.key==='ArrowRight') newIndex = (i+1)%items.length;
+            else if (e.key==='ArrowLeft') newIndex = (i-1+items.length)%items.length;
+            else if (e.key==='Home') newIndex = 0;
+            else if (e.key==='End') newIndex = items.length-1;
+            thumbButtons[newIndex].focus();
+          }
+        });
+        thumbsWrap.appendChild(btn);
+      });
+      thumbButtons = Array.from(thumbsWrap.querySelectorAll('button'));
+      // initialize roving tabindex
+      thumbButtons.forEach((b,i)=> b.tabIndex = i===0 ? 0 : -1);
+    }
+
+    // Swipe support
+    let touchStartX = 0; let touchActive = false;
+    function onTouchStart(e){ touchActive = true; touchStartX = e.touches[0].clientX; }
+    function onTouchEnd(e){ if(!touchActive) return; const dx = e.changedTouches[0].clientX - touchStartX; if (Math.abs(dx) > 40) { dx<0 ? next() : prev(); } touchActive=false; }
+    galleryDialog.addEventListener('touchstart', onTouchStart, {passive:true});
+    galleryDialog.addEventListener('touchend', onTouchEnd, {passive:true});
+  }
+  initGallery();
 });
 
 // -------------------------------------

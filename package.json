@@ -3,17 +3,22 @@
   "version": "1.0.0",
   "description": "Portfolio optimization tools",
   "scripts": {
+    "fetch:assets": "node scripts/fetch-assets.mjs",
     "optimize": "node optimize-media.js",
     "optimize:images": "node optimize-media.js --images-only",
     "optimize:videos": "node optimize-media.js --videos-only",
     "generate-projects": "node generate-projects.js",
-    "build": "npm run generate-projects && npm run optimize"
+    "build": "npm run generate-projects && npm run fetch:assets && npm run optimize && node scripts/rev.mjs",
+    "lh": "lhci autorun --collect.url=https://leok974.github.io/leo-portfolio/ --upload.target=temporary-public-storage"
   },
   "dependencies": {
     "sharp": "^0.33.0"
   },
   "devDependencies": {
+    "@lhci/cli": "^0.13.0",
     "commander": "^11.0.0",
-    "glob": "^10.3.0"
+    "glob": "^10.3.0",
+    "lighthouse": "^12.0.0",
+    "tslib": "2.8.1"
   }
 }

@@ -12,8 +12,6 @@ build/
 # Media optimization outputs (generated files)
 assets/optimized/
 
-# Generated project pages (since they're built from JSON)
-projects/*.html
 
 # IDE and editor files
 .vscode/
