@@ -10,6 +10,31 @@ const indexHTML = fs.readFileSync('index.html', 'utf8');
 // Determine ordering of projects (stable by key order in JSON)
 const orderedSlugs = Object.keys(projectsData);
 
+// Build JSON-LD structured data for a project
+function buildJsonLd(project, slug) {
+  const url = `https://leok974.github.io/leo-portfolio/projects/${slug}.html`;
+  const image = project.images && project.images.length ? `https://leok974.github.io/leo-portfolio/${project.images[0].src}` : undefined;
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareSourceCode',
+    'name': project.title,
+    'description': project.description,
+    'url': url,
+    'codeRepository': project.repo || undefined,
+    'programmingLanguage': project.stack && project.stack.length ? project.stack.join(', ') : undefined,
+    'image': image,
+    'dateModified': new Date().toISOString(),
+    'author': {
+      '@type': 'Person',
+      'name': 'Leo Klemet'
+    },
+    'keywords': project.tags ? project.tags.join(', ') : undefined
+  };
+  // Remove undefined fields
+  Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
+  return JSON.stringify(data, null, 2);
+}
+
 // Template for individual project pages
 function generateProjectPage(project, slug) {
   const index = orderedSlugs.indexOf(slug);
@@ -29,6 +54,7 @@ function generateProjectPage(project, slug) {
   <meta property="og:type" content="article" />
   <meta property="og:image" content="/assets/${slug}-detail.webp" />
   <meta name="theme-color" content="#0f172a" />
+  <script type="application/ld+json">${buildJsonLd(project, slug)}</script>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
