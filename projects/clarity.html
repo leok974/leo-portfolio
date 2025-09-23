@@ -22,6 +22,9 @@
     .project-content {
       padding: 3rem 0;
     }
+    .breadcrumb { font-size:.8rem; display:flex; flex-wrap:wrap; gap:.35rem; align-items:center; margin-bottom:1rem; color:var(--muted); }
+    .breadcrumb a { color: var(--muted); }
+    .breadcrumb a:hover { color: var(--text); }
     .back-link {
       display: inline-flex;
       align-items: center;
@@ -36,6 +39,11 @@
       color: var(--text);
       background: color-mix(in oklab, var(--card) 80%, transparent);
     }
+    .project-nav { border-top:1px solid var(--border); margin-top:3rem; padding-top:2rem; display:flex; justify-content:space-between; gap:1rem; }
+    .project-nav a { flex:1; display:flex; flex-direction:column; padding:1rem 1.25rem; border:1px solid var(--border); border-radius:.8rem; background: var(--card); }
+    .project-nav a:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
+    .project-nav span.label { font-size:.7rem; text-transform:uppercase; letter-spacing:.5px; color: var(--muted); margin-bottom:.25rem; }
+    @media (max-width:700px){ .project-nav { flex-direction:column; } }
   </style>
 </head>
 <body>
@@ -63,7 +71,13 @@
   <main id="content">
     <section class="project-header">
       <div class="container">
-        <a href="../#projects" class="back-link">← Back to Projects</a>
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../">Home</a>
+          <span aria-hidden="true">/</span>
+          <a href="../#projects">Projects</a>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">Clarity Companion</span>
+        </nav>
         <h1>Clarity Companion</h1>
         <p class="subline">On‑device writing clarity assistant with strict coverage gates and localized UI.</p>
         <p><a class="btn" href="https://github.com/leok974/clarity-companion" target="_blank" rel="noopener">GitHub Repo ↗</a></p>
@@ -78,6 +92,12 @@
         <article class="case-study"><section><h2>Problem</h2><p>Writers receive vague style feedback; privacy concerns limit use of cloud AI for iterative editing.</p></section><section><h2>Solution</h2><p>Local extension enforces clarity heuristics with coverage gates and offline-friendly analysis loop.</p></section><section><h2>Tech Stack</h2><ul><li>Chrome MV3, TypeScript</li><li>Vitest, CI coverage gates</li></ul></section><section><h2>Screenshots & Media</h2><img src="../assets/clarity-detail.webp" alt="Clarity Companion panel with localized UI" /></section><section><h2>Links</h2><div class="card-actions"><a class="btn" href="https://github.com/leok974/clarity-companion" target="_blank" rel="noopener">GitHub Repo ↗</a></div></section></article>
       </div>
     </section>
+    <div class="container">
+      <nav class="project-nav" aria-label="Project navigation">
+        <a href="datapipe-ai.html" aria-label="Previous project: DataPipe AI"><span class="label">Previous</span><strong>DataPipe AI</strong></a>
+        <div></div>
+      </nav>
+    </div>
   </main>
 
   <footer>

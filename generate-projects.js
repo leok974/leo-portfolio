@@ -7,8 +7,16 @@ const projectsData = JSON.parse(fs.readFileSync('projects.json', 'utf8'));
 // Read the main index.html to extract the base template structure
 const indexHTML = fs.readFileSync('index.html', 'utf8');
 
+// Determine ordering of projects (stable by key order in JSON)
+const orderedSlugs = Object.keys(projectsData);
+
 // Template for individual project pages
 function generateProjectPage(project, slug) {
+  const index = orderedSlugs.indexOf(slug);
+  const prevSlug = index > 0 ? orderedSlugs[index - 1] : null;
+  const nextSlug = index < orderedSlugs.length - 1 ? orderedSlugs[index + 1] : null;
+  const prevProj = prevSlug ? projectsData[prevSlug] : null;
+  const nextProj = nextSlug ? projectsData[nextSlug] : null;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,6 +41,9 @@ function generateProjectPage(project, slug) {
     .project-content {
       padding: 3rem 0;
     }
+    .breadcrumb { font-size:.8rem; display:flex; flex-wrap:wrap; gap:.35rem; align-items:center; margin-bottom:1rem; color:var(--muted); }
+    .breadcrumb a { color: var(--muted); }
+    .breadcrumb a:hover { color: var(--text); }
     .back-link {
       display: inline-flex;
       align-items: center;
@@ -47,6 +58,11 @@ function generateProjectPage(project, slug) {
       color: var(--text);
       background: color-mix(in oklab, var(--card) 80%, transparent);
     }
+    .project-nav { border-top:1px solid var(--border); margin-top:3rem; padding-top:2rem; display:flex; justify-content:space-between; gap:1rem; }
+    .project-nav a { flex:1; display:flex; flex-direction:column; padding:1rem 1.25rem; border:1px solid var(--border); border-radius:.8rem; background: var(--card); }
+    .project-nav a:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
+    .project-nav span.label { font-size:.7rem; text-transform:uppercase; letter-spacing:.5px; color: var(--muted); margin-bottom:.25rem; }
+    @media (max-width:700px){ .project-nav { flex-direction:column; } }
   </style>
 </head>
 <body>
@@ -74,7 +90,13 @@ function generateProjectPage(project, slug) {
   <main id="content">
     <section class="project-header">
       <div class="container">
-        <a href="../#projects" class="back-link">← Back to Projects</a>
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../">Home</a>
+          <span aria-hidden="true">/</span>
+          <a href="../#projects">Projects</a>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">${project.title}</span>
+        </nav>
         <h1>${project.title}</h1>
         <p class="subline">${project.description}</p>
         ${project.repo ? `<p><a class="btn" href="${project.repo}" target="_blank" rel="noopener">GitHub Repo ↗</a></p>` : ''}
@@ -89,6 +111,12 @@ function generateProjectPage(project, slug) {
         ${generateStructuredSections(project)}
       </div>
     </section>
+    <div class="container">
+      <nav class="project-nav" aria-label="Project navigation">
+        ${prevProj ? `<a href="${prevSlug}.html" aria-label="Previous project: ${prevProj.title}"><span class="label">Previous</span><strong>${prevProj.title}</strong></a>` : '<div></div>'}
+        ${nextProj ? `<a href="${nextSlug}.html" style="text-align:right" aria-label="Next project: ${nextProj.title}"><span class="label">Next</span><strong>${nextProj.title}</strong></a>` : '<div></div>'}
+      </nav>
+    </div>
   </main>
 
   <footer>

@@ -22,6 +22,9 @@
     .project-content {
       padding: 3rem 0;
     }
+    .breadcrumb { font-size:.8rem; display:flex; flex-wrap:wrap; gap:.35rem; align-items:center; margin-bottom:1rem; color:var(--muted); }
+    .breadcrumb a { color: var(--muted); }
+    .breadcrumb a:hover { color: var(--text); }
     .back-link {
       display: inline-flex;
       align-items: center;
@@ -36,6 +39,11 @@
       color: var(--text);
       background: color-mix(in oklab, var(--card) 80%, transparent);
     }
+    .project-nav { border-top:1px solid var(--border); margin-top:3rem; padding-top:2rem; display:flex; justify-content:space-between; gap:1rem; }
+    .project-nav a { flex:1; display:flex; flex-direction:column; padding:1rem 1.25rem; border:1px solid var(--border); border-radius:.8rem; background: var(--card); }
+    .project-nav a:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
+    .project-nav span.label { font-size:.7rem; text-transform:uppercase; letter-spacing:.5px; color: var(--muted); margin-bottom:.25rem; }
+    @media (max-width:700px){ .project-nav { flex-direction:column; } }
   </style>
 </head>
 <body>
@@ -63,7 +71,13 @@
   <main id="content">
     <section class="project-header">
       <div class="container">
-        <a href="../#projects" class="back-link">← Back to Projects</a>
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../">Home</a>
+          <span aria-hidden="true">/</span>
+          <a href="../#projects">Projects</a>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">LedgerMind</span>
+        </nav>
         <h1>LedgerMind</h1>
         <p class="subline">Private-by-default finances with explainable ML suggestions and NL → SQL analytics.</p>
         
@@ -78,9 +92,15 @@
         <article class="case-study"><section><h2>Problem</h2><p>Personal finance tools fragment data across banks, budgets, and AI assistants with little explainability.</p></section><section><h2>Solution</h2><p>Unified ledger ingestion, grounded NL → SQL analytics, and explainable AI suggestions with traceable references.</p></section><section><h2>Tech Stack</h2><ul><li>FastAPI, Postgres, Alembic</li><li>React/Vite (client), Recharts</li><li>OAuth/Authlib, JWT cookies + CSRF</li><li>Docker, Nginx, Cloudflare Tunnel</li></ul></section><section><h2>Screenshots & Media</h2><figure>
           <img src="../assets/ledgermind-detail.webp" alt="LedgerMind dashboard overview"/>
           <figcaption class="muted">Overview dashboard with grounded analytics.</figcaption>
-        </figure><video controls preload="metadata" poster="../assets/ledgermind-detail-poster.webp"><source src="../assets/ledgermind-demo.webm" type="video/webm"/><source src="../assets/ledgermind-demo.mp4" type="video/mp4"/><track label="English" kind="captions" srclang="en" src="../assets/ledgermind-demo.vtt" default></video></section><section><h2>Outcomes</h2><ul><li>Deterministic tools with friendly LLM rephrase</li><li>Explain drawer with grounded references</li><li>Exports to PDF/XLSX</li></ul></section><section><h2>Links</h2><div class="card-actions"><a class="btn" href="../assets/ledgermind-case-study.pdf" download>Case Study (PDF)</a><a class="btn" href="../assets/ledgermind-brief.pdf" download>One‑pager</a></div></section></article>
+        </figure><video controls preload="metadata" poster="../assets/ledgermind-detail-poster.webp"><source src="../assets/ledgermind-demo.webm" type="video/webm"/><source src="../assets/ledgermind-demo.mp4" type="video/mp4"/><track label="English" kind="captions" srclang="en" src="../assets/ledgermind-demo.vtt" default></video></section><section><h2>Outcomes</h2><ul><li>Deterministic tools with friendly LLM rephrase</li><li>Explain drawer with grounded references</li><li>Exports to PDF/XLSX</li></ul></section><section><h2>Links</h2><div class="card-actions"><a class="btn" href="https://app.ledger-mind.org" target="_blank" rel="noopener">Live Demo ↗</a><a class="btn" href="../assets/ledgermind-case-study.pdf" download>Case Study (PDF)</a><a class="btn" href="../assets/ledgermind-brief.pdf" download>One‑pager</a></div></section></article>
       </div>
     </section>
+    <div class="container">
+      <nav class="project-nav" aria-label="Project navigation">
+        <div></div>
+        <a href="datapipe-ai.html" style="text-align:right" aria-label="Next project: DataPipe AI"><span class="label">Next</span><strong>DataPipe AI</strong></a>
+      </nav>
+    </div>
   </main>
 
   <footer>
