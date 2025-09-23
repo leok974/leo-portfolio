@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 // Read the projects data
 const projectsData = JSON.parse(fs.readFileSync('projects.json', 'utf8'));
@@ -9,6 +10,36 @@ const indexHTML = fs.readFileSync('index.html', 'utf8');
 
 // Determine ordering of projects (stable by key order in JSON)
 const orderedSlugs = Object.keys(projectsData);
+
+// Load last modification metadata store
+const lastmodPath = path.join(__dirname, '.lastmod.json');
+let lastmodStore = {};
+try { if (fs.existsSync(lastmodPath)) lastmodStore = JSON.parse(fs.readFileSync(lastmodPath,'utf8')); } catch(e){ console.warn('Could not read lastmod store', e); }
+
+function hashProject(project){
+  const relevant = {
+    title: project.title,
+    description: project.description,
+    problem: project.problem,
+    solution: project.solution,
+    stack: project.stack,
+    outcomes: project.outcomes,
+    tags: project.tags,
+    images: project.images?.map(i=>({src:i.src,alt:i.alt,caption:i.caption})) || [],
+    videos: project.videos?.map(v=>({poster:v.poster,sources:v.sources?.map(s=>s.src)})) || []
+  };
+  const str = JSON.stringify(relevant);
+  return crypto.createHash('sha256').update(str).digest('hex').slice(0,16);
+}
+
+// Ensure each slug has stable lastmod unless changed
+orderedSlugs.forEach(slug=>{
+  const proj = projectsData[slug];
+  const hash = hashProject(proj);
+  if (!lastmodStore[slug] || lastmodStore[slug].hash !== hash){
+    lastmodStore[slug] = { hash, lastmod: new Date().toISOString().split('T')[0] };
+  }
+});
 
 // Build JSON-LD structured data for a project
 function buildJsonLd(project, slug) {
@@ -22,7 +53,7 @@ function buildJsonLd(project, slug) {
       codeRepository: project.repo || undefined,
       programmingLanguage: project.stack && project.stack.length ? project.stack.join(', ') : undefined,
       image,
-      dateModified: new Date().toISOString(),
+      dateModified: (lastmodStore[slug] && lastmodStore[slug].lastmod) ? lastmodStore[slug].lastmod : new Date().toISOString().split('T')[0],
       author: { '@type': 'Person', name: 'Leo Klemet' },
       keywords: project.tags ? project.tags.join(', ') : undefined
   };
@@ -324,6 +355,9 @@ Object.entries(projectsData).forEach(([slug, project]) => {
   console.log(`Generated: ${fileName}`);
 });
 
+// Persist lastmod store (after successful generation)
+try { fs.writeFileSync(lastmodPath, JSON.stringify(lastmodStore, null, 2)); } catch(e){ console.error('Failed to write lastmod store', e); }
+
 // Generate sitemap.xml
 try {
   const base = 'https://leok974.github.io/leo-portfolio';
@@ -333,7 +367,17 @@ try {
   ];
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls.map(u=>`  <url><loc>${u}</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod></url>`).join('\n') +
+    urls.map(u=>{
+      if (u.endsWith('/')) {
+        // index lastmod = newest project lastmod
+        const newest = Object.values(lastmodStore).map(v=>v.lastmod).sort().slice(-1)[0] || new Date().toISOString().split('T')[0];
+        return `  <url><loc>${u}</loc><lastmod>${newest}</lastmod></url>`;
+      } else {
+        const slug = u.split('/').pop().replace('.html','');
+        const lm = (lastmodStore[slug] && lastmodStore[slug].lastmod) ? lastmodStore[slug].lastmod : new Date().toISOString().split('T')[0];
+        return `  <url><loc>${u}</loc><lastmod>${lm}</lastmod></url>`;
+      }
+    }).join('\n') +
     `\n</urlset>`;
   fs.writeFileSync(path.join(__dirname, 'sitemap.xml'), sitemap, 'utf8');
   console.log('sitemap.xml generated');
