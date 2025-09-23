@@ -231,6 +231,23 @@ function initializeProjectModals() {
 document.addEventListener('DOMContentLoaded', async function() {
   await loadProjectData();
   initializeProjectModals();
+  // Make project cards clickable to case study pages
+  document.querySelectorAll('.card-click').forEach(card => {
+    card.addEventListener('click', (e)=> {
+      // Avoid triggering if a direct interactive child (buttons/links) was clicked
+      const tag = e.target.tagName.toLowerCase();
+      if (['a','button'].includes(tag)) return;
+      const slug = card.getAttribute('data-slug');
+      if (slug) window.location.href = `projects/${slug}.html`;
+    });
+    card.addEventListener('keydown', (e)=> {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const slug = card.getAttribute('data-slug');
+        if (slug) window.location.href = `projects/${slug}.html`;
+      }
+    });
+  });
 });
 
 // -------------------------------------

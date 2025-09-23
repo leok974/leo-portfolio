@@ -86,14 +86,7 @@ function generateProjectPage(project, slug) {
 
     <section class="project-content">
       <div class="container">
-        <div class="detail-grid">
-          <div>
-            ${generateProjectMedia(project)}
-          </div>
-          <aside>
-            ${generateProjectDetails(project)}
-          </aside>
-        </div>
+        ${generateStructuredSections(project)}
       </div>
     </section>
   </main>
@@ -188,6 +181,47 @@ function generateProjectDetails(project) {
   }
 
   return html;
+  }
+  function generateStructuredSections(project) {
+    let html = '<article class="case-study">';
+
+    // Problem
+    if (project.problem) {
+      html += `<section><h2>Problem</h2><p>${project.problem}</p></section>`;
+    }
+
+    // Solution
+    if (project.solution) {
+      html += `<section><h2>Solution</h2><p>${project.solution}</p></section>`;
+    }
+
+    // Tech Stack
+    if (project.stack && project.stack.length) {
+      html += '<section><h2>Tech Stack</h2><ul>' + project.stack.map(i=>`<li>${i}</li>`).join('') + '</ul></section>';
+    }
+
+    // Screenshots / GIFs (media)
+    const media = generateProjectMedia(project);
+    if (media.trim()) {
+      html += `<section><h2>Screenshots & Media</h2>${media}</section>`;
+    }
+
+    // Outcomes
+    if (project.outcomes && project.outcomes.length) {
+      html += '<section><h2>Outcomes</h2><ul>' + project.outcomes.map(o=>`<li>${o}</li>`).join('') + '</ul></section>';
+    }
+
+    // Links
+    let links = '';
+    if (project.repo) links += `<a class="btn" href="${project.repo}" target="_blank" rel="noopener">GitHub Repo ↗</a>`;
+    if (project.demo) links += `<a class="btn" href="${project.demo}" target="_blank" rel="noopener">Live Demo ↗</a>`;
+    if (project.downloads && project.downloads.length) {
+      project.downloads.forEach(d=>{ links += `<a class="btn" href="../${d.href}" download>${d.label}</a>`; });
+    }
+    if (links) html += `<section><h2>Links</h2><div class="card-actions">${links}</div></section>`;
+
+    html += '</article>';
+    return html;
 }
 
 // Create projects directory if it doesn't exist

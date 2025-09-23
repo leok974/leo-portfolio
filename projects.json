@@ -4,6 +4,8 @@
     "slug": "ledgermind",
     "tags": ["ai", "finance", "ml"],
     "thumbnail": "assets/ledgermind-thumb.webp",
+    "problem": "Personal finance tools fragment data across banks, budgets, and AI assistants with little explainability.",
+    "solution": "Unified ledger ingestion, grounded NL → SQL analytics, and explainable AI suggestions with traceable references.",
     "description": "Private-by-default finances with explainable ML suggestions and NL → SQL analytics.",
     "goals": "Private-by-default finances with explainable ML suggestions and NL → SQL analytics.",
     "stack": [
@@ -44,6 +46,8 @@
     "slug": "datapipe-ai",
     "tags": ["ai", "devops", "kubernetes", "ml"],
     "thumbnail": "assets/datapipe-ai-cover.webp",
+    "problem": "Kubernetes/GKE operations generate noisy metrics and manual pipelines—operators react instead of anticipating.",
+    "solution": "Agent monitors telemetry, predicts scaling / failures, and automates pipeline deployment + remediation actions.",
     "description": "AI-powered ops agent for GKE deployments with automated data pipeline management and intelligent monitoring.",
     "goals": "Streamline Kubernetes operations with AI-driven automation, providing intelligent monitoring and automated data pipeline management for GKE deployments.",
     "stack": [
@@ -74,6 +78,8 @@
     "tags": ["dev", "extension", "productivity"],
     "thumbnail": "assets/clarity-thumb.webp",
     "repo": "https://github.com/leok974/clarity-companion",
+    "problem": "Writers receive vague style feedback; privacy concerns limit use of cloud AI for iterative editing.",
+    "solution": "Local extension enforces clarity heuristics with coverage gates and offline-friendly analysis loop.",
     "description": "On‑device writing clarity assistant with strict coverage gates and localized UI.",
     "goals": "On‑device writing clarity assistant with strict coverage gates and localized UI.",
     "stack": [
