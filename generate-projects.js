@@ -32,13 +32,20 @@ function hashProject(project){
   return crypto.createHash('sha256').update(str).digest('hex').slice(0,16);
 }
 
-// Ensure each slug has stable lastmod unless changed
+// Ensure each slug has stable lastmod unless changed and record datePublished
 orderedSlugs.forEach(slug=>{
   const proj = projectsData[slug];
   const hash = hashProject(proj);
-  if (!lastmodStore[slug] || lastmodStore[slug].hash !== hash){
-    lastmodStore[slug] = { hash, lastmod: new Date().toISOString().split('T')[0] };
+  if (!lastmodStore[slug]) {
+    lastmodStore[slug] = { hash, lastmod: new Date().toISOString().split('T')[0], datePublished: new Date().toISOString().split('T')[0] };
+  } else if (lastmodStore[slug].hash !== hash) {
+    // update lastmod only
+    lastmodStore[slug].hash = hash;
+    lastmodStore[slug].lastmod = new Date().toISOString().split('T')[0];
+    // preserve existing datePublished
   }
+  // Add datePublished fallback if older store missing it
+  if (!lastmodStore[slug].datePublished) lastmodStore[slug].datePublished = lastmodStore[slug].lastmod;
 });
 
 // Build JSON-LD structured data for a project
@@ -54,6 +61,7 @@ function buildJsonLd(project, slug) {
       programmingLanguage: project.stack && project.stack.length ? project.stack.join(', ') : undefined,
       image,
       dateModified: (lastmodStore[slug] && lastmodStore[slug].lastmod) ? lastmodStore[slug].lastmod : new Date().toISOString().split('T')[0],
+    datePublished: (lastmodStore[slug] && lastmodStore[slug].datePublished) ? lastmodStore[slug].datePublished : undefined,
       author: { '@type': 'Person', name: 'Leo Klemet' },
       keywords: project.tags ? project.tags.join(', ') : undefined
   };
@@ -76,6 +84,8 @@ function buildJsonLd(project, slug) {
     description: project.description,
     url,
     dateModified: baseSoftware.dateModified,
+    datePublished: baseSoftware.datePublished,
+    lastReviewed: baseSoftware.dateModified,
     creator: { '@type': 'Person', name: 'Leo Klemet' },
     keywords: project.tags ? project.tags.join(', ') : undefined,
     about: project.problem || undefined,
