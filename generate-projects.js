@@ -77,6 +77,7 @@ function generateProjectPage(project, slug) {
         <a href="../#projects" class="back-link">← Back to Projects</a>
         <h1>${project.title}</h1>
         <p class="subline">${project.description}</p>
+        ${project.repo ? `<p><a class="btn" href="${project.repo}" target="_blank" rel="noopener">GitHub Repo ↗</a></p>` : ''}
         <div class="tags">
           ${project.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
         </div>
@@ -179,6 +180,11 @@ function generateProjectDetails(project) {
       html += `<a href="../${download.href}" download>${download.label}</a>`;
     });
     html += '</div>';
+  }
+
+  // Repository link (duplicate in details if desired)
+  if (project.repo) {
+    html += `<p><a class="btn" href="${project.repo}" target="_blank" rel="noopener">GitHub Repo ↗</a></p>`;
   }
 
   return html;

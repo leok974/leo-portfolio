@@ -73,6 +73,7 @@
     "slug": "clarity",
     "tags": ["dev", "extension", "productivity"],
     "thumbnail": "assets/clarity-thumb.webp",
+    "repo": "https://github.com/leok974/clarity-companion",
     "description": "On‑device writing clarity assistant with strict coverage gates and localized UI.",
     "goals": "On‑device writing clarity assistant with strict coverage gates and localized UI.",
     "stack": [

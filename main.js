@@ -185,6 +185,11 @@ function generateProjectHTML(project) {
     html += '</div>';
   }
 
+  // Repository link
+  if (project.repo) {
+    html += `<div class="repo-link"><a class="btn" href="${project.repo}" target="_blank" rel="noopener">GitHub Repo ↗</a></div>`;
+  }
+
   html += '</aside>';
   return html;
 }
