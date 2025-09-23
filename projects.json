@@ -39,55 +39,6 @@
       {"href": "assets/ledgermind-brief.pdf", "label": "One‑pager"}
     ]
   },
-  "adgen": {
-    "title": "AdGen Studio",
-    "slug": "adgen",
-    "tags": ["ai", "creative", "automation"],
-    "thumbnail": "assets/adgen-thumb.webp",
-    "description": "Rapid, brand‑consistent ad assets (stills/video) with JSON recipes and CI deploys.",
-    "goals": "Rapid, brand‑consistent ad assets (stills/video) with JSON recipes and CI deploys.",
-    "stack": [
-      "Next.js, FastAPI",
-      "ComfyUI graphs, Runway",
-      "Docker, GH Actions"
-    ],
-    "outcomes": [
-      "End‑to‑end pipeline demos",
-      "Case studies with before/after"
-    ],
-    "images": [
-      {
-        "src": "assets/adgen-detail.webp",
-        "alt": "AdGen brand board and generated ad stills"
-      }
-    ],
-    "videos": [],
-    "downloads": []
-  },
-  "pixel-banana": {
-    "title": "Pixel Banana Suite",
-    "slug": "pixel-banana",
-    "tags": ["ai", "creative", "gamedev"],
-    "thumbnail": "assets/pixel-banana.webp",
-    "description": "Turn pose prompts into crisp sprite sheets and GIFs with per‑pose control.",
-    "goals": "Turn pose prompts into crisp sprite sheets and GIFs with per‑pose control.",
-    "stack": [
-      "FastAPI, Vite",
-      "Gemini + ComfyUI integrations"
-    ],
-    "outcomes": [],
-    "images": [],
-    "videos": [
-      {
-        "poster": "assets/pixel-banana.webp",
-        "sources": [
-          {"src": "assets/pixel-banana.webm", "type": "video/webm"},
-          {"src": "assets/pixel-banana.mp4", "type": "video/mp4"}
-        ]
-      }
-    ],
-    "downloads": []
-  },
   "clarity": {
     "title": "Clarity Companion",
     "slug": "clarity",
