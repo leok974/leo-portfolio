@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, renameSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const files = [
@@ -18,7 +18,13 @@ function hashPath(p){
   return { old:p, hashed:withHash };
 }
 
-const updates = files.map(hashPath);
+const updates = files
+  .filter((p) => {
+    const ok = existsSync(p);
+    if (!ok) console.warn(`[rev] Skip missing: ${p}`);
+    return ok;
+  })
+  .map(hashPath);
 
 // Helper to rewrite a single HTML file with correct relative paths
 function rewriteHtml(filePath){
