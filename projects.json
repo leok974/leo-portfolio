@@ -6,6 +6,7 @@
     "thumbnail": "assets/ledgermind-thumb.webp",
     "problem": "Personal finance tools fragment data across banks, budgets, and AI assistants with little explainability.",
     "solution": "Unified ledger ingestion, grounded NL → SQL analytics, and explainable AI suggestions with traceable references.",
+  "demo": "https://app.ledger-mind.org",
     "description": "Private-by-default finances with explainable ML suggestions and NL → SQL analytics.",
     "goals": "Private-by-default finances with explainable ML suggestions and NL → SQL analytics.",
     "stack": [

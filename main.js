@@ -189,6 +189,9 @@ function generateProjectHTML(project) {
   if (project.repo) {
     html += `<div class="repo-link"><a class="btn" href="${project.repo}" target="_blank" rel="noopener">GitHub Repo ↗</a></div>`;
   }
+  if (project.demo) {
+    html += `<div class="repo-link"><a class="btn" href="${project.demo}" target="_blank" rel="noopener">Live Demo ↗</a></div>`;
+  }
 
   html += '</aside>';
   return html;
