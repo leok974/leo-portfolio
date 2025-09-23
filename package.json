@@ -7,13 +7,16 @@
     "optimize:images": "node optimize-media.js --images-only",
     "optimize:videos": "node optimize-media.js --videos-only",
     "generate-projects": "node generate-projects.js",
-    "build": "npm run generate-projects && npm run optimize"
+    "build": "npm run generate-projects && npm run optimize",
+    "lh": "lhci autorun --collect.url=https://leok974.github.io/leo-portfolio/ --upload.target=temporary-public-storage"
   },
   "dependencies": {
     "sharp": "^0.33.0"
   },
   "devDependencies": {
     "commander": "^11.0.0",
-    "glob": "^10.3.0"
+    "glob": "^10.3.0",
+    "@lhci/cli": "^0.13.0",
+    "lighthouse": "^12.0.0"
   }
 }

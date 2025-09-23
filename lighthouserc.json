@@ -1,0 +1,20 @@
+{
+  "ci": {
+    "collect": { "staticDistDir": "./", "numberOfRuns": 3 },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.93 }],
+        "categories:seo": ["error", { "minScore": 1 }],
+        "categories:accessibility": ["error", { "minScore": 0.98 }],
+        "total-byte-weight": ["warn", { "maxNumericValue": 450000 }],
+        "unminified-css": "warn",
+        "unused-css-rules": "warn",
+        "uses-optimized-images": "error",
+        "uses-responsive-images": "error",
+        "uses-text-compression": "error",
+        "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }]
+      }
+    }
+  }
+}
