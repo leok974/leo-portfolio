@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist</title>
+  <meta name="description" content="Portfolio of Leo Klemet — building agents, analytics, and cinematic creative pipelines." />
+  <meta property="og:title" content="Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist" />
+  <meta property="og:description" content="Building agents, analytics, and cinematic creative pipelines." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/assets/og-cover.jpg" />
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="sr-only skip-link" href="#projects">Skip to content</a>
+  <header>
+    <div class="container nav" role="navigation" aria-label="Primary">
+      <div class="brand">Leo Klemet</div>
+      <nav>
+        <ul>
+          <li><a href="#projects">Projects</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+          <li><a href="#blog">Blog</a></li>
+        </ul>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" aria-pressed="false" aria-label="Toggle dark/light mode">
+        <span aria-hidden="true">🌙</span>
+        <input id="themeSwitch" type="checkbox" aria-hidden="true" />
+        <span aria-hidden="true">☀️</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- HERO / LANDING -->
+  <section class="hero container" id="home">
+    <div>
+      <h1 class="headline">Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist</h1>
+      <p class="subline">Building agents, analytics, and cinematic creative pipelines.</p>
+      <a class="cta" href="#projects">⟶ See My Work</a>
+      <p class="muted" style="margin-top:.75rem">Tip: Use the category filters to explore AI Agents, ML/Analytics, 3D & Generative Art, and DevOps/Security projects.</p>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+      <!-- Optional background video/image (replace poster/src as desired) -->
+      <video playsinline muted loop preload="metadata" poster="assets/hero-poster.webp" aria-label="Showreel background" style="width:100%;height:100%;object-fit:cover;">
+        <source src="assets/hero-showreel.webm" type="video/webm" />
+        <source src="assets/hero-showreel.mp4" type="video/mp4" />
+        <!-- Add captions for accessibility if this video contains meaningful audio/dialog -->
+        <!-- <track label="English" kind="captions" srclang="en" src="assets/hero.vtt"> -->
+      </video>
+      <div class="orb"></div>
+      <div class="orb2"></div>
+    </div>
+  </section>
+
+  <!-- PROJECTS -->
+  <section id="projects">
+    <div class="container">
+      <div class="section-head">
+        <h2 class="section-title">Projects</h2>
+        <div class="filters" role="toolbar" aria-label="Project filters">
+          <button class="chip" data-filter="all" aria-pressed="true">All</button>
+          <button class="chip" data-filter="agents">AI Agents & Apps</button>
+          <button class="chip" data-filter="ml">ML / Analytics</button>
+          <button class="chip" data-filter="art">3D & Generative Art</button>
+          <button class="chip" data-filter="devops">DevOps & Security</button>
+        </div>
+      </div>
+
+      <div class="grid" id="projectGrid" aria-live="polite">
+        <!-- CARD: LedgerMind -->
+        <article class="card" data-cats="agents ml devops">
+          <div class="thumb">
+            <img loading="lazy" src="assets/ledgermind-cover.webp" alt="LedgerMind dashboard with charts and AI assistant" />
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">LedgerMind</h3>
+            <p class="muted">AI‑powered personal finance agent with grounded analytics, budgets, and explainable suggestions. Local/Cloud deploy.</p>
+            <div class="tags">
+              <span class="tag">FastAPI</span><span class="tag">React</span><span class="tag">Postgres</span><span class="tag">Ollama/OpenAI</span>
+            </div>
+            <div class="card-actions">
+              <a class="btn" href="projects/ledgermind.html">Case Study</a>
+              <a class="btn" href="#" data-detail="ledgermind">Quick View</a>
+              <a class="btn" href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+              <a class="btn" href="https://app.ledger-mind.org" target="_blank" rel="noopener">Live</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- CARD: Finance Agent OSS -->
+        <article class="card" data-cats="agents ml">
+          <div class="thumb">
+            <video preload="metadata" poster="assets/finance-agent.webp" controls aria-label="Finance Agent demo">
+              <source src="assets/finance-agent.webm" type="video/webm" />
+              <source src="assets/finance-agent.mp4" type="video/mp4" />
+              <track label="English" kind="captions" srclang="en" src="assets/finance-agent.vtt" default>
+            </video>
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">Finance Agent (OSS)</h3>
+            <p class="muted">Transaction ingest, rules, ML suggestions, grounded NL → SQL queries, exports, and analytics.</p>
+            <div class="tags">
+              <span class="tag">FastAPI</span><span class="tag">Sklearn</span><span class="tag">Vite</span>
+            </div>
+            <div class="card-actions">
+              <a class="btn" href="projects/finance-agent.html">Case Study</a>
+              <a class="btn" href="#" data-detail="finance-agent">Quick View</a>
+              <a class="btn" href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- CARD: AdGen Studio -->
+        <article class="card" data-cats="agents art ml">
+          <div class="thumb">
+            <img loading="lazy" src="assets/adgen-poster.webp" alt="AdGen Studio generated brand boards and video stills" />
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">AdGen Studio</h3>
+            <p class="muted">AI‑driven ad campaign generator — stills/video via ComfyUI graphs, JSON recipes, and CI/CD.</p>
+            <div class="tags">
+              <span class="tag">ComfyUI</span><span class="tag">Docker</span><span class="tag">Next.js</span>
+            </div>
+            <div class="card-actions">
+              <a class="btn" href="projects/adgen.html">Case Study</a>
+              <a class="btn" href="#" data-detail="adgen">Quick View</a>
+              <a class="btn" href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- CARD: Pixel Banana Suite -->
+        <article class="card" data-cats="art agents">
+          <div class="thumb">
+            <iframe loading="lazy" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Pixel Banana Suite demo"
+              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen
+              style="border:0; aspect-ratio:16/9;"></iframe>
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">Pixel Banana Suite</h3>
+            <p class="muted">Sprite pose generator + GIF animator (FastAPI + Vite) with Gemini/Comfy integrations.</p>
+            <div class="tags">
+              <span class="tag">FastAPI</span><span class="tag">Gemini</span><span class="tag">Sprites</span>
+            </div>
+            <div class="card-actions">
+              <a class="btn" href="projects/pixel-banana.html">Case Study</a>
+              <a class="btn" href="#" data-detail="pixel-banana">Quick View</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- CARD: Clarity Companion (Chrome Ext) -->
+        <article class="card" data-cats="agents devops">
+          <div class="thumb">
+            <img loading="lazy" src="assets/clarity-companion.webp" alt="Clarity Companion Chrome extension panel UI" />
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">Clarity Companion (Chrome Extension)</h3>
+            <p class="muted">On‑device writing clarity assistant with localization, coverage gates, and CI packaging.</p>
+            <div class="tags">
+              <span class="tag">MV3</span><span class="tag">TypeScript</span><span class="tag">CI/CD</span>
+            </div>
+            <div class="card-actions">
+              <a class="btn" href="projects/clarity.html">Case Study</a>
+              <a class="btn" href="#" data-detail="clarity">Quick View</a>
+              <a class="btn" href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="container">
+      <div class="section-head">
+        <h2 class="section-title">About Me</h2>
+        <p class="muted">AI Engineer · Software Engineer · Generative AI / 3D Artist & Creative Technologist</p>
+      </div>
+      <div class="about">
+        <div>
+          <img class="avatar" src="assets/leo-avatar.webp" alt="Portrait of Leo Klemet" />
+        </div>
+        <div>
+          <p>Hey, I’m Leo — I build agentic apps, grounded analytics, and cinematic creative pipelines. I love shipping fast, clean systems that balance reliable infra with playful, art‑driven UX.</p>
+          <div class="skills" aria-label="Skills by domain">
+            <div class="skill-box">
+              <h4>AI / ML</h4>
+              <ul>
+                <li>PyTorch, TensorFlow, embeddings, RAG</li>
+                <li>Ollama, OpenAI API, evals</li>
+                <li>Classifiers, forecasting, explainability</li>
+              </ul>
+            </div>
+            <div class="skill-box">
+              <h4>Backend</h4>
+              <ul>
+                <li>FastAPI, Postgres, Alembic</li>
+                <li>OAuth/Authlib, JWT cookies + CSRF</li>
+                <li>Report exports (PDF/XLSX)</li>
+              </ul>
+            </div>
+            <div class="skill-box">
+              <h4>Frontend</h4>
+              <ul>
+                <li>React, Vite, TypeScript, Tailwind</li>
+                <li>shadcn, Recharts, accessibility</li>
+              </ul>
+            </div>
+            <div class="skill-box">
+              <h4>MLOps / Infra</h4>
+              <ul>
+                <li>Docker, GitHub Actions, CI/CD</li>
+                <li>Cloudflare Tunnel, GCP KMS, Nginx</li>
+                <li>Secrets, observability, security</li>
+              </ul>
+            </div>
+            <div class="skill-box">
+              <h4>3D / Creative</h4>
+              <ul>
+                <li>Blender, Substance Painter</li>
+                <li>ComfyUI, LoRA/SDXL, Runway</li>
+                <li>Storyboards, editing, sound</li>
+              </ul>
+            </div>
+            <div class="skill-box">
+              <h4>Resume</h4>
+              <ul>
+                <li><a class="btn" href="assets/Leo-Klemet-Resume.pdf" download>Download PDF</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="container">
+      <div class="section-head">
+        <h2 class="section-title">Contact</h2>
+        <p class="muted">Let’s collaborate or chat about roles, freelance, and experiments.</p>
+      </div>
+      <form name="contact" method="POST" data-netlify="true" novalidate>
+        <input type="hidden" name="form-name" value="contact" />
+        <div>
+          <label for="name">Name *</label>
+          <input id="name" name="name" autocomplete="name" required aria-describedby="name-error" />
+          <div id="name-error" class="error-message" aria-live="polite"></div>
+        </div>
+        <div>
+          <label for="email">Email *</label>
+          <input id="email" name="email" type="email" autocomplete="email" required aria-describedby="email-error" />
+          <div id="email-error" class="error-message" aria-live="polite"></div>
+        </div>
+        <div>
+          <label for="message">Message *</label>
+          <textarea id="message" name="message" placeholder="What would you like to build together?" required aria-describedby="message-error"></textarea>
+          <div id="message-error" class="error-message" aria-live="polite"></div>
+        </div>
+        <button class="btn submit" type="submit">Send Message</button>
+      </form>
+      <p class="muted" style="margin-top:1rem">Find me on <a href="https://www.linkedin.com/in/" target="_blank" rel="noopener">LinkedIn</a> · <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a> · <a href="https://www.artstation.com/" target="_blank" rel="noopener">ArtStation</a> · <a href="#" target="_blank" rel="noopener">Portfolio</a></p>
+    </div>
+  </section>
+
+  <!-- BLOG / UPDATES (optional) -->
+  <section id="blog">
+    <div class="container">
+      <div class="section-head">
+        <h2 class="section-title">Blog · Updates</h2>
+        <p class="muted">Hackathons, experiments, and devlogs.</p>
+      </div>
+      <div class="posts">
+        <article class="post">
+          <h3>Local GPT‑OSS + Agents for Finance</h3>
+          <p class="muted">A deep‑dive into grounded NL → SQL, analytics orchestration, and privacy‑first design.</p>
+        </article>
+        <article class="post">
+          <h3>From Storyboard to Sprite Sheet</h3>
+          <p class="muted">How Pixel Banana Suite turns pose prompts into crisp, animatable sprites.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container footer-grid">
+      <div>© <span id="year"></span> Leo Klemet</div>
+      <div class="muted">AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist</div>
+      <div style="text-align:right">
+        <a href="#home">Back to top ↑</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- PROJECT DETAIL DIALOG (reusable) -->
+  <dialog class="project-detail" id="detailDialog" aria-labelledby="detailTitle">
+    <div class="detail-header">
+      <h3 id="detailTitle" style="margin:0">Project</h3>
+      <button class="btn" id="detailClose" aria-label="Close project details">✕ Close</button>
+    </div>
+    <div class="detail-body">
+      <div id="detailContent" class="detail-grid">
+        <!-- Filled dynamically by JS (see PROJECT_DETAILS map) -->
+      </div>
+    </div>
+  </dialog>
+
+  <script src="main.js"></script>
+</body>
+</html>

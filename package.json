@@ -1,0 +1,19 @@
+{
+  "name": "leo-portfolio-tools",
+  "version": "1.0.0",
+  "description": "Portfolio optimization tools",
+  "scripts": {
+    "optimize": "node optimize-media.js",
+    "optimize:images": "node optimize-media.js --images-only",
+    "optimize:videos": "node optimize-media.js --videos-only",
+    "generate-projects": "node generate-projects.js",
+    "build": "npm run generate-projects && npm run optimize"
+  },
+  "dependencies": {
+    "sharp": "^0.33.0"
+  },
+  "devDependencies": {
+    "commander": "^11.0.0",
+    "glob": "^10.3.0"
+  }
+}
