@@ -69,7 +69,21 @@ function buildJsonLd(project, slug) {
     ]
   };
 
-  return JSON.stringify({ '@context': 'https://schema.org', '@graph': [ baseSoftware, breadcrumb ] }, null, 2);
+  // CreativeWork / Project representation
+  const creative = {
+    '@type': 'CreativeWork',
+    name: project.title,
+    description: project.description,
+    url,
+    dateModified: baseSoftware.dateModified,
+    creator: { '@type': 'Person', name: 'Leo Klemet' },
+    keywords: project.tags ? project.tags.join(', ') : undefined,
+    about: project.problem || undefined,
+    thumbnailUrl: image || undefined
+  };
+  Object.keys(creative).forEach(k => creative[k] === undefined && delete creative[k]);
+
+  return JSON.stringify({ '@context': 'https://schema.org', '@graph': [ baseSoftware, creative, breadcrumb ] }, null, 2);
 }
 
 // Template for individual project pages
@@ -90,6 +104,7 @@ function generateProjectPage(project, slug) {
   <meta property="og:description" content="${project.description}" />
   <meta property="og:type" content="article" />
   <meta property="og:image" content="/assets/${slug}-detail.webp" />
+  <link rel="canonical" href="https://leok974.github.io/leo-portfolio/projects/${slug}.html" />
   <meta name="theme-color" content="#0f172a" />
   <script type="application/ld+json">${buildJsonLd(project, slug)}</script>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -371,11 +386,11 @@ try {
       if (u.endsWith('/')) {
         // index lastmod = newest project lastmod
         const newest = Object.values(lastmodStore).map(v=>v.lastmod).sort().slice(-1)[0] || new Date().toISOString().split('T')[0];
-        return `  <url><loc>${u}</loc><lastmod>${newest}</lastmod></url>`;
+        return `  <url><loc>${u}</loc><lastmod>${newest}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>`;
       } else {
         const slug = u.split('/').pop().replace('.html','');
         const lm = (lastmodStore[slug] && lastmodStore[slug].lastmod) ? lastmodStore[slug].lastmod : new Date().toISOString().split('T')[0];
-        return `  <url><loc>${u}</loc><lastmod>${lm}</lastmod></url>`;
+        return `  <url><loc>${u}</loc><lastmod>${lm}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>`;
       }
     }).join('\n') +
     `\n</urlset>`;
