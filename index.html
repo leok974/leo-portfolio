@@ -13,10 +13,36 @@
   <meta property="og:url" content="https://leok974.github.io/leo-portfolio/" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="theme-color" content="#0f172a" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Critical CSS: minimal layout to paint above-the-fold quickly */
+    :root{--bg:#0b1020;--bg-elev:#0f172a;--text:#e5e7eb;--muted:#94a3b8;--border:#1f2937}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;line-height:1.6;color:var(--text);background:var(--bg)}
+    header{position:sticky;top:0;z-index:50;background:#0f172acc;border-bottom:1px solid var(--border)}
+    .container{width:min(1200px,92vw);margin-inline:auto}
+    .nav{display:flex;align-items:center;justify-content:space-between;padding:.85rem 0}
+    nav ul{display:flex;gap:1rem;list-style:none;margin:0;padding:0}
+    .hero{padding:clamp(3rem,6vw + 1rem,7rem) 0;display:grid;grid-template-columns:1.2fr .8fr;gap:2rem;align-items:center}
+    @media(max-width:900px){.hero{grid-template-columns:1fr}}
+    .headline{font-size:clamp(1.8rem,2.3rem + 1.5vw,3.2rem);line-height:1.15;margin:0 0 1rem}
+    .subline{color:var(--muted);margin:0 0 1.5rem}
+    .hero-visual{aspect-ratio:4/3;border:1px solid var(--border);border-radius:1rem;overflow:hidden;background:#111827}
+  </style>
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="fonts/Inter-roman.var.woff2" />
+  <link rel="preload" as="style" href="styles.css">
+  <link rel="stylesheet" href="styles.css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="styles.css"></noscript>
+  <style>
+    @font-face{
+      font-family:"Inter";
+      src:url("fonts/Inter-roman.var.woff2") format("woff2-variations");
+      font-weight:100 900;
+      font-style:normal;
+      font-display:swap;
+    }
+    :root{--font-sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+    html{font-family:var(--font-sans)}
+  </style>
   <script type="application/ld+json">{
     "@context": "https://schema.org",
     "@graph": [
@@ -73,7 +99,6 @@
       </nav>
       <button class="theme-toggle" id="themeToggle" aria-pressed="false" aria-label="Toggle dark/light mode">
         <span aria-hidden="true">🌙</span>
-        <input id="themeSwitch" type="checkbox" aria-hidden="true" />
         <span aria-hidden="true">☀️</span>
       </button>
     </div>
@@ -92,16 +117,15 @@
       </div>
       <p class="muted" style="margin-top:.75rem">Tip: Use the category filters to explore AI Agents, ML/Analytics, 3D & Generative Art, and DevOps/Security projects.</p>
     </div>
-    <div class="hero-visual" aria-hidden="true">
-      <!-- Optional background video/image (replace poster/src as desired) -->
-      <video playsinline muted loop preload="metadata" poster="assets/hero-poster.webp" aria-label="Showreel background" width="1200" height="800" style="aspect-ratio:3/2;width:100%;height:100%;object-fit:cover;border-radius:16px;">
-        <source src="assets/hero-showreel.webm" type="video/webm" />
-        <source src="assets/hero-showreel.mp4" type="video/mp4" />
-        <!-- Add captions for accessibility if this video contains meaningful audio/dialog -->
-        <!-- <track label="English" kind="captions" srclang="en" src="assets/hero.vtt"> -->
+    <div class="hero-visual hero-media">
+      <link rel="preload" as="image" href="assets/hero-poster.webp" imagesrcset="assets/hero-poster.webp" imagesizes="100vw" fetchpriority="high">
+      <img id="hero-poster" src="assets/hero-poster.webp" width="1200" height="800" alt="" decoding="async" fetchpriority="high" style="aspect-ratio:3/2;width:100%;height:100%;object-fit:cover;border-radius:16px;display:block">
+      <video id="hero-video" muted playsinline loop width="1200" height="800" aria-hidden="true" style="position:absolute;inset:0;border-radius:16px;opacity:0;transition:opacity .4s ease">
+        <source data-src="assets/hero-showreel.webm" type="video/webm" />
+        <source data-src="assets/hero-showreel.mp4" type="video/mp4" />
       </video>
-      <div class="orb"></div>
-      <div class="orb2"></div>
+      <div class="orb" aria-hidden="true"></div>
+      <div class="orb2" aria-hidden="true"></div>
     </div>
   </section>
 
@@ -126,7 +150,7 @@
             <picture>
               <source type="image/avif" srcset="assets/optimized/ledgermind-cover-sm.avif 400w, assets/optimized/ledgermind-cover-md.avif 800w, assets/optimized/ledgermind-cover-lg.avif 1200w, assets/optimized/ledgermind-cover-xl.avif 1920w" sizes="(max-width: 600px) 100vw, 33vw">
               <source type="image/webp" srcset="assets/optimized/ledgermind-cover-sm.webp 400w, assets/optimized/ledgermind-cover-md.webp 800w, assets/optimized/ledgermind-cover-lg.webp 1200w, assets/optimized/ledgermind-cover-xl.webp 1920w" sizes="(max-width: 600px) 100vw, 33vw">
-              <img loading="lazy" decoding="async" src="assets/ledgermind-cover.webp" alt="LedgerMind dashboard with charts and AI assistant" />
+              <img loading="lazy" decoding="async" src="assets/ledgermind-cover.webp" alt="LedgerMind dashboard with charts and AI assistant" width="1200" height="675" />
             </picture>
           </div>
           <div class="card-body">
@@ -150,7 +174,7 @@
             <picture>
               <source type="image/avif" srcset="assets/optimized/datapipe-ai-cover-sm.avif 400w, assets/optimized/datapipe-ai-cover-md.avif 800w, assets/optimized/datapipe-ai-cover-lg.avif 1200w, assets/optimized/datapipe-ai-cover-xl.avif 1920w" sizes="(max-width: 600px) 100vw, 33vw">
               <source type="image/webp" srcset="assets/optimized/datapipe-ai-cover-sm.webp 400w, assets/optimized/datapipe-ai-cover-md.webp 800w, assets/optimized/datapipe-ai-cover-lg.webp 1200w, assets/optimized/datapipe-ai-cover-xl.webp 1920w" sizes="(max-width: 600px) 100vw, 33vw">
-              <img loading="lazy" decoding="async" src="assets/datapipe-ai-cover.webp" alt="DataPipe AI ops dashboard with GKE integration" />
+              <img loading="lazy" decoding="async" src="assets/datapipe-ai-cover.webp" alt="DataPipe AI ops dashboard with GKE integration" width="1200" height="675" />
             </picture>
           </div>
           <div class="card-body">
@@ -173,7 +197,7 @@
             <picture>
               <source type="image/avif" srcset="assets/optimized/clarity-companion-sm.avif 400w, assets/optimized/clarity-companion-md.avif 800w, assets/optimized/clarity-companion-lg.avif 1200w, assets/optimized/clarity-companion-xl.avif 1920w" sizes="(max-width: 600px) 100vw, 33vw">
               <source type="image/webp" srcset="assets/optimized/clarity-companion-sm.webp 400w, assets/optimized/clarity-companion-md.webp 800w, assets/optimized/clarity-companion-lg.webp 1200w, assets/optimized/clarity-companion-xl.webp 1920w" sizes="(max-width: 600px) 100vw, 33vw">
-              <img loading="lazy" decoding="async" src="assets/clarity-companion.webp" alt="Clarity Companion Chrome extension panel UI" />
+              <img loading="lazy" decoding="async" src="assets/clarity-companion.webp" alt="Clarity Companion Chrome extension panel UI" width="1200" height="675" />
             </picture>
           </div>
           <div class="card-body">
@@ -203,7 +227,7 @@
       </div>
       <div class="about">
         <div>
-          <img class="avatar" src="assets/leo-avatar.webp" alt="Portrait of Leo Klemet" />
+          <img class="avatar" src="assets/leo-avatar.webp" alt="Portrait of Leo Klemet" width="140" height="140" />
         </div>
         <div>
           <p>Hey, I’m Leo — I build agentic apps, grounded analytics, and cinematic creative pipelines. I love shipping fast, clean systems that balance reliable infra with playful, art‑driven UX.</p>
@@ -349,7 +373,7 @@
   <!-- PROJECT DETAIL DIALOG (reusable) -->
   <dialog class="project-detail" id="detailDialog" aria-labelledby="detailTitle">
     <div class="detail-header">
-      <h3 id="detailTitle" style="margin:0">Project</h3>
+  <h2 id="detailTitle" style="margin:0">Project</h2>
       <button class="btn" id="detailClose" aria-label="Close project details">✕ Close</button>
     </div>
     <div class="detail-body">
@@ -360,5 +384,29 @@
   </dialog>
 
   <script src="main.js" defer></script>
+  <script>
+  (function() {
+    const prefersDataSaver = matchMedia('(prefers-reduced-data: reduce)').matches;
+    const wideEnough = window.innerWidth >= 768;
+    function loadHeroVideo() {
+      const v = document.getElementById('hero-video');
+      if (!v || v.dataset.loaded) return;
+      v.dataset.loaded = '1';
+      for (const s of v.querySelectorAll('source')) {
+        if (s.dataset.src) s.src = s.dataset.src;
+      }
+      v.load();
+      v.play && v.play().catch(()=>{});
+      requestAnimationFrame(()=>{ v.style.opacity = '1'; });
+    }
+    if (!prefersDataSaver && wideEnough) {
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(loadHeroVideo, { timeout: 2000 });
+      } else {
+        setTimeout(loadHeroVideo, 1200);
+      }
+    }
+  })();
+  </script>
 </body>
 </html>

@@ -6,15 +6,15 @@
   const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
   const initial = saved || (prefersLight ? 'light' : 'dark');
   document.documentElement.setAttribute('data-theme', initial);
-  const switchEl = document.getElementById('themeSwitch');
-  if (switchEl) {
-    switchEl.checked = (initial === 'light');
-    document.getElementById('themeToggle').setAttribute('aria-pressed', (initial === 'light'));
-    switchEl.addEventListener('change', () => {
-      const mode = switchEl.checked ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', mode);
-      document.getElementById('themeToggle').setAttribute('aria-pressed', (mode === 'light'));
-      localStorage.setItem('theme', mode);
+  const toggleBtn = document.getElementById('themeToggle');
+  if (toggleBtn) {
+    toggleBtn.setAttribute('aria-pressed', (initial === 'light'));
+    toggleBtn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      toggleBtn.setAttribute('aria-pressed', (next === 'light'));
+      localStorage.setItem('theme', next);
     });
   }
 })();
