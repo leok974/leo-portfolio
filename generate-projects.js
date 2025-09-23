@@ -100,6 +100,11 @@ function generateProjectPage(project, slug) {
   .gallery-next { right:.75rem; top: 50%; transform: translateY(-50%); }
   .gallery-close:hover, .gallery-prev:hover, .gallery-next:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
   .gallery-item { cursor: zoom-in; }
+  .gallery-thumbs { margin-top:1rem; display:flex; gap:.5rem; flex-wrap:wrap; justify-content:center; }
+  .gallery-thumbs button { border:1px solid var(--border); background: var(--card); padding:0; width:60px; height:40px; border-radius:.4rem; overflow:hidden; cursor:pointer; position:relative; }
+  .gallery-thumbs button img { width:100%; height:100%; object-fit:cover; }
+  .gallery-thumbs button[aria-current="true"] { outline:2px solid var(--accent); outline-offset:2px; }
+  .gallery-thumbs button:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
   </style>
 </head>
 <body>
@@ -165,13 +170,14 @@ function generateProjectPage(project, slug) {
       </div>
     </div>
   </footer>
-  <dialog id="galleryDialog" class="gallery-dialog" aria-label="Image gallery" inert>
+  <dialog id="galleryDialog" class="gallery-dialog" aria-label="Image gallery" aria-modal="true" inert>
     <div class="gallery-frame">
       <button class="gallery-close" id="galleryClose" aria-label="Close gallery">×</button>
       <button class="gallery-prev" id="galleryPrev" aria-label="Previous image">‹</button>
       <img id="galleryImage" alt="" />
       <button class="gallery-next" id="galleryNext" aria-label="Next image">›</button>
       <p id="galleryCaption" class="muted" style="margin-top:.75rem"></p>
+      <div id="galleryThumbs" class="gallery-thumbs" aria-label="Gallery thumbnails" role="list"></div>
     </div>
   </dialog>
   <script src="../main.js"></script>

@@ -263,9 +263,19 @@ document.addEventListener('DOMContentLoaded', async function() {
     const prevBtn = document.getElementById('galleryPrev');
     const nextBtn = document.getElementById('galleryNext');
     const closeBtnG = document.getElementById('galleryClose');
+    const thumbsWrap = document.getElementById('galleryThumbs');
     const items = Array.from(document.querySelectorAll('.gallery-item'));
     if (!items.length) return;
     let idx = 0;
+    let lastFocusedBeforeOpen = null;
+
+    function preload(i){
+      const t = items[(i+items.length)%items.length];
+      if (!t) return;
+      const src = t.getAttribute('src');
+      const img = new Image();
+      img.src = src;
+    }
     function openAt(i){
       idx = (i+items.length)%items.length;
       const target = items[idx];
@@ -275,6 +285,15 @@ document.addEventListener('DOMContentLoaded', async function() {
       const fig = target.closest('figure');
       captionEl.textContent = fig ? (fig.querySelector('figcaption')?.textContent || '') : '';
       if (typeof galleryDialog.showModal === 'function') galleryDialog.showModal(); else galleryDialog.setAttribute('open','');
+      // mark current thumb
+      if (thumbsWrap) {
+        thumbsWrap.querySelectorAll('button').forEach((b,bi)=>{ b.setAttribute('aria-current', bi===idx ? 'true':'false'); });
+      }
+      // focus trap start
+      lastFocusedBeforeOpen = document.activeElement;
+      closeBtnG.focus();
+      // Preload neighbors
+      preload(idx+1); preload(idx-1);
     }
     items.forEach(it=>{
       it.addEventListener('click', ()=> openAt(parseInt(it.dataset.galleryIndex,10)) );
@@ -287,6 +306,38 @@ document.addEventListener('DOMContentLoaded', async function() {
     nextBtn?.addEventListener('click', next);
     closeBtnG?.addEventListener('click', ()=> galleryDialog.close());
     galleryDialog.addEventListener('keydown', (e)=>{ if(e.key==='ArrowLeft'){ prev(); } else if(e.key==='ArrowRight'){ next(); } else if(e.key==='Escape'){ galleryDialog.close(); } });
+
+    // Focus trap enforcement
+    galleryDialog.addEventListener('keydown', (e)=>{
+      if (e.key==='Tab') {
+        const focusable = Array.from(galleryDialog.querySelectorAll('button, [href], img[tabindex="0"]')).filter(el=> !el.hasAttribute('disabled'));
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length-1];
+        if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+      }
+    });
+    galleryDialog.addEventListener('close', ()=> { if(lastFocusedBeforeOpen) lastFocusedBeforeOpen.focus(); });
+
+    // Build thumbnails
+    if (thumbsWrap) {
+      items.forEach((it,i)=>{
+        const btn = document.createElement('button');
+        btn.setAttribute('type','button');
+        btn.setAttribute('role','listitem');
+        btn.innerHTML = `<img src="${it.getAttribute('src')}" alt="Thumbnail ${i+1}">`;
+        btn.addEventListener('click', ()=> openAt(i));
+        thumbsWrap.appendChild(btn);
+      });
+    }
+
+    // Swipe support
+    let touchStartX = 0; let touchActive = false;
+    function onTouchStart(e){ touchActive = true; touchStartX = e.touches[0].clientX; }
+    function onTouchEnd(e){ if(!touchActive) return; const dx = e.changedTouches[0].clientX - touchStartX; if (Math.abs(dx) > 40) { dx<0 ? next() : prev(); } touchActive=false; }
+    galleryDialog.addEventListener('touchstart', onTouchStart, {passive:true});
+    galleryDialog.addEventListener('touchend', onTouchEnd, {passive:true});
   }
   initGallery();
 });
