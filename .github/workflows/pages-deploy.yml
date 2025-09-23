@@ -2,7 +2,7 @@ name: Build and Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ UI-updates ]
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
