@@ -89,6 +89,17 @@ function generateProjectPage(project, slug) {
     .project-nav a:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
     .project-nav span.label { font-size:.7rem; text-transform:uppercase; letter-spacing:.5px; color: var(--muted); margin-bottom:.25rem; }
     @media (max-width:700px){ .project-nav { flex-direction:column; } }
+  /* Gallery */
+  .gallery-dialog { border:none; padding:0; background:transparent; max-width: min(90vw,1000px); }
+  .gallery-dialog::backdrop { background: rgba(0,0,0,.65); backdrop-filter: blur(4px); }
+  .gallery-frame { position:relative; background: var(--card); padding:1.5rem 2.5rem; border:1px solid var(--border); border-radius:1rem; box-shadow: var(--shadow); display:flex; flex-direction:column; align-items:center; }
+  .gallery-frame img { max-width:100%; height:auto; border-radius:.5rem; }
+  .gallery-close, .gallery-prev, .gallery-next { position:absolute; top: .75rem; background: var(--card); border:1px solid var(--border); width:2.2rem; height:2.2rem; border-radius:.6rem; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.1rem; }
+  .gallery-close { right:.75rem; }
+  .gallery-prev { left:.75rem; top: 50%; transform: translateY(-50%); }
+  .gallery-next { right:.75rem; top: 50%; transform: translateY(-50%); }
+  .gallery-close:hover, .gallery-prev:hover, .gallery-next:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
+  .gallery-item { cursor: zoom-in; }
   </style>
 </head>
 <body>
@@ -154,7 +165,15 @@ function generateProjectPage(project, slug) {
       </div>
     </div>
   </footer>
-
+  <dialog id="galleryDialog" class="gallery-dialog" aria-label="Image gallery" inert>
+    <div class="gallery-frame">
+      <button class="gallery-close" id="galleryClose" aria-label="Close gallery">×</button>
+      <button class="gallery-prev" id="galleryPrev" aria-label="Previous image">‹</button>
+      <img id="galleryImage" alt="" />
+      <button class="gallery-next" id="galleryNext" aria-label="Next image">›</button>
+      <p id="galleryCaption" class="muted" style="margin-top:.75rem"></p>
+    </div>
+  </dialog>
   <script src="../main.js"></script>
 </body>
 </html>`;
@@ -165,14 +184,12 @@ function generateProjectMedia(project) {
 
   // Add images
   if (project.images && project.images.length > 0) {
-    project.images.forEach(img => {
+    project.images.forEach((img, idx) => {
+      const base = `<img class=\"gallery-item\" data-gallery-index=\"${idx}\" src=\"../${img.src}\" alt=\"${img.alt}\" loading=\"lazy\" />`;
       if (img.caption) {
-        html += `<figure>
-          <img src="../${img.src}" alt="${img.alt}"/>
-          <figcaption class="muted">${img.caption}</figcaption>
-        </figure>`;
+        html += `<figure>${base}<figcaption class="muted">${img.caption}</figcaption></figure>`;
       } else {
-        html += `<img src="../${img.src}" alt="${img.alt}" />`;
+        html += base;
       }
     });
   }

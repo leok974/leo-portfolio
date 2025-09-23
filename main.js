@@ -22,7 +22,8 @@
 // -----------------------------
 // FOOTER YEAR
 // -----------------------------
-document.getElementById('year').textContent = new Date().getFullYear();
+const yearEl = document.getElementById('year');
+if (yearEl) yearEl.textContent = new Date().getFullYear();
 
 // -----------------------------
 // LAZY-LOAD IMAGES/VIDEOS OUT OF VIEW (extra safety beyond native)
@@ -205,6 +206,7 @@ function generateProjectHTML(project) {
 function initializeProjectModals() {
   const dialogEl = document.getElementById('detailDialog');
   const contentEl = document.getElementById('detailContent');
+  if (!dialogEl || !contentEl) return; // Guard on pages without modal
 
   document.querySelectorAll('[data-detail]').forEach(btn => {
     btn.addEventListener('click', (e)=>{
@@ -219,7 +221,8 @@ function initializeProjectModals() {
     });
   });
 
-  document.getElementById('detailClose').addEventListener('click', ()=> dialogEl.close());
+    const closeBtn = document.getElementById('detailClose');
+    if (closeBtn) closeBtn.addEventListener('click', ()=> dialogEl.close());
 
   // -----------------------------
   // ACCESSIBILITY ENHANCEMENTS
@@ -251,6 +254,41 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
     });
   });
+  // Gallery (on project detail pages)
+  function initGallery(){
+    const galleryDialog = document.getElementById('galleryDialog');
+    if (!galleryDialog) return; // Not on project page
+    const imgEl = document.getElementById('galleryImage');
+    const captionEl = document.getElementById('galleryCaption');
+    const prevBtn = document.getElementById('galleryPrev');
+    const nextBtn = document.getElementById('galleryNext');
+    const closeBtnG = document.getElementById('galleryClose');
+    const items = Array.from(document.querySelectorAll('.gallery-item'));
+    if (!items.length) return;
+    let idx = 0;
+    function openAt(i){
+      idx = (i+items.length)%items.length;
+      const target = items[idx];
+      imgEl.src = target.getAttribute('src');
+      imgEl.alt = target.getAttribute('alt') || '';
+      // Get caption if inside figure
+      const fig = target.closest('figure');
+      captionEl.textContent = fig ? (fig.querySelector('figcaption')?.textContent || '') : '';
+      if (typeof galleryDialog.showModal === 'function') galleryDialog.showModal(); else galleryDialog.setAttribute('open','');
+    }
+    items.forEach(it=>{
+      it.addEventListener('click', ()=> openAt(parseInt(it.dataset.galleryIndex,10)) );
+      it.addEventListener('keydown', (e)=> { if(e.key==='Enter'){ openAt(parseInt(it.dataset.galleryIndex,10)); } });
+      it.setAttribute('tabindex','0');
+    });
+    function prev(){ openAt(idx-1); }
+    function next(){ openAt(idx+1); }
+    prevBtn?.addEventListener('click', prev);
+    nextBtn?.addEventListener('click', next);
+    closeBtnG?.addEventListener('click', ()=> galleryDialog.close());
+    galleryDialog.addEventListener('keydown', (e)=>{ if(e.key==='ArrowLeft'){ prev(); } else if(e.key==='ArrowRight'){ next(); } else if(e.key==='Escape'){ galleryDialog.close(); } });
+  }
+  initGallery();
 });
 
 // -------------------------------------
