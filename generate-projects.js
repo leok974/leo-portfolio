@@ -14,25 +14,31 @@ const orderedSlugs = Object.keys(projectsData);
 function buildJsonLd(project, slug) {
   const url = `https://leok974.github.io/leo-portfolio/projects/${slug}.html`;
   const image = project.images && project.images.length ? `https://leok974.github.io/leo-portfolio/${project.images[0].src}` : undefined;
-  const data = {
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareSourceCode',
-    'name': project.title,
-    'description': project.description,
-    'url': url,
-    'codeRepository': project.repo || undefined,
-    'programmingLanguage': project.stack && project.stack.length ? project.stack.join(', ') : undefined,
-    'image': image,
-    'dateModified': new Date().toISOString(),
-    'author': {
-      '@type': 'Person',
-      'name': 'Leo Klemet'
-    },
-    'keywords': project.tags ? project.tags.join(', ') : undefined
+  const baseSoftware = {
+      '@type': 'SoftwareSourceCode',
+      name: project.title,
+      description: project.description,
+      url,
+      codeRepository: project.repo || undefined,
+      programmingLanguage: project.stack && project.stack.length ? project.stack.join(', ') : undefined,
+      image,
+      dateModified: new Date().toISOString(),
+      author: { '@type': 'Person', name: 'Leo Klemet' },
+      keywords: project.tags ? project.tags.join(', ') : undefined
   };
-  // Remove undefined fields
-  Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
-  return JSON.stringify(data, null, 2);
+  Object.keys(baseSoftware).forEach(k => baseSoftware[k] === undefined && delete baseSoftware[k]);
+
+  // BreadcrumbList
+  const breadcrumb = {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://leok974.github.io/leo-portfolio/' },
+      { '@type': 'ListItem', position: 2, name: 'Projects', item: 'https://leok974.github.io/leo-portfolio/#projects' },
+      { '@type': 'ListItem', position: 3, name: project.title, item: url }
+    ]
+  };
+
+  return JSON.stringify({ '@context': 'https://schema.org', '@graph': [ baseSoftware, breadcrumb ] }, null, 2);
 }
 
 // Template for individual project pages
@@ -105,6 +111,8 @@ function generateProjectPage(project, slug) {
   .gallery-thumbs button img { width:100%; height:100%; object-fit:cover; }
   .gallery-thumbs button[aria-current="true"] { outline:2px solid var(--accent); outline-offset:2px; }
   .gallery-thumbs button:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
+  .gallery-thumbs button:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+  .gallery-thumbs button[aria-current="true"]:focus-visible { outline:3px solid var(--accent); }
   </style>
 </head>
 <body>
@@ -178,6 +186,7 @@ function generateProjectPage(project, slug) {
       <button class="gallery-next" id="galleryNext" aria-label="Next image">›</button>
       <p id="galleryCaption" class="muted" style="margin-top:.75rem"></p>
       <div id="galleryThumbs" class="gallery-thumbs" aria-label="Gallery thumbnails" role="list"></div>
+      <div id="galleryAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     </div>
   </dialog>
   <script src="../main.js"></script>
@@ -314,5 +323,22 @@ Object.entries(projectsData).forEach(([slug, project]) => {
   fs.writeFileSync(fileName, projectHTML);
   console.log(`Generated: ${fileName}`);
 });
+
+// Generate sitemap.xml
+try {
+  const base = 'https://leok974.github.io/leo-portfolio';
+  const urls = [
+    `${base}/`,
+    ...orderedSlugs.map(slug => `${base}/projects/${slug}.html`)
+  ];
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    urls.map(u=>`  <url><loc>${u}</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod></url>`).join('\n') +
+    `\n</urlset>`;
+  fs.writeFileSync(path.join(__dirname, 'sitemap.xml'), sitemap, 'utf8');
+  console.log('sitemap.xml generated');
+} catch(e) {
+  console.error('Failed to generate sitemap:', e);
+}
 
 console.log('Project pages generated successfully!');

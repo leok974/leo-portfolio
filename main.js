@@ -260,6 +260,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (!galleryDialog) return; // Not on project page
     const imgEl = document.getElementById('galleryImage');
     const captionEl = document.getElementById('galleryCaption');
+    const announcerEl = document.getElementById('galleryAnnouncer');
     const prevBtn = document.getElementById('galleryPrev');
     const nextBtn = document.getElementById('galleryNext');
     const closeBtnG = document.getElementById('galleryClose');
@@ -268,6 +269,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (!items.length) return;
     let idx = 0;
     let lastFocusedBeforeOpen = null;
+    let thumbButtons = [];
 
     function preload(i){
       const t = items[(i+items.length)%items.length];
@@ -287,7 +289,18 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (typeof galleryDialog.showModal === 'function') galleryDialog.showModal(); else galleryDialog.setAttribute('open','');
       // mark current thumb
       if (thumbsWrap) {
-        thumbsWrap.querySelectorAll('button').forEach((b,bi)=>{ b.setAttribute('aria-current', bi===idx ? 'true':'false'); });
+        thumbButtons.forEach((b,bi)=>{
+          b.setAttribute('aria-current', bi===idx ? 'true':'false');
+          // roving tabindex
+          b.tabIndex = bi===idx ? 0 : -1;
+        });
+      }
+      // Announce slide change
+      if (announcerEl) {
+        const total = items.length;
+        const slideNum = idx + 1;
+        const caption = captionEl.textContent ? `: ${captionEl.textContent}` : '';
+        announcerEl.textContent = `Slide ${slideNum} of ${total}${caption}`;
       }
       // focus trap start
       lastFocusedBeforeOpen = document.activeElement;
@@ -324,12 +337,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (thumbsWrap) {
       items.forEach((it,i)=>{
         const btn = document.createElement('button');
-        btn.setAttribute('type','button');
+        btn.type = 'button';
         btn.setAttribute('role','listitem');
-        btn.innerHTML = `<img src="${it.getAttribute('src')}" alt="Thumbnail ${i+1}">`;
+        btn.setAttribute('aria-label', `Slide ${i+1}`);
+        btn.innerHTML = `<img src="${it.getAttribute('src')}" alt="">`;
         btn.addEventListener('click', ()=> openAt(i));
+        btn.addEventListener('keydown', (e)=>{
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAt(i); }
+          if (['ArrowRight','ArrowLeft','Home','End'].includes(e.key)) {
+            e.preventDefault();
+            let newIndex = i;
+            if (e.key==='ArrowRight') newIndex = (i+1)%items.length;
+            else if (e.key==='ArrowLeft') newIndex = (i-1+items.length)%items.length;
+            else if (e.key==='Home') newIndex = 0;
+            else if (e.key==='End') newIndex = items.length-1;
+            thumbButtons[newIndex].focus();
+          }
+        });
         thumbsWrap.appendChild(btn);
       });
+      thumbButtons = Array.from(thumbsWrap.querySelectorAll('button'));
+      // initialize roving tabindex
+      thumbButtons.forEach((b,i)=> b.tabIndex = i===0 ? 0 : -1);
     }
 
     // Swipe support

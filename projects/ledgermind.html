@@ -12,18 +12,45 @@
   <meta name="theme-color" content="#0f172a" />
   <script type="application/ld+json">{
   "@context": "https://schema.org",
-  "@type": "SoftwareSourceCode",
-  "name": "LedgerMind",
-  "description": "Private-by-default finances with explainable ML suggestions and NL → SQL analytics.",
-  "url": "https://leok974.github.io/leo-portfolio/projects/ledgermind.html",
-  "programmingLanguage": "FastAPI, Postgres, Alembic, React/Vite (client), Recharts, OAuth/Authlib, JWT cookies + CSRF, Docker, Nginx, Cloudflare Tunnel",
-  "image": "https://leok974.github.io/leo-portfolio/assets/ledgermind-detail.webp",
-  "dateModified": "2025-09-23T19:47:58.876Z",
-  "author": {
-    "@type": "Person",
-    "name": "Leo Klemet"
-  },
-  "keywords": "ai, finance, ml"
+  "@graph": [
+    {
+      "@type": "SoftwareSourceCode",
+      "name": "LedgerMind",
+      "description": "Private-by-default finances with explainable ML suggestions and NL → SQL analytics.",
+      "url": "https://leok974.github.io/leo-portfolio/projects/ledgermind.html",
+      "programmingLanguage": "FastAPI, Postgres, Alembic, React/Vite (client), Recharts, OAuth/Authlib, JWT cookies + CSRF, Docker, Nginx, Cloudflare Tunnel",
+      "image": "https://leok974.github.io/leo-portfolio/assets/ledgermind-detail.webp",
+      "dateModified": "2025-09-23T19:58:34.732Z",
+      "author": {
+        "@type": "Person",
+        "name": "Leo Klemet"
+      },
+      "keywords": "ai, finance, ml"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://leok974.github.io/leo-portfolio/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Projects",
+          "item": "https://leok974.github.io/leo-portfolio/#projects"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "LedgerMind",
+          "item": "https://leok974.github.io/leo-portfolio/projects/ledgermind.html"
+        }
+      ]
+    }
+  ]
 }</script>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -75,6 +102,8 @@
   .gallery-thumbs button img { width:100%; height:100%; object-fit:cover; }
   .gallery-thumbs button[aria-current="true"] { outline:2px solid var(--accent); outline-offset:2px; }
   .gallery-thumbs button:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
+  .gallery-thumbs button:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+  .gallery-thumbs button[aria-current="true"]:focus-visible { outline:3px solid var(--accent); }
   </style>
 </head>
 <body>
@@ -148,6 +177,7 @@
       <button class="gallery-next" id="galleryNext" aria-label="Next image">›</button>
       <p id="galleryCaption" class="muted" style="margin-top:.75rem"></p>
       <div id="galleryThumbs" class="gallery-thumbs" aria-label="Gallery thumbnails" role="list"></div>
+      <div id="galleryAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     </div>
   </dialog>
   <script src="../main.js"></script>
