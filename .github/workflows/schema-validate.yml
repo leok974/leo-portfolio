@@ -24,6 +24,13 @@ jobs:
           key: project-pages-${{ github.sha }}
           restore-keys: |
             project-pages-
+      - name: Cache sitemap
+        uses: actions/cache@v4
+        with:
+          path: sitemap.xml
+          key: sitemap-${{ github.sha }}
+          restore-keys: |
+            sitemap-
       - name: Install dependencies
         run: |
           if [ -f package.json ]; then npm ci; else echo 'No package.json, skipping install'; fi
@@ -36,3 +43,9 @@ jobs:
         with:
           name: project-pages-${{ github.run_id }}
           path: projects/*.html
+      - name: Upload sitemap artifact
+        if: ${{ hashFiles('sitemap.xml') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: sitemap-${{ github.run_id }}
+          path: sitemap.xml
