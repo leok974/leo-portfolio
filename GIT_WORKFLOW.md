@@ -10,7 +10,7 @@
 ### 1. Connect to GitHub/GitLab
 ```bash
 # Create a new repository on GitHub/GitLab first, then:
-git remote add origin https://github.com/yourusername/leo-portfolio.git
+git remote add origin https://github.com/leok974/leo-portfolio.git
 git push -u origin main
 ```
 

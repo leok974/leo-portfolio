@@ -19,7 +19,7 @@ A fast, modern, **framework-free** portfolio for **Leo Klemet — AI Engineer ·
 
 1) **Clone** and open the folder in VS Code:
 ```bash
-git clone https://github.com/YOUR_GH/leo-portfolio.git
+git clone https://github.com/leok974/leo-portfolio.git
 cd leo-portfolio
 code .
 ```
