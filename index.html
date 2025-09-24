@@ -411,5 +411,100 @@
 
   <script src="main.js" defer></script>
   <script>/* hero video temporarily disabled pending assets */</script>
+  
+  <!-- Leo Assistant Widget: minimal, no-build chat relay -->
+  <style>
+  #leo-assistant{position:fixed;right:16px;bottom:16px;z-index:9999}
+  #leo-assistant .btn{border:1px solid #2a3357;padding:.55rem .8rem;border-radius:14px;background:#121a2e;color:#e8ecf8;cursor:pointer}
+  #leo-assistant .panel{width:min(92vw,380px);height:420px;background:#0b1223;border:1px solid #2a3357;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.4);display:none;flex-direction:column;overflow:hidden}
+  #leo-assistant .head{display:flex;justify-content:space-between;align-items:center;padding:.6rem 1rem;border-bottom:1px solid #1c2545}
+  #leo-assistant .log{flex:1;overflow:auto;padding:0 1rem}
+  #leo-assistant .msg{margin:.75rem 0}
+  #leo-assistant .you{color:#c9d4ff}
+  #leo-assistant .ai{color:#a7ffdc}
+  #leo-assistant form{display:flex;gap:.5rem;padding:.6rem;border-top:1px solid #1c2545}
+  #leo-assistant input{flex:1;background:#0f1830;color:#e8ecf8;border:1px solid #263055;border-radius:12px;padding:.65rem}
+  </style>
+
+  <div id="leo-assistant">
+    <button id="la-open" class="btn">🤖 Ask about my projects</button>
+    <div id="la-panel" class="panel" role="dialog" aria-label="Leo Assistant">
+      <div class="head">
+        <strong>Leo’s Assistant</strong>
+        <button id="la-close" class="btn" aria-label="Close assistant">✕</button>
+      </div>
+      <div id="la-log" class="log" aria-live="polite"></div>
+      <form id="la-form">
+        <input id="la-input" placeholder="Ask: which project fits data engineering?" autocomplete="off"/>
+        <button class="btn" type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    // Update this to your Cloudflare Tunnel domain for the relay
+    const API = "https://assistant.leo-portfolio.app/chat";
+    // Only show on GitHub Pages to avoid local dev errors if relay is private
+    const allowed = location.hostname === 'leok974.github.io';
+    const root = document.getElementById('leo-assistant');
+    if(!allowed && root){ root.style.display = 'none'; return; }
+
+    const openBtn = document.getElementById('la-open');
+    const panel = document.getElementById('la-panel');
+    const closeBtn = document.getElementById('la-close');
+    const form = document.getElementById('la-form');
+    const input = document.getElementById('la-input');
+    const log = document.getElementById('la-log');
+    const msgs = [];
+
+    function show(){ panel.style.display='flex'; openBtn.style.display='none'; input.focus(); }
+    function hide(){ panel.style.display='none'; openBtn.style.display='inline-block'; }
+    openBtn.onclick = show; closeBtn.onclick = hide;
+
+    const context = {};
+    async function loadContext(){
+      try {
+        const res = await fetch('projects.json', {cache:'no-store'});
+        const data = await res.json();
+        const take = data.projects?.slice(0,6).map(p=>`• ${p.title}: ${p.description} [${(p.tags||[]).join(', ')}]`).join('\n');
+        context.summary = `Projects:\n${take}`;
+      } catch {}
+    }
+    loadContext();
+
+    function append(role, text){
+      const div = document.createElement('div');
+      div.className = 'msg ' + (role === 'user' ? 'you':'ai');
+      div.textContent = (role === 'user' ? 'You: ' : 'Assistant: ') + text;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const content = input.value.trim();
+      if(!content) return;
+      input.value='';
+      msgs.push({role:'user', content});
+      append('user', content);
+      append('assistant', 'Thinking…');
+
+      try {
+        const res = await fetch(API, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ messages: msgs, context })
+        });
+        const data = await res.json();
+        const text = data.assistant || '(no response)';
+        log.lastChild.textContent = 'Assistant: ' + text;
+        msgs.push({role:'assistant', content: text});
+      } catch(err){
+        log.lastChild.textContent = 'Assistant: (connection failed — please try again later)';
+      }
+    });
+  })();
+  </script>
 </body>
 </html>
