@@ -124,7 +124,7 @@ function generateProjectPage(project, slug) {
   <meta property="og:title" content="${project.title} — Leo Klemet Portfolio" />
   <meta property="og:description" content="${project.description}" />
   <meta property="og:type" content="article" />
-  <meta property="og:image" content="/assets/${slug}-detail.webp" />
+  <meta property="og:image" content="../assets/${slug}-detail.webp" />
   <link rel="canonical" href="https://leok974.github.io/leo-portfolio/projects/${slug}.html" />
   <meta name="theme-color" content="#0f172a" />
   <script type="application/ld+json">${buildJsonLd(project, slug)}</script>

@@ -237,6 +237,15 @@ function initializeProjectModals() {
 document.addEventListener('DOMContentLoaded', async function() {
   await loadProjectData();
   initializeProjectModals();
+  // Guard against missing/broken images so cards don't look empty
+  document.addEventListener('error', (e) => {
+    const t = e.target;
+    if (t && t.tagName === 'IMG' && !t.dataset.fallbackApplied) {
+      t.dataset.fallbackApplied = '1';
+      t.src = 'assets/hero-placeholder.svg';
+      t.style.background = 'linear-gradient(180deg,#141b2d,#0b1223)';
+    }
+  }, true);
   // Make project cards clickable to case study pages
   document.querySelectorAll('.card-click').forEach(card => {
     card.addEventListener('click', (e)=> {
