@@ -562,5 +562,185 @@
     });
   })();
   </script>
+  
+  <!-- AI Avatar Widget (canvas + streaming + TTS) -->
+  <style>
+  #ai-avatar-wrap{position:fixed;right:16px;bottom:16px;z-index:9999;display:flex;gap:12px;align-items:flex-end}
+  #ai-avatar-canvas{width:160px;height:160px;border-radius:18px;border:1px solid #2a3357;background:#0b1223;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+  #ai-say {border:1px solid #2a3357;background:#121a2e;color:#e8ecf8;border-radius:12px;padding:.6rem .9rem}
+  #ai-text {max-width:min(56vw,520px);min-height:48px;background:#0b1223;border:1px solid #2a3357;border-radius:12px;padding:.6rem .8rem;color:#e8ecf8;white-space:pre-wrap}
+  #ai-controls{display:flex;gap:.5rem}
+  </style>
+
+  <div id="ai-avatar-wrap">
+    <canvas id="ai-avatar-canvas" width="320" height="320" aria-label="AI avatar"></canvas>
+    <div>
+      <div id="ai-text">Ask me about my projects…</div>
+      <div id="ai-controls">
+        <input id="ai-input" placeholder="Which project fits GKE ops?" />
+        <button id="ai-say">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    const API_STREAM = "https://assistant.leo-portfolio.app/chat/stream"; // <- your tunnel URL
+    const canvas = document.getElementById('ai-avatar-canvas');
+    const ctx = canvas.getContext('2d');
+    const sayBtn = document.getElementById('ai-say');
+    const input = document.getElementById('ai-input');
+    const out = document.getElementById('ai-text');
+
+    const msgs = [];
+    const context = {};
+    (async () => {
+      try {
+        const res = await fetch('projects.json', {cache:'no-store'});
+        const data = await res.json();
+        context.summary = (data.projects||[]).slice(0,6)
+          .map(p=>`• ${p.title}: ${p.description} [${(p.tags||[]).join(', ')}]`).join('\n');
+      } catch {}
+    })();
+
+    // --- Canvas avatar (simple anime style) ---
+    const state = {
+      t: 0,
+      blink: 0,
+      nextBlink: performance.now() + 2000 + Math.random()*2000,
+      mouth: 0,
+      speaking: false,
+      headBob: 0
+    };
+
+    function drawAvatar() {
+      const { width:w, height:h } = canvas;
+      ctx.clearRect(0,0,w,h);
+
+      ctx.save();
+      const bob = Math.sin(state.t*0.0013)*2;
+      ctx.translate(0, bob);
+
+      const g = ctx.createRadialGradient(w/2, h/2, 20, w/2, h/2, 150);
+      g.addColorStop(0, '#1a2345'); g.addColorStop(1, 'transparent');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(w/2,h/2,140,0,Math.PI*2); ctx.fill();
+
+      ctx.fillStyle = '#f3f6ff';
+      ctx.beginPath(); ctx.arc(w/2, h/2, 88, 0, Math.PI*2); ctx.fill();
+
+      const eyeY = h/2 - 18, eyeDX = 34, eyeW = 28, eyeH = 12*(1 - (1-Math.pow(1-state.blink,2)));
+      ctx.fillStyle = '#0d1530';
+      ctx.beginPath(); roundedRect(w/2-eyeDX-eyeW/2, eyeY-eyeH/2, eyeW, eyeH, 6); ctx.fill();
+      ctx.beginPath(); roundedRect(w/2+eyeDX-eyeW/2, eyeY-eyeH/2, eyeW, eyeH, 6); ctx.fill();
+
+      ctx.globalAlpha = 0.12; ctx.fillStyle = '#ff7aa2';
+      ctx.beginPath(); ctx.ellipse(w/2-48, h/2+8, 18,8,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(w/2+48, h/2+8, 18,8,0,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+
+      const mOpen = 6 + state.mouth*14;
+      ctx.fillStyle = '#c02d5c';
+      ctx.beginPath(); ctx.ellipse(w/2, h/2+32, 18, mOpen/2, 0, 0, Math.PI*2); ctx.fill();
+
+      ctx.fillStyle = '#263061';
+      ctx.beginPath(); ctx.arc(w/2, h/2-52, 62, Math.PI*1.05, Math.PI*2 - 0.05); ctx.fill();
+
+      ctx.strokeStyle = 'rgba(10,15,30,.25)';
+      ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(w/2, h/2, 88, 0, Math.PI*2); ctx.stroke();
+
+      ctx.restore();
+    }
+    function roundedRect(x,y,w,h,r){ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+    function tick(now){
+      state.t = now;
+      if (now > state.nextBlink){
+        state.blink += 0.25;
+        if (state.blink >= 1){ state.blink = 0; state.nextBlink = now + 1500 + Math.random()*2500; }
+      }
+      const target = state.speaking ? 0.8 : 0.0;
+      state.mouth += (target - state.mouth) * 0.15;
+      drawAvatar();
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    // --- TTS (SpeechSynthesis) ---
+    function speak(text){
+      if (!text) return;
+      const u = new SpeechSynthesisUtterance(text);
+      const vs = speechSynthesis.getVoices();
+      const prefer = vs.find(v => /en-US|en_GB/.test(v.lang) && /female|Jenny|Aria|Natasha/i.test(v.name)) || vs[0];
+      if (prefer) u.voice = prefer;
+      u.rate = 1.0; u.pitch = 1.05; u.volume = 1.0;
+      u.onstart = () => { state.speaking = true; };
+      u.onend   = () => { state.speaking = false; };
+      u.onboundary = () => { state.mouth = 1.0; };
+      speechSynthesis.speak(u);
+    }
+
+    // --- Stream and chunk to TTS ---
+    async function streamOpenAI(payload){
+      const res = await fetch(API_STREAM, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok || !res.body) throw new Error('stream failed');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '', answer = '', speakBuf = '';
+      out.textContent = '';
+      const flushSpeak = () => { const s = speakBuf.trim(); if (s) speak(s); speakBuf = ''; };
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx;
+        while ((idx = buffer.indexOf('\n\n')) !== -1) {
+          const frame = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+          for (const line of frame.split('\n')) {
+            const l = line.trim();
+            if (!l.startsWith('data:')) continue;
+            const data = l.slice(5).trim();
+            if (data === '[DONE]') { flushSpeak(); msgs.push({role:'assistant', content: answer}); return; }
+            try {
+              const j = JSON.parse(data);
+              const d = j.choices?.[0]?.delta?.content || '';
+              if (d) {
+                answer += d;
+                out.textContent = answer;
+                speakBuf += d;
+                if (/[\.\!\?]\s/.test(speakBuf)) {
+                  const parts = speakBuf.split(/([\.\!\?]\s)/);
+                  while (parts.length > 2) {
+                    const seg = (parts.shift() || '') + (parts.shift() || '');
+                    speak(seg);
+                  }
+                  speakBuf = parts.join('');
+                }
+              }
+            } catch {}
+          }
+        }
+      }
+    }
+
+    async function send(){
+      const text = (input.value || '').trim();
+      if (!text) return;
+      input.value = '';
+      msgs.push({ role:'user', content:text });
+      out.textContent = '…';
+      try {
+        await streamOpenAI({ messages: msgs, context, stream: true });
+      } catch (e){
+        out.textContent = 'Connection failed. Please try again later.';
+      }
+    }
+    sayBtn.addEventListener('click', send);
+    input.addEventListener('keydown', (e)=>{ if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(); }});
+  })();
+  </script>
 </body>
 </html>
