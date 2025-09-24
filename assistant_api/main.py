@@ -8,8 +8,9 @@ OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/v1/chat/completions
 MODEL = os.getenv("MODEL", "gpt-oss:20b")
 
 ALLOWED_ORIGINS = [
-    "https://leok974.github.io",  # GitHub Pages
-    "https://leok974.github.io/leo-portfolio/"
+    "https://leok974.github.io",  # GitHub Pages (origin only)
+    "http://localhost:5500",      # local dev server (e.g., Live Server)
+    "http://127.0.0.1:5500"       # local dev server (direct IP)
 ]
 
 app = FastAPI(title="Leo Portfolio Assistant")
