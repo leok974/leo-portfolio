@@ -411,7 +411,7 @@
 
   <script src="main.js" defer></script>
   <script>/* hero video temporarily disabled pending assets */</script>
-  
+
   <!-- Leo Assistant Widget: minimal, no-build chat relay -->
   <style>
   #leo-assistant{position:fixed;right:16px;bottom:16px;z-index:9999}
@@ -424,6 +424,10 @@
   #leo-assistant .ai{color:#a7ffdc}
   #leo-assistant form{display:flex;gap:.5rem;padding:.6rem;border-top:1px solid #1c2545}
   #leo-assistant input{flex:1;background:#0f1830;color:#e8ecf8;border:1px solid #263055;border-radius:12px;padding:.65rem}
+  #leo-assistant .msg.ai{white-space:pre-wrap}
+  #leo-assistant .msg.ai::after{content:"▍";animation:blink 1s steps(1) infinite;margin-left:2px;opacity:.6}
+  #leo-assistant .msg.ai.done::after{content:"";animation:none}
+  @keyframes blink{50%{opacity:0}}
   </style>
 
   <div id="leo-assistant">
@@ -443,8 +447,7 @@
 
   <script>
   (() => {
-    // Update this to your Cloudflare Tunnel domain for the relay
-    const API = "https://assistant.leo-portfolio.app/chat";
+    const API_STREAM = "https://assistant.leo-portfolio.app/chat/stream"; // your tunnel URL
     // Only show on GitHub Pages to avoid local dev errors if relay is private
     const allowed = location.hostname === 'leok974.github.io';
     const root = document.getElementById('leo-assistant');
@@ -481,6 +484,54 @@
       log.scrollTop = log.scrollHeight;
     }
 
+    async function streamChat(payload){
+      const res = await fetch(API_STREAM, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if(!res.ok || !res.body) throw new Error('stream failed');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let answer = '';
+      while(true){
+        const { value, done } = await reader.read();
+        if(done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let sep;
+        while((sep = buffer.indexOf('\n\n')) !== -1){
+          const chunk = buffer.slice(0, sep);
+          buffer = buffer.slice(sep + 2);
+          let event = 'message';
+          let data = '';
+          for(const line of chunk.split('\n')){
+            const s = line.trim();
+            if(!s) continue;
+            if(s.startsWith('event:')) event = s.slice(6).trim();
+            else if(s.startsWith('data:')) data += s.slice(5).trim();
+          }
+          if(event === 'message' && data){
+            try{
+              const j = JSON.parse(data);
+              if(j.token){
+                answer += j.token;
+                log.lastChild.textContent = 'Assistant: ' + answer;
+                log.scrollTop = log.scrollHeight;
+              }
+            }catch{
+              answer += data;
+              log.lastChild.textContent = 'Assistant: ' + answer;
+            }
+          } else if(event === 'done'){
+            log.lastChild.classList.add('done');
+            msgs.push({ role:'assistant', content: answer });
+            return;
+          }
+        }
+      }
+    }
+
     form.addEventListener('submit', async (e)=>{
       e.preventDefault();
       const content = input.value.trim();
@@ -489,19 +540,21 @@
       msgs.push({role:'user', content});
       append('user', content);
       append('assistant', 'Thinking…');
-
       try {
-        const res = await fetch(API, {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ messages: msgs, context })
-        });
-        const data = await res.json();
-        const text = data.assistant || '(no response)';
-        log.lastChild.textContent = 'Assistant: ' + text;
-        msgs.push({role:'assistant', content: text});
+        await streamChat({ messages: msgs, context, stream: true });
       } catch(err){
-        log.lastChild.textContent = 'Assistant: (connection failed — please try again later)';
+        try {
+          const res = await fetch(API_STREAM.replace('/stream',''), {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ messages: msgs, context })
+          });
+          const data = await res.json();
+          const text = data.assistant || '(no response)';
+          log.lastChild.textContent = 'Assistant: ' + text;
+          msgs.push({role:'assistant', content: text});
+        } catch {
+          log.lastChild.textContent = 'Assistant: (connection failed — please try again later)';
+        }
       }
     });
   })();
