@@ -503,30 +503,33 @@
         while((sep = buffer.indexOf('\n\n')) !== -1){
           const chunk = buffer.slice(0, sep);
           buffer = buffer.slice(sep + 2);
-          let event = 'message';
-          let data = '';
-          for(const line of chunk.split('\n')){
-            const s = line.trim();
-            if(!s) continue;
-            if(s.startsWith('event:')) event = s.slice(6).trim();
-            else if(s.startsWith('data:')) data += s.slice(5).trim();
-          }
-          if(event === 'message' && data){
+          const lines = chunk.split('\n').map(l=>l.trim()).filter(Boolean);
+          for(const l of lines){
+            if(!l.startsWith('data:')) continue;
+            const data = l.slice(5).trim();
+            if(data === '[DONE]'){
+              log.lastChild.classList.add('done');
+              msgs.push({ role:'assistant', content: answer });
+              return;
+            }
             try{
               const j = JSON.parse(data);
-              if(j.token){
-                answer += j.token;
+              const choice = (j.choices && j.choices[0]) || {};
+              const delta = (choice.delta && choice.delta.content) || '';
+              const finish = choice.finish_reason || null;
+              if(delta){
+                answer += delta;
                 log.lastChild.textContent = 'Assistant: ' + answer;
                 log.scrollTop = log.scrollHeight;
               }
+              if(finish){
+                log.lastChild.classList.add('done');
+                msgs.push({ role:'assistant', content: answer });
+                return;
+              }
             }catch{
-              answer += data;
-              log.lastChild.textContent = 'Assistant: ' + answer;
+              // ignore non-JSON keepalives
             }
-          } else if(event === 'done'){
-            log.lastChild.classList.add('done');
-            msgs.push({ role:'assistant', content: answer });
-            return;
           }
         }
       }
