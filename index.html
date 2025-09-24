@@ -430,6 +430,56 @@
   @keyframes blink{50%{opacity:0}}
   </style>
 
+  <!-- Assistant safe-area + layout overrides (appended) -->
+  <style>
+  :root{
+    /* runtime-updated by JS when a FAB is detected */
+    --assistant-fab-safe: 0px;
+  }
+
+  /* Widget + avatar wrap share the same safe positioning */
+  #leo-assistant,
+  #ai-avatar-wrap{
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: calc(max(16px, env(safe-area-inset-bottom)) + var(--assistant-fab-safe));
+    z-index: 2147483643; /* above other overlays */
+  }
+
+  /* Panel sizing/spacing */
+  #leo-assistant .panel{
+    width: min(92vw, 380px);
+    height: 420px;
+    display: none; /* toggled by JS */
+    flex-direction: column;
+    background:#0b1223;
+    border:1px solid #2a3357;
+    border-radius:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
+    overflow:hidden;
+  }
+
+  /* Input row: make buttons not squish text field */
+  #leo-assistant form,
+  #ai-controls{
+    display: grid;
+    grid-template-columns: 1fr auto auto; /* input | Send | Voice/Mute */
+    gap: .5rem;
+    align-items: center;
+  }
+  #leo-assistant input,
+  #ai-input{ min-width: 0; }
+
+  /* Keep streamed text readable */
+  #leo-assistant .msg.ai,
+  #ai-text{ white-space: pre-wrap; }
+
+  @media (max-width: 640px){
+    /* give the page a bit more breathing room when open */
+    body.assistant-open { padding-bottom: 340px; }
+  }
+  </style>
+
   <div id="leo-assistant">
     <button id="la-open" class="btn">🤖 Ask about my projects</button>
     <div id="la-panel" class="panel" role="dialog" aria-label="Leo Assistant">
@@ -448,8 +498,8 @@
   <script>
   (() => {
     const API_STREAM = "https://assistant.leo-portfolio.app/chat/stream"; // your tunnel URL
-    // Only show on GitHub Pages to avoid local dev errors if relay is private
-    const allowed = location.hostname === 'leok974.github.io';
+  // Only show on GitHub Pages or local dev
+  const allowed = ['leok974.github.io','localhost','127.0.0.1'].includes(location.hostname);
     const root = document.getElementById('leo-assistant');
     if(!allowed && root){ root.style.display = 'none'; return; }
 
@@ -560,6 +610,68 @@
         }
       }
     });
+  })();
+  </script>
+
+  <!-- Avoid FAB overlap + open padding helper (appended) -->
+  <script>
+  (() => {
+    // 1) bump assistant above any bottom-right FAB (e.g., PDF button)
+    function computeFabOffset(){
+      const vh = window.innerHeight, vw = window.innerWidth;
+      const cands = Array.from(document.querySelectorAll([
+        '.fab',              // your own class, if any
+        '[data-fab]',        // generic
+        '.floating-button',
+        '.scroll-to-top',
+        '.pdf', '.pdf-btn',  // common viewer buttons
+        '.chakra-portal [role="button"]'
+      ].join(',')));
+
+      let off = 0;
+      for (const el of cands){
+        const cs = getComputedStyle(el);
+        if (cs.position !== 'fixed') continue;
+        const r = el.getBoundingClientRect();
+        const nearRight = (vw - r.right) < 140;
+        const nearBottom = (vh - r.bottom) < 140;
+        const smallish = r.width <= 140 && r.height <= 140;
+        if (nearRight && nearBottom && smallish){
+          off = Math.max(off, Math.ceil(r.height + 16)); // 16px gap
+        }
+      }
+      document.documentElement.style.setProperty('--assistant-fab-safe', off + 'px');
+    }
+
+    // 2) add/remove bottom padding when panel is open so content isn't covered
+    function setOpenPadding(open, panelHeight=340){
+      document.body.classList.toggle('assistant-open', open);
+      if (open){
+        const h = Math.min(panelHeight, Math.round(window.innerHeight * 0.6));
+        document.body.style.paddingBottom = `${h + 24}px`;
+      } else {
+        document.body.style.paddingBottom = '';
+      }
+    }
+
+    // Hook into your existing open/close (adjust IDs if different)
+    const panel = document.getElementById('la-panel');
+    const openBtn = document.getElementById('la-open');
+    const closeBtn = document.getElementById('la-close');
+
+    if (openBtn && panel){
+      const _show = () => { panel.style.display='flex'; openBtn.style.display='none'; setOpenPadding(true, panel.offsetHeight || 340); };
+      const _hide = () => { panel.style.display='none'; openBtn.style.display='inline-block'; setOpenPadding(false); };
+      openBtn.addEventListener('click', _show);
+      if (closeBtn) closeBtn.addEventListener('click', _hide);
+    }
+
+    // Recompute on load/resize/mutation (handles third-party FABs that mount late)
+    const ro = new ResizeObserver(computeFabOffset);
+    ro.observe(document.documentElement);
+    window.addEventListener('load', computeFabOffset, {once:true});
+    window.addEventListener('resize', computeFabOffset, {passive:true});
+    computeFabOffset();
   })();
   </script>
 </body>
