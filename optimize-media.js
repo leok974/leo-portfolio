@@ -197,8 +197,8 @@ async function optimizeMedia() {
   const hasFFmpeg = checkFFmpeg();
 
   // Find all media files
-  const imagePattern = path.join(CONFIG.inputDir, `**/*{${CONFIG.imageFormats.join(',')}}`);
-  const videoPattern = path.join(CONFIG.inputDir, `**/*{${CONFIG.videoFormats.join(',')}}`);
+  const imagePattern = `${CONFIG.inputDir.replace(/\\/g,'/')}/**/*.{${CONFIG.imageFormats.map(e=>e.replace(/^\./,'')).join(',')}}`;
+  const videoPattern = `${CONFIG.inputDir.replace(/\\/g,'/')}/**/*.{${CONFIG.videoFormats.map(e=>e.replace(/^\./,'')).join(',')}}`;
 
   const imageFiles = glob.sync(imagePattern, { nocase: true });
   const videoFiles = glob.sync(videoPattern, { nocase: true });
@@ -210,6 +210,10 @@ async function optimizeMedia() {
     console.log('🖼️  OPTIMIZING IMAGES\n' + '='.repeat(50));
 
     for (const imagePath of imageFiles) {
+      try {
+        const stat = fs.statSync(imagePath);
+        if (!stat.size) { console.log(`   ⚠️  Skipping empty file: ${path.relative(CONFIG.inputDir, imagePath)}`); continue; }
+      } catch {}
       await optimizeImage(imagePath, CONFIG.outputDir);
       await generateResponsiveSizes(imagePath, CONFIG.outputDir);
     }
