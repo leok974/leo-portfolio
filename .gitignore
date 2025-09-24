@@ -62,3 +62,17 @@ coverage/
 *.zip
 *.tar.gz
 *.rar
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Python virtual environments
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+pip-wheel-metadata/
