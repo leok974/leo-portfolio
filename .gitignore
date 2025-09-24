@@ -10,7 +10,10 @@ build/
 .tmp/
 
 # Media optimization outputs (generated files)
-assets/optimized/
+# Media optimization outputs (generated files)
+# Keep optimized outputs in repo for GitHub Pages deployment
+!assets/optimized/
+!assets/optimized/**
 
 
 # IDE and editor files
