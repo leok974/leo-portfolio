@@ -116,7 +116,9 @@ header {
 .brand { font-weight: 800; letter-spacing: .3px; }
 nav ul { display: flex; gap: 1rem; list-style: none; margin: 0; padding: 0; }
 nav a {
-  padding: .5rem .75rem; border-radius: .6rem; color: var(--muted);
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: .5rem .9rem; border-radius: .6rem; color: var(--muted);
+  min-height: 44px; min-width: 44px;
 }
 nav a:hover, nav a:focus { color: var(--text); background: color-mix(in oklab, var(--card) 80%, transparent); }
 
@@ -124,6 +126,7 @@ nav a:hover, nav a:focus { color: var(--text); background: color-mix(in oklab, v
   display: inline-flex; align-items: center; gap: .5rem;
   border: 1px solid var(--border); border-radius: 999px; padding: .35rem .65rem;
   background: var(--card); cursor: pointer;
+  min-height: 44px;
 }
 .theme-toggle input { appearance: none; width: 34px; height: 18px; background: var(--border); border-radius: 999px; position: relative; outline: none; }
 .theme-toggle input::after { content: ""; position: absolute; inset: 3px auto auto 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--text); transition: transform .2s ease; }
@@ -159,9 +162,10 @@ nav a:hover, nav a:focus { color: var(--text); background: color-mix(in oklab, v
 /* CTA group */
 .cta-group { display:flex; flex-wrap:wrap; gap:.8rem; align-items:center; margin-bottom:1rem; }
 
-.cta { display: inline-flex; align-items: center; gap: .6rem; padding: .8rem 1.1rem; border-radius: .8rem; font-weight: 600; border: 1px solid color-mix(in oklab, var(--accent) 40%, var(--border));
+.cta { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; padding: .9rem 1.2rem; border-radius: .8rem; font-weight: 600; border: 1px solid color-mix(in oklab, var(--accent) 40%, var(--border));
        background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 22%, var(--card)) 0%, var(--card) 100%);
-       box-shadow: var(--shadow);
+  box-shadow: var(--shadow);
+  min-height: 48px; min-width: 48px;
 }
 .cta:hover { transform: translateY(-1px); }
 
@@ -192,7 +196,7 @@ section { padding: 3.5rem 0; }
 -------------------------*/
 .filters { display:flex; flex-wrap:wrap; gap:.5rem; }
 .chip { border:1px solid var(--border); background: var(--card); color: var(--muted);
-        padding:.45rem .7rem; border-radius:999px; cursor:pointer; user-select:none; }
+  padding:.45rem .9rem; border-radius:999px; cursor:pointer; user-select:none; min-height: 44px; }
 .chip[aria-pressed="true"] { color: var(--text); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
 
 /* ------------------------
@@ -210,9 +214,9 @@ section { padding: 3.5rem 0; }
 .card-body { padding: 1rem 1rem 1.2rem; display:flex; flex-direction:column; gap:.65rem; }
 .card-title { margin:0; font-size:1.1rem; }
 .tags { display:flex; flex-wrap:wrap; gap:.35rem; }
-.tag { font-size:.8rem; padding:.18rem .5rem; border-radius:.5rem; border:1px solid var(--border); color: var(--muted); }
+.tag { font-size:.8rem; padding:.18rem .5rem; border-radius:.5rem; border:1px solid var(--border); color: var(--text); }
 .card-actions { margin-top:auto; display:flex; gap:.5rem; flex-wrap:wrap; }
-.btn { display:inline-flex; align-items:center; gap:.4rem; border:1px solid var(--border); background: transparent; color: var(--text); padding:.5rem .7rem; border-radius:.6rem; cursor:pointer; }
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:.4rem; border:1px solid var(--border); background: transparent; color: var(--text); padding:.5rem .8rem; border-radius:.6rem; cursor:pointer; min-height: 44px; min-width: 44px; }
 .btn:hover { background: color-mix(in oklab, var(--card) 85%, transparent); }
 
 /* ------------------------

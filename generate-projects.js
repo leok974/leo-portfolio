@@ -189,9 +189,9 @@ function generateProjectPage(project, slug) {
   <a class="sr-only" href="#content">Skip to content</a>
 
   <header>
-    <div class="container nav" role="navigation" aria-label="Primary">
+    <div class="container nav">
       <div class="brand"><a href="../">Leo Klemet</a></div>
-      <nav>
+      <nav aria-label="Primary">
         <ul>
           <li><a href="../#projects">Projects</a></li>
           <li><a href="../#about">About</a></li>
