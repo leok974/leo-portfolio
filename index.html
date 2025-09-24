@@ -447,11 +447,10 @@
 
   <script>
   (() => {
-  const API_STREAM = "https://assistant.ledger-mind.org/chat/stream"; // your tunnel URL
-    // Only show on GitHub Pages to avoid local dev errors if relay is private
-    const allowed = location.hostname === 'leok974.github.io';
+  const ENABLE_ASSISTANT = ['leok974.github.io','localhost'].includes(location.hostname);
     const root = document.getElementById('leo-assistant');
-    if(!allowed && root){ root.style.display = 'none'; return; }
+    if(!ENABLE_ASSISTANT){ if(root) root.style.display = 'none'; return; }
+    const API_STREAM = "https://assistant.ledger-mind.org/chat/stream"; // your tunnel URL
 
     const openBtn = document.getElementById('la-open');
     const panel = document.getElementById('la-panel');
@@ -579,18 +578,38 @@
       <div id="ai-controls">
         <input id="ai-input" placeholder="Which project fits GKE ops?" />
         <button id="ai-say">Send</button>
+        <button id="ai-mute" class="btn" aria-pressed="false">🔈 Voice: On</button>
       </div>
     </div>
   </div>
 
   <script>
   (() => {
-  const API_STREAM = "https://assistant.ledger-mind.org/chat/stream"; // <- your tunnel URL
+  const ENABLE_ASSISTANT = ['leok974.github.io','localhost'].includes(location.hostname);
+    const wrap = document.getElementById('ai-avatar-wrap');
+    if(!ENABLE_ASSISTANT){ if(wrap) wrap.style.display='none'; return; }
+    const API_STREAM = "https://assistant.ledger-mind.org/chat/stream"; // <- your tunnel URL
     const canvas = document.getElementById('ai-avatar-canvas');
     const ctx = canvas.getContext('2d');
     const sayBtn = document.getElementById('ai-say');
     const input = document.getElementById('ai-input');
     const out = document.getElementById('ai-text');
+    const muteBtn = document.getElementById('ai-mute');
+    let muted = JSON.parse(localStorage.getItem('aiMuted') || 'false');
+    function syncMuteUI(){
+      if(!muteBtn) return;
+      muteBtn.setAttribute('aria-pressed', String(!muted));
+      muteBtn.textContent = muted ? '🔇 Voice: Off' : '🔈 Voice: On';
+    }
+    if(muteBtn){
+      muteBtn.onclick = () => {
+        muted = !muted;
+        localStorage.setItem('aiMuted', JSON.stringify(muted));
+        if (muted && 'speechSynthesis' in window) speechSynthesis.cancel();
+        syncMuteUI();
+      };
+      syncMuteUI();
+    }
 
     const msgs = [];
     const context = {};
@@ -667,10 +686,10 @@
 
     // --- TTS (SpeechSynthesis) ---
     function speak(text){
-      if (!text) return;
+      if (!text || muted || !('speechSynthesis' in window)) return;
       const u = new SpeechSynthesisUtterance(text);
       const vs = speechSynthesis.getVoices();
-      const prefer = vs.find(v => /en-US|en_GB/.test(v.lang) && /female|Jenny|Aria|Natasha/i.test(v.name)) || vs[0];
+      const prefer = vs.find(v => /en-(US|GB)/.test(v.lang) && /female|Jenny|Aria|Natasha/i.test(v.name)) || vs[0];
       if (prefer) u.voice = prefer;
       u.rate = 1.0; u.pitch = 1.05; u.volume = 1.0;
       u.onstart = () => { state.speaking = true; };

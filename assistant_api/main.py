@@ -98,3 +98,7 @@ def chat_stream(req: ChatReq):
         "X-Accel-Buffering": "no"
     }
     return StreamingResponse(passthrough(), media_type="text/event-stream", headers=headers)
+
+@app.get("/health")
+def health():
+    return {"ok": True, "model": MODEL}
