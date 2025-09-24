@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="DataPipe AI cover">
+  <defs>
+    <linearGradient id="dp1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1020"/>
+      <stop offset="100%" stop-color="#10243a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#dp1)"/>
+  <g fill="#22d3ee" opacity="0.22">
+    <circle cx="200" cy="220" r="120"/>
+    <rect x="400" y="140" width="360" height="120" rx="10"/>
+    <rect x="800" y="160" width="320" height="100" rx="10"/>
+  </g>
+  <g fill="#7c3aed" opacity="0.15">
+    <rect x="160" y="400" width="300" height="100" rx="10"/>
+    <rect x="500" y="400" width="300" height="100" rx="10"/>
+    <rect x="840" y="400" width="300" height="100" rx="10"/>
+  </g>
+  <text x="60" y="610" fill="#cbd5e1" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="28" font-weight="600">DataPipe AI — ops dashboard preview</text>
+</svg>

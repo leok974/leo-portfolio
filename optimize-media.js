@@ -10,7 +10,7 @@ console.log('🚀 Media Optimization Script Starting...\n');
 const CONFIG = {
   inputDir: './assets',
   outputDir: './assets/optimized',
-  imageFormats: ['.jpg', '.jpeg', '.png', '.tiff', '.bmp', '.webp'],
+  imageFormats: ['.jpg', '.jpeg', '.png', '.tiff', '.bmp', '.webp', '.svg'],
   videoFormats: ['.mp4', '.avi', '.mov', '.mkv'],
   imageQuality: {
     webp: 85,

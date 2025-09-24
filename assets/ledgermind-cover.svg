@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="LedgerMind cover">
+  <defs>
+    <linearGradient id="lm1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1f1140"/>
+      <stop offset="100%" stop-color="#0b1020"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#lm1)"/>
+  <g fill="#7c3aed" opacity="0.18">
+    <rect x="80" y="100" width="320" height="180" rx="10"/>
+    <rect x="430" y="100" width="300" height="180" rx="10"/>
+    <rect x="760" y="100" width="360" height="180" rx="10"/>
+  </g>
+  <g fill="#22d3ee" opacity="0.15">
+    <circle cx="260" cy="420" r="90"/>
+    <rect x="420" y="380" width="260" height="80" rx="12"/>
+  </g>
+  <text x="60" y="610" fill="#cbd5e1" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="28" font-weight="600">LedgerMind — dashboard preview</text>
+</svg>
