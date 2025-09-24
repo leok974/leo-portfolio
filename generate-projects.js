@@ -284,15 +284,21 @@ function generateProjectMedia(project) {
       ];
       const webp = [];
       const avif = [];
+      const jpeg = [];
+      const png = [];
       sizes.forEach(s => {
         const webpPath = path.join(__dirname, dir, `${base}${s.suffix}.webp`);
         const avifPath = path.join(__dirname, dir, `${base}${s.suffix}.avif`);
+        const jpgPath = path.join(__dirname, dir, `${base}${s.suffix}.jpg`);
+        const pngPath = path.join(__dirname, dir, `${base}${s.suffix}.png`);
         if (fs.existsSync(webpPath)) webp.push({ width: s.width, url: path.posix.join('/', dir, `${base}${s.suffix}.webp`).replace(/\\/g,'/') });
         if (fs.existsSync(avifPath)) avif.push({ width: s.width, url: path.posix.join('/', dir, `${base}${s.suffix}.avif`).replace(/\\/g,'/') });
+        if (fs.existsSync(jpgPath)) jpeg.push({ width: s.width, url: path.posix.join('/', dir, `${base}${s.suffix}.jpg`).replace(/\\/g,'/') });
+        if (fs.existsSync(pngPath)) png.push({ width: s.width, url: path.posix.join('/', dir, `${base}${s.suffix}.png`).replace(/\\/g,'/') });
       });
-      return { webp, avif };
+      return { webp, avif, jpeg, png };
     } catch(_) {
-      return { webp: [], avif: [] };
+      return { webp: [], avif: [], jpeg: [], png: [] };
     }
   }
 
@@ -300,13 +306,17 @@ function generateProjectMedia(project) {
     const variants = findOptimizedVariants(relPath);
     const src = `../${relPath}`;
     const sizes = '(max-width: 700px) 100vw, 900px';
-    if ((variants.webp && variants.webp.length) || (variants.avif && variants.avif.length)) {
+    if ((variants.webp && variants.webp.length) || (variants.avif && variants.avif.length) || (variants.jpeg && variants.jpeg.length) || (variants.png && variants.png.length)) {
       const webpSrcset = variants.webp.map(v => `${v.url} ${v.width}w`).join(', ');
       const avifSrcset = variants.avif.map(v => `${v.url} ${v.width}w`).join(', ');
+      const jpegSrcset = variants.jpeg.map(v => `${v.url} ${v.width}w`).join(', ');
+      const pngSrcset = variants.png.map(v => `${v.url} ${v.width}w`).join(', ');
       return (
         `<picture>` +
         (avifSrcset ? `<source type="image/avif" srcset="${avifSrcset}" sizes="${sizes}">` : '') +
         (webpSrcset ? `<source type="image/webp" srcset="${webpSrcset}" sizes="${sizes}">` : '') +
+        (jpegSrcset ? `<source type="image/jpeg" srcset="${jpegSrcset}" sizes="${sizes}">` : '') +
+        (pngSrcset ? `<source type="image/png" srcset="${pngSrcset}" sizes="${sizes}">` : '') +
         `<img class="gallery-item" ${typeof idx==='number' ? `data-gallery-index="${idx}"` : ''} src="${src}" alt="${alt}" loading="lazy" decoding="async">` +
         `</picture>`
       );

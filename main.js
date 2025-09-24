@@ -369,6 +369,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     galleryDialog.addEventListener('touchend', onTouchEnd, {passive:true});
   }
   initGallery();
+
+  // Global IMG error fallback
+  document.addEventListener('error', (e) => {
+    const el = e.target;
+    if (el && el.tagName === 'IMG') {
+      // Prefer optimized card fallback if present
+      const fallback = 'assets/optimized/hero-placeholder-sm.webp';
+      if (el.src.endsWith(fallback)) return; // avoid loop
+      el.src = fallback;
+      el.style.background = 'linear-gradient(180deg,#141b2d,#0b1223)';
+    }
+  }, true);
 });
 
 // -------------------------------------
@@ -376,3 +388,22 @@ document.addEventListener('DOMContentLoaded', async function() {
 // -------------------------------------
 // Later, create /projects/<slug>.html pages using the same content structure.
 // For now, the modal shows a full case‑study experience without leaving the page.
+
+// -----------------------------
+// SERVICE WORKER REGISTRATION
+// -----------------------------
+if ('serviceWorker' in navigator) {
+  // Use subpath-aware URL so it works on GitHub Pages and locally
+  const basePath = location.pathname.includes('/leo-portfolio/') ? '/leo-portfolio/' : '/';
+  const swUrl = `${basePath}sw.js`;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register(swUrl)
+      .then(reg => {
+        // Optional: log for diagnostics
+        console.log('Service worker registered:', reg.scope);
+      })
+      .catch(err => {
+        console.warn('Service worker registration failed:', err);
+      });
+  });
+}

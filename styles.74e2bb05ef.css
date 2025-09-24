@@ -122,6 +122,10 @@ nav a {
 }
 nav a:hover, nav a:focus { color: var(--text); background: color-mix(in oklab, var(--card) 80%, transparent); }
 
+/* Brand link with tiny avatar */
+.brand-link { display:inline-flex; align-items:center; gap:.5rem; text-decoration:none; color:inherit; }
+.brand-link img { width:28px; height:28px; border-radius:50%; display:block; }
+
 .theme-toggle {
   display: inline-flex; align-items: center; gap: .5rem;
   border: 1px solid var(--border); border-radius: 999px; padding: .35rem .65rem;

@@ -9,10 +9,30 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist" />
   <meta property="og:description" content="Projects in AI Agents, ML/Analytics, 3D/Generative Art, DevOps." />
-  <meta property="og:image" content="assets/og-cover.svg" />
+  <meta property="og:image" content="https://leok974.github.io/leo-portfolio/assets/optimized/og-cover.jpg" />
   <meta property="og:url" content="https://leok974.github.io/leo-portfolio/" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="theme-color" content="#0f172a" />
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/optimized/leo-avatar-xs.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/optimized/leo-avatar-sm.png">
+  <link rel="preload" href="fonts/Inter-roman.var.woff2" as="font" type="font/woff2" crossorigin>
+  <style>
+    @font-face {
+      font-family: 'Inter var';
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url('fonts/Inter-roman.var.woff2') format('woff2-variations');
+    }
+    @font-face {
+      font-family: 'Inter var';
+      font-style: italic;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url('fonts/Inter-italic.var.woff2') format('woff2-variations');
+    }
+  </style>
   <style>
     /* Critical CSS: minimal layout to paint above-the-fold quickly */
     :root{--bg:#0b1020;--bg-elev:#0f172a;--text:#e5e7eb;--muted:#94a3b8;--border:#1f2937}
@@ -28,21 +48,11 @@
     .subline{color:var(--muted);margin:0 0 1.5rem}
     .hero-visual{aspect-ratio:4/3;border:1px solid var(--border);border-radius:1rem;overflow:hidden;background:#111827}
   </style>
-  <link rel="preload" as="font" type="font/woff2" crossorigin href="fonts/Inter-roman.var.woff2" />
+
   <link rel="preload" as="style" href="styles.74e2bb05ef.css">
   <link rel="stylesheet" href="styles.74e2bb05ef.css" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="styles.74e2bb05ef.css"></noscript>
-  <style>
-    @font-face{
-      font-family:"Inter";
-      src:url("fonts/Inter-roman.var.woff2") format("woff2-variations");
-      font-weight:100 900;
-      font-style:normal;
-      font-display:swap;
-    }
-    :root{--font-sans:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-    html{font-family:var(--font-sans)}
-  </style>
+  <style>:root{--font-sans:"Inter var","Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif}html{font-family:var(--font-sans)}</style>
   <script type="application/ld+json">{
     "@context": "https://schema.org",
     "@graph": [
@@ -88,7 +98,15 @@
   <a class="sr-only skip-link" href="#main">Skip to content</a>
   <header>
     <div class="container nav">
-      <div class="brand">Leo Klemet</div>
+  <div class="brand"><a href="./" class="brand-link">
+        <picture>
+          <source type="image/avif" srcset="assets/optimized/leo-avatar-xs.avif 160w, assets/optimized/leo-avatar-sm.avif 320w" sizes="28px">
+          <source type="image/webp" srcset="assets/optimized/leo-avatar-xs.webp 160w, assets/optimized/leo-avatar-sm.webp 320w" sizes="28px">
+          <source type="image/jpeg" srcset="assets/optimized/leo-avatar-xs.jpg 160w, assets/optimized/leo-avatar-sm.jpg 320w" sizes="28px">
+          <img src="assets/leo-avatar.svg" alt="" width="28" height="28" decoding="async" />
+        </picture>
+        <span>Leo Klemet</span>
+      </a></div>
       <nav aria-label="Primary">
         <ul>
           <li><a href="#projects">Projects</a></li>
@@ -118,11 +136,11 @@
       <p class="muted" style="margin-top:.75rem">Tip: Use the category filters to explore AI Agents, ML/Analytics, 3D & Generative Art, and DevOps/Security projects.</p>
     </div>
     <div class="hero-visual hero-media">
-      <link rel="preload" as="image" href="assets/optimized/hero-poster-lg.webp" fetchpriority="high">
       <picture>
         <source type="image/avif" srcset="assets/optimized/hero-poster-sm.avif 400w, assets/optimized/hero-poster-md.avif 800w, assets/optimized/hero-poster-lg.avif 1200w, assets/optimized/hero-poster-xl.avif 1920w" sizes="(max-width: 900px) 100vw, 50vw">
         <source type="image/webp" srcset="assets/optimized/hero-poster-sm.webp 400w, assets/optimized/hero-poster-md.webp 800w, assets/optimized/hero-poster-lg.webp 1200w, assets/optimized/hero-poster-xl.webp 1920w" sizes="(max-width: 900px) 100vw, 50vw">
-        <img id="hero-poster" src="assets/hero-poster.svg" width="1200" height="800" alt="" decoding="async" fetchpriority="high" style="aspect-ratio:3/2;width:100%;height:100%;object-fit:cover;border-radius:16px;display:block">
+        <source type="image/jpeg" srcset="assets/optimized/hero-poster-sm.jpg 400w, assets/optimized/hero-poster-md.jpg 800w, assets/optimized/hero-poster-lg.jpg 1200w, assets/optimized/hero-poster-xl.jpg 1920w" sizes="(max-width: 900px) 100vw, 50vw">
+        <img id="hero-poster" src="assets/optimized/hero-poster-lg.webp" width="1200" height="800" alt="" decoding="async" fetchpriority="high" style="aspect-ratio:3/2;width:100%;height:100%;object-fit:cover;border-radius:16px;display:block">
       </picture>
       <div class="orb" aria-hidden="true"></div>
       <div class="orb2" aria-hidden="true"></div>
@@ -150,6 +168,7 @@
             <picture>
               <source type="image/avif" srcset="assets/optimized/ledgermind-cover-sm.avif 400w, assets/optimized/ledgermind-cover-md.avif 800w, assets/optimized/ledgermind-cover-lg.avif 1200w, assets/optimized/ledgermind-cover-xl.avif 1920w" sizes="(max-width: 600px) 100vw, 33vw">
               <source type="image/webp" srcset="assets/optimized/ledgermind-cover-sm.webp 400w, assets/optimized/ledgermind-cover-md.webp 800w, assets/optimized/ledgermind-cover-lg.webp 1200w, assets/optimized/ledgermind-cover-xl.webp 1920w" sizes="(max-width: 600px) 100vw, 33vw">
+              <source type="image/jpeg" srcset="assets/optimized/ledgermind-cover-sm.jpg 400w, assets/optimized/ledgermind-cover-md.jpg 800w, assets/optimized/ledgermind-cover-lg.jpg 1200w, assets/optimized/ledgermind-cover-xl.jpg 1920w" sizes="(max-width: 600px) 100vw, 33vw">
               <img loading="lazy" decoding="async" src="assets/ledgermind-cover.svg" alt="LedgerMind dashboard with charts and AI assistant" width="1200" height="675" />
             </picture>
           </div>
@@ -174,6 +193,7 @@
             <picture>
               <source type="image/avif" srcset="assets/optimized/datapipe-ai-cover-sm.avif 400w, assets/optimized/datapipe-ai-cover-md.avif 800w, assets/optimized/datapipe-ai-cover-lg.avif 1200w, assets/optimized/datapipe-ai-cover-xl.avif 1920w" sizes="(max-width: 600px) 100vw, 33vw">
               <source type="image/webp" srcset="assets/optimized/datapipe-ai-cover-sm.webp 400w, assets/optimized/datapipe-ai-cover-md.webp 800w, assets/optimized/datapipe-ai-cover-lg.webp 1200w, assets/optimized/datapipe-ai-cover-xl.webp 1920w" sizes="(max-width: 600px) 100vw, 33vw">
+              <source type="image/jpeg" srcset="assets/optimized/datapipe-ai-cover-sm.jpg 400w, assets/optimized/datapipe-ai-cover-md.jpg 800w, assets/optimized/datapipe-ai-cover-lg.jpg 1200w, assets/optimized/datapipe-ai-cover-xl.jpg 1920w" sizes="(max-width: 600px) 100vw, 33vw">
               <img loading="lazy" decoding="async" src="assets/datapipe-ai-cover.svg" alt="DataPipe AI ops dashboard with GKE integration" width="1200" height="675" />
             </picture>
           </div>
@@ -197,6 +217,7 @@
             <picture>
               <source type="image/avif" srcset="assets/optimized/clarity-companion-sm.avif 400w, assets/optimized/clarity-companion-md.avif 800w, assets/optimized/clarity-companion-lg.avif 1200w, assets/optimized/clarity-companion-xl.avif 1920w" sizes="(max-width: 600px) 100vw, 33vw">
               <source type="image/webp" srcset="assets/optimized/clarity-companion-sm.webp 400w, assets/optimized/clarity-companion-md.webp 800w, assets/optimized/clarity-companion-lg.webp 1200w, assets/optimized/clarity-companion-xl.webp 1920w" sizes="(max-width: 600px) 100vw, 33vw">
+              <source type="image/jpeg" srcset="assets/optimized/clarity-companion-sm.jpg 400w, assets/optimized/clarity-companion-md.jpg 800w, assets/optimized/clarity-companion-lg.jpg 1200w, assets/optimized/clarity-companion-xl.jpg 1920w" sizes="(max-width: 600px) 100vw, 33vw">
               <img loading="lazy" decoding="async" src="assets/clarity-companion.svg" alt="Clarity Companion Chrome extension panel UI" width="1200" height="675" />
             </picture>
           </div>
@@ -227,7 +248,12 @@
       </div>
       <div class="about">
         <div>
-          <img class="avatar" src="assets/leo-avatar.webp" alt="Portrait of Leo Klemet" width="140" height="140" />
+          <picture>
+            <source type="image/avif" srcset="assets/optimized/leo-avatar-xs.avif 160w, assets/optimized/leo-avatar-sm.avif 320w" sizes="140px">
+            <source type="image/webp" srcset="assets/optimized/leo-avatar-xs.webp 160w, assets/optimized/leo-avatar-sm.webp 320w" sizes="140px">
+            <source type="image/jpeg" srcset="assets/optimized/leo-avatar-xs.jpg 160w, assets/optimized/leo-avatar-sm.jpg 320w" sizes="140px">
+            <img class="avatar" src="assets/leo-avatar.svg" alt="Portrait of Leo Klemet" width="140" height="140" loading="lazy" decoding="async" />
+          </picture>
         </div>
         <div>
           <p>Hey, I’m Leo — I build agentic apps, grounded analytics, and cinematic creative pipelines. I love shipping fast, clean systems that balance reliable infra with playful, art‑driven UX.</p>
@@ -274,7 +300,7 @@
             <div class="skill-box">
               <h3>Resume</h3>
               <ul>
-                <li><a class="btn" href="assets/Leo-Klemet-Resume.pdf" download>Download PDF</a></li>
+                <li><a class="btn" href="assets/docs/Leo-Klemet-Resume.pdf" download>Download PDF</a></li>
               </ul>
             </div>
           </div>
@@ -297,7 +323,7 @@
           <div class="cta-buttons" role="group" aria-label="Direct contact links">
             <a class="cta" href="mailto:leoklemet.pa@gmail.com" aria-label="Email Leo">✉ Email</a>
             <a class="cta" href="https://calendly.com/leo-klemet/30min" target="_blank" rel="noopener" aria-label="Schedule a call on Calendly">🗓 Schedule</a>
-            <a class="cta" href="assets/Leo-Klemet-Resume.pdf" target="_blank" rel="noopener" aria-label="View Leo's resume PDF">📄 Resume</a>
+            <a class="cta" href="assets/docs/Leo-Klemet-Resume.pdf" target="_blank" rel="noopener" aria-label="View Leo's resume PDF">📄 Resume</a>
             <a class="cta" href="https://www.linkedin.com/in/leo-klemet-1241662a6/" target="_blank" rel="noopener" aria-label="LinkedIn profile">in LinkedIn</a>
             <a class="cta" href="https://github.com/leok974" target="_blank" rel="noopener" aria-label="GitHub profile">★ GitHub</a>
             <a class="cta" href="https://leoklemet3.artstation.com" target="_blank" rel="noopener" aria-label="ArtStation portfolio">🎨 ArtStation</a>
@@ -307,13 +333,11 @@
         <div class="resume-pane" aria-labelledby="resumeHeading">
           <h4 id="resumeHeading" style="margin-top:0">Resume</h4>
           <div class="resume-embed">
-            <object data="assets/Leo-Klemet-Resume.pdf" type="application/pdf" aria-label="Embedded resume PDF" tabindex="0">
-              <p class="muted">PDF preview not supported in this browser. <a class="btn" href="assets/Leo-Klemet-Resume.pdf" download>Download Resume</a></p>
-            </object>
+            <p class="muted">Preview available after upload. <a class="btn" href="assets/docs/Leo-Klemet-Resume.pdf" download>Download Resume</a></p>
           </div>
           <div class="resume-actions">
-            <a class="btn" href="assets/Leo-Klemet-Resume.pdf" download aria-label="Download resume PDF">Download PDF</a>
-            <a class="btn" href="assets/Leo-Klemet-Resume.pdf" target="_blank" rel="noopener" aria-label="Open resume in new tab">Open in New Tab ↗</a>
+            <a class="btn" href="assets/docs/Leo-Klemet-Resume.pdf" download aria-label="Download resume PDF">Download PDF</a>
+            <a class="btn" href="assets/docs/Leo-Klemet-Resume.pdf" target="_blank" rel="noopener" aria-label="Open resume in new tab">Open in New Tab ↗</a>
           </div>
         </div>
       </div>

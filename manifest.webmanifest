@@ -1,0 +1,14 @@
+{
+  "name": "Leo Klemet Portfolio",
+  "short_name": "Leo Portfolio",
+  "start_url": "/leo-portfolio/",
+  "scope": "/leo-portfolio/",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#0f172a",
+  "description": "AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist — projects and contact",
+  "icons": [
+    { "src": "assets/optimized/leo-avatar-sm.png", "sizes": "320x320", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/optimized/leo-avatar-md.png", "sizes": "800x800", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
