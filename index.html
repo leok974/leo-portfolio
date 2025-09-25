@@ -81,405 +81,48 @@
         "name": "Leo Klemet Portfolio",
         "inLanguage": "en",
         "author": { "@id": "https://leok974.github.io/leo-portfolio/#person" },
-        "publisher": { "@id": "https://leok974.github.io/leo-portfolio/#org" }
-      },
-      {
-        "@type": "BreadcrumbList",
-        "@id": "https://leok974.github.io/leo-portfolio/#breadcrumb",
-        "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://leok974.github.io/leo-portfolio/" },
-          { "@type": "ListItem", "position": 2, "name": "Projects", "item": "https://leok974.github.io/leo-portfolio/#projects" }
-        ]
-      }
-    ]
-  }</script>
-</head>
-<body>
-  <a class="sr-only skip-link" href="#main">Skip to content</a>
-  <header>
-    <div class="container nav">
-  <div class="brand"><a href="./" class="brand-link">
-        <picture>
-          <source type="image/avif" srcset="assets/optimized/leo-avatar-xs.avif 160w, assets/optimized/leo-avatar-sm.avif 320w" sizes="28px">
-          <source type="image/webp" srcset="assets/optimized/leo-avatar-xs.webp 160w, assets/optimized/leo-avatar-sm.webp 320w" sizes="28px">
-          <source type="image/jpeg" srcset="assets/optimized/leo-avatar-xs.jpg 160w, assets/optimized/leo-avatar-sm.jpg 320w" sizes="28px">
-          <img src="assets/leo-avatar.svg" alt="" width="28" height="28" decoding="async" />
-        </picture>
-        <span>Leo Klemet</span>
-      </a></div>
-      <nav aria-label="Primary">
-        <ul>
-          <li><a href="#projects">Projects</a></li>
-          <li><a href="#about">About</a></li>
-          <li><a href="#contact">Contact</a></li>
-          <li><a href="#blog">Blog</a></li>
-        </ul>
-      </nav>
-      <button class="theme-toggle" id="themeToggle" aria-pressed="false" aria-label="Toggle dark/light mode">
-        <span aria-hidden="true">🌙</span>
-        <span aria-hidden="true">☀️</span>
-      </button>
-    </div>
-  </header>
-
-  <!-- HERO / LANDING -->
-  <main id="main">
-  <section class="hero container" id="home">
-    <div>
-      <h1 class="headline">Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist</h1>
-      <span class="availability-badge" role="note">Open to roles in AI Engineering, SWE, or Creative Tech</span>
-      <p class="subline">Building agents, analytics, and cinematic creative pipelines.</p>
-      <div class="cta-group">
-        <a class="cta" href="#projects">⟶ See My Work</a>
-        <a class="cta secondary" href="assets/Leo-Klemet-Resume.pdf" download title="Download Resume PDF">📄 Download Resume</a>
-      </div>
-      <p class="muted" style="margin-top:.75rem">Tip: Use the category filters to explore AI Agents, ML/Analytics, 3D & Generative Art, and DevOps/Security projects.</p>
-    </div>
-    <div class="hero-visual hero-media">
-      <picture>
-        <source type="image/avif" srcset="assets/optimized/hero-poster-sm.avif 400w, assets/optimized/hero-poster-md.avif 800w, assets/optimized/hero-poster-lg.avif 1200w, assets/optimized/hero-poster-xl.avif 1920w" sizes="(max-width: 900px) 100vw, 50vw">
-        <source type="image/webp" srcset="assets/optimized/hero-poster-sm.webp 400w, assets/optimized/hero-poster-md.webp 800w, assets/optimized/hero-poster-lg.webp 1200w, assets/optimized/hero-poster-xl.webp 1920w" sizes="(max-width: 900px) 100vw, 50vw">
-        <source type="image/jpeg" srcset="assets/optimized/hero-poster-sm.jpg 400w, assets/optimized/hero-poster-md.jpg 800w, assets/optimized/hero-poster-lg.jpg 1200w, assets/optimized/hero-poster-xl.jpg 1920w" sizes="(max-width: 900px) 100vw, 50vw">
-        <img id="hero-poster" src="assets/optimized/hero-poster-lg.webp" width="1200" height="800" alt="" decoding="async" fetchpriority="high" style="aspect-ratio:3/2;width:100%;height:100%;object-fit:cover;border-radius:16px;display:block">
-      </picture>
-      <div class="orb" aria-hidden="true"></div>
-      <div class="orb2" aria-hidden="true"></div>
-    </div>
-  </section>
-
-  <!-- PROJECTS -->
-  <section id="projects">
-    <div class="container">
-      <div class="section-head">
-        <h2 class="section-title">Projects</h2>
-        <div class="filters" role="toolbar" aria-label="Project filters">
-          <button class="chip" data-filter="all" aria-pressed="true">All</button>
-          <button class="chip" data-filter="agents">AI Agents & Apps</button>
-          <button class="chip" data-filter="ml">ML / Analytics</button>
-          <button class="chip" data-filter="art">3D & Generative Art</button>
-          <button class="chip" data-filter="devops">DevOps & Security</button>
+  
+        <!-- New bottom-right assistant chip -->
+        <style>
+        /* Kill old assistants/avatars; keep the new chip widget */
+        #leo-assistant, #la-open, #la-panel,
+        #ai-avatar-wrap, #ai-controls, #ai-text,
+        #live2d-wrap, #vrm-wrap, #riv-wrap,
+        #svg-avatar-wrap, #svg-mascot {
+          display: none !important;
+        }
+        #assistant-chip { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); z-index: 2147483643; }
+        #assistant-chip-btn { border:1px solid #2a3357; padding:.55rem .8rem; border-radius:999px; background:#121a2e; color:#e8ecf8; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.3); }
+        #assistant-chip-btn:hover { background:#0f1830; }
+        @media (prefers-reduced-motion: reduce){ #assistant-chip-btn { transition:none !important; } }
+        </style>
+        <div id="assistant-chip" role="region" aria-label="Assistant">
+          <button id="assistant-chip-btn" class="btn" aria-label="Ask about my projects">
+            🤖 Ask about my projects…
+          </button>
         </div>
-      </div>
-
-      <div class="grid" id="projectGrid" aria-live="polite">
-        <!-- CARD: LedgerMind -->
-  <article class="card card-click" data-slug="ledgermind" data-cats="agents ml devops" role="link" tabindex="0">
-          <div class="thumb">
-            <picture>
-              <source type="image/avif" srcset="assets/optimized/ledgermind-cover-sm.avif 400w, assets/optimized/ledgermind-cover-md.avif 800w, assets/optimized/ledgermind-cover-lg.avif 1200w, assets/optimized/ledgermind-cover-xl.avif 1920w" sizes="(max-width: 600px) 100vw, 33vw">
-              <source type="image/webp" srcset="assets/optimized/ledgermind-cover-sm.webp 400w, assets/optimized/ledgermind-cover-md.webp 800w, assets/optimized/ledgermind-cover-lg.webp 1200w, assets/optimized/ledgermind-cover-xl.webp 1920w" sizes="(max-width: 600px) 100vw, 33vw">
-              <source type="image/jpeg" srcset="assets/optimized/ledgermind-cover-sm.jpg 400w, assets/optimized/ledgermind-cover-md.jpg 800w, assets/optimized/ledgermind-cover-lg.jpg 1200w, assets/optimized/ledgermind-cover-xl.jpg 1920w" sizes="(max-width: 600px) 100vw, 33vw">
-              <img loading="lazy" decoding="async" src="assets/ledgermind-cover.svg" alt="LedgerMind dashboard with charts and AI assistant" width="1200" height="675" />
-            </picture>
-          </div>
-          <div class="card-body">
-            <h3 class="card-title">LedgerMind</h3>
-            <p class="muted">AI‑powered personal finance agent with grounded analytics, budgets, and explainable suggestions. Local/Cloud deploy.</p>
-            <div class="tags">
-              <span class="tag">FastAPI</span><span class="tag">React</span><span class="tag">Postgres</span><span class="tag">Ollama/OpenAI</span>
-            </div>
-            <div class="card-actions">
-              <a class="btn" href="projects/ledgermind.html">Case Study</a>
-              <button class="btn" type="button" data-detail="ledgermind">Quick View</button>
-              <a class="btn" href="https://github.com/leok974/ai-finance-agent-oss" target="_blank" rel="noopener">GitHub</a>
-              <a class="btn" href="https://app.ledger-mind.org" target="_blank" rel="noopener">Live</a>
-            </div>
-          </div>
-        </article>
-
-        <!-- CARD: DataPipe AI -->
-  <article class="card card-click" data-slug="datapipe-ai" data-cats="agents ml devops" role="link" tabindex="0">
-          <div class="thumb">
-            <picture>
-              <source type="image/avif" srcset="assets/optimized/datapipe-ai-cover-sm.avif 400w, assets/optimized/datapipe-ai-cover-md.avif 800w, assets/optimized/datapipe-ai-cover-lg.avif 1200w, assets/optimized/datapipe-ai-cover-xl.avif 1920w" sizes="(max-width: 600px) 100vw, 33vw">
-              <source type="image/webp" srcset="assets/optimized/datapipe-ai-cover-sm.webp 400w, assets/optimized/datapipe-ai-cover-md.webp 800w, assets/optimized/datapipe-ai-cover-lg.webp 1200w, assets/optimized/datapipe-ai-cover-xl.webp 1920w" sizes="(max-width: 600px) 100vw, 33vw">
-              <source type="image/jpeg" srcset="assets/optimized/datapipe-ai-cover-sm.jpg 400w, assets/optimized/datapipe-ai-cover-md.jpg 800w, assets/optimized/datapipe-ai-cover-lg.jpg 1200w, assets/optimized/datapipe-ai-cover-xl.jpg 1920w" sizes="(max-width: 600px) 100vw, 33vw">
-              <img loading="lazy" decoding="async" src="assets/datapipe-ai-cover.svg" alt="DataPipe AI ops dashboard with GKE integration" width="1200" height="675" />
-            </picture>
-          </div>
-          <div class="card-body">
-            <h3 class="card-title">DataPipe AI</h3>
-            <p class="muted">AI-powered ops agent for GKE deployments with automated data pipeline management and intelligent monitoring.</p>
-            <div class="tags">
-              <span class="tag">GKE</span><span class="tag">Kubernetes</span><span class="tag">AI Ops</span><span class="tag">Data Pipeline</span>
-            </div>
-            <div class="card-actions">
-              <a class="btn" href="projects/datapipe-ai.html">Case Study</a>
-              <button class="btn" type="button" data-detail="datapipe-ai">Quick View</button>
-              <a class="btn" href="https://github.com/leok974/ai-ops-agent-gke" target="_blank" rel="noopener">GitHub</a>
-            </div>
-          </div>
-        </article>
-
-        <!-- CARD: Clarity Companion (Chrome Ext) -->
-  <article class="card card-click" data-slug="clarity" data-cats="agents devops" role="link" tabindex="0">
-          <div class="thumb">
-            <picture>
-              <source type="image/avif" srcset="assets/optimized/clarity-companion-sm.avif 400w, assets/optimized/clarity-companion-md.avif 800w, assets/optimized/clarity-companion-lg.avif 1200w, assets/optimized/clarity-companion-xl.avif 1920w" sizes="(max-width: 600px) 100vw, 33vw">
-              <source type="image/webp" srcset="assets/optimized/clarity-companion-sm.webp 400w, assets/optimized/clarity-companion-md.webp 800w, assets/optimized/clarity-companion-lg.webp 1200w, assets/optimized/clarity-companion-xl.webp 1920w" sizes="(max-width: 600px) 100vw, 33vw">
-              <source type="image/jpeg" srcset="assets/optimized/clarity-companion-sm.jpg 400w, assets/optimized/clarity-companion-md.jpg 800w, assets/optimized/clarity-companion-lg.jpg 1200w, assets/optimized/clarity-companion-xl.jpg 1920w" sizes="(max-width: 600px) 100vw, 33vw">
-              <img loading="lazy" decoding="async" src="assets/clarity-companion.svg" alt="Clarity Companion Chrome extension panel UI" width="1200" height="675" />
-            </picture>
-          </div>
-          <div class="card-body">
-            <h3 class="card-title">Clarity Companion (Chrome Extension)</h3>
-            <p class="muted">On‑device writing clarity assistant with localization, coverage gates, and CI packaging.</p>
-            <div class="tags">
-              <span class="tag">MV3</span><span class="tag">TypeScript</span><span class="tag">CI/CD</span>
-            </div>
-            <div class="card-actions">
-              <a class="btn" href="projects/clarity.html">Case Study</a>
-              <button class="btn" type="button" data-detail="clarity">Quick View</button>
-              <a class="btn" href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
-            </div>
-          </div>
-        </article>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- ABOUT -->
-  <section id="about">
-    <div class="container">
-      <div class="section-head">
-        <h2 class="section-title">About Me</h2>
-        <p class="muted">AI Engineer · Software Engineer · Generative AI / 3D Artist & Creative Technologist</p>
-      </div>
-      <div class="about">
-        <div>
-          <picture>
-            <source type="image/avif" srcset="assets/optimized/leo-avatar-xs.avif 160w, assets/optimized/leo-avatar-sm.avif 320w" sizes="140px">
-            <source type="image/webp" srcset="assets/optimized/leo-avatar-xs.webp 160w, assets/optimized/leo-avatar-sm.webp 320w" sizes="140px">
-            <source type="image/jpeg" srcset="assets/optimized/leo-avatar-xs.jpg 160w, assets/optimized/leo-avatar-sm.jpg 320w" sizes="140px">
-            <img class="avatar" src="assets/leo-avatar.svg" alt="Portrait of Leo Klemet" width="140" height="140" loading="lazy" decoding="async" />
-          </picture>
-        </div>
-        <div>
-          <p>Hey, I’m Leo — I build agentic apps, grounded analytics, and cinematic creative pipelines. I love shipping fast, clean systems that balance reliable infra with playful, art‑driven UX.</p>
-          <div class="skills" aria-label="Skills by domain">
-            <div class="skill-box">
-              <h3>AI / ML</h3>
-              <ul>
-                <li>PyTorch, TensorFlow, embeddings, RAG</li>
-                <li>Ollama, OpenAI API, evals</li>
-                <li>Classifiers, forecasting, explainability</li>
-              </ul>
-            </div>
-            <div class="skill-box">
-              <h3>Backend</h3>
-              <ul>
-                <li>FastAPI, Postgres, Alembic</li>
-                <li>OAuth/Authlib, JWT cookies + CSRF</li>
-                <li>Report exports (PDF/XLSX)</li>
-              </ul>
-            </div>
-            <div class="skill-box">
-              <h3>Frontend</h3>
-              <ul>
-                <li>React, Vite, TypeScript, Tailwind</li>
-                <li>shadcn, Recharts, accessibility</li>
-              </ul>
-            </div>
-            <div class="skill-box">
-              <h3>MLOps / Infra</h3>
-              <ul>
-                <li>Docker, GitHub Actions, CI/CD</li>
-                <li>Cloudflare Tunnel, GCP KMS, Nginx</li>
-                <li>Secrets, observability, security</li>
-              </ul>
-            </div>
-            <div class="skill-box">
-              <h3>3D / Creative</h3>
-              <ul>
-                <li>Blender, Substance Painter</li>
-                <li>ComfyUI, LoRA/SDXL, Runway</li>
-                <li>Storyboards, editing, sound</li>
-              </ul>
-            </div>
-            <div class="skill-box">
-              <h3>Resume</h3>
-              <ul>
-                <li><a class="btn" href="assets/docs/Leo-Klemet-Resume.pdf" download>Download PDF</a></li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CONTACT -->
-  <section id="contact">
-    <div class="container">
-      <div class="section-head">
-        <h2 class="section-title">Contact</h2>
-        <p class="muted">Let’s collaborate or chat about roles, freelance, and experiments.</p>
-      </div>
-      <div class="work-together" aria-labelledby="workTogetherHeading">
-        <div class="work-together-text">
-          <h3 id="workTogetherHeading">Let’s Work Together</h3>
-          <p class="muted">Have a role, project, or idea you’d like to ship quickly with a strong engineering + creative lens? Reach out directly or connect on platforms below.</p>
-          <div class="cta-buttons" role="group" aria-label="Direct contact links">
-            <a class="cta" href="mailto:leoklemet.pa@gmail.com" aria-label="Email Leo">✉ Email</a>
-            <a class="cta" href="https://calendly.com/leo-klemet/30min" target="_blank" rel="noopener" aria-label="Schedule a call on Calendly">🗓 Schedule</a>
-            <a class="cta" href="assets/docs/Leo-Klemet-Resume.pdf" target="_blank" rel="noopener" aria-label="View Leo's resume PDF">📄 Resume</a>
-            <a class="cta" href="https://www.linkedin.com/in/leo-klemet-1241662a6/" target="_blank" rel="noopener" aria-label="LinkedIn profile">in LinkedIn</a>
-            <a class="cta" href="https://github.com/leok974" target="_blank" rel="noopener" aria-label="GitHub profile">★ GitHub</a>
-            <a class="cta" href="https://leoklemet3.artstation.com" target="_blank" rel="noopener" aria-label="ArtStation portfolio">🎨 ArtStation</a>
-            <a class="cta" href="tel:+12024401027" aria-label="Call Leo">📞 Call</a>
-          </div>
-        </div>
-        <div class="resume-pane" aria-labelledby="resumeHeading">
-          <h4 id="resumeHeading" style="margin-top:0">Resume</h4>
-          <div class="resume-embed">
-            <p class="muted">Preview available after upload. <a class="btn" href="assets/docs/Leo-Klemet-Resume.pdf" download>Download Resume</a></p>
-          </div>
-          <div class="resume-actions">
-            <a class="btn" href="assets/docs/Leo-Klemet-Resume.pdf" download aria-label="Download resume PDF">Download PDF</a>
-            <a class="btn" href="assets/docs/Leo-Klemet-Resume.pdf" target="_blank" rel="noopener" aria-label="Open resume in new tab">Open in New Tab ↗</a>
-          </div>
-        </div>
-      </div>
-      <form name="contact" method="POST" data-netlify="true" novalidate>
-        <input type="hidden" name="form-name" value="contact" />
-        <div>
-          <label for="name">Name *</label>
-          <input id="name" name="name" autocomplete="name" required aria-describedby="name-error" />
-          <div id="name-error" class="error-message" aria-live="polite"></div>
-        </div>
-        <div>
-          <label for="email">Email *</label>
-          <input id="email" name="email" type="email" autocomplete="email" required aria-describedby="email-error" />
-          <div id="email-error" class="error-message" aria-live="polite"></div>
-        </div>
-        <div>
-          <label for="message">Message *</label>
-          <textarea id="message" name="message" placeholder="What would you like to build together?" required aria-describedby="message-error"></textarea>
-          <div id="message-error" class="error-message" aria-live="polite"></div>
-        </div>
-        <button class="btn submit" type="submit">Send Message</button>
-      </form>
-  <p class="muted" style="margin-top:1rem">Find me on <a href="https://www.linkedin.com/in/leo-klemet-1241662a6/" target="_blank" rel="noopener noreferrer">LinkedIn</a> · <a href="https://github.com/leok974" target="_blank" rel="noopener noreferrer">GitHub</a> · <a href="https://leoklemet3.artstation.com" target="_blank" rel="noopener noreferrer">ArtStation</a></p>
-    </div>
-  </section>
-
-  <!-- BLOG / UPDATES (optional) -->
-  <section id="blog">
-    <div class="container">
-      <div class="section-head">
-        <h2 class="section-title">Blog · Updates</h2>
-        <p class="muted">Hackathons, experiments, and devlogs.</p>
-      </div>
-      <div class="posts">
-        <article class="post">
-          <h3>Local GPT‑OSS + Agents for Finance</h3>
-          <p class="muted">A deep‑dive into grounded NL → SQL, analytics orchestration, and privacy‑first design.</p>
-        </article>
-        <article class="post">
-          <h3>From Storyboard to Sprite Sheet</h3>
-          <p class="muted">How Pixel Banana Suite turns pose prompts into crisp, animatable sprites.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  </main>
-  <!-- FOOTER -->
-  <footer>
-    <div class="container footer-grid">
-      <div>© <span id="year"></span> Leo Klemet</div>
-      <div class="muted">AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist</div>
-      <div style="text-align:right">
-        <a href="#home">Back to top ↑</a>
-      </div>
-    </div>
-  </footer>
-
-  <!-- PROJECT DETAIL DIALOG (reusable) -->
-  <dialog class="project-detail" id="detailDialog" aria-labelledby="detailTitle">
-    <div class="detail-header">
-  <h2 id="detailTitle" style="margin:0">Project</h2>
-      <button class="btn" id="detailClose" aria-label="Close project details">✕ Close</button>
-    </div>
-    <div class="detail-body">
-      <div id="detailContent" class="detail-grid">
-        <!-- Filled dynamically by JS (see PROJECT_DETAILS map) -->
-      </div>
-    </div>
-  </dialog>
-
-  <script src="main.js" defer></script>
-  <script>/* hero video temporarily disabled pending assets */</script>
-
-  <!-- Leo Assistant Widget: minimal, no-build chat relay -->
-  <style>
-  #leo-assistant{position:fixed;right:16px;bottom:16px;z-index:9999}
-  #leo-assistant .btn{border:1px solid #2a3357;padding:.55rem .8rem;border-radius:14px;background:#121a2e;color:#e8ecf8;cursor:pointer}
-  #leo-assistant .panel{width:min(92vw,380px);height:420px;background:#0b1223;border:1px solid #2a3357;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.4);display:none;flex-direction:column;overflow:hidden}
-  #leo-assistant .head{display:flex;justify-content:space-between;align-items:center;padding:.6rem 1rem;border-bottom:1px solid #1c2545}
-  #leo-assistant .log{flex:1;overflow:auto;padding:0 1rem}
-  #leo-assistant .msg{margin:.75rem 0}
-  #leo-assistant .you{color:#c9d4ff}
-  #leo-assistant .ai{color:#a7ffdc}
-  #leo-assistant form{display:flex;gap:.5rem;padding:.6rem;border-top:1px solid #1c2545}
-  #leo-assistant input{flex:1;background:#0f1830;color:#e8ecf8;border:1px solid #263055;border-radius:12px;padding:.65rem}
-  #leo-assistant .msg.ai{white-space:pre-wrap}
-  #leo-assistant .msg.ai::after{content:"▍";animation:blink 1s steps(1) infinite;margin-left:2px;opacity:.6}
-  #leo-assistant .msg.ai.done::after{content:"";animation:none}
-  @keyframes blink{50%{opacity:0}}
-  </style>
-
-  <!-- Assistant safe-area + layout overrides (appended) -->
-  <style>
-  :root{
-    /* runtime-updated by JS when a FAB is detected */
-    --assistant-fab-safe: 0px;
-  }
-
-  /* Widget + avatar wrap share the same safe positioning */
-  #leo-assistant,
-  #ai-avatar-wrap{
-    position: fixed;
-    right: max(16px, env(safe-area-inset-right));
-    bottom: calc(max(16px, env(safe-area-inset-bottom)) + var(--assistant-fab-safe));
-    z-index: 2147483643; /* above other overlays */
-  }
-
-  /* Panel sizing/spacing */
-  #leo-assistant .panel{
-    width: min(92vw, 380px);
-    height: 420px;
-    display: none; /* toggled by JS */
-    flex-direction: column;
-    background:#0b1223;
-    border:1px solid #2a3357;
-    border-radius:16px;
-    box-shadow:0 10px 30px rgba(0,0,0,.4);
-    overflow:hidden;
-  }
-
-  /* Input row: make buttons not squish text field */
-  #leo-assistant form,
-  #ai-controls{
-    display: grid;
-    grid-template-columns: 1fr auto auto; /* input | Send | Voice/Mute */
-    gap: .5rem;
-    align-items: center;
-  }
-  #leo-assistant input,
-  #ai-input{ min-width: 0; }
-
-  /* Keep streamed text readable */
-  #leo-assistant .msg.ai,
-  #ai-text{ white-space: pre-wrap; }
-
-  @media (max-width: 640px){
-    /* give the page a bit more breathing room when open */
-    body.assistant-open { padding-bottom: 340px; }
-  }
-  </style>
-
+        <script>
+        if (window.__assistantInit) console.warn('assistant already initialized');
+        if (!window.__assistantInit){
+          window.__assistantInit = true;
+          (function(){
+            const ENABLE_ASSISTANT = ['leok974.github.io','localhost','127.0.0.1'].includes(location.hostname);
+            // Runtime sweep in case old blocks sneak in
+            ['leo-assistant','la-open','la-panel','ai-avatar-wrap','live2d-wrap','vrm-wrap','riv-wrap','svg-avatar-wrap','svg-mascot']
+              .forEach(id => document.getElementById(id)?.remove());
+            const wrap = document.getElementById('assistant-chip');
+            const btn = document.getElementById('assistant-chip-btn');
+            if (!ENABLE_ASSISTANT){ if (wrap) wrap.style.display='none'; return; }
+            // Keyboard toggle for mute support placeholder (M), or future actions
+            document.addEventListener('keydown', e=>{ if (e.key && e.key.toLowerCase()==='m'){ /* reserved */ } });
+            // Chip click: for now, scroll to projects; could open a panel in future
+            btn?.addEventListener('click', ()=>{
+              const el = document.getElementById('projects');
+              if (el) el.scrollIntoView({behavior:'smooth'});
+            });
+          })();
+        }
+        </script>
   <div id="leo-assistant">
     <button id="la-open" class="btn">🤖 Ask about my projects</button>
     <div id="la-panel" class="panel" role="dialog" aria-label="Leo Assistant">
@@ -811,66 +454,6 @@
     input.addEventListener('keydown', (e)=>{ if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(); }});
   })();
   </script>
-  <!-- Avoid FAB overlap + open padding helper (appended) -->
-  <script>
-  (() => {
-    // 1) bump assistant above any bottom-right FAB (e.g., PDF button)
-    function computeFabOffset(){
-      const vh = window.innerHeight, vw = window.innerWidth;
-      const cands = Array.from(document.querySelectorAll([
-        '.fab',              // your own class, if any
-        '[data-fab]',        // generic
-        '.floating-button',
-        '.scroll-to-top',
-        '.pdf', '.pdf-btn',  // common viewer buttons
-        '.chakra-portal [role="button"]'
-      ].join(',')));
-
-      let off = 0;
-      for (const el of cands){
-        const cs = getComputedStyle(el);
-        if (cs.position !== 'fixed') continue;
-        const r = el.getBoundingClientRect();
-        const nearRight = (vw - r.right) < 140;
-        const nearBottom = (vh - r.bottom) < 140;
-        const smallish = r.width <= 140 && r.height <= 140;
-        if (nearRight && nearBottom && smallish){
-          off = Math.max(off, Math.ceil(r.height + 16)); // 16px gap
-        }
-      }
-      document.documentElement.style.setProperty('--assistant-fab-safe', off + 'px');
-    }
-
-    // 2) add/remove bottom padding when panel is open so content isn't covered
-    function setOpenPadding(open, panelHeight=340){
-      document.body.classList.toggle('assistant-open', open);
-      if (open){
-        const h = Math.min(panelHeight, Math.round(window.innerHeight * 0.6));
-        document.body.style.paddingBottom = `${h + 24}px`;
-      } else {
-        document.body.style.paddingBottom = '';
-      }
-    }
-
-    // Hook into your existing open/close (adjust IDs if different)
-    const panel = document.getElementById('la-panel');
-    const openBtn = document.getElementById('la-open');
-    const closeBtn = document.getElementById('la-close');
-
-    if (openBtn && panel){
-      const _show = () => { panel.style.display='flex'; openBtn.style.display='none'; setOpenPadding(true, panel.offsetHeight || 340); };
-      const _hide = () => { panel.style.display='none'; openBtn.style.display='inline-block'; setOpenPadding(false); };
-      openBtn.addEventListener('click', _show);
-      if (closeBtn) closeBtn.addEventListener('click', _hide);
-    }
-
-    // Recompute on load/resize/mutation (handles third-party FABs that mount late)
-    const ro = new ResizeObserver(computeFabOffset);
-    ro.observe(document.documentElement);
-    window.addEventListener('load', computeFabOffset, {once:true});
-    window.addEventListener('resize', computeFabOffset, {passive:true});
-    computeFabOffset();
-  })();
-  </script>
+  
 </body>
 </html>
