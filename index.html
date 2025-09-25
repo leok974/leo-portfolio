@@ -97,7 +97,7 @@
     #assistant-chip-btn { border:1px solid #2a3357; padding:.55rem .8rem; border-radius:999px; background:#121a2e; color:#e8ecf8; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.3); }
     #assistant-chip-btn:hover { background:#0f1830; }
     @media (prefers-reduced-motion: reduce){ #assistant-chip-btn { transition:none !important; } }
-    
+
     /* Lightweight assistant panel */
     #assistant-panel { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom));
       width: min(92vw, 420px); max-height: min(60vh, 520px); display: none; flex-direction: column; gap: .6rem;
@@ -132,7 +132,7 @@
       🤖 Ask about my projects…
     </button>
   </div>
-  
+
   <!-- Lightweight assistant panel (hidden by default) -->
   <div id="assistant-panel" role="dialog" aria-modal="false" aria-label="Assistant panel">
     <div class="head">
@@ -164,9 +164,18 @@
         const API_STREAM = API_BASE + '/chat/stream';
         const API_NON_STREAM = API_BASE + '/chat';
         const msgs = [];
+        // Client-side system prompt snippet to complement backend prompt
+        const CLIENT_SYSTEM = {
+          role: 'system',
+          content: (
+            "You are Leo’s portfolio assistant. Answer concisely with exactly one most relevant project. " +
+            "Format: 1 short value sentence + 3 bullets (Tech, Impact, Why hireable). " +
+            "Close with: [Case Study] • [GitHub] • [Schedule]. If unclear, ask one brief clarifying question first."
+          )
+        };
         const context = {};
         if (!ENABLE_ASSISTANT){ if (wrap) wrap.style.display='none'; if (panel) panel.style.display='none'; return; }
-        
+
         // Load small context from projects.json
         (async () => {
           try {
@@ -274,9 +283,9 @@
           append('user', content);
           append('assistant', 'Thinking…');
           try {
-            await streamChat({ messages: msgs, context, stream: true });
+            await streamChat({ messages: [CLIENT_SYSTEM, ...msgs], context, stream: true });
           } catch {
-            try { await nonStreamChat({ messages: msgs, context }); }
+            try { await nonStreamChat({ messages: [CLIENT_SYSTEM, ...msgs], context }); }
             catch { if (log.lastChild) log.lastChild.textContent = 'Assistant: (connection failed — please try again later)'; }
           }
         });
