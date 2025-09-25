@@ -140,6 +140,7 @@
 
   <script>
   (() => {
+    if (window.USE_BOTTOM_RIGHT_ASSISTANT === false) return;
     // Only show on GitHub Pages or local dev
     const ENABLE_ASSISTANT = ['leok974.github.io','localhost','127.0.0.1'].includes(location.hostname);
     const root = document.getElementById('leo-assistant');
@@ -254,6 +255,22 @@
       }
     });
   })();
+  </script>
+  
+  <!-- Kill-switch: disable bottom-right assistant widget and clear padding -->
+  <style>
+    /* Hard-disable the old bottom-right assistant widget */
+    #leo-assistant { display: none !important; }
+  </style>
+  <script>
+    // Tell any widget script to bail early (if it exists)
+    window.USE_BOTTOM_RIGHT_ASSISTANT = false;
+
+    // Clean any padding the old widget might have added
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.classList.remove('assistant-open');
+      document.body.style.paddingBottom = '';
+    });
   </script>
   <!-- AI Avatar Widget (canvas + streaming + TTS) -->
   <style>
