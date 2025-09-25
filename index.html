@@ -88,7 +88,7 @@
         #leo-assistant, #la-open, #la-panel,
         #ai-avatar-wrap, #ai-controls, #ai-text,
         #live2d-wrap, #vrm-wrap, #riv-wrap,
-        #svg-avatar-wrap {
+        #svg-avatar-wrap, #svg-mascot {
           display: none !important;
         }
         #assistant-chip { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); z-index: 2147483643; }
@@ -252,94 +252,6 @@
           log.lastChild.textContent = 'Assistant: (connection failed — please try again later)';
         }
       }
-    });
-  })();
-  </script>
-  
-  <!-- SVG Mascot overlay (mouth overlay driven by JS) -->
-  <style>
-  #svg-mascot {
-    position: fixed;
-    right: max(16px, env(safe-area-inset-right));
-    bottom: calc(max(16px, env(safe-area-inset-bottom)) + var(--assistant-fab-safe, 0px));
-    width: 220px; height: 220px;
-    z-index: 2147483643;
-    pointer-events: none; /* don’t block clicks */
-    contain: layout paint;
-  }
-  /* Tweak these 4 to align the mouth box with your art (viewBox is 1024) */
-  #svg-mascot { 
-    --mouth-x: 312;  /* left   */
-    --mouth-y: 640;  /* top    */
-    --mouth-w: 400;  /* width  */
-    --mouth-h: 110;  /* height at full open */
-  }
-  /* Debug helper: press `d` to toggle an outline of the overlay */
-  #svg-mascot.debug .overlay { outline: 1px dashed #ff6aa2; }
-  </style>
-
-  <div id="svg-mascot" aria-hidden="true">
-    <!-- Base art (your file) -->
-    <img id="svg-mascot-img" src="assets/icons/assistant-robot.svg" alt="" width="220" height="220" />
-    <!-- Overlay lives in the same coordinate space as the original (scaled) -->
-    <svg class="overlay" viewBox="0 0 1024 1024" width="220" height="220" preserveAspectRatio="xMidYMid meet">
-      <!-- Mouth overlay: a rounded rect we animate in JS -->
-      <rect id="mouth-overlay" x="0" y="0" width="0" height="0" rx="28" fill="#c02d5c"/>
-    </svg>
-  </div>
-
-  <script>
-  (() => {
-    if (!['leok974.github.io','localhost','127.0.0.1'].includes(location.hostname)) return;
-    const wrap = document.getElementById('svg-mascot');
-    const mouth = document.getElementById('mouth-overlay');
-    if (!wrap || !mouth) return;
-
-    // Read CSS vars (mapped to the original 1024x1024 viewBox)
-    function cfg(){
-      const cs = getComputedStyle(wrap);
-      const x = parseFloat(cs.getPropertyValue('--mouth-x')) || 0;
-      const y = parseFloat(cs.getPropertyValue('--mouth-y')) || 0;
-      const w = parseFloat(cs.getPropertyValue('--mouth-w')) || 0;
-      const h = parseFloat(cs.getPropertyValue('--mouth-h')) || 0;
-      return {x,y,w,h};
-    }
-
-    // Level 0..1 -> set rect size/position
-    let level = 0; // target
-    let cur   = 0; // smoothed
-    function draw() {
-      cur += (level - cur) * 0.18;               // ease
-      const {x,y,w,h} = cfg();
-      const open = Math.max(0, Math.min(1, cur));
-      const hh = Math.max(6, h * open);          // height
-      const cy = y + h/2;                        // keep centered around box center
-      const yy = cy - hh/2;
-      mouth.setAttribute('x', x);
-      mouth.setAttribute('width', w);
-      mouth.setAttribute('y', yy.toFixed(2));
-      mouth.setAttribute('height', hh.toFixed(2));
-      mouth.setAttribute('rx', Math.min(28, hh/2).toFixed(2));
-      requestAnimationFrame(draw);
-    }
-    requestAnimationFrame(draw);
-
-    function poke(v=0.85){ level = Math.max(level, v); setTimeout(()=> level *= 0.9, 90); }
-
-    // Expose the same API your chat/tts already calls
-    window.avatar = {
-      speakStart(){ poke(0.6); },
-      speakEnd(){ level = 0; },
-      boundary(ch){
-        const c = (ch||'').toLowerCase();
-        level = /[aeiou]/.test(c) ? 1.0 : /[bmp]/.test(c) ? 0.35 : 0.7;
-      },
-      rms(v){ level = Math.min(1, v * 1.8); } // if you switch to audio-driven
-    };
-
-    // Debug toggle: press `d` to outline overlay box
-    document.addEventListener('keydown', (e)=>{
-      if (e.key && e.key.toLowerCase()==='d') wrap.classList.toggle('debug');
     });
   })();
   </script>
