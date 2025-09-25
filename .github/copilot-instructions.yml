@@ -1,0 +1,13 @@
+overview:
+  description: >
+    Generate and maintain a high-level JSON overview of this repository.
+    Follow the format shown in overview.json. Include:
+      - metadata (name, description, languages, context)
+      - structure (frontend, backend, tests, config)
+      - core_components
+      - infrastructure (docker, ci_cd, cloud)
+      - dependencies
+      - tests & docs
+    Always reflect the *current state of the repo* without hallucination.
+  format: json
+  output: overview.json
