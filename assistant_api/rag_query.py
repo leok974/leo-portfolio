@@ -1,11 +1,13 @@
 import os
+from pathlib import Path
 from fastapi import APIRouter
 from pydantic import BaseModel
 from .db import connect, search
 import numpy as np
 from dotenv import load_dotenv
 
-load_dotenv()
+# Ensure we load env from the package-local .env (assistant_api/.env)
+load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
 
 router = APIRouter()
 
@@ -13,30 +15,33 @@ class QueryIn(BaseModel):
     question: str
     k: int = 8
 
-MODEL_NAME = os.getenv("EMBED_MODEL", "intfloat/e5-large-v2")
-_model = None
+MODEL_Q = os.getenv("EMBED_MODEL_QUERY", "text-embedding-3-large")
+# Normalize legacy values like 'openai/text-embedding-3-large' -> 'text-embedding-3-large'
+if MODEL_Q.startswith("openai/"):
+    MODEL_Q = MODEL_Q.split("/", 1)[1]
+def _read_secret(env_name: str, file_env: str, default_file: str | None = None):
+    val = os.getenv(env_name)
+    if val:
+        return val
+    fpath = os.getenv(file_env) or default_file
+    if fpath and Path(fpath).exists():
+        try:
+            return Path(fpath).read_text(encoding="utf-8").strip()
+        except Exception:
+            return None
+    return None
 
-async def embed(texts):
-    global _model
-    if MODEL_NAME.startswith("openai/"):
-        from openai import OpenAI
-        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])  # expects key when using OpenAI
-        resp = client.embeddings.create(model=MODEL_NAME, input=texts)
-        return [np.array(e.embedding, dtype=np.float32) for e in resp.data]
-    else:
-        if _model is None:
-            from sentence_transformers import SentenceTransformer
-            _model = SentenceTransformer(MODEL_NAME)
-        vecs = _model.encode(texts, normalize_embeddings=True)
-        return [np.array(v, dtype=np.float32) for v in vecs]
+OPENAI_API_KEY = _read_secret("OPENAI_API_KEY", "OPENAI_API_KEY_FILE", "/run/secrets/openai_api_key")
 
-async def _embed_one(text: str):
-    vecs = await embed([text])
-    return vecs[0]
+async def embed_query(text: str) -> np.ndarray:
+    from openai import OpenAI
+    client = OpenAI(api_key=OPENAI_API_KEY, base_url="https://api.openai.com/v1")
+    r = client.embeddings.create(model=MODEL_Q, input=[text])
+    return np.array(r.data[0].embedding, dtype=np.float32)
 
 @router.post("/rag/query")
 async def rag_query(q: QueryIn):
-    qv = await _embed_one(q.question)
+    qv = await embed_query(q.question)
     conn = connect()
     hits = search(conn, qv, k=q.k)
     return {

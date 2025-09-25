@@ -2,113 +2,137 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-import requests, os, json
+import os
+from pathlib import Path
 from .rag_query import router as rag_router
 from .rag_ingest import ingest
+from .llm_client import chat as llm_chat, chat_stream as llm_chat_stream
+from .auto_rag import needs_repo_context, fetch_context, build_context_message
+from .llm_health import router as llm_health_router
+from .ready import router as ready_router
+from .metrics import record, snapshot
+import time
+import json
+try:
+    # Load .env and .env.local if present (dev convenience)
+    from dotenv import load_dotenv
+    here = Path(__file__).parent
+    load_dotenv(here / ".env")
+    load_dotenv(here / ".env.local")
+except Exception:
+    pass
 
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/v1/chat/completions")
-MODEL = os.getenv("MODEL", "gpt-oss:20b")
-
-ALLOWED_ORIGINS = [
-    "https://leok974.github.io",  # GitHub Pages (origin only)
-    "http://localhost:5500",      # local dev server (e.g., Live Server)
-    "http://127.0.0.1:5500",      # local dev server (direct IP)
-    "http://localhost:5530",      # BrowserSync dev server
-    "http://127.0.0.1:5530"       # BrowserSync dev server (IP)
-]
+# If running locally, allow reading OpenAI key from secrets/openai_api_key
+try:
+    secrets_file = Path(__file__).resolve().parents[1] / "secrets" / "openai_api_key"
+    if secrets_file.exists():
+        val = secrets_file.read_text(encoding="utf-8").strip()
+        os.environ.setdefault("OPENAI_API_KEY", val)
+        os.environ.setdefault("FALLBACK_API_KEY", val)
+except Exception:
+    pass
 
 app = FastAPI(title="Leo Portfolio Assistant")
 
+origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+if not origins:
+    origins = [
+        "https://leok974.github.io",
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "http://localhost:5530",
+        "http://127.0.0.1:5530",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=False,
-    allow_methods=["POST", "OPTIONS"],
-    allow_headers=["Content-Type"],
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
 )
 
 # RAG API routes
 app.include_router(rag_router, prefix="/api")
+app.include_router(llm_health_router)
+app.include_router(ready_router)
+
+@app.middleware("http")
+async def _metrics_middleware(request, call_next):
+    start = time.perf_counter()
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        duration_ms = (time.perf_counter() - start) * 1000
+        try:
+            status = getattr(locals().get('response', None), 'status_code', 500)
+        except Exception:
+            status = 500
+        record(status, duration_ms)
+
+@app.get("/metrics")
+def metrics():
+    return snapshot()
 
 class ChatReq(BaseModel):
-    messages: list  # [{role:"system|user|assistant", content:"..."}]
+    messages: list
     context: dict | None = None
-    stream: bool | None = True  # default to streaming
+    stream: bool | None = False
 
-SYSTEM_PROMPT = """You are Leo’s portfolio assistant.
-Be concise and specific. Recommend the most relevant project (LedgerMind, DataPipe AI, Clarity Companion),
-give one-sentence value + 3 bullets (tech/impact/why hireable), then end with actions:
-[Case Study] • [GitHub] • [Schedule]. If unsure, say so briefly.
-"""
+SYSTEM_PROMPT = (
+    "You are Leo’s portfolio assistant. Be concise and specific. Recommend the most relevant "
+    "project (LedgerMind, DataPipe AI, Clarity Companion), give one-sentence value + 3 bullets "
+    "(tech/impact/why hireable), then end with actions: [Case Study] • [GitHub] • [Schedule]. "
+    "If unsure, say so briefly."
+)
 
 def _build_messages(req: ChatReq):
-    msgs = [{"role":"system","content": SYSTEM_PROMPT}]
+    msgs = [{"role": "system", "content": SYSTEM_PROMPT}]
     if req.context:
-        msgs.append({"role":"system","content": f"Site context:\n{req.context.get('summary','')[:2000]}"})
-    msgs += req.messages[-8:]  # last 8 turns
+        msgs.append({"role": "system", "content": f"Site context:\n{req.context.get('summary','')[:2000]}"})
+    msgs += req.messages[-8:]
     return msgs
 
-def clamp_tokens(n: int, lo=64, hi=4096):  # crude guard
-    return max(lo, min(hi, n))
-
-@app.post("/chat")  # non-stream fallback (kept for compatibility)
-def chat(req: ChatReq):
-    body = {
-        "model": MODEL,
-        "messages": _build_messages(req),
-        "temperature": 0.4,
-        "max_tokens": 768,
-        "stream": False
-    }
-
+@app.post("/chat")
+async def chat(req: ChatReq):
+    messages = _build_messages(req)
+    # auto-RAG: peek at latest user message
+    user_last = next((m for m in reversed(messages) if m.get("role") == "user"), None)
+    if user_last and needs_repo_context(user_last.get("content", "")):
+        try:
+            matches = await fetch_context(user_last["content"])
+            if matches:
+                messages = [build_context_message(matches)] + messages
+        except Exception:
+            pass
     try:
-        r = requests.post(OLLAMA_URL, json=body, timeout=120)
-        r.raise_for_status()
-        data = r.json()
-        # OpenAI-compatible response shape
-        content = data["choices"][0]["message"]["content"]
-        return {"assistant": content}
-    except Exception as e:
-        raise HTTPException(502, f"Upstream error: {e}")
+        tag, resp = await llm_chat(messages, stream=False)
+        data = resp.json()
+        data["_served_by"] = tag
+        return data
+    except Exception:
+        # Friendly 503 if both providers fail
+        raise HTTPException(status_code=503, detail={"error": "All providers unavailable. Try again later."})
 
 @app.post("/chat/stream")
-def chat_stream(req: ChatReq):
-    body = {
-        "model": MODEL,
-        "messages": _build_messages(req),
-        "temperature": 0.4,
-        "max_tokens": 768,
-        "stream": True
-    }
-    try:
-        upstream = requests.post(OLLAMA_URL, json=body, stream=True, timeout=600)
-        upstream.raise_for_status()
-    except Exception as e:
-        raise HTTPException(502, f"Upstream error: {e}")
+async def chat_stream_ep(req: ChatReq):
+    messages = _build_messages(req)
 
-    def passthrough():
-        # initial comment keepalive
-        yield ":ok\n\n"
-        for line in upstream.iter_lines(decode_unicode=True):
-            if not line:
-                continue
-            if line.startswith("data:"):
-                yield line + "\n\n"
-            else:
-                yield "data: " + line + "\n\n"
-        # ensure termination
-        yield "data: [DONE]\n\n"
+    async def gen():
+        source = None
+        async for tag, line in llm_chat_stream(messages):
+            if source is None:
+                source = tag
+                meta = {"_served_by": source}
+                yield f"event: meta\ndata: {json.dumps(meta)}\n\n"
+            # passthrough OpenAI-style data lines
+            if not line.startswith("data:"):
+                line = f"data: {line}"
+            yield line + "\n"
+        yield "event: done\ndata: {}\n\n"
 
-    headers = {
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-        "X-Accel-Buffering": "no"
-    }
-    return StreamingResponse(passthrough(), media_type="text/event-stream", headers=headers)
-
-@app.get("/health")
-def health():
-    return {"ok": True, "model": MODEL}
+    return StreamingResponse(gen(), media_type="text/event-stream")
 
 @app.post("/api/rag/ingest")
 async def trigger_ingest():

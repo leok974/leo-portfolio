@@ -1,5 +1,5 @@
 // assistant-chip.js
-// Idempotent mount; safe DOM creation; no document.write
+// Idempotent mount; safe DOM creation; unified panel using site styles/IDs
 (function(){
   if (window.__ASSISTANT_CHIP_MOUNTED__) return;
   window.__ASSISTANT_CHIP_MOUNTED__ = true;
@@ -13,7 +13,7 @@
       document.body.appendChild(host);
     }
 
-    // Build wrap
+    // Build wrapper
     const wrap = document.createElement('div');
     wrap.id = 'assistant-chip';
     wrap.style.cssText = [
@@ -24,34 +24,48 @@
       'pointer-events:auto'
     ].join(';');
 
+    // Unified panel markup (matches IDs styled in index.html)
     wrap.innerHTML = `
-      <button id="chip-btn" class="chip" aria-label="Ask about my projects">🤖 Ask about my projects…</button>
-      <div id="chip-panel" class="panel" hidden role="dialog" aria-modal="false" aria-label="Assistant panel">
-        <form id="chip-form" class="row" autocomplete="off">
-          <input id="chip-input" placeholder="Which project fits GKE ops?" required />
-          <button type="submit">Send</button>
+      <button id="assistant-chip-btn" aria-label="Ask about my projects">🤖 Ask about my projects…</button>
+      <div id="assistant-panel" role="dialog" aria-modal="false" aria-label="Assistant panel" style="display:none">
+        <div class="head">
+          <strong>Portfolio Assistant</strong>
+          <span data-agent-badge title="LLM source">local</span>
+          <button id="assistant-close" class="btn" type="button" aria-label="Close panel">Close</button>
+        </div>
+        <div id="assistant-log" aria-live="polite"></div>
+        <form id="assistant-form" autocomplete="off">
+          <input id="assistant-input" placeholder="Ask about my projects…" required aria-label="Your question" />
+          <button class="btn" type="submit">Send</button>
         </form>
-        <div id="chip-log" aria-live="polite"></div>
       </div>`;
 
     host.appendChild(wrap);
 
-    // Wire up toggle
-    const btn   = wrap.querySelector('#chip-btn');
-    const panel = wrap.querySelector('#chip-panel');
-    const form  = wrap.querySelector('#chip-form');
-    const input = wrap.querySelector('#chip-input');
-    const logEl = wrap.querySelector('#chip-log');
+    // References
+    const chipBtn = wrap.querySelector('#assistant-chip-btn');
+    const panel   = wrap.querySelector('#assistant-panel');
+    const form    = wrap.querySelector('#assistant-form');
+    const input   = wrap.querySelector('#assistant-input');
+    const logEl   = wrap.querySelector('#assistant-log');
+    const closeBtn= wrap.querySelector('#assistant-close');
 
-    const open = ()=>{ panel.hidden = false; input?.focus(); };
-    const close= ()=>{ panel.hidden = true; };
+    // Toggle helpers
+    function open(){ panel.style.display = 'flex'; input?.focus(); }
+    function close(){ panel.style.display = 'none'; }
 
-    btn.addEventListener('click', ()=> panel.hidden ? open() : close());
-
-    document.addEventListener('keydown', (e)=>{
-      if (e.key === 'Escape' && !panel.hidden) close();
+    // Open via chip or wrapper click
+    chipBtn.addEventListener('click', open);
+    wrap.addEventListener('click', (e)=>{
+      // Only open if clicking the chip area, not when interacting with the form
+      if (e.target === wrap) open();
     });
+    closeBtn.addEventListener('click', close);
 
+    // Esc to close
+    document.addEventListener('keydown', (e)=>{ if (e.key === 'Escape' && panel.style.display !== 'none') close(); });
+
+    // Submit handler
     form.addEventListener('submit', (e)=>{
       e.preventDefault();
       const q = input.value.trim();

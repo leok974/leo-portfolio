@@ -1,29 +1,24 @@
 import os, tempfile, subprocess, hashlib
+from pathlib import Path
 from dotenv import load_dotenv
 from .db import connect, upsert_doc, upsert_vec
 from .chunkers import chunk_for_path
 import numpy as np
 
-load_dotenv()
-
-MODEL_NAME = os.getenv("EMBED_MODEL", "intfloat/e5-large-v2")
-REPOS = [r.strip() for r in os.getenv("RAG_REPOS", "").split(",") if r.strip()]
+# Ensure we load env from the package-local .env (assistant_api/.env)
+load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
 
 _model = None
+MODEL_I = "intfloat/e5-base-v2"
 
 async def embed(texts):
     global _model
-    if MODEL_NAME.startswith("openai/"):
-        from openai import OpenAI
-        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])  # expects key when using OpenAI
-        resp = client.embeddings.create(model=MODEL_NAME, input=texts)
-        return [np.array(e.embedding, dtype=np.float32) for e in resp.data]
-    else:
-        if _model is None:
-            from sentence_transformers import SentenceTransformer
-            _model = SentenceTransformer(MODEL_NAME)
-        vecs = _model.encode(texts, normalize_embeddings=True)
-        return [np.array(v, dtype=np.float32) for v in vecs]
+    # Always use local SentenceTransformer for ingest
+    if _model is None:
+        from sentence_transformers import SentenceTransformer
+        _model = SentenceTransformer(MODEL_I)
+    vecs = _model.encode(texts, normalize_embeddings=True)
+    return [np.array(v, dtype=np.float32) for v in vecs]
 
 def file_list(repo_dir):
     for root, _, files in os.walk(repo_dir):
@@ -39,7 +34,9 @@ def file_list(repo_dir):
 async def ingest():
     conn = connect()
     with tempfile.TemporaryDirectory() as tmp:
-        for repo in REPOS:
+        # Read repos from env at call time
+        repos = [r.strip() for r in os.getenv("RAG_REPOS", "").split(",") if r.strip()]
+        for repo in repos:
             dst = os.path.join(tmp, repo.replace("/", "__"))
             subprocess.run(["git", "clone", "--depth", "1", f"https://github.com/{repo}.git", dst], check=True)
             for p in file_list(dst):

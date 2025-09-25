@@ -393,17 +393,25 @@ document.addEventListener('DOMContentLoaded', async function() {
 // SERVICE WORKER REGISTRATION
 // -----------------------------
 if ('serviceWorker' in navigator) {
-  // Use subpath-aware URL so it works on GitHub Pages and locally
-  const basePath = location.pathname.includes('/leo-portfolio/') ? '/leo-portfolio/' : '/';
-  const swUrl = `${basePath}sw.js`;
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register(swUrl)
-      .then(reg => {
-        // Optional: log for diagnostics
-        console.log('Service worker registered:', reg.scope);
-      })
-      .catch(err => {
-        console.warn('Service worker registration failed:', err);
-      });
-  });
+  const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
+  if (isLocal) {
+    // During local development, avoid SW caching. Actively unregister any existing SWs.
+    navigator.serviceWorker.getRegistrations?.().then(regs => {
+      regs.forEach(reg => reg.unregister());
+    });
+  } else {
+    // Use subpath-aware URL so it works on GitHub Pages
+    const basePath = location.pathname.includes('/leo-portfolio/') ? '/leo-portfolio/' : '/';
+    const swUrl = `${basePath}sw.js`;
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register(swUrl)
+        .then(reg => {
+          // Optional: log for diagnostics
+          console.log('Service worker registered:', reg.scope);
+        })
+        .catch(err => {
+          console.warn('Service worker registration failed:', err);
+        });
+    });
+  }
 }
