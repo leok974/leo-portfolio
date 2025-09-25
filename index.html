@@ -117,6 +117,20 @@
     #assistant-form { display:flex; gap:.5rem; }
     #assistant-input { flex:1; border:1px solid #2a3357; background:#0b1223; color:#e8ecf8; border-radius:8px; padding:.55rem .7rem; }
     #assistant-form .btn { border:1px solid #2a3357; background:#121a2e; color:#e8ecf8; border-radius:8px; padding:.55rem .7rem; cursor:pointer; }
+    /* Agent status pill */
+    .agent-status{
+      display:inline-flex; align-items:center; gap:.4rem;
+      padding:.25rem .5rem; border-radius:999px; background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12); font:12px/1.2 system-ui;
+    }
+    .agent-status .dot{
+      width:.6rem; height:.6rem; border-radius:50%; display:inline-block;
+      background:#888; box-shadow:0 0 0 1px rgba(0,0,0,.2) inset;
+    }
+    .agent-status .dot.ok{ background:#22c55e; }
+    .agent-status .dot.warn{ background:#eab308; }
+    .agent-status .dot.err{ background:#ef4444; }
+    .agent-status .label{ opacity:.9; }
   </style>
   <!-- Small styles for icon-only link buttons -->
   <style>
@@ -406,7 +420,9 @@
     (function(){
       const ENABLE_ASSISTANT = ['leok974.github.io','localhost','127.0.0.1'].includes(location.hostname);
       if (!ENABLE_ASSISTANT) return;
-      const API_BASE = 'https://assistant.ledger-mind.org';
+  const API_BASE = 'https://assistant.ledger-mind.org';
+  // Expose for AgentStatus so pill uses same backend as stream
+  window.AGENT_BASE_URL = API_BASE;
       const API_STREAM = API_BASE + '/chat/stream';
       const API_NON_STREAM = API_BASE + '/chat';
       const CLIENT_SYSTEM = {
@@ -453,12 +469,9 @@
                 try{
                   if (chunk.startsWith('event: meta')){
                     const meta = JSON.parse(data);
-                    const badgeEl = document.querySelector('[data-agent-badge]');
                     const servedBy = meta._served_by;
-                    if (badgeEl){
-                      badgeEl.textContent = servedBy === 'fallback' ? 'fallback' : 'local';
-                      badgeEl.classList.toggle('is-fallback', servedBy === 'fallback');
-                    }
+                    // Update status pill LLM dot and label
+                    window.AgentStatus?.updateServed(servedBy);
                     continue;
                   }
                   const j = JSON.parse(data);
@@ -503,9 +516,7 @@
   <script defer src="main.js"></script>
 
   <style>
-    [data-agent-badge]{font:12px/1.2 system-ui;padding:.2rem .4rem;border-radius:.5rem;margin-left:.5rem}
-    [data-agent-badge].is-fallback{background:#ffe8e8;color:#b00020}
-    [data-agent-badge]:not(.is-fallback){background:#e8fff0;color:#0b6b34}
+    
   </style>
 
 </body>
