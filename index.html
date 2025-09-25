@@ -80,396 +80,61 @@
         "url": "https://leok974.github.io/leo-portfolio/",
         "name": "Leo Klemet Portfolio",
         "inLanguage": "en",
-        "author": { "@id": "https://leok974.github.io/leo-portfolio/#person" },
-
-        <!-- New bottom-right assistant chip -->
-        <style>
-        /* Kill old assistants/avatars; keep the new chip widget */
-        #leo-assistant, #la-open, #la-panel,
-        #ai-avatar-wrap, #ai-controls, #ai-text,
-        #live2d-wrap, #vrm-wrap, #riv-wrap,
-        #svg-avatar-wrap, #svg-mascot {
-          display: none !important;
-        }
-        #assistant-chip { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); z-index: 2147483643; }
-        #assistant-chip-btn { border:1px solid #2a3357; padding:.55rem .8rem; border-radius:999px; background:#121a2e; color:#e8ecf8; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.3); }
-        #assistant-chip-btn:hover { background:#0f1830; }
-        @media (prefers-reduced-motion: reduce){ #assistant-chip-btn { transition:none !important; } }
-        </style>
-        <div id="assistant-chip" role="region" aria-label="Assistant">
-          <button id="assistant-chip-btn" class="btn" aria-label="Ask about my projects">
-            🤖 Ask about my projects…
-          </button>
-        </div>
-        <script>
-        if (window.__assistantInit) console.warn('assistant already initialized');
-        if (!window.__assistantInit){
-          window.__assistantInit = true;
-          (function(){
-            const ENABLE_ASSISTANT = ['leok974.github.io','localhost','127.0.0.1'].includes(location.hostname);
-            // Runtime sweep in case old blocks sneak in
-            ['leo-assistant','la-open','la-panel','ai-avatar-wrap','live2d-wrap','vrm-wrap','riv-wrap','svg-avatar-wrap','svg-mascot']
-              .forEach(id => document.getElementById(id)?.remove());
-            const wrap = document.getElementById('assistant-chip');
-            const btn = document.getElementById('assistant-chip-btn');
-            if (!ENABLE_ASSISTANT){ if (wrap) wrap.style.display='none'; return; }
-            // Keyboard toggle for mute support placeholder (M), or future actions
-            document.addEventListener('keydown', e=>{ if (e.key && e.key.toLowerCase()==='m'){ /* reserved */ } });
-            // Chip click: for now, scroll to projects; could open a panel in future
-            btn?.addEventListener('click', ()=>{
-              const el = document.getElementById('projects');
-              if (el) el.scrollIntoView({behavior:'smooth'});
-            });
-          })();
-        }
-        </script>
-  <div id="leo-assistant">
-    <button id="la-open" class="btn">🤖 Ask about my projects</button>
-    <div id="la-panel" class="panel" role="dialog" aria-label="Leo Assistant">
-      <div class="head">
-        <strong>Leo’s Assistant</strong>
-        <button id="la-close" class="btn" aria-label="Close assistant">✕</button>
-      </div>
-      <div id="la-log" class="log" aria-live="polite"></div>
-      <form id="la-form">
-        <input id="la-input" placeholder="Ask: which project fits data engineering?" autocomplete="off"/>
-        <button class="btn" type="submit">Send</button>
-      </form>
-    </div>
-  </div>
-
-  <script>
-  (() => {
-    if (window.USE_BOTTOM_RIGHT_ASSISTANT === false) return;
-    // Only show on GitHub Pages or local dev
-    const ENABLE_ASSISTANT = ['leok974.github.io','localhost','127.0.0.1'].includes(location.hostname);
-    const root = document.getElementById('leo-assistant');
-    if(!ENABLE_ASSISTANT){ if(root) root.style.display = 'none'; return; }
-    const API_STREAM = "https://assistant.ledger-mind.org/chat/stream"; // your tunnel URL
-
-    const openBtn = document.getElementById('la-open');
-    const panel = document.getElementById('la-panel');
-    const closeBtn = document.getElementById('la-close');
-    const form = document.getElementById('la-form');
-    const input = document.getElementById('la-input');
-    const log = document.getElementById('la-log');
-    const msgs = [];
-
-    function show(){ panel.style.display='flex'; openBtn.style.display='none'; input.focus(); }
-    function hide(){ panel.style.display='none'; openBtn.style.display='inline-block'; }
-    openBtn.onclick = show; closeBtn.onclick = hide;
-
-    const context = {};
-    async function loadContext(){
-      try {
-        const res = await fetch('projects.json', {cache:'no-store'});
-        const data = await res.json();
-        const take = data.projects?.slice(0,6).map(p=>`• ${p.title}: ${p.description} [${(p.tags||[]).join(', ')}]`).join('\n');
-        context.summary = `Projects:\n${take}`;
-      } catch {}
-    }
-    loadContext();
-
-    function append(role, text){
-      const div = document.createElement('div');
-      div.className = 'msg ' + (role === 'user' ? 'you':'ai');
-      div.textContent = (role === 'user' ? 'You: ' : 'Assistant: ') + text;
-      log.appendChild(div);
-      log.scrollTop = log.scrollHeight;
-    }
-
-    async function streamChat(payload){
-      const res = await fetch(API_STREAM, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(payload)
-      });
-      if(!res.ok || !res.body) throw new Error('stream failed');
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let answer = '';
-      while(true){
-        const { value, done } = await reader.read();
-        if(done) break;
-        buffer += decoder.decode(value, { stream: true });
-        let sep;
-        while((sep = buffer.indexOf('\n\n')) !== -1){
-          const chunk = buffer.slice(0, sep);
-          buffer = buffer.slice(sep + 2);
-          const lines = chunk.split('\n').map(l=>l.trim()).filter(Boolean);
-          for(const l of lines){
-            if(!l.startsWith('data:')) continue;
-            const data = l.slice(5).trim();
-            if(data === '[DONE]'){
-              log.lastChild.classList.add('done');
-              msgs.push({ role:'assistant', content: answer });
-              return;
-            }
-            try{
-              const j = JSON.parse(data);
-              const choice = (j.choices && j.choices[0]) || {};
-              const delta = (choice.delta && choice.delta.content) || '';
-              const finish = choice.finish_reason || null;
-              if(delta){
-                answer += delta;
-                log.lastChild.textContent = 'Assistant: ' + answer;
-                log.scrollTop = log.scrollHeight;
-              }
-              if(finish){
-                log.lastChild.classList.add('done');
-                msgs.push({ role:'assistant', content: answer });
-                return;
-              }
-            }catch{
-              // ignore non-JSON keepalives
-            }
-          }
-        }
+        "author": { "@id": "https://leok974.github.io/leo-portfolio/#person" }
       }
-    }
-
-    form.addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const content = input.value.trim();
-      if(!content) return;
-      input.value='';
-      msgs.push({role:'user', content});
-      append('user', content);
-      append('assistant', 'Thinking…');
-      try {
-        await streamChat({ messages: msgs, context, stream: true });
-      } catch(err){
-        try {
-          const res = await fetch(API_STREAM.replace('/stream',''), {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ messages: msgs, context })
-          });
-          const data = await res.json();
-          const text = data.assistant || '(no response)';
-          log.lastChild.textContent = 'Assistant: ' + text;
-          msgs.push({role:'assistant', content: text});
-        } catch {
-          log.lastChild.textContent = 'Assistant: (connection failed — please try again later)';
-        }
-      }
-    });
-  })();
-  </script>
-  
-  <!-- Kill-switch: disable bottom-right assistant widget and clear padding -->
+    ]
+  }</script>
+  <!-- New bottom-right assistant chip styles -->
   <style>
-    /* Hard-disable the old bottom-right assistant widget */
-    #leo-assistant { display: none !important; }
+    /* Kill old assistants/avatars; keep the new chip widget */
+    #leo-assistant, #la-open, #la-panel,
+    #ai-avatar-wrap, #ai-controls, #ai-text,
+    #live2d-wrap, #vrm-wrap, #riv-wrap,
+    #svg-avatar-wrap, #svg-mascot {
+      display: none !important;
+    }
+    #assistant-chip { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); z-index: 2147483643; }
+    #assistant-chip-btn { border:1px solid #2a3357; padding:.55rem .8rem; border-radius:999px; background:#121a2e; color:#e8ecf8; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.3); }
+    #assistant-chip-btn:hover { background:#0f1830; }
+    @media (prefers-reduced-motion: reduce){ #assistant-chip-btn { transition:none !important; } }
   </style>
+  
+</head>
+<body>
+  <!-- Minimal kill-switch for old bottom-right widget (kept for safety) -->
   <script>
-    // Tell any widget script to bail early (if it exists)
     window.USE_BOTTOM_RIGHT_ASSISTANT = false;
-
-    // Clean any padding the old widget might have added
     document.addEventListener('DOMContentLoaded', () => {
       document.body.classList.remove('assistant-open');
-      document.body.style.paddingBottom = '';
+      if (document.body && document.body.style) document.body.style.paddingBottom = '';
     });
   </script>
-  <!-- AI Avatar Widget (canvas + streaming + TTS) -->
-  <style>
-  #ai-avatar-wrap{position:fixed;right:16px;bottom:16px;z-index:9999;display:flex;gap:12px;align-items:flex-end}
-  #ai-avatar-canvas{width:160px;height:160px;border-radius:18px;border:1px solid #2a3357;background:#0b1223;box-shadow:0 10px 24px rgba(0,0,0,.35)}
-  #ai-say {border:1px solid #2a3357;background:#121a2e;color:#e8ecf8;border-radius:12px;padding:.6rem .9rem}
-  #ai-text {max-width:min(56vw,520px);min-height:48px;background:#0b1223;border:1px solid #2a3357;border-radius:12px;padding:.6rem .8rem;color:#e8ecf8;white-space:pre-wrap}
-  #ai-controls{display:flex;gap:.5rem}
-  </style>
 
-  <div id="ai-avatar-wrap">
-    <canvas id="ai-avatar-canvas" width="320" height="320" aria-label="AI avatar"></canvas>
-    <div>
-      <div id="ai-text">Ask me about my projects…</div>
-      <div id="ai-controls">
-        <input id="ai-input" placeholder="Which project fits GKE ops?" />
-        <button id="ai-say">Send</button>
-        <button id="ai-mute" class="btn" aria-pressed="false">🔈 Voice: On</button>
-      </div>
-    </div>
+  <!-- New bottom-right assistant chip (markup + init) -->
+  <div id="assistant-chip" role="region" aria-label="Assistant">
+    <button id="assistant-chip-btn" class="btn" aria-label="Ask about my projects">
+      🤖 Ask about my projects…
+    </button>
   </div>
-
   <script>
-  (() => {
-  const ENABLE_ASSISTANT = ['leok974.github.io','localhost'].includes(location.hostname);
-    const wrap = document.getElementById('ai-avatar-wrap');
-    if(!ENABLE_ASSISTANT){ if(wrap) wrap.style.display='none'; return; }
-    const API_STREAM = "https://assistant.ledger-mind.org/chat/stream"; // <- your tunnel URL
-    const canvas = document.getElementById('ai-avatar-canvas');
-    const ctx = canvas.getContext('2d');
-    const sayBtn = document.getElementById('ai-say');
-    const input = document.getElementById('ai-input');
-    const out = document.getElementById('ai-text');
-    const muteBtn = document.getElementById('ai-mute');
-    let muted = JSON.parse(localStorage.getItem('aiMuted') || 'false');
-    function syncMuteUI(){
-      if(!muteBtn) return;
-      muteBtn.setAttribute('aria-pressed', String(!muted));
-      muteBtn.textContent = muted ? '🔇 Voice: Off' : '🔈 Voice: On';
+    if (!window.__assistantInit) {
+      window.__assistantInit = true;
+      (function(){
+        const ENABLE_ASSISTANT = ['leok974.github.io','localhost','127.0.0.1'].includes(location.hostname);
+        // Runtime sweep in case old blocks sneak in
+        ['leo-assistant','la-open','la-panel','ai-avatar-wrap','live2d-wrap','vrm-wrap','riv-wrap','svg-avatar-wrap','svg-mascot']
+          .forEach(id => document.getElementById(id)?.remove());
+        const wrap = document.getElementById('assistant-chip');
+        const btn = document.getElementById('assistant-chip-btn');
+        if (!ENABLE_ASSISTANT){ if (wrap) wrap.style.display='none'; return; }
+        // Placeholder for future actions (e.g., opening a panel)
+        document.addEventListener('keydown', e=>{ if (e.key && e.key.toLowerCase()==='m'){ /* reserved */ } });
+        btn?.addEventListener('click', ()=>{
+          const el = document.getElementById('projects') || document.querySelector('[data-section="projects"]');
+          if (el) el.scrollIntoView({behavior:'smooth'}); else window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      })();
     }
-    if(muteBtn){
-      muteBtn.onclick = () => {
-        muted = !muted;
-        localStorage.setItem('aiMuted', JSON.stringify(muted));
-        if (muted && 'speechSynthesis' in window) speechSynthesis.cancel();
-        syncMuteUI();
-      };
-      syncMuteUI();
-    }
-
-    const msgs = [];
-    const context = {};
-    (async () => {
-      try {
-        const res = await fetch('projects.json', {cache:'no-store'});
-        const data = await res.json();
-        context.summary = (data.projects||[]).slice(0,6)
-          .map(p=>`• ${p.title}: ${p.description} [${(p.tags||[]).join(', ')}]`).join('\n');
-      } catch {}
-    })();
-
-    // --- Canvas avatar (simple anime style) ---
-    const state = {
-      t: 0,
-      blink: 0,
-      nextBlink: performance.now() + 2000 + Math.random()*2000,
-      mouth: 0,
-      speaking: false,
-      headBob: 0
-    };
-
-    function drawAvatar() {
-      const { width:w, height:h } = canvas;
-      ctx.clearRect(0,0,w,h);
-
-      ctx.save();
-      const bob = Math.sin(state.t*0.0013)*2;
-      ctx.translate(0, bob);
-
-      const g = ctx.createRadialGradient(w/2, h/2, 20, w/2, h/2, 150);
-      g.addColorStop(0, '#1a2345'); g.addColorStop(1, 'transparent');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(w/2,h/2,140,0,Math.PI*2); ctx.fill();
-
-      ctx.fillStyle = '#f3f6ff';
-      ctx.beginPath(); ctx.arc(w/2, h/2, 88, 0, Math.PI*2); ctx.fill();
-
-      const eyeY = h/2 - 18, eyeDX = 34, eyeW = 28, eyeH = 12*(1 - (1-Math.pow(1-state.blink,2)));
-      ctx.fillStyle = '#0d1530';
-      ctx.beginPath(); roundedRect(w/2-eyeDX-eyeW/2, eyeY-eyeH/2, eyeW, eyeH, 6); ctx.fill();
-      ctx.beginPath(); roundedRect(w/2+eyeDX-eyeW/2, eyeY-eyeH/2, eyeW, eyeH, 6); ctx.fill();
-
-      ctx.globalAlpha = 0.12; ctx.fillStyle = '#ff7aa2';
-      ctx.beginPath(); ctx.ellipse(w/2-48, h/2+8, 18,8,0,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(w/2+48, h/2+8, 18,8,0,0,Math.PI*2); ctx.fill();
-      ctx.globalAlpha = 1;
-
-      const mOpen = 6 + state.mouth*14;
-      ctx.fillStyle = '#c02d5c';
-      ctx.beginPath(); ctx.ellipse(w/2, h/2+32, 18, mOpen/2, 0, 0, Math.PI*2); ctx.fill();
-
-      ctx.fillStyle = '#263061';
-      ctx.beginPath(); ctx.arc(w/2, h/2-52, 62, Math.PI*1.05, Math.PI*2 - 0.05); ctx.fill();
-
-      ctx.strokeStyle = 'rgba(10,15,30,.25)';
-      ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(w/2, h/2, 88, 0, Math.PI*2); ctx.stroke();
-
-      ctx.restore();
-    }
-    function roundedRect(x,y,w,h,r){ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
-
-    function tick(now){
-      state.t = now;
-      if (now > state.nextBlink){
-        state.blink += 0.25;
-        if (state.blink >= 1){ state.blink = 0; state.nextBlink = now + 1500 + Math.random()*2500; }
-      }
-      const target = state.speaking ? 0.8 : 0.0;
-      state.mouth += (target - state.mouth) * 0.15;
-      drawAvatar();
-      requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
-
-    // --- TTS (SpeechSynthesis) ---
-    function speak(text){
-      if (!text || muted || !('speechSynthesis' in window)) return;
-      const u = new SpeechSynthesisUtterance(text);
-      const vs = speechSynthesis.getVoices();
-      const prefer = vs.find(v => /en-(US|GB)/.test(v.lang) && /female|Jenny|Aria|Natasha/i.test(v.name)) || vs[0];
-      if (prefer) u.voice = prefer;
-      u.rate = 1.0; u.pitch = 1.05; u.volume = 1.0;
-      u.onstart = () => { state.speaking = true; };
-      u.onend   = () => { state.speaking = false; };
-      u.onboundary = () => { state.mouth = 1.0; };
-      speechSynthesis.speak(u);
-    }
-
-    // --- Stream and chunk to TTS ---
-    async function streamOpenAI(payload){
-      const res = await fetch(API_STREAM, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok || !res.body) throw new Error('stream failed');
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '', answer = '', speakBuf = '';
-      out.textContent = '';
-      const flushSpeak = () => { const s = speakBuf.trim(); if (s) speak(s); speakBuf = ''; };
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        let idx;
-        while ((idx = buffer.indexOf('\n\n')) !== -1) {
-          const frame = buffer.slice(0, idx);
-          buffer = buffer.slice(idx + 2);
-          for (const line of frame.split('\n')) {
-            const l = line.trim();
-            if (!l.startsWith('data:')) continue;
-            const data = l.slice(5).trim();
-            if (data === '[DONE]') { flushSpeak(); msgs.push({role:'assistant', content: answer}); return; }
-            try {
-              const j = JSON.parse(data);
-              const d = j.choices?.[0]?.delta?.content || '';
-              if (d) {
-                answer += d;
-                out.textContent = answer;
-                speakBuf += d;
-                if (/[\.\!\?]\s/.test(speakBuf)) {
-                  const parts = speakBuf.split(/([\.\!\?]\s)/);
-                  while (parts.length > 2) {
-                    const seg = (parts.shift() || '') + (parts.shift() || '');
-                    speak(seg);
-                  }
-                  speakBuf = parts.join('');
-                }
-              }
-            } catch {}
-          }
-        }
-      }
-    }
-
-    async function send(){
-      const text = (input.value || '').trim();
-      if (!text) return;
-      input.value = '';
-      msgs.push({ role:'user', content:text });
-      out.textContent = '…';
-      try {
-        await streamOpenAI({ messages: msgs, context, stream: true });
-      } catch (e){
-        out.textContent = 'Connection failed. Please try again later.';
-      }
-    }
-    sayBtn.addEventListener('click', send);
-    input.addEventListener('keydown', (e)=>{ if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(); }});
-  })();
   </script>
 
 </body>
