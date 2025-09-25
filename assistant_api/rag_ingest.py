@@ -6,19 +6,23 @@ import numpy as np
 
 load_dotenv()
 
-USE_OPENAI = os.getenv("EMBED_MODEL", "").startswith("openai/")
+MODEL_NAME = os.getenv("EMBED_MODEL", "intfloat/e5-large-v2")
 REPOS = [r.strip() for r in os.getenv("RAG_REPOS", "").split(",") if r.strip()]
 
+_model = None
+
 async def embed(texts):
-    if USE_OPENAI:
+    global _model
+    if MODEL_NAME.startswith("openai/"):
         from openai import OpenAI
-        client = OpenAI()
-        resp = client.embeddings.create(model=os.environ["EMBED_MODEL"], input=texts)
+        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])  # expects key when using OpenAI
+        resp = client.embeddings.create(model=MODEL_NAME, input=texts)
         return [np.array(e.embedding, dtype=np.float32) for e in resp.data]
     else:
-        from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer("intfloat/e5-large-v2")
-        vecs = model.encode(texts, normalize_embeddings=True)
+        if _model is None:
+            from sentence_transformers import SentenceTransformer
+            _model = SentenceTransformer(MODEL_NAME)
+        vecs = _model.encode(texts, normalize_embeddings=True)
         return [np.array(v, dtype=np.float32) for v in vecs]
 
 def file_list(repo_dir):
