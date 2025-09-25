@@ -43,6 +43,9 @@ logs
 .env.test.local
 .env.production.local
 
+# Local backend data files
+data/
+
 # Cache files
 .cache/
 .parcel-cache/

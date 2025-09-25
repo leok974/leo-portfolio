@@ -1,0 +1,9 @@
+fastapi>=0.110
+uvicorn[standard]
+httpx
+tiktoken
+numpy
+scikit-learn
+faiss-cpu
+sentence-transformers
+python-dotenv

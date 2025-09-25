@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import requests, os, json
+from .rag_query import router as rag_router
+from .rag_ingest import ingest
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/v1/chat/completions")
 MODEL = os.getenv("MODEL", "gpt-oss:20b")
@@ -10,7 +12,9 @@ MODEL = os.getenv("MODEL", "gpt-oss:20b")
 ALLOWED_ORIGINS = [
     "https://leok974.github.io",  # GitHub Pages (origin only)
     "http://localhost:5500",      # local dev server (e.g., Live Server)
-    "http://127.0.0.1:5500"       # local dev server (direct IP)
+    "http://127.0.0.1:5500",      # local dev server (direct IP)
+    "http://localhost:5530",      # BrowserSync dev server
+    "http://127.0.0.1:5530"       # BrowserSync dev server (IP)
 ]
 
 app = FastAPI(title="Leo Portfolio Assistant")
@@ -22,6 +26,9 @@ app.add_middleware(
     allow_methods=["POST", "OPTIONS"],
     allow_headers=["Content-Type"],
 )
+
+# RAG API routes
+app.include_router(rag_router, prefix="/api")
 
 class ChatReq(BaseModel):
     messages: list  # [{role:"system|user|assistant", content:"..."}]
@@ -102,3 +109,8 @@ def chat_stream(req: ChatReq):
 @app.get("/health")
 def health():
     return {"ok": True, "model": MODEL}
+
+@app.post("/api/rag/ingest")
+async def trigger_ingest():
+    await ingest()
+    return {"ok": True}
