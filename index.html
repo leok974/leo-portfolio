@@ -97,8 +97,24 @@
     #assistant-chip-btn { border:1px solid #2a3357; padding:.55rem .8rem; border-radius:999px; background:#121a2e; color:#e8ecf8; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.3); }
     #assistant-chip-btn:hover { background:#0f1830; }
     @media (prefers-reduced-motion: reduce){ #assistant-chip-btn { transition:none !important; } }
+    
+    /* Lightweight assistant panel */
+    #assistant-panel { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom));
+      width: min(92vw, 420px); max-height: min(60vh, 520px); display: none; flex-direction: column; gap: .6rem;
+      border: 1px solid #2a3357; border-radius: 12px; background: rgba(16,22,42,.96); backdrop-filter: blur(8px);
+      box-shadow: 0 16px 40px rgba(0,0,0,.35); padding: .8rem; z-index: 2147483644; }
+    #assistant-panel .head { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+    #assistant-panel .head strong { font-weight: 600; }
+    #assistant-close { border:1px solid #2a3357; background:#0f162f; color:#e8ecf8; border-radius:8px; padding:.25rem .5rem; cursor:pointer; }
+    #assistant-log { flex:1; min-height: 140px; max-height: 320px; overflow:auto; border:1px solid #2a3357; border-radius:8px; padding:.6rem; background:#0b1223; }
+    #assistant-log .msg { margin:.25rem 0; }
+    #assistant-log .you { color:#a5b4fc; }
+    #assistant-log .ai  { color:#e5e7eb; }
+    #assistant-form { display:flex; gap:.5rem; }
+    #assistant-input { flex:1; border:1px solid #2a3357; background:#0b1223; color:#e8ecf8; border-radius:8px; padding:.55rem .7rem; }
+    #assistant-form .btn { border:1px solid #2a3357; background:#121a2e; color:#e8ecf8; border-radius:8px; padding:.55rem .7rem; cursor:pointer; }
   </style>
-  
+
 </head>
 <body>
   <!-- Minimal kill-switch for old bottom-right widget (kept for safety) -->
@@ -116,6 +132,19 @@
       🤖 Ask about my projects…
     </button>
   </div>
+  
+  <!-- Lightweight assistant panel (hidden by default) -->
+  <div id="assistant-panel" role="dialog" aria-modal="false" aria-label="Assistant panel">
+    <div class="head">
+      <strong>Leo’s Assistant</strong>
+      <button id="assistant-close" class="btn" aria-label="Close">✕</button>
+    </div>
+    <div id="assistant-log" class="log" aria-live="polite"></div>
+    <form id="assistant-form">
+      <input id="assistant-input" placeholder="Ask: which project fits data engineering?" autocomplete="off" />
+      <button class="btn" type="submit">Send</button>
+    </form>
+  </div>
   <script>
     if (!window.__assistantInit) {
       window.__assistantInit = true;
@@ -126,13 +155,132 @@
           .forEach(id => document.getElementById(id)?.remove());
         const wrap = document.getElementById('assistant-chip');
         const btn = document.getElementById('assistant-chip-btn');
-        if (!ENABLE_ASSISTANT){ if (wrap) wrap.style.display='none'; return; }
-        // Placeholder for future actions (e.g., opening a panel)
-        document.addEventListener('keydown', e=>{ if (e.key && e.key.toLowerCase()==='m'){ /* reserved */ } });
-        btn?.addEventListener('click', ()=>{
-          const el = document.getElementById('projects') || document.querySelector('[data-section="projects"]');
-          if (el) el.scrollIntoView({behavior:'smooth'}); else window.scrollTo({ top: 0, behavior: 'smooth' });
+        const panel = document.getElementById('assistant-panel');
+        const closeBtn = document.getElementById('assistant-close');
+        const form = document.getElementById('assistant-form');
+        const input = document.getElementById('assistant-input');
+        const log = document.getElementById('assistant-log');
+        const API_BASE = 'https://assistant.ledger-mind.org';
+        const API_STREAM = API_BASE + '/chat/stream';
+        const API_NON_STREAM = API_BASE + '/chat';
+        const msgs = [];
+        const context = {};
+        if (!ENABLE_ASSISTANT){ if (wrap) wrap.style.display='none'; if (panel) panel.style.display='none'; return; }
+        
+        // Load small context from projects.json
+        (async () => {
+          try {
+            const res = await fetch('projects.json', { cache: 'no-store' });
+            const data = await res.json();
+            const take = (data.projects||[]).slice(0,6)
+              .map(p=>`• ${p.title}: ${p.description} [${(p.tags||[]).join(', ')}]`).join('\n');
+            context.summary = `Projects:\n${take}`;
+          } catch {}
+        })();
+
+        // Helpers
+        function append(role, text){
+          const div = document.createElement('div');
+          div.className = 'msg ' + (role === 'user' ? 'you' : 'ai');
+          div.textContent = (role === 'user' ? 'You: ' : 'Assistant: ') + text;
+          log.appendChild(div);
+          log.scrollTop = log.scrollHeight;
+        }
+        function openPanel(){
+          if (!panel) return;
+          panel.style.display = 'flex';
+          document.body.classList.add('assistant-open');
+          queueMicrotask(()=>{
+            const pad = (panel.offsetHeight||0) + 24;
+            document.body.style.paddingBottom = pad + 'px';
+            input?.focus();
+          });
+        }
+        function closePanel(){
+          if (!panel) return;
+          panel.style.display = 'none';
+          document.body.classList.remove('assistant-open');
+          document.body.style.paddingBottom = '';
+        }
+        document.addEventListener('keydown', (e)=>{
+          if (e.key === 'Escape' && panel && panel.style.display !== 'none') closePanel();
         });
+
+        // Streaming via SSE with fallback
+        async function streamChat(payload){
+          const res = await fetch(API_STREAM, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          if (!res.ok || !res.body) throw new Error('stream failed');
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let answer = '';
+          while(true){
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            let sep;
+            while((sep = buffer.indexOf('\n\n')) !== -1){
+              const chunk = buffer.slice(0, sep);
+              buffer = buffer.slice(sep + 2);
+              const lines = chunk.split('\n').map(l=>l.trim()).filter(Boolean);
+              for(const l of lines){
+                if(!l.startsWith('data:')) continue;
+                const data = l.slice(5).trim();
+                if(data === '[DONE]'){
+                  log.lastChild?.classList.add('done');
+                  msgs.push({ role:'assistant', content: answer });
+                  return;
+                }
+                try{
+                  const j = JSON.parse(data);
+                  const choice = (j.choices && j.choices[0]) || {};
+                  const delta = (choice.delta && choice.delta.content) || '';
+                  const finish = choice.finish_reason || null;
+                  if(delta){
+                    answer += delta;
+                    if (!log.lastChild || !log.lastChild.classList.contains('ai')) append('assistant', '');
+                    log.lastChild.textContent = 'Assistant: ' + answer;
+                    log.scrollTop = log.scrollHeight;
+                  }
+                  if(finish){
+                    log.lastChild?.classList.add('done');
+                    msgs.push({ role:'assistant', content: answer });
+                    return;
+                  }
+                }catch{}
+              }
+            }
+          }
+        }
+
+        async function nonStreamChat(payload){
+          const res = await fetch(API_NON_STREAM, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          const data = await res.json();
+          const text = data.assistant || '(no response)';
+          if (!log.lastChild || !log.lastChild.classList.contains('ai')) append('assistant', '');
+          log.lastChild.textContent = 'Assistant: ' + text;
+          msgs.push({ role:'assistant', content: text });
+        }
+
+        // Wire UI
+        btn?.addEventListener('click', openPanel);
+        closeBtn?.addEventListener('click', closePanel);
+        form?.addEventListener('submit', async (e)=>{
+          e.preventDefault();
+          const content = (input?.value || '').trim();
+          if (!content) return;
+          input.value = '';
+          msgs.push({ role:'user', content });
+          append('user', content);
+          append('assistant', 'Thinking…');
+          try {
+            await streamChat({ messages: msgs, context, stream: true });
+          } catch {
+            try { await nonStreamChat({ messages: msgs, context }); }
+            catch { if (log.lastChild) log.lastChild.textContent = 'Assistant: (connection failed — please try again later)'; }
+          }
+        });
+
       })();
     }
   </script>
