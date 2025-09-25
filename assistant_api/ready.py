@@ -4,6 +4,14 @@ from fastapi import APIRouter, HTTPException
 router = APIRouter()
 
 DB_PATH = os.getenv("RAG_DB", "./data/rag.sqlite")
+def _ollama_version_url():
+    # Prefer OPENAI_BASE_URL (OpenAI-compatible endpoint), else OLLAMA_HOST/PORT, else localhost
+    base = os.getenv("OPENAI_BASE_URL")
+    if base and ("localhost" in base or "127.0.0.1" in base or "ollama" in base):
+        return base.replace("/v1", "/api/version")
+    host = os.getenv("OLLAMA_HOST", "localhost")
+    port = os.getenv("OLLAMA_PORT", "11434")
+    return f"http://{host}:{port}/api/version"
 def _read_secret(env_name: str, file_env: str, default_file: str | None = None) -> str | None:
     """Read a secret from env or a file path set via *_FILE; return None if missing."""
     val = os.getenv(env_name)
@@ -32,15 +40,12 @@ async def ready():
     except Exception as e:
         checks["rag_db"] = {"ok": False, "err": str(e)}
 
-    # Ollama check (only if base URL points to Ollama)
-    OLLAMA_URL = os.getenv("OPENAI_BASE_URL", "http://ollama:11434/v1")
+    # Ollama check using consistent URL derivation
     try:
-        if "ollama" in OLLAMA_URL:
-            async with httpx.AsyncClient(timeout=3.0) as client:
-                r = await client.get(OLLAMA_URL.replace("/v1", "/api/version"))
-                checks["ollama"] = {"ok": r.status_code == 200}
-        else:
-            checks["ollama"] = {"skipped": True}
+        url = _ollama_version_url()
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            r = await client.get(url)
+            checks["ollama"] = {"ok": r.status_code == 200}
     except Exception as e:
         checks["ollama"] = {"ok": False, "err": str(e)}
 

@@ -6,13 +6,14 @@ import os
 from pathlib import Path
 from .rag_query import router as rag_router
 from .rag_ingest import ingest
-from .llm_client import chat as llm_chat, chat_stream as llm_chat_stream
+from .llm_client import chat as llm_chat, chat_stream as llm_chat_stream, diag as llm_diag
 from .auto_rag import needs_repo_context, fetch_context, build_context_message
 from .llm_health import router as llm_health_router
 from .ready import router as ready_router
 from .metrics import record, snapshot
 import time
 import json
+import os
 try:
     # Load .env and .env.local if present (dev convenience)
     from dotenv import load_dotenv
@@ -111,9 +112,37 @@ async def chat(req: ChatReq):
         data = resp.json()
         data["_served_by"] = tag
         return data
-    except Exception:
-        # Friendly 503 if both providers fail
-        raise HTTPException(status_code=503, detail={"error": "All providers unavailable. Try again later."})
+    except Exception as e:
+        # Gather rich debug info when provider calls fail
+        debug = {"type": type(e).__name__, "msg": str(e)}
+        # httpx.HTTPStatusError exposes .response with status/text
+        try:
+            resp = getattr(e, "response", None)
+            if resp is not None:
+                # Avoid huge bodies
+                body_text = None
+                try:
+                    body_text = resp.text
+                except Exception:
+                    body_text = None
+                debug.update({
+                    "status": getattr(resp, "status_code", None),
+                    "body": (body_text[:400] if isinstance(body_text, str) else None)
+                })
+        except Exception:
+            pass
+        # Include non-secret runtime diag
+        try:
+            debug["llm"] = llm_diag()
+        except Exception:
+            pass
+        try:
+            print("/chat error:", debug)
+        except Exception:
+            pass
+        # Friendly 503 with debug payload
+        detail = {"error": "All providers unavailable. Try again later.", "debug": debug}
+        raise HTTPException(status_code=503, detail=detail)
 
 @app.post("/chat/stream")
 async def chat_stream_ep(req: ChatReq):

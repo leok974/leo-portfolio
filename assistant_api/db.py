@@ -66,3 +66,19 @@ def search(conn, query_vec: np.ndarray, k=8):
                 }
             )
     return res
+
+def index_dim(conn) -> int | None:
+    """Return the dominant embedding dimension stored in the index, or None if empty.
+    Uses SQL LENGTH aggregation to avoid loading all blobs.
+    """
+    # Prefer the most frequent length; tie-break by larger length
+    cur = conn.execute(
+        "SELECT LENGTH(embedding) AS L, COUNT(*) AS C FROM vecs GROUP BY L ORDER BY C DESC, L DESC LIMIT 1"
+    )
+    row = cur.fetchone()
+    if not row:
+        return None
+    try:
+        return int(row[0] // 4)
+    except Exception:
+        return None

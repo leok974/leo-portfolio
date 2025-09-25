@@ -1,6 +1,6 @@
 import re, os, httpx
 
-RAG_URL = os.getenv("RAG_URL", "http://localhost:8000/api/rag/query")
+RAG_URL = os.getenv("RAG_URL", "http://127.0.0.1:8001/api/rag/query")
 PROJECT_HINTS = [
     r"\bledgermind\b", r"\bportfolio\b", r"\bassistant chip\b",
     r"\brag\b", r"\bfastapi\b", r"\brelay\b"
