@@ -32,6 +32,10 @@
       font-display: swap;
       src: url('fonts/Inter-italic.var.woff2') format('woff2-variations');
     }
+    /* Neutralize any old padding toggle */
+    body.assistant-open { padding-bottom: 0 !important; }
+    /* Ensure mascots are off */
+    #riv-wrap, #vrm-wrap, #svg-avatar-wrap, #svg-mascot { display:none !important; }
   </style>
   <style>
     /* Critical CSS: minimal layout to paint above-the-fold quickly */
@@ -126,172 +130,92 @@
     });
   </script>
 
-  <!-- New bottom-right assistant chip (markup + init) -->
-  <div id="assistant-chip" role="region" aria-label="Assistant">
-    <button id="assistant-chip-btn" class="btn" aria-label="Ask about my projects">
-      🤖 Ask about my projects…
-    </button>
-  </div>
-
-  <!-- Lightweight assistant panel (hidden by default) -->
-  <div id="assistant-panel" role="dialog" aria-modal="false" aria-label="Assistant panel">
-    <div class="head">
-      <strong>Leo’s Assistant</strong>
-      <button id="assistant-close" class="btn" aria-label="Close">✕</button>
-    </div>
-    <div id="assistant-log" class="log" aria-live="polite"></div>
-    <form id="assistant-form">
-      <input id="assistant-input" placeholder="Ask: which project fits data engineering?" autocomplete="off" />
-      <button class="btn" type="submit">Send</button>
-    </form>
-  </div>
+  <!-- Expose a small streaming API for the chip -->
   <script>
-    if (!window.__assistantInit) {
-      window.__assistantInit = true;
-      (function(){
-        const ENABLE_ASSISTANT = ['leok974.github.io','localhost','127.0.0.1'].includes(location.hostname);
-        // Runtime sweep in case old blocks sneak in
-        ['leo-assistant','la-open','la-panel','ai-avatar-wrap','live2d-wrap','vrm-wrap','riv-wrap','svg-avatar-wrap','svg-mascot']
-          .forEach(id => document.getElementById(id)?.remove());
-        const wrap = document.getElementById('assistant-chip');
-        const btn = document.getElementById('assistant-chip-btn');
-        const panel = document.getElementById('assistant-panel');
-        const closeBtn = document.getElementById('assistant-close');
-        const form = document.getElementById('assistant-form');
-        const input = document.getElementById('assistant-input');
-        const log = document.getElementById('assistant-log');
-        const API_BASE = 'https://assistant.ledger-mind.org';
-        const API_STREAM = API_BASE + '/chat/stream';
-        const API_NON_STREAM = API_BASE + '/chat';
-        const msgs = [];
-        // Client-side system prompt snippet to complement backend prompt
-        const CLIENT_SYSTEM = {
-          role: 'system',
-          content: (
-            "You are Leo’s portfolio assistant. Answer concisely with exactly one most relevant project. " +
-            "Format: 1 short value sentence + 3 bullets (Tech, Impact, Why hireable). " +
-            "Close with: [Case Study] • [GitHub] • [Schedule]. If unclear, ask one brief clarifying question first."
-          )
-        };
-        const context = {};
-        if (!ENABLE_ASSISTANT){ if (wrap) wrap.style.display='none'; if (panel) panel.style.display='none'; return; }
+    (function(){
+      const ENABLE_ASSISTANT = ['leok974.github.io','localhost','127.0.0.1'].includes(location.hostname);
+      if (!ENABLE_ASSISTANT) return;
+      const API_BASE = 'https://assistant.ledger-mind.org';
+      const API_STREAM = API_BASE + '/chat/stream';
+      const API_NON_STREAM = API_BASE + '/chat';
+      const CLIENT_SYSTEM = {
+        role: 'system',
+        content: 'You are Leo’s portfolio assistant. Return one best project with a short value line + 3 bullets (Tech, Impact, Why hireable). Close with [Case Study] • [GitHub] • [Schedule]. If unclear, ask one brief clarifying question first.'
+      };
+      const msgs = [];
+      const context = {};
+      // seed a tiny context
+      (async ()=>{
+        try {
+          const res = await fetch('projects.json', { cache: 'no-store' });
+          const data = await res.json();
+          const take = (data.projects||[]).slice(0,6)
+            .map(p=>`• ${p.title}: ${p.description} [${(p.tags||[]).join(', ')}]`).join('\n');
+          context.summary = `Projects:\n${take}`;
+        } catch {}
+      })();
 
-        // Load small context from projects.json
-        (async () => {
-          try {
-            const res = await fetch('projects.json', { cache: 'no-store' });
-            const data = await res.json();
-            const take = (data.projects||[]).slice(0,6)
-              .map(p=>`• ${p.title}: ${p.description} [${(p.tags||[]).join(', ')}]`).join('\n');
-            context.summary = `Projects:\n${take}`;
-          } catch {}
-        })();
+      function appendLine(el, role, text){
+        const div = document.createElement('div');
+        div.className = 'msg ' + (role === 'user' ? 'you':'ai');
+        div.textContent = (role==='user'?'You: ':'Assistant: ') + text;
+        el.appendChild(div); el.scrollTop = el.scrollHeight;
+      }
 
-        // Helpers
-        function append(role, text){
-          const div = document.createElement('div');
-          div.className = 'msg ' + (role === 'user' ? 'you' : 'ai');
-          div.textContent = (role === 'user' ? 'You: ' : 'Assistant: ') + text;
-          log.appendChild(div);
-          log.scrollTop = log.scrollHeight;
-        }
-        function openPanel(){
-          if (!panel) return;
-          panel.style.display = 'flex';
-          document.body.classList.add('assistant-open');
-          queueMicrotask(()=>{
-            const pad = (panel.offsetHeight||0) + 24;
-            document.body.style.paddingBottom = pad + 'px';
-            input?.focus();
-          });
-        }
-        function closePanel(){
-          if (!panel) return;
-          panel.style.display = 'none';
-          document.body.classList.remove('assistant-open');
-          document.body.style.paddingBottom = '';
-        }
-        document.addEventListener('keydown', (e)=>{
-          if (e.key === 'Escape' && panel && panel.style.display !== 'none') closePanel();
-        });
-
-        // Streaming via SSE with fallback
-        async function streamChat(payload){
-          const res = await fetch(API_STREAM, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      async function doStream(question, logEl){
+        msgs.push({ role:'user', content: question });
+        appendLine(logEl, 'user', question);
+        appendLine(logEl, 'assistant', 'Thinking…');
+        try {
+          const res = await fetch(API_STREAM, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages: [CLIENT_SYSTEM, ...msgs], context, stream: true }) });
           if (!res.ok || !res.body) throw new Error('stream failed');
           const reader = res.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-          let answer = '';
+          const decoder = new TextDecoder(); let buf=''; let ans='';
           while(true){
-            const { value, done } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            let sep;
-            while((sep = buffer.indexOf('\n\n')) !== -1){
-              const chunk = buffer.slice(0, sep);
-              buffer = buffer.slice(sep + 2);
-              const lines = chunk.split('\n').map(l=>l.trim()).filter(Boolean);
-              for(const l of lines){
-                if(!l.startsWith('data:')) continue;
-                const data = l.slice(5).trim();
-                if(data === '[DONE]'){
-                  log.lastChild?.classList.add('done');
-                  msgs.push({ role:'assistant', content: answer });
-                  return;
-                }
+            const {value, done} = await reader.read(); if (done) break;
+            buf += decoder.decode(value, {stream:true});
+            let i; while((i = buf.indexOf('\n\n')) !== -1){
+              const chunk = buf.slice(0,i); buf = buf.slice(i+2);
+              for (const line of chunk.split('\n')){
+                const l = line.trim(); if (!l.startsWith('data:')) continue;
+                const data = l.slice(5).trim(); if (data === '[DONE]') return;
                 try{
                   const j = JSON.parse(data);
-                  const choice = (j.choices && j.choices[0]) || {};
-                  const delta = (choice.delta && choice.delta.content) || '';
-                  const finish = choice.finish_reason || null;
-                  if(delta){
-                    answer += delta;
-                    if (!log.lastChild || !log.lastChild.classList.contains('ai')) append('assistant', '');
-                    log.lastChild.textContent = 'Assistant: ' + answer;
-                    log.scrollTop = log.scrollHeight;
-                  }
-                  if(finish){
-                    log.lastChild?.classList.add('done');
-                    msgs.push({ role:'assistant', content: answer });
-                    return;
-                  }
+                  const d = j.choices?.[0]?.delta?.content || '';
+                  if (d){ ans += d; logEl.lastChild.textContent = 'Assistant: ' + ans; logEl.scrollTop = logEl.scrollHeight; }
                 }catch{}
               }
             }
           }
-        }
-
-        async function nonStreamChat(payload){
-          const res = await fetch(API_NON_STREAM, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-          const data = await res.json();
-          const text = data.assistant || '(no response)';
-          if (!log.lastChild || !log.lastChild.classList.contains('ai')) append('assistant', '');
-          log.lastChild.textContent = 'Assistant: ' + text;
-          msgs.push({ role:'assistant', content: text });
-        }
-
-        // Wire UI
-        btn?.addEventListener('click', openPanel);
-        closeBtn?.addEventListener('click', closePanel);
-        form?.addEventListener('submit', async (e)=>{
-          e.preventDefault();
-          const content = (input?.value || '').trim();
-          if (!content) return;
-          input.value = '';
-          msgs.push({ role:'user', content });
-          append('user', content);
-          append('assistant', 'Thinking…');
+        } catch {
           try {
-            await streamChat({ messages: [CLIENT_SYSTEM, ...msgs], context, stream: true });
+            const res = await fetch(API_NON_STREAM, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages: [CLIENT_SYSTEM, ...msgs], context }) });
+            const data = await res.json();
+            const text = data.assistant || '(no response)';
+            logEl.lastChild.textContent = 'Assistant: ' + text;
           } catch {
-            try { await nonStreamChat({ messages: [CLIENT_SYSTEM, ...msgs], context }); }
-            catch { if (log.lastChild) log.lastChild.textContent = 'Assistant: (connection failed — please try again later)'; }
+            logEl.lastChild.textContent = 'Assistant: (connection failed — please try again later)';
           }
-        });
+        }
+      }
 
-      })();
-    }
+      window.startStream = function(question, opts){
+        const logEl = opts?.logEl || document.getElementById('assistant-log');
+        if (!logEl) return;
+        return doStream(question, logEl);
+      };
+    })();
+  </script>
+
+  <!-- Load chip (defer, no async, no document.write) -->
+  <script defer src="js/assistant-chip.js"></script>
+
+  <script>
+    // One-time cleanup to keep page layout intact
+    document.addEventListener('DOMContentLoaded', ()=>{
+      document.body.classList.remove('assistant-open');
+      document.body.style.paddingBottom = '';
+    });
   </script>
 
 </body>
