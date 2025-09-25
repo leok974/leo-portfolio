@@ -8,6 +8,7 @@ overview:
       - infrastructure (docker, ci_cd, cloud)
       - dependencies
       - tests & docs
+      - skills (technical skills demonstrated by the repo, useful for recruiters)
     Always reflect the *current state of the repo* without hallucination.
   format: json
   output: overview.json

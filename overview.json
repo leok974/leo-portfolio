@@ -46,6 +46,18 @@
       "framework": "None detected",
       "coverage": "N/A (CI includes link and schema validation, Lighthouse audits)"
     },
-    "docs": true
+    "docs": true,
+    "skills": [
+      "Full-stack development: static frontend + Python backend",
+      "FastAPI for API design and OpenAI-compatible relay",
+      "Web performance optimization (Lighthouse CI, asset hashing, sharp)",
+      "Progressive Web App features (manifest, service worker, offline readiness)",
+      "Accessibility-first design (keyboard nav, aria-live, alt text)",
+      "SEO best practices (structured data, sitemap, meta tags, robots.txt)",
+      "CI/CD with GitHub Actions (deploy, link check, schema validation, Lighthouse)",
+      "Frontend engineering (vanilla JS, modular scripts, lazy loading)",
+      "Cloud deployment on GitHub Pages with automated workflows",
+      "Security practices (CORS allowlist, static asset integrity)"
+    ]
   }
 }
