@@ -165,3 +165,37 @@ healthcheck:
   timeout: 5s
   retries: 3
 ```
+
+---
+
+## Full Stack (Frontend + Backend + Ollama)
+
+A combined compose file `docker-compose.full.yml` adds a standalone `frontend` container (nginx) that serves the static portfolio separately from the reverse proxy layer. Use this when you want to preview both layers without binding your host Node/browser-sync dev setup.
+
+### File Summary
+
+- `deploy/Dockerfile.frontend` – copies static assets into an nginx image (port 8080 internally)
+- `deploy/docker-compose.full.yml` – services: `ollama`, `backend`, `frontend`
+
+### Run
+```bash
+cd deploy
+docker compose -f docker-compose.full.yml up -d --build
+```
+
+### Access
+- Backend API (direct): http://127.0.0.1:8000 (if you publish a port) or via existing nginx if you add it
+- Static frontend: http://127.0.0.1:8080
+
+> Note: The default full file does not include the edge `nginx` proxy from the simpler stack; you can layer it by adding `-f docker-compose.yml -f docker-compose.full.yml` if you want unified routing.
+
+### Tear down
+```bash
+docker compose -f docker-compose.full.yml down
+```
+
+### Extending
+- Add cache busting or a build step (Vite, etc.) by replacing the first stage with a Node builder, then copying `dist/`.
+- Introduce an edge proxy that serves `/` (static) and `/api` or `/chat` to backend; currently the demo keeps them independent.
+
+---
