@@ -35,7 +35,9 @@
     /* Neutralize any old padding toggle */
     body.assistant-open { padding-bottom: 0 !important; }
     /* Ensure mascots are off */
-    #riv-wrap, #vrm-wrap, #svg-avatar-wrap, #svg-mascot { display:none !important; }
+  #riv-wrap, #vrm-wrap, #svg-avatar-wrap, #svg-mascot { display:none !important; }
+  /* Also hide any legacy assistant panels */
+  #assistant-panel, #assistant-log, #assistant-form { display:none !important; }
   </style>
   <style>
     /* Critical CSS: minimal layout to paint above-the-fold quickly */
@@ -51,6 +53,35 @@
     .headline{font-size:clamp(1.8rem,2.3rem + 1.5vw,3.2rem);line-height:1.15;margin:0 0 1rem}
     .subline{color:var(--muted);margin:0 0 1.5rem}
     .hero-visual{aspect-ratio:4/3;border:1px solid var(--border);border-radius:1rem;overflow:hidden;background:#111827}
+  </style>
+  <!-- Leo Portfolio — Assistant palette -->
+  <style>
+    :root{
+      --lk-bg:           #0b1220;
+      --lk-surface:      #0f1a2d;
+      --lk-surface-2:    #111b30;
+      --lk-border:       rgba(255,255,255,.06);
+      --lk-border-strong:rgba(255,255,255,.12);
+      --lk-text:         #e8eef8;
+      --lk-muted:        #b4c0cf;
+      --lk-accent:       #2d6cdf;
+      --lk-accent-contrast: #ffffff;
+      --lk-shadow:       0 10px 35px rgba(0,0,0,.45);
+      --lk-radius:       16px;
+      --lk-radius-pill:  999px;
+    }
+    [data-theme="light"], .theme-light{
+      --lk-bg:           #f6f8fc;
+      --lk-surface:      #ffffff;
+      --lk-surface-2:    #f1f5fb;
+      --lk-border:       rgba(0,0,0,.08);
+      --lk-border-strong:rgba(0,0,0,.12);
+      --lk-text:         #0f172a;
+      --lk-muted:        #52627a;
+      --lk-accent:       #2d6cdf;
+      --lk-accent-contrast: #ffffff;
+      --lk-shadow:       0 10px 24px rgba(0,0,0,.12);
+    }
   </style>
 
   <link rel="preload" as="style" href="styles.74e2bb05ef.css">
@@ -88,49 +119,12 @@
       }
     ]
   }</script>
-  <!-- New bottom-right assistant chip styles -->
+  <!-- Hide any legacy assistants/avatars -->
   <style>
-    /* Kill old assistants/avatars; keep the new chip widget */
     #leo-assistant, #la-open, #la-panel,
     #ai-avatar-wrap, #ai-controls, #ai-text,
     #live2d-wrap, #vrm-wrap, #riv-wrap,
-    #svg-avatar-wrap, #svg-mascot {
-      display: none !important;
-    }
-    #assistant-chip { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); z-index: 2147483643; }
-    #assistant-chip-btn { border:1px solid #2a3357; padding:.55rem .8rem; border-radius:999px; background:#121a2e; color:#e8ecf8; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.3); }
-    #assistant-chip-btn:hover { background:#0f1830; }
-    @media (prefers-reduced-motion: reduce){ #assistant-chip-btn { transition:none !important; } }
-
-    /* Lightweight assistant panel */
-    #assistant-panel { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom));
-      width: min(92vw, 420px); max-height: min(60vh, 520px); display: none; flex-direction: column; gap: .6rem;
-      border: 1px solid #2a3357; border-radius: 12px; background: rgba(16,22,42,.96); backdrop-filter: blur(8px);
-      box-shadow: 0 16px 40px rgba(0,0,0,.35); padding: .8rem; z-index: 2147483644; }
-    #assistant-panel .head { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
-    #assistant-panel .head strong { font-weight: 600; }
-    #assistant-close { border:1px solid #2a3357; background:#0f162f; color:#e8ecf8; border-radius:8px; padding:.25rem .5rem; cursor:pointer; }
-    #assistant-log { flex:1; min-height: 140px; max-height: 320px; overflow:auto; border:1px solid #2a3357; border-radius:8px; padding:.6rem; background:#0b1223; }
-    #assistant-log .msg { margin:.25rem 0; }
-    #assistant-log .you { color:#a5b4fc; }
-    #assistant-log .ai  { color:#e5e7eb; }
-    #assistant-form { display:flex; gap:.5rem; }
-    #assistant-input { flex:1; border:1px solid #2a3357; background:#0b1223; color:#e8ecf8; border-radius:8px; padding:.55rem .7rem; }
-    #assistant-form .btn { border:1px solid #2a3357; background:#121a2e; color:#e8ecf8; border-radius:8px; padding:.55rem .7rem; cursor:pointer; }
-    /* Agent status pill */
-    .agent-status{
-      display:inline-flex; align-items:center; gap:.4rem;
-      padding:.25rem .5rem; border-radius:999px; background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.12); font:12px/1.2 system-ui;
-    }
-    .agent-status .dot{
-      width:.6rem; height:.6rem; border-radius:50%; display:inline-block;
-      background:#888; box-shadow:0 0 0 1px rgba(0,0,0,.2) inset;
-    }
-    .agent-status .dot.ok{ background:#22c55e; }
-    .agent-status .dot.warn{ background:#eab308; }
-    .agent-status .dot.err{ background:#ef4444; }
-    .agent-status .label{ opacity:.9; }
+    #svg-avatar-wrap, #svg-mascot { display: none !important; }
   </style>
   <!-- Small styles for icon-only link buttons -->
   <style>
@@ -149,6 +143,17 @@
     document.addEventListener('DOMContentLoaded', () => {
       document.body.classList.remove('assistant-open');
       if (document.body && document.body.style) document.body.style.paddingBottom = '';
+      // Remove any legacy assistant UIs and duplicates
+      const legacyIds = ['assistant-panel','leo-assistant','la-panel','la-open'];
+      legacyIds.forEach(id=>{ const el=document.getElementById(id); if (el) try{ el.remove(); }catch{} });
+      // Remove duplicate chip roots/wrappers if any
+      const chipRoots = document.querySelectorAll('#assistant-chip-root');
+      chipRoots.forEach((el,i)=>{ if(i>0) try{ el.remove(); }catch{} });
+      const chips = document.querySelectorAll('#assistant-chip');
+      chips.forEach((el,i)=>{ if(i>0) try{ el.remove(); }catch{} });
+      // Keep only the first assistant dock if multiple exist
+      const docks = document.querySelectorAll('.assistant-dock');
+      docks.forEach((el,i)=>{ if(i>0) try{ el.remove(); }catch{} });
     });
   </script>
 
@@ -402,8 +407,33 @@
     </div>
   </footer>
 
-  <!-- Agent status pill near footer -->
-  <div id="agent-status" class="agent-status" aria-live="polite" title="Model &amp; RAG status" style="position:fixed; right:max(16px, env(safe-area-inset-right)); bottom:calc(max(16px, env(safe-area-inset-bottom)) + 56px); z-index:2147483641;">Loading…</div>
+  <!-- Chip (emoji robot style) -->
+  <button id="assistantChip" class="assistant-chip" aria-controls="assistantDock" aria-expanded="false" title="Ask about my projects">
+    <span aria-hidden="true">🤖</span> Ask about my projects…
+  </button>
+
+  <!-- Assistant Dock Panel (hidden by default; opened by chip) -->
+  <div id="assistantDock" class="assistant-dock" hidden role="dialog" aria-label="Portfolio Assistant" aria-modal="false">
+    <div class="assistant-header">
+      <div class="assistant-title">
+        <strong>Portfolio Assistant</strong>
+      </div>
+      <button class="assistant-close" aria-label="Close">Close</button>
+    </div>
+    <div class="assistant-systembar" role="status" aria-live="polite">
+      <span id="agent-status" class="agent-status" title="Model &amp; RAG status">Status</span>
+      <span class="served-by" id="servedBy">—</span>
+    </div>
+
+  <ol id="chatLog" class="chat-log" role="log" aria-live="polite" aria-relevant="additions text" aria-atomic="false"></ol>
+
+    <form id="chatForm" class="chat-composer">
+      <input id="chatInput" name="q" placeholder="Ask about my projects….." autocomplete="off" />
+      <button id="chatSend" type="submit">Send</button>
+    </form>
+  </div>
+
+
 
   <!-- PROJECT DETAIL DIALOG (reusable) -->
   <dialog class="project-detail" id="detailDialog" aria-labelledby="detailTitle">
@@ -423,8 +453,9 @@
     (function(){
       const ENABLE_ASSISTANT = ['leok974.github.io','localhost','127.0.0.1'].includes(location.hostname);
       if (!ENABLE_ASSISTANT) return;
-  const API_BASE = 'https://assistant.ledger-mind.org';
-  // Expose for AgentStatus so pill uses same backend as stream
+  const isLocal = ['localhost','127.0.0.1'].includes(location.hostname);
+  const API_BASE = isLocal ? 'http://127.0.0.1:8001' : 'https://assistant.ledger-mind.org';
+  // Expose for AgentStatus so pill and chat use the same backend
   window.AGENT_BASE_URL = API_BASE;
       const API_STREAM = API_BASE + '/chat/stream';
       const API_NON_STREAM = API_BASE + '/chat';
@@ -504,8 +535,6 @@
     })();
   </script>
 
-  <!-- Load chip (defer, no async, no document.write) -->
-  <script defer src="js/assistant-chip.js"></script>
   <!-- Lightweight status pill script -->
   <script defer src="js/agent-status.js"></script>
 
@@ -520,14 +549,17 @@
   <!-- Main site JS (filters, modals, SW registration, a11y helpers) -->
   <script defer src="main.js"></script>
 
-  <style>
-    /* Extra micro styles for external status pill (agent-dot/agent-kv) */
-    .agent-dot{width:.55rem; height:.55rem; border-radius:50%; display:inline-block}
-    .agent-kv{opacity:.9}
-    .agent-status.ok{border-color:#2ecc71aa}
-    .agent-status.warn{border-color:#f1c40faa}
-    .agent-status.err{border-color:#e74c3caa}
-  </style>
+
+
+  <!-- Assistant Dock behavior (streaming) -->
+  <script type="module" defer src="js/assistant-dock.js"></script>
+
+
 
 </body>
 </html>
+
+
+
+
+
