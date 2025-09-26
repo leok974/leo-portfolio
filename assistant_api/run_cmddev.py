@@ -1,5 +1,13 @@
 import os, sys, time, asyncio
+from pathlib import Path
 import uvicorn
+
+# Ensure repository root is importable so 'assistant_api' resolves when launched
+# from different working directories or without PYTHONPATH.
+_here = Path(__file__).resolve().parent
+_repo_root = _here.parent
+if str(_repo_root) not in sys.path:
+    sys.path.insert(0, str(_repo_root))
 
 def main():
     # Force Windows selector loop (safe no-op elsewhere)
@@ -13,6 +21,9 @@ def main():
     app_path = os.getenv("APP_PATH", "assistant_api.main:app")
 
     try:
+        print(f"[run_cmddev] Python: {sys.executable}")
+        print(f"[run_cmddev] Repo root: {_repo_root}")
+        print(f"[run_cmddev] Launching {app_path} on {host}:{port}")
         uvicorn.run(
             app_path,
             host=host,

@@ -14,7 +14,7 @@ services:
     volumes:
       - ollama:/root/.ollama
     ports:
-      - "127.0.0.1:11434:11434"
+      - "127.0.0.1:11435:11434" # host port changed from 11434 to avoid local conflict
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "ollama", "list"]
@@ -24,8 +24,8 @@ services:
 
   backend:
     build:
-      context: ../assistant_api
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: assistant_api/Dockerfile
     env_file:
       - ../assistant_api/.env.prod
     environment:
@@ -52,8 +52,8 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
     image: ${FRONTEND_IMAGE:-leo-portfolio/frontend:dev}
     depends_on:
       - backend
