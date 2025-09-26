@@ -1,0 +1,43 @@
+name: docker-build
+on:
+  push:
+    paths:
+      - "assistant_api/Dockerfile"
+      - "assistant_api/requirements.txt"
+      - "assistant_api/requirements.in"
+      - "assistant_api/**"
+      - ".github/workflows/docker-build.yml"
+  pull_request:
+    paths:
+      - "assistant_api/Dockerfile"
+      - "assistant_api/requirements.txt"
+      - "assistant_api/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up QEMU (multi-arch optional)
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build (cache to GitHub Actions)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./assistant_api
+          push: false
+          tags: leo-portfolio-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Smoke container (ready endpoint)
+        run: |
+          docker image ls | grep leo-portfolio-backend
+          docker run -d --rm -p 8001:8000 --name app leo-portfolio-backend:ci
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8001/ready >/dev/null; then echo 'ready ok'; exit 0; fi
+            sleep 1
+          done
+          echo "ready endpoint did not become healthy" >&2
+          docker logs app || true
+          exit 1

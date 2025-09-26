@@ -62,6 +62,24 @@ def diag() -> dict:
         "primary_disabled": DISABLE_PRIMARY,
     }
 
+def get_primary_status() -> dict:
+    return {
+        "base_url": PRIMARY_BASE,
+        "model": PRIMARY_MODEL,
+        "enabled": not DISABLE_PRIMARY,
+        "model_present": PRIMARY_MODEL_PRESENT,
+        "last_error": LAST_PRIMARY_ERROR,
+        "last_status": LAST_PRIMARY_STATUS,
+    }
+
+def get_fallback_status() -> dict:
+    key = _get_fallback_key()
+    return {
+        "provider": "openai",
+        "model": FALLBACK_MODEL,
+        "key_present": bool(key),
+    }
+
 def _debug_log(msg: str):
     if PRIMARY_DEBUG:
         try:

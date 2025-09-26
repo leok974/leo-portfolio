@@ -10,6 +10,8 @@ from ..llm_client import (
     PRIMARY_MODEL_PRESENT,
     DISABLE_PRIMARY,
     PRIMARY_MODELS,
+    get_primary_status,
+    get_fallback_status,
 )
 
 router = APIRouter(prefix="/llm", tags=["llm"])
@@ -18,23 +20,11 @@ logging.getLogger("uvicorn.error").info("LLM routes loaded: /llm/diag /llm/model
 
 @router.get("/diag")
 def llm_diag():
+    primary = get_primary_status()
+    fallback = get_fallback_status()
     return {
-        "primary": {
-            "base_url": os.getenv("OPENAI_BASE_URL", "http://ollama:11434/v1"),
-            "model": os.getenv("OPENAI_MODEL", "gpt-oss:20b"),
-            "disabled": os.getenv("DISABLE_PRIMARY") in ("1", "true", "True"),
-        },
-        "fallback": {
-            "base_url": os.getenv("FALLBACK_BASE_URL", "https://api.openai.com/v1"),
-            "model": os.getenv("FALLBACK_MODEL", "gpt-4o-mini"),
-            "key_present": bool(
-                os.getenv("FALLBACK_API_KEY")
-                or (os.getenv("FALLBACK_API_KEY_FILE") and os.path.exists(os.getenv("FALLBACK_API_KEY_FILE")))
-                or os.path.exists("/run/secrets/openai_api_key")
-                or os.getenv("OPENAI_API_KEY")
-                or (os.getenv("OPENAI_API_KEY_FILE") and os.path.exists(os.getenv("OPENAI_API_KEY_FILE")))
-            ),
-        },
+        "primary": primary,
+        "fallback": fallback,
         "rag_url": os.getenv("RAG_URL", "http://127.0.0.1:8001/api/rag/query"),
     }
 
