@@ -304,3 +304,202 @@ footer { border-top:1px solid var(--border); padding:2rem 0; color: var(--muted)
 .resume-actions { display:flex; gap:.6rem; flex-wrap:wrap; }
 .resume-actions .btn { background: var(--card); }
 .resume-actions .btn:hover { background: color-mix(in oklab, var(--card) 85%, transparent); }
+
+/* ------------------------
+   ASSISTANT DOCK PANEL
+-------------------------*/
+/* Chip button */
+.assistant-chip{
+  position: fixed; right: 1rem; bottom: 1rem; z-index: 9998;
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .55rem .8rem; border-radius: 999px;
+  background: var(--lk-surface-2); color: var(--lk-text);
+  border: 1px solid var(--lk-border); box-shadow: var(--lk-shadow);
+}
+.assistant-chip .chip-icon{ width:18px; height:18px; opacity:.9 }
+.assistant-chip:is(:hover,:focus-visible){
+  border-color: color-mix(in srgb, var(--lk-accent) 65%, white 35%);
+}
+.assistant-chip.is-hidden{ display:none; }
+
+/* Hide dock when [hidden] */
+.assistant-dock[hidden]{ display:none !important; }
+/* Panel */
+.assistant-dock{
+  position: fixed; right: 1rem; bottom: calc(1rem + var(--assistant-bottom-offset, 0px)); z-index: 9999;
+  width: min(420px, 92vw);
+  background: color-mix(in srgb, var(--lk-surface) 92%, transparent);
+  border: 1px solid var(--lk-border);
+  border-radius: var(--lk-radius);
+  backdrop-filter: saturate(140%) blur(8px);
+  box-shadow: var(--lk-shadow);
+  display: flex; flex-direction: column; overflow: hidden;
+  color: var(--lk-text);
+  transform-origin: bottom right; animation: dockIn .16s ease-out;
+}
+@keyframes dockIn { from { transform: scale(.98); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce){ .assistant-dock { animation: none; } }
+.assistant-header{
+  display:flex; align-items:center; justify-content:space-between; gap:.5rem;
+  padding:.7rem .9rem .5rem; border-bottom:1px solid var(--lk-border);
+  font: 600 14px/1.2 ui-sans-serif, system-ui, Inter, Segoe UI, Roboto, Arial;
+}
+.assistant-title{ display:flex; align-items:center; gap:.5rem; }
+.assistant-close{ margin-left:.6rem; background:none; border:0; color:var(--lk-muted); cursor:pointer }
+
+/* System bar under header */
+.assistant-systembar{
+  display:flex; align-items:center; gap:.5rem; justify-content:flex-start;
+  padding:.4rem .9rem; border-bottom:1px dashed var(--lk-border);
+  background: color-mix(in srgb, var(--lk-surface) 96%, transparent);
+}
+.assistant-systembar .served-by{ margin-left:0; color: var(--lk-muted); font-weight:500; font-size:12px }
+
+/* In-panel agent status chip */
+.agent-status{
+  display:inline-flex; align-items:center; gap:.4rem;
+  padding:.25rem .5rem; border-radius:999px;
+  background: color-mix(in srgb, var(--lk-surface-2) 90%, transparent);
+  border:1px solid var(--lk-border);
+  color: var(--lk-text); font-size:12px; line-height:1.2;
+  cursor: default; position: relative;
+  transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.agent-status .agent-dot{ width:.55rem; height:.55rem; border-radius:50%; display:inline-block }
+.agent-status .agent-kv{ opacity:.9 }
+.agent-status.ok{ border-color: color-mix(in srgb, #2ecc71 60%, var(--lk-border)); }
+.agent-status.warn{ border-color: color-mix(in srgb, #f1c40f 60%, var(--lk-border)); }
+.agent-status.err{ border-color: color-mix(in srgb, #e74c3c 60%, var(--lk-border)); }
+.agent-status:hover{ background: color-mix(in srgb, var(--lk-surface-2) 96%, transparent); box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+
+/* Simple hover tooltip for details */
+.agent-status[data-tip]{
+  --tip-bg: color-mix(in srgb, var(--lk-bg) 95%, black 5%);
+}
+.agent-status[data-tip]:hover::after{
+  content: attr(data-tip);
+  position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: calc(100% + 8px);
+  white-space: pre-wrap; max-width: 260px;
+  background: var(--tip-bg); color: var(--lk-text);
+  border: 1px solid var(--lk-border); border-radius: .5rem;
+  padding: .45rem .6rem; box-shadow: var(--lk-shadow);
+  z-index: 10000; font-size: 12px; line-height: 1.25;
+}
+/* Tooltip arrow */
+.agent-status[data-tip]:hover::before{
+  content:""; position:absolute; left: 50%; transform: translateX(-50%);
+  bottom: calc(100% + 4px);
+  border: 6px solid transparent;
+  border-top-color: var(--lk-border);
+}
+/*.agent-status:hover::before can draw an arrow if desired*/
+
+/* Messages */
+.chat-log{
+  list-style:none; margin:0; padding: .75rem .75rem 0; overflow:auto; max-height: 48vh;
+  display:flex; flex-direction: column; gap:.75rem;
+}
+/* Scrollbar polish */
+.chat-log::-webkit-scrollbar{ width: 10px; height:10px }
+.chat-log::-webkit-scrollbar-thumb{ background: color-mix(in srgb, var(--lk-border) 80%, var(--lk-surface-2)); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box }
+.chat-log::-webkit-scrollbar-track{ background: transparent }
+.msg{ display:flex; gap:.6rem; align-items:flex-end }
+.msg .avatar{
+  width: 28px; height: 28px; border-radius: 50%; flex: none;
+  background: var(--lk-surface-2);
+  border:1px solid var(--lk-border-strong);
+  display:grid; place-items:center;
+  font: 700 12px/1 ui-sans-serif; color: color-mix(in srgb, var(--lk-accent) 75%, white 25%);
+}
+
+/* Bubbles */
+.msg .bubble{
+  max-width: 75%;
+  padding:.6rem .75rem;
+  border-radius: 16px;
+  border:1px solid var(--lk-border);
+  word-wrap: break-word; overflow:hidden;
+  box-shadow: 0 6px 18px rgba(0,0,0,.20);
+}
+.from-user{ justify-content:flex-end }
+.from-user .bubble{
+  background: var(--lk-accent);
+  color: var(--lk-accent-contrast);
+  border-color: color-mix(in srgb, var(--lk-accent) 85%, black 15%);
+}
+.from-user .avatar{
+  order:2; background: var(--lk-accent); color: var(--lk-accent-contrast);
+  border-color: color-mix(in srgb, var(--lk-accent) 85%, black 15%);
+}
+.from-ai .bubble{
+  background: var(--lk-surface-2);
+  color: var(--lk-text);
+}
+.from-ai .avatar{ background: var(--lk-surface-2) }
+
+/* Bubble tails */
+.from-user .bubble{ position:relative }
+.from-user .bubble::after{
+  content:""; position:absolute; right:-6px; bottom:6px; width:10px; height:10px;
+  background: var(--lk-accent);
+  transform: rotate(45deg);
+  border-right:1px solid color-mix(in srgb, var(--lk-accent) 85%, black 15%);
+  border-bottom:1px solid color-mix(in srgb, var(--lk-accent) 85%, black 15%);
+}
+.from-ai .bubble{ position:relative }
+.from-ai .bubble::before{
+  content:""; position:absolute; left:-6px; bottom:6px; width:10px; height:10px;
+  background: var(--lk-surface-2);
+  transform: rotate(45deg);
+  border-left:1px solid var(--lk-border);
+  border-bottom:1px solid var(--lk-border);
+}
+
+/* Typographic polish inside bubbles */
+.bubble h4{ margin:.2rem 0 .35rem; font-size:14px; color: var(--lk-text) }
+.bubble p{ margin:.25rem 0; opacity:.95 }
+.bubble ul{ margin:.25rem 0 .25rem 1rem; padding:0 }
+.bubble li{ margin:.15rem 0 }
+.bubble code{
+  background: var(--lk-bg);
+  padding:.1rem .3rem; border-radius:6px;
+  border:1px solid var(--lk-border);
+  color: color-mix(in srgb, var(--lk-text) 90%, var(--lk-accent) 10%);
+}
+/* Reduced motion respect */
+@media (prefers-reduced-motion: reduce){
+  .assistant-dock, .agent-status{ transition: none !important; }
+}
+
+/* Composer */
+.chat-composer{
+  display:flex; gap:.5rem; padding:.6rem; border-top:1px solid var(--lk-border);
+  background: color-mix(in srgb, var(--lk-surface) 96%, transparent);
+}
+.chat-composer input{
+  flex:1; background: var(--lk-bg); color: var(--lk-text);
+  border:1px solid var(--lk-border);
+  border-radius: 12px; padding:.65rem .8rem; outline:none;
+}
+.chat-composer input:focus{
+  border-color: color-mix(in srgb, var(--lk-accent) 70%, white 30%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lk-accent) 25%, transparent);
+}
+.chat-composer button{
+  padding:.6rem .9rem; border-radius:12px; border:0;
+  background: var(--lk-accent); color: var(--lk-accent-contrast);
+  font-weight:600; cursor:pointer;
+}
+.chat-composer button:hover{ filter: brightness(1.05); }
+
+/* Streaming cursor */
+.cursor{
+  display:inline-block; width:.55em; height:1em; vertical-align:bottom;
+  background: var(--lk-text); opacity:.75; margin-left:2px;
+  animation: blink 1s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* Links inside the panel */
+.assistant-dock a{ color: color-mix(in srgb, var(--lk-accent) 85%, white 15%) }

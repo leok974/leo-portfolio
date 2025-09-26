@@ -35,7 +35,9 @@
     /* Neutralize any old padding toggle */
     body.assistant-open { padding-bottom: 0 !important; }
     /* Ensure mascots are off */
-    #riv-wrap, #vrm-wrap, #svg-avatar-wrap, #svg-mascot { display:none !important; }
+  #riv-wrap, #vrm-wrap, #svg-avatar-wrap, #svg-mascot { display:none !important; }
+  /* Also hide any legacy assistant panels */
+  #assistant-panel, #assistant-log, #assistant-form { display:none !important; }
   </style>
   <style>
     /* Critical CSS: minimal layout to paint above-the-fold quickly */
@@ -51,6 +53,35 @@
     .headline{font-size:clamp(1.8rem,2.3rem + 1.5vw,3.2rem);line-height:1.15;margin:0 0 1rem}
     .subline{color:var(--muted);margin:0 0 1.5rem}
     .hero-visual{aspect-ratio:4/3;border:1px solid var(--border);border-radius:1rem;overflow:hidden;background:#111827}
+  </style>
+  <!-- Leo Portfolio — Assistant palette -->
+  <style>
+    :root{
+      --lk-bg:           #0b1220;
+      --lk-surface:      #0f1a2d;
+      --lk-surface-2:    #111b30;
+      --lk-border:       rgba(255,255,255,.06);
+      --lk-border-strong:rgba(255,255,255,.12);
+      --lk-text:         #e8eef8;
+      --lk-muted:        #b4c0cf;
+      --lk-accent:       #2d6cdf;
+      --lk-accent-contrast: #ffffff;
+      --lk-shadow:       0 10px 35px rgba(0,0,0,.45);
+      --lk-radius:       16px;
+      --lk-radius-pill:  999px;
+    }
+    [data-theme="light"], .theme-light{
+      --lk-bg:           #f6f8fc;
+      --lk-surface:      #ffffff;
+      --lk-surface-2:    #f1f5fb;
+      --lk-border:       rgba(0,0,0,.08);
+      --lk-border-strong:rgba(0,0,0,.12);
+      --lk-text:         #0f172a;
+      --lk-muted:        #52627a;
+      --lk-accent:       #2d6cdf;
+      --lk-accent-contrast: #ffffff;
+      --lk-shadow:       0 10px 24px rgba(0,0,0,.12);
+    }
   </style>
 
   <link rel="preload" as="style" href="styles.74e2bb05ef.css">
@@ -88,35 +119,20 @@
       }
     ]
   }</script>
-  <!-- New bottom-right assistant chip styles -->
+  <!-- Hide any legacy assistants/avatars -->
   <style>
-    /* Kill old assistants/avatars; keep the new chip widget */
     #leo-assistant, #la-open, #la-panel,
     #ai-avatar-wrap, #ai-controls, #ai-text,
     #live2d-wrap, #vrm-wrap, #riv-wrap,
-    #svg-avatar-wrap, #svg-mascot {
-      display: none !important;
-    }
-    #assistant-chip { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); z-index: 2147483643; }
-    #assistant-chip-btn { border:1px solid #2a3357; padding:.55rem .8rem; border-radius:999px; background:#121a2e; color:#e8ecf8; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.3); }
-    #assistant-chip-btn:hover { background:#0f1830; }
-    @media (prefers-reduced-motion: reduce){ #assistant-chip-btn { transition:none !important; } }
-
-    /* Lightweight assistant panel */
-    #assistant-panel { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom));
-      width: min(92vw, 420px); max-height: min(60vh, 520px); display: none; flex-direction: column; gap: .6rem;
-      border: 1px solid #2a3357; border-radius: 12px; background: rgba(16,22,42,.96); backdrop-filter: blur(8px);
-      box-shadow: 0 16px 40px rgba(0,0,0,.35); padding: .8rem; z-index: 2147483644; }
-    #assistant-panel .head { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
-    #assistant-panel .head strong { font-weight: 600; }
-    #assistant-close { border:1px solid #2a3357; background:#0f162f; color:#e8ecf8; border-radius:8px; padding:.25rem .5rem; cursor:pointer; }
-    #assistant-log { flex:1; min-height: 140px; max-height: 320px; overflow:auto; border:1px solid #2a3357; border-radius:8px; padding:.6rem; background:#0b1223; }
-    #assistant-log .msg { margin:.25rem 0; }
-    #assistant-log .you { color:#a5b4fc; }
-    #assistant-log .ai  { color:#e5e7eb; }
-    #assistant-form { display:flex; gap:.5rem; }
-    #assistant-input { flex:1; border:1px solid #2a3357; background:#0b1223; color:#e8ecf8; border-radius:8px; padding:.55rem .7rem; }
-    #assistant-form .btn { border:1px solid #2a3357; background:#121a2e; color:#e8ecf8; border-radius:8px; padding:.55rem .7rem; cursor:pointer; }
+    #svg-avatar-wrap, #svg-mascot { display: none !important; }
+  </style>
+  <!-- Small styles for icon-only link buttons -->
+  <style>
+    .icon-links { display:flex; flex-wrap:wrap; gap:.5rem; }
+    .icon-links .icon-btn { display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; border:1px solid var(--border); border-radius:999px; background:#121a2e; color:#e8ecf8; text-decoration:none; }
+    .icon-links .icon-btn:hover { background:#0f1830; }
+    .icon-links .icon-btn:focus-visible { outline:2px solid #60a5fa; outline-offset:2px; }
+    .icon-links .icon-btn svg { width:20px; height:20px; fill:currentColor; }
   </style>
 
 </head>
@@ -127,15 +143,320 @@
     document.addEventListener('DOMContentLoaded', () => {
       document.body.classList.remove('assistant-open');
       if (document.body && document.body.style) document.body.style.paddingBottom = '';
+      // Remove any legacy assistant UIs and duplicates
+      const legacyIds = ['assistant-panel','leo-assistant','la-panel','la-open'];
+      legacyIds.forEach(id=>{ const el=document.getElementById(id); if (el) try{ el.remove(); }catch{} });
+      // Remove duplicate chip roots/wrappers if any
+      const chipRoots = document.querySelectorAll('#assistant-chip-root');
+      chipRoots.forEach((el,i)=>{ if(i>0) try{ el.remove(); }catch{} });
+      const chips = document.querySelectorAll('#assistant-chip');
+      chips.forEach((el,i)=>{ if(i>0) try{ el.remove(); }catch{} });
+      // Keep only the first assistant dock if multiple exist
+      const docks = document.querySelectorAll('.assistant-dock');
+      docks.forEach((el,i)=>{ if(i>0) try{ el.remove(); }catch{} });
     });
   </script>
+
+  <!-- Main site content -->
+  <a class="sr-only skip-link" href="#projects">Skip to content</a>
+  <header>
+    <div class="container nav" role="navigation" aria-label="Primary">
+      <div class="brand">Leo Klemet</div>
+      <nav>
+        <ul>
+          <li><a href="#projects">Projects</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" aria-pressed="false" aria-label="Toggle dark/light mode">
+        <span aria-hidden="true">🌙</span>
+        <input id="themeSwitch" type="checkbox" aria-hidden="true" />
+        <span aria-hidden="true">☀️</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- HERO / LANDING -->
+  <section class="hero container" id="home">
+    <div>
+      <h1 class="headline">Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist</h1>
+      <span class="availability-badge" role="note">Open to roles in AI Engineering, SWE, or Creative Tech</span>
+      <p class="subline">Building agents, analytics, and cinematic creative pipelines.</p>
+      <div class="cta-group">
+        <a class="cta" href="#projects">⟶ See My Work</a>
+        <a class="cta secondary" href="assets/Leo-Klemet-Resume.pdf" download title="Download Resume PDF">📄 Download Resume</a>
+      </div>
+      <p class="muted" style="margin-top:.75rem">Tip: Use the category filters to explore AI Agents, ML/Analytics, 3D & Generative Art, and DevOps/Security projects.</p>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+      <picture>
+        <source type="image/avif" srcset="assets/optimized/hero-placeholder-lg.avif 1200w, assets/optimized/hero-placeholder-md.avif 900w, assets/optimized/hero-placeholder-sm.avif 600w, assets/optimized/hero-placeholder-xs.avif 400w" sizes="(max-width: 900px) 92vw, 40vw" />
+        <source type="image/webp" srcset="assets/optimized/hero-placeholder-lg.webp 1200w, assets/optimized/hero-placeholder-md.webp 900w, assets/optimized/hero-placeholder-sm.webp 600w, assets/optimized/hero-placeholder-xs.webp 400w" sizes="(max-width: 900px) 92vw, 40vw" />
+        <img src="assets/optimized/hero-placeholder-sm.jpg" alt="Abstract hero background" loading="lazy" />
+      </picture>
+    </div>
+  </section>
+
+  <!-- PROJECTS -->
+  <section id="projects">
+    <div class="container">
+      <div class="section-head">
+        <h2 class="section-title">Projects</h2>
+        <div class="filters" role="toolbar" aria-label="Project filters">
+          <button class="chip" data-filter="all" aria-pressed="true">All</button>
+          <button class="chip" data-filter="agents">AI Agents & Apps</button>
+          <button class="chip" data-filter="ml">ML / Analytics</button>
+          <button class="chip" data-filter="art">3D & Generative Art</button>
+          <button class="chip" data-filter="devops">DevOps & Security</button>
+        </div>
+      </div>
+
+      <div class="grid" id="projectGrid" aria-live="polite">
+        <!-- CARD: LedgerMind -->
+        <article class="card card-click" data-slug="ledgermind" data-cats="agents ml devops" role="link" tabindex="0">
+          <div class="thumb">
+            <img loading="lazy" src="assets/optimized/hero-placeholder-sm.webp" alt="LedgerMind dashboard with charts and AI assistant" />
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">LedgerMind</h3>
+            <p class="muted">AI‑powered personal finance agent with grounded analytics, budgets, and explainable suggestions. Local/Cloud deploy.</p>
+            <div class="tags">
+              <span class="tag">FastAPI</span><span class="tag">React</span><span class="tag">Postgres</span><span class="tag">Ollama/OpenAI</span>
+            </div>
+            <div class="card-actions">
+              <a class="btn" href="projects/ledgermind.html">Case Study</a>
+              <a class="btn" href="#" data-detail="ledgermind">Quick View</a>
+              <a class="btn" href="https://github.com/leok974/ai-finance-agent-oss" target="_blank" rel="noopener">GitHub</a>
+              <a class="btn" href="https://app.ledger-mind.org" target="_blank" rel="noopener">Live</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- CARD: DataPipe AI -->
+        <article class="card card-click" data-slug="datapipe-ai" data-cats="agents ml devops" role="link" tabindex="0">
+          <div class="thumb">
+            <img loading="lazy" src="assets/optimized/datapipe-ai-cover.webp" alt="DataPipe AI ops dashboard with GKE integration" />
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">DataPipe AI</h3>
+            <p class="muted">AI-powered ops agent for GKE deployments with automated data pipeline management and intelligent monitoring.</p>
+            <div class="tags">
+              <span class="tag">GKE</span><span class="tag">Kubernetes</span><span class="tag">AI Ops</span><span class="tag">Data Pipeline</span>
+            </div>
+            <div class="card-actions">
+              <a class="btn" href="projects/datapipe-ai.html">Case Study</a>
+              <a class="btn" href="#" data-detail="datapipe-ai">Quick View</a>
+              <a class="btn" href="https://github.com/leok974/ai-ops-agent-gke" target="_blank" rel="noopener">GitHub</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- CARD: Clarity Companion (Chrome Ext) -->
+        <article class="card card-click" data-slug="clarity" data-cats="agents devops" role="link" tabindex="0">
+          <div class="thumb">
+            <img loading="lazy" src="assets/optimized/clarity-companion.webp" alt="Clarity Companion Chrome extension panel UI" />
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">Clarity Companion (Chrome Extension)</h3>
+            <p class="muted">On‑device writing clarity assistant with localization, coverage gates, and CI packaging.</p>
+            <div class="tags">
+              <span class="tag">MV3</span><span class="tag">TypeScript</span><span class="tag">CI/CD</span>
+            </div>
+            <div class="card-actions">
+              <a class="btn" href="projects/clarity.html">Case Study</a>
+              <a class="btn" href="#" data-detail="clarity">Quick View</a>
+              <a class="btn" href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="container">
+      <div class="section-head">
+        <h2 class="section-title">About Me</h2>
+        <p class="muted">AI Engineer · Software Engineer · Generative AI / 3D Artist & Creative Technologist</p>
+      </div>
+      <div class="about">
+        <div>
+          <img class="avatar" src="assets/optimized/leo-avatar-sm.jpg" alt="Portrait of Leo Klemet" />
+        </div>
+        <div>
+          <p>Hey, I’m Leo — I build agentic apps, grounded analytics, and cinematic creative pipelines. I love shipping fast, clean systems that balance reliable infra with playful, art‑driven UX.</p>
+          <div class="icon-links" style="margin:.75rem 0 1rem">
+            <!-- GitHub -->
+            <a class="icon-btn" href="https://github.com/leok974" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 .5C5.73.5.98 5.24.98 11.52c0 4.85 3.15 8.96 7.52 10.41.55.1.75-.24.75-.53 0-.26-.01-1.13-.02-2.05-3.06.66-3.71-1.3-3.71-1.3-.5-1.27-1.22-1.61-1.22-1.61-.99-.67.08-.66.08-.66 1.1.08 1.68 1.13 1.68 1.13.98 1.68 2.57 1.2 3.2.92.1-.71.38-1.2.69-1.48-2.44-.28-5.01-1.22-5.01-5.43 0-1.2.43-2.18 1.13-2.95-.11-.28-.49-1.4.1-2.92 0 0 .93-.3 3.06 1.13a10.6 10.6 0 0 1 2.79-.38c.95 0 1.91.13 2.79.38 2.13-1.43 3.06-1.13 3.06-1.13.59 1.52.21 2.64.1 2.92.7.77 1.13 1.75 1.13 2.95 0 4.22-2.58 5.15-5.03 5.42.39.34.73 1.02.73 2.06 0 1.49-.01 2.69-.01 3.06 0 .29.2.63.75.52A10.53 10.53 0 0 0 23.02 11.5C23.02 5.24 18.27.5 12 .5Z"/>
+              </svg>
+            </a>
+            <!-- LinkedIn -->
+            <a class="icon-btn" href="https://www.linkedin.com/in/leo-klemet-1241662a6/" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5.001 2.5 2.5 0 0 1 0-5.001ZM3 9h4v12H3V9Zm7 0h3.83v1.64h.05c.53-.95 1.84-1.95 3.79-1.95 4.06 0 4.81 2.67 4.81 6.13V21h-4v-5.33c0-1.27-.03-2.9-1.77-2.9-1.77 0-2.04 1.38-2.04 2.81V21h-4V9Z"/>
+              </svg>
+            </a>
+            <!-- ArtStation (placeholder URL) -->
+            <a class="icon-btn" href="#" target="_blank" rel="noopener" aria-label="ArtStation" title="ArtStation — add your profile URL">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M21.6 16.82c.41.7.07 1.68-.76 1.68H10.9l2.21-3.85h6.06c.31 0 .59.16.73.43M8.26 19.49H3.16c-.83 0-1.33-.91-.92-1.61L9.21 4.51C9.61 3.82 10.53 3.82 10.94 4.5l2.52 4.37-5.2 9.06m11.6-7.71H13.7L11.5 7.93h7.44c.83 0 1.34.91.93 1.6l-1.01 1.74Z"/>
+              </svg>
+            </a>
+            <!-- Resume (download) -->
+            <a class="icon-btn" href="assets/Leo-Klemet-Resume.pdf" download aria-label="Download resume (PDF)" title="Download Resume (PDF)">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 3a1 1 0 0 1 1 1v8.586l2.293-2.293a1 1 0 1 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4A1 1 0 1 1 8.707 10.293L11 12.586V4a1 1 0 0 1 1-1ZM5 18a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z"/>
+              </svg>
+            </a>
+          </div>
+          <div class="skills" aria-label="Skills by domain">
+            <div class="skill-box">
+              <h4>AI / ML</h4>
+              <ul>
+                <li>PyTorch, TensorFlow, embeddings, RAG</li>
+                <li>Ollama, OpenAI API, evals</li>
+                <li>Classifiers, forecasting, explainability</li>
+              </ul>
+            </div>
+            <div class="skill-box">
+              <h4>Backend</h4>
+              <ul>
+                <li>FastAPI, Postgres, Alembic</li>
+                <li>OAuth/Authlib, JWT cookies + CSRF</li>
+                <li>Report exports (PDF/XLSX)</li>
+              </ul>
+            </div>
+            <div class="skill-box">
+              <h4>Frontend</h4>
+              <ul>
+                <li>React, Vite, TypeScript, Tailwind</li>
+                <li>shadcn, Recharts, accessibility</li>
+              </ul>
+            </div>
+            <div class="skill-box">
+              <h4>MLOps / Infra</h4>
+              <ul>
+                <li>Docker, GitHub Actions, CI/CD</li>
+                <li>Cloudflare Tunnel, GCP KMS, Nginx</li>
+                <li>Secrets, observability, security</li>
+              </ul>
+            </div>
+            <div class="skill-box">
+              <h4>3D / Creative</h4>
+              <ul>
+                <li>Blender, Substance Painter</li>
+                <li>ComfyUI, LoRA/SDXL, Runway</li>
+                <li>Storyboards, editing, sound</li>
+              </ul>
+            </div>
+            <div class="skill-box">
+              <h4>Resume</h4>
+              <ul>
+                <li><a class="btn" href="assets/Leo-Klemet-Resume.pdf" download>Download PDF</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="container">
+      <div class="section-head">
+        <h2 class="section-title">Contact</h2>
+        <p class="muted">Let’s collaborate or chat about roles, freelance, and experiments.</p>
+      </div>
+      <form name="contact" method="POST" data-netlify="true" novalidate>
+        <input type="hidden" name="form-name" value="contact" />
+        <div>
+          <label for="name">Name *</label>
+          <input id="name" name="name" autocomplete="name" required aria-describedby="name-error" />
+          <div id="name-error" class="error-message" aria-live="polite"></div>
+        </div>
+        <div>
+          <label for="email">Email *</label>
+          <input id="email" name="email" type="email" autocomplete="email" required aria-describedby="email-error" />
+          <div id="email-error" class="error-message" aria-live="polite"></div>
+        </div>
+        <div>
+          <label for="message">Message *</label>
+          <textarea id="message" name="message" placeholder="What would you like to build together?" required aria-describedby="message-error"></textarea>
+          <div id="message-error" class="error-message" aria-live="polite"></div>
+        </div>
+        <button class="btn submit" type="submit">Send Message</button>
+      </form>
+  <p class="muted" style="margin-top:1rem">Find me on <a href="https://www.linkedin.com/in/leo-klemet-1241662a6/" target="_blank" rel="noopener">LinkedIn</a> · <a href="https://github.com/leok974" target="_blank" rel="noopener">GitHub</a></p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container footer-grid">
+      <div>© <span id="year"></span> Leo Klemet</div>
+      <div class="muted">AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist</div>
+      <div style="text-align:right">
+        <a href="#home">Back to top ↑</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Chip (emoji robot style) -->
+  <button id="assistantChip" class="assistant-chip" aria-controls="assistantDock" aria-expanded="false" title="Ask about my projects">
+    <span aria-hidden="true">🤖</span> Ask about my projects…
+  </button>
+
+  <!-- Assistant Dock Panel (hidden by default; opened by chip) -->
+  <div id="assistantDock" class="assistant-dock" hidden role="dialog" aria-label="Portfolio Assistant" aria-modal="false">
+    <div class="assistant-header">
+      <div class="assistant-title">
+        <strong>Portfolio Assistant</strong>
+      </div>
+      <button class="assistant-close" aria-label="Close">Close</button>
+    </div>
+    <div class="assistant-systembar" role="status" aria-live="polite">
+      <span id="agent-status" class="agent-status" title="Model &amp; RAG status">Status</span>
+      <span class="served-by" id="servedBy">—</span>
+    </div>
+
+  <ol id="chatLog" class="chat-log" role="log" aria-live="polite" aria-relevant="additions text" aria-atomic="false"></ol>
+
+    <form id="chatForm" class="chat-composer">
+      <input id="chatInput" name="q" placeholder="Ask about my projects….." autocomplete="off" />
+      <button id="chatSend" type="submit">Send</button>
+    </form>
+  </div>
+
+
+
+  <!-- PROJECT DETAIL DIALOG (reusable) -->
+  <dialog class="project-detail" id="detailDialog" aria-labelledby="detailTitle">
+    <div class="detail-header">
+      <h3 id="detailTitle" style="margin:0">Project</h3>
+      <button class="btn" id="detailClose" aria-label="Close project details">✕ Close</button>
+    </div>
+    <div class="detail-body">
+      <div id="detailContent" class="detail-grid">
+        <!-- Filled dynamically by JS (see PROJECT_DETAILS map) -->
+      </div>
+    </div>
+  </dialog>
 
   <!-- Expose a small streaming API for the chip -->
   <script>
     (function(){
       const ENABLE_ASSISTANT = ['leok974.github.io','localhost','127.0.0.1'].includes(location.hostname);
       if (!ENABLE_ASSISTANT) return;
-      const API_BASE = 'https://assistant.ledger-mind.org';
+  const isLocal = ['localhost','127.0.0.1'].includes(location.hostname);
+  const API_BASE = isLocal ? 'http://127.0.0.1:8001' : 'https://assistant.ledger-mind.org';
+  // Expose for AgentStatus so pill and chat use the same backend
+  window.AGENT_BASE_URL = API_BASE;
       const API_STREAM = API_BASE + '/chat/stream';
       const API_NON_STREAM = API_BASE + '/chat';
       const CLIENT_SYSTEM = {
@@ -180,6 +501,13 @@
                 const l = line.trim(); if (!l.startsWith('data:')) continue;
                 const data = l.slice(5).trim(); if (data === '[DONE]') return;
                 try{
+                  if (chunk.startsWith('event: meta')){
+                    const meta = JSON.parse(data);
+                    const servedBy = meta._served_by;
+                    // Update status pill LLM dot and label
+                    window.AgentStatus?.updateServed(servedBy);
+                    continue;
+                  }
                   const j = JSON.parse(data);
                   const d = j.choices?.[0]?.delta?.content || '';
                   if (d){ ans += d; logEl.lastChild.textContent = 'Assistant: ' + ans; logEl.scrollTop = logEl.scrollHeight; }
@@ -207,8 +535,8 @@
     })();
   </script>
 
-  <!-- Load chip (defer, no async, no document.write) -->
-  <script defer src="js/assistant-chip.js"></script>
+  <!-- Lightweight status pill script -->
+  <script defer src="js/agent-status.js"></script>
 
   <script>
     // One-time cleanup to keep page layout intact
@@ -218,5 +546,20 @@
     });
   </script>
 
+  <!-- Main site JS (filters, modals, SW registration, a11y helpers) -->
+  <script defer src="main.js"></script>
+
+
+
+  <!-- Assistant Dock behavior (streaming) -->
+  <script type="module" defer src="js/assistant-dock.js"></script>
+
+
+
 </body>
 </html>
+
+
+
+
+

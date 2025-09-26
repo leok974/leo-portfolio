@@ -43,6 +43,12 @@ logs
 .env.test.local
 .env.production.local
 
+# Local backend data files
+data/
+
+# Secrets (Docker secrets)
+secrets/
+
 # Cache files
 .cache/
 .parcel-cache/
