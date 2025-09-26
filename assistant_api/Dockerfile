@@ -38,10 +38,17 @@ COPY assets ./assets
 COPY js ./js
 COPY index.html ./
 
+# Create non-root user and adjust ownership (minimal privileges)
+RUN useradd --system --create-home --uid 1001 appuser && \
+  mkdir -p /app/data && \
+  chown -R appuser:appuser /app
+
 EXPOSE 8000
 
 # Container-level healthcheck using dedicated script
 COPY assistant_api/healthcheck.py ./assistant_api/healthcheck.py
 HEALTHCHECK --interval=30s --timeout=6s --start-period=20s --retries=3 CMD python assistant_api/healthcheck.py
+
+USER appuser
 
 CMD ["uvicorn", "assistant_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
