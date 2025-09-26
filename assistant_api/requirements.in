@@ -1,0 +1,13 @@
+# Original unconstrained dependency intentions (source of truth for updates)
+fastapi>=0.110
+uvicorn[standard]
+httpx
+openai>=1.45.0
+tiktoken
+numpy
+scikit-learn
+faiss-cpu
+sentence-transformers
+python-dotenv
+pytest
+pytest-asyncio
