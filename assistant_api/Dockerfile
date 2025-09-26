@@ -35,9 +35,6 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 # Copy only necessary source (exclude tests, docs, etc.)
 COPY assistant_api ./assistant_api
-COPY assets ./assets
-COPY js ./js
-COPY index.html ./
 
 # Create non-root user and adjust ownership (minimal privileges)
 RUN useradd --system --create-home --uid 1001 appuser && \

@@ -1,4 +1,4 @@
-.PHONY: deps test build run audit latency models dev cmddev hyperdev
+.PHONY: deps test build run audit latency models dev cmddev hyperdev webdev
 
 # Lock dependencies from requirements.in
 deps:
@@ -51,3 +51,9 @@ cmddev:
 hyperdev:
 	@HOST=$${HOST:-127.0.0.1}; PORT=$${PORT:-8010}; echo "Starting hypercorn on $$HOST:$$PORT"; \
 	hypercorn assistant_api.main:app --bind $$HOST:$$PORT --workers 1 --log-level info
+
+# Frontend static server (separate from API). Requires node + browser-sync.
+# Usage: make webdev [PORT=5530]
+webdev:
+	@PORT=$${PORT:-5530}; echo "Starting static web server on 127.0.0.1:$$PORT"; \
+	npx browser-sync start --server --no-ui --no-notify --host 127.0.0.1 --port $$PORT --files "index.html,*.css,main.js,js/**/*.js,projects/**/*.html,assets/**/*,manifest.webmanifest,sw.js,projects.json"

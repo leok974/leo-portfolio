@@ -38,6 +38,16 @@ function HyperDev {
   hypercorn assistant_api.main:app --bind 127.0.0.1:$env:PORT --workers 1 --log-level info
 }
 
+function WebDev {
+  Write-Host "Starting static web server (browser-sync)" -ForegroundColor Cyan
+  if (-not (Get-Command npx -ErrorAction SilentlyContinue)) {
+    Write-Host "Node / npx not found. Install Node.js to use WebDev." -ForegroundColor Red
+    exit 1
+  }
+  if (-not $env:WEB_PORT) { $env:WEB_PORT = "5530" }
+  npx browser-sync start --server --no-ui --no-notify --host 127.0.0.1 --port $env:WEB_PORT --files "index.html,*.css,main.js,js/**/*.js,projects/**/*.html,assets/**/*,manifest.webmanifest,sw.js,projects.json"
+}
+
 function Latency {
   Write-Host "Probing primary latency (direct /models sampling)..."
   try {
@@ -58,5 +68,6 @@ switch ($Task) {
   "latency" { Latency }
   "cmddev" { CmdDev }
   "hyperdev" { HyperDev }
+  "webdev" { WebDev }
   default { Write-Host "Tasks: deps | test | build | run | audit" }
 }

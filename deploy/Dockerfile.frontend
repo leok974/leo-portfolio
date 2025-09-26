@@ -1,0 +1,51 @@
+########## Frontend Static-First Dockerfile ##########
+# Safe today (no Node build). Seamless future upgrade when a ./frontend
+# app with a build step appears. Uncomment the build stage + overlay
+# lines below once you add a real frontend toolchain.
+
+# ---------- (optional) build stage ----------
+# FROM node:20-alpine AS build
+# WORKDIR /app
+# COPY frontend/package*.json ./
+# RUN npm ci --no-audit --no-fund
+# COPY frontend/ .
+# RUN npm run build
+# RUN mkdir -p /out && cp -a dist/. /out/ || true
+
+# ---------- static collector (current static site at repo root) ----------
+FROM alpine:3.20 AS static
+WORKDIR /src
+COPY . .
+RUN set -eux; \
+		mkdir -p /out; \
+		for p in \
+			index.html \
+			favicon.ico \
+			robots.txt \
+			assets \
+			js \
+			css \
+			styles \
+			images \
+			img \
+			fonts \
+			media \
+		; do \
+			if [ -e "$p" ]; then \
+				cp -a "$p" /out/; \
+			fi; \
+		done
+
+# ---------- runtime ----------
+FROM nginx:1.27-alpine
+COPY --from=static /out/ /usr/share/nginx/html/
+# (future) overlay built assets if build stage enabled
+# COPY --from=build /out/ /tmp/dist/
+# RUN [ ! -d /tmp/dist ] || cp -a /tmp/dist/. /usr/share/nginx/html/
+
+# Lightweight healthcheck (edge proxy can still expose /healthz)
+RUN printf 'ok' > /usr/share/nginx/html/healthz
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD wget -qO- http://localhost/healthz || exit 1
+
+EXPOSE 8080
+
