@@ -40,16 +40,8 @@ COPY index.html ./
 
 EXPOSE 8000
 
-# Container-level healthcheck (no curl dependency required, but curl present if needed)
-HEALTHCHECK --interval=30s --timeout=6s --start-period=20s --retries=3 CMD python - <<PY || exit 1
-import json, os, sys, urllib.request
-url = os.environ.get('HEALTH_URL','http://127.0.0.1:8000/ready')
-try:
-    with urllib.request.urlopen(url, timeout=5) as r:
-        data = json.loads(r.read().decode() or '{}')
-    sys.exit(0 if data.get('ok') else 1)
-except Exception:
-    sys.exit(1)
-PY
+# Container-level healthcheck using dedicated script
+COPY assistant_api/healthcheck.py ./assistant_api/healthcheck.py
+HEALTHCHECK --interval=30s --timeout=6s --start-period=20s --retries=3 CMD python assistant_api/healthcheck.py
 
 CMD ["uvicorn", "assistant_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
