@@ -1,76 +1,36 @@
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
+import asyncio
+import sys
+import time
 
-from .llm_client import primary_list_models, PRIMARY_MODELS, OPENAI_MODEL as PRIMARY_MODEL_NAME
-import os, asyncio, subprocess
+
+def _log(msg: str) -> None:
+    print(f"[lifespan] {time.strftime('%H:%M:%S')} {msg}", file=sys.stderr, flush=True)
 
 
 @asynccontextmanager
 async def lifespan(app) -> AsyncIterator[None]:  # type: ignore[override]
-    """Application lifespan context.
-
-    Startup tasks:
-      - Populate PRIMARY_MODELS cache
-      - Determine PRIMARY_MODEL_PRESENT flag
-
-    Shutdown tasks: (placeholder for future resource cleanup)
-      - Close model / HTTP clients if persistent
-    """
-    # ---- Startup ----
+    _log("startup: begin")
+    stopper = asyncio.Event()
+    hold_task = asyncio.create_task(_hold_open(stopper))
     try:
-        models = await primary_list_models()
-        PRIMARY_MODELS[:] = models
-        present = PRIMARY_MODEL_NAME in models or any(
-            m.lower().startswith(PRIMARY_MODEL_NAME.lower()) for m in models
-        )
-        globals()["PRIMARY_MODEL_PRESENT"] = present
-        if not present:
-            print(f"[lifespan] WARNING primary model '{PRIMARY_MODEL_NAME}' not found in {len(models)} models")
-            # Optional auto-pull if enabled and looks like an Ollama environment
-            if os.getenv("PRIMARY_AUTO_PULL", "0").lower() in ("1","true","yes"):
-                # Fire and forget: pull model asynchronously so startup isn't blocked excessively
-                async def _pull():
-                    cmd = ["ollama", "pull", PRIMARY_MODEL_NAME]
-                    try:
-                        print(f"[lifespan] auto-pull starting: {' '.join(cmd)}")
-                        proc = await asyncio.create_subprocess_exec(*cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-                        try:
-                            await asyncio.wait_for(proc.communicate(), timeout=3600)
-                        except asyncio.TimeoutError:
-                            proc.kill()
-                            print("[lifespan] auto-pull timeout; process killed")
-                        else:
-                            if proc.returncode == 0:
-                                print("[lifespan] auto-pull complete; refreshing model list")
-                                try:
-                                    new_models = await primary_list_models()
-                                    PRIMARY_MODELS[:] = new_models
-                                    globals()["PRIMARY_MODEL_PRESENT"] = (
-                                        PRIMARY_MODEL_NAME in new_models or any(m.lower().startswith(PRIMARY_MODEL_NAME.lower()) for m in new_models)
-                                    )
-                                except Exception as e:
-                                    print(f"[lifespan] post-pull refresh failed: {e}")
-                            else:
-                                err_txt = (await proc.stderr.read()).decode(errors='ignore') if proc.stderr else ''
-                                print(f"[lifespan] auto-pull failed rc={proc.returncode} {err_txt[:200]}")
-                    except FileNotFoundError:
-                        print("[lifespan] auto-pull skipped: 'ollama' binary not found")
-                    except Exception as e:
-                        print(f"[lifespan] auto-pull error: {e}")
-                try:
-                    asyncio.create_task(_pull())
-                except RuntimeError:
-                    # If no running loop, fallback to subprocess (blocking, last resort)
-                    try:
-                        subprocess.Popen(["ollama", "pull", PRIMARY_MODEL_NAME])
-                        print("[lifespan] auto-pull spawned external process (no loop)")
-                    except Exception as e:
-                        print(f"[lifespan] auto-pull spawn failed: {e}")
-    except Exception as e:  # pragma: no cover - defensive logging
-        print(f"[lifespan] primary model warmup failed: {e}")
-    try:
+        _log("startup: ready (loop held)")
         yield
     finally:
-        # ---- Shutdown ----
-        # (No persistent resources yet; placeholder for future cleanup)
-        pass
+        _log("shutdown: begin")
+        stopper.set()
+        try:
+            await asyncio.wait_for(hold_task, timeout=2.0)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            _log(f"shutdown: hold_task cleanup error: {exc!r}")
+        _log("shutdown: done")
+
+
+async def _hold_open(stopper: asyncio.Event) -> None:
+    _log("hold_task: started")
+    try:
+        while not stopper.is_set():
+            await asyncio.sleep(1.0)
+    finally:
+        _log("hold_task: exiting")

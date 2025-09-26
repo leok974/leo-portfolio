@@ -1,5 +1,14 @@
 import os
+import sys
+from pathlib import Path
 import uvicorn
+
+# Ensure repository root (parent of this file's directory) is on sys.path so that
+# "assistant_api" package resolves even if launched from a different CWD or without PYTHONPATH.
+_here = Path(__file__).resolve().parent
+_repo_root = _here.parent
+if str(_repo_root) not in sys.path:
+    sys.path.insert(0, str(_repo_root))
 
 
 def main():

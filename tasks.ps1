@@ -22,6 +22,22 @@ function Audit {
   pip-audit --strict
 }
 
+function CmdDev {
+  Write-Host "Starting cmddev (loop policy enforced)" -ForegroundColor Cyan
+  $env:HOST = ${env:HOST} ? ${env:HOST} : "127.0.0.1"
+  if (-not $env:PORT) { $env:PORT = "8010" }
+  python assistant_api/run_cmddev.py
+}
+
+function HyperDev {
+  Write-Host "Starting hypercorn dev server" -ForegroundColor Cyan
+  if (-not (Get-Command hypercorn -ErrorAction SilentlyContinue)) {
+    Write-Host "Hypercorn not installed in this venv. Install with: pip install hypercorn" -ForegroundColor Yellow
+  }
+  if (-not $env:PORT) { $env:PORT = "8010" }
+  hypercorn assistant_api.main:app --bind 127.0.0.1:$env:PORT --workers 1 --log-level info
+}
+
 function Latency {
   Write-Host "Probing primary latency (direct /models sampling)..."
   try {
@@ -40,5 +56,7 @@ switch ($Task) {
   "run"   { Run }
   "audit" { Audit }
   "latency" { Latency }
+  "cmddev" { CmdDev }
+  "hyperdev" { HyperDev }
   default { Write-Host "Tasks: deps | test | build | run | audit" }
 }

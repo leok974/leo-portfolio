@@ -1,4 +1,4 @@
-.PHONY: deps test build run audit latency models dev
+.PHONY: deps test build run audit latency models dev cmddev hyperdev
 
 # Lock dependencies from requirements.in
 deps:
@@ -41,3 +41,13 @@ dev:
 	PORT=$${PORT:-8010}; \
 	echo "Starting dev server on $$HOST:$$PORT (reload enabled)"; \
 	python -m uvicorn assistant_api.main:app --host $$HOST --port $$PORT --reload
+
+# Command-prompt friendly dev (forces selector loop, no reload)
+cmddev:
+	@HOST=$${HOST:-127.0.0.1}; PORT=$${PORT:-8010}; echo "Starting cmddev on $$HOST:$$PORT"; \
+	python assistant_api/run_cmddev.py
+
+# Hypercorn alternative (may avoid uvicorn shell shutdown issue)
+hyperdev:
+	@HOST=$${HOST:-127.0.0.1}; PORT=$${PORT:-8010}; echo "Starting hypercorn on $$HOST:$$PORT"; \
+	hypercorn assistant_api.main:app --bind $$HOST:$$PORT --workers 1 --log-level info
