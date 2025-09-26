@@ -24,6 +24,7 @@ from .llm_health import router as llm_health_router
 from .ready import router as ready_router
 from .metrics import record, snapshot
 from .routes import status as status_routes, llm as llm_routes
+from .health import router as health_router
 import httpx
 import time
 import json
@@ -77,6 +78,7 @@ app.include_router(llm_health_router)
 app.include_router(ready_router)
 app.include_router(status_routes.router)
 app.include_router(llm_routes.router)
+app.include_router(health_router)
 
 ## Startup logic migrated to lifespan context in lifespan.py
 
