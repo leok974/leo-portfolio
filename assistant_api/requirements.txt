@@ -1,3 +1,4 @@
+# DO NOT EDIT: generated from requirements.in via scripts/update-deps.(sh|ps1)
 ###############################################
 # Pinned dependency lock file
 # Generated via: pip freeze (Python 3.13 runtime env)

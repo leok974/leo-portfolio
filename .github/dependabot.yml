@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/assistant_api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    allow:
+      - dependency-type: "direct"
+    open-pull-requests-limit: 5
+    # Note: Dependabot will update requirements.txt by default; treat PRs as advisory.
+    # Run scripts/update-deps.(sh|ps1) locally to regenerate the lock.

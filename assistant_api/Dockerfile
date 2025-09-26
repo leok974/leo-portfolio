@@ -9,7 +9,7 @@ WORKDIR /wheels
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential gcc rustc cargo curl ca-certificates \
   && rm -rf /var/lib/apt/lists/*
-COPY requirements.txt ./requirements.txt
+COPY requirements.in requirements.txt ./
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip wheel --no-cache-dir --wheel-dir /wheels/dist -r requirements.txt
 

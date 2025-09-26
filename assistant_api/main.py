@@ -46,7 +46,9 @@ try:
 except Exception:
     pass
 
-app = FastAPI(title="Leo Portfolio Assistant")
+from .lifespan import lifespan
+
+app = FastAPI(title="Leo Portfolio Assistant", lifespan=lifespan)
 
 # Track last provider that served a response (primary|fallback|none)
 LAST_SERVED_BY: dict[str, str | float] = {"provider": "none", "ts": 0.0}
@@ -76,19 +78,7 @@ app.include_router(ready_router)
 app.include_router(status_routes.router)
 app.include_router(llm_routes.router)
 
-@app.on_event("startup")
-async def _warm_primary_models():
-    try:
-        models = await primary_list_models()
-        PRIMARY_MODELS[:] = models
-        present = PRIMARY_MODEL_NAME in models
-        if not present and any(m.lower().startswith(PRIMARY_MODEL_NAME.lower()) for m in models):
-            present = True
-        globals()["PRIMARY_MODEL_PRESENT"] = present
-        if not present:
-            print(f"[startup] WARNING primary model '{PRIMARY_MODEL_NAME}' not found in {len(models)} models")
-    except Exception as e:
-        print(f"[startup] primary model warmup failed: {e}")
+## Startup logic migrated to lifespan context in lifespan.py
 
 @app.middleware("http")
 async def _metrics_middleware(request, call_next):
