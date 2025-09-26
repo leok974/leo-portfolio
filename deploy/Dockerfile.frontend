@@ -1,22 +1,48 @@
-# Build stage (optional hook for future processing)
-FROM alpine:3.20 AS assets
-WORKDIR /src
-# Copy only static assets and root HTML/JS/CSS. Adjust if build tooling added later.
+############### Frontend Multi-stage Build ###############
+# If a future Node/Vite app lives under ./frontend this will build it;
+# otherwise we fall back to copying existing static root assets.
+
+ARG FRONTEND_DIR=frontend
+
+FROM node:20-alpine AS build
+WORKDIR /app
+
+# Only copy package manifests first (better layer caching)
+COPY ${FRONTEND_DIR}/package*.json ./
+RUN if [ -f package.json ]; then npm ci --no-audit --no-fund; else echo "(no frontend package.json, skipping npm ci)"; fi
+
+# Copy rest of prospective frontend sources
+COPY ${FRONTEND_DIR}/ .
+
+# Build if build script exists
+RUN if [ -f package.json ] && npm run | grep -q ' build'; then npm run build; else echo "(no build script, skipping)"; fi
+
+FROM nginx:1.27-alpine AS runtime
+ARG FRONTEND_DIR=frontend
+ENV STATIC_FALLBACK=1
+
+RUN rm /etc/nginx/conf.d/default.conf || true
+WORKDIR /usr/share/nginx/html
+
+# Copy built dist if present; else copy legacy static assets from repo root (context assumed deploy/)
+COPY --from=build /app/dist/ ./
+
+# Fallback copy (legacy static site at repo root one level up)
 COPY ../index.html ./
 COPY ../main.js ./
-COPY ../styles*.css ./
 COPY ../manifest.webmanifest ./
 COPY ../sw.js ./
 COPY ../assets ./assets
 COPY ../projects ./projects
 COPY ../js ./js
+# Use wildcard for styles via separate copy to avoid COPY multi-source confusion
+COPY ../styles*.css ./
 
-# Final stage: nginx serving static site
-FROM nginx:1.27-alpine
-# Remove default config & add a simple one (can be overridden by reverse proxy compose service)
-RUN rm /etc/nginx/conf.d/default.conf || true
-COPY --from=assets /src /usr/share/nginx/html
-# Basic cache headers: tweak as needed
+# Simple health file
+RUN printf 'ok' > healthz
+
+# Basic cache header include (lightweight; edge proxy may override)
 RUN printf 'add_header Cache-Control "public, max-age=3600";\n' > /etc/nginx/conf.d/cache.conf
+
 EXPOSE 8080
 

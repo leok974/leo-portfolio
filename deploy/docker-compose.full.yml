@@ -54,10 +54,22 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+    image: ${FRONTEND_IMAGE:-leo-portfolio/frontend:dev}
     depends_on:
       - backend
+    expose:
+      - "8080"
+    restart: unless-stopped
+
+  edge:
+    build:
+      context: ./edge
+    image: ${EDGE_IMAGE:-leo-portfolio/edge:dev}
+    depends_on:
+      - backend
+      - frontend
     ports:
-      - "127.0.0.1:8080:8080"
+      - "${EDGE_PORT:-8080}:80"
     restart: unless-stopped
 
 volumes:
