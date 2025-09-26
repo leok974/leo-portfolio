@@ -123,3 +123,13 @@ Write-Status $chat.ok "POST /chat" $chat
 Write-Host "`n== METRICS =="
 $metrics = Invoke-Http -Method GET -Url "$BaseUrl/metrics" -TimeoutSec 10
 Write-Status $metrics.ok "GET /metrics" $metrics
+Write-Host "`n== STATUS SUMMARY =="
+$sum = Invoke-Http -Method GET -Url "$BaseUrl/status/summary" -TimeoutSec 10
+if ($sum.ok) {
+  $llm = $sum.body.llm.path
+  $key = if ($sum.body.openai_configured) { 'yes' } else { 'no' }
+  $rag = if ($sum.body.rag.ok) { 'ok' } else { 'err' }
+  Write-Host ("[status] LLM:{0} • OpenAI key:{1} • RAG:{2}" -f $llm,$key,$rag) -ForegroundColor Cyan
+} else {
+  Write-Status $false "GET /status/summary" $sum
+}

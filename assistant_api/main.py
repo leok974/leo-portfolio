@@ -11,6 +11,7 @@ from .auto_rag import needs_repo_context, fetch_context, build_context_message
 from .llm_health import router as llm_health_router
 from .ready import router as ready_router
 from .metrics import record, snapshot
+from .routes import status as status_routes
 import time
 import json
 import os
@@ -57,6 +58,7 @@ app.add_middleware(
 app.include_router(rag_router, prefix="/api")
 app.include_router(llm_health_router)
 app.include_router(ready_router)
+app.include_router(status_routes.router)
 
 @app.middleware("http")
 async def _metrics_middleware(request, call_next):

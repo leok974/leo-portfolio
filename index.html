@@ -402,6 +402,9 @@
     </div>
   </footer>
 
+  <!-- Agent status pill near footer -->
+  <div id="agent-status" class="agent-status" aria-live="polite" title="Model &amp; RAG status" style="position:fixed; right:max(16px, env(safe-area-inset-right)); bottom:calc(max(16px, env(safe-area-inset-bottom)) + 56px); z-index:2147483641;">Loading…</div>
+
   <!-- PROJECT DETAIL DIALOG (reusable) -->
   <dialog class="project-detail" id="detailDialog" aria-labelledby="detailTitle">
     <div class="detail-header">
@@ -503,6 +506,8 @@
 
   <!-- Load chip (defer, no async, no document.write) -->
   <script defer src="js/assistant-chip.js"></script>
+  <!-- Lightweight status pill script -->
+  <script defer src="js/agent-status.js"></script>
 
   <script>
     // One-time cleanup to keep page layout intact
@@ -516,7 +521,12 @@
   <script defer src="main.js"></script>
 
   <style>
-    
+    /* Extra micro styles for external status pill (agent-dot/agent-kv) */
+    .agent-dot{width:.55rem; height:.55rem; border-radius:50%; display:inline-block}
+    .agent-kv{opacity:.9}
+    .agent-status.ok{border-color:#2ecc71aa}
+    .agent-status.warn{border-color:#f1c40faa}
+    .agent-status.err{border-color:#e74c3caa}
   </style>
 
 </body>
