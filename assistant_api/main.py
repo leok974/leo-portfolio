@@ -6,15 +6,27 @@ import os
 from pathlib import Path
 from .rag_query import router as rag_router
 from .rag_ingest import ingest
-from .llm_client import chat as llm_chat, chat_stream as llm_chat_stream, diag as llm_diag
+from .llm_client import (
+    chat as llm_chat,
+    chat_stream as llm_chat_stream,
+    diag as llm_diag,
+    primary_list_models,
+    PRIMARY_MODELS,
+    PRIMARY_MODEL_PRESENT,
+    OPENAI_MODEL as PRIMARY_MODEL_NAME,
+    PRIMARY_BASE as PRIMARY_BASE_URL,
+    LAST_PRIMARY_ERROR,
+    LAST_PRIMARY_STATUS,
+    DISABLE_PRIMARY,
+)
 from .auto_rag import needs_repo_context, fetch_context, build_context_message
 from .llm_health import router as llm_health_router
 from .ready import router as ready_router
 from .metrics import record, snapshot
-from .routes import status as status_routes
+from .routes import status as status_routes, llm as llm_routes
+import httpx
 import time
 import json
-import os
 try:
     # Load .env and .env.local if present (dev convenience)
     from dotenv import load_dotenv
@@ -35,6 +47,9 @@ except Exception:
     pass
 
 app = FastAPI(title="Leo Portfolio Assistant")
+
+# Track last provider that served a response (primary|fallback|none)
+LAST_SERVED_BY: dict[str, str | float] = {"provider": "none", "ts": 0.0}
 
 origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
 if not origins:
@@ -59,6 +74,21 @@ app.include_router(rag_router, prefix="/api")
 app.include_router(llm_health_router)
 app.include_router(ready_router)
 app.include_router(status_routes.router)
+app.include_router(llm_routes.router)
+
+@app.on_event("startup")
+async def _warm_primary_models():
+    try:
+        models = await primary_list_models()
+        PRIMARY_MODELS[:] = models
+        present = PRIMARY_MODEL_NAME in models
+        if not present and any(m.lower().startswith(PRIMARY_MODEL_NAME.lower()) for m in models):
+            present = True
+        globals()["PRIMARY_MODEL_PRESENT"] = present
+        if not present:
+            print(f"[startup] WARNING primary model '{PRIMARY_MODEL_NAME}' not found in {len(models)} models")
+    except Exception as e:
+        print(f"[startup] primary model warmup failed: {e}")
 
 @app.middleware("http")
 async def _metrics_middleware(request, call_next):
@@ -77,6 +107,77 @@ async def _metrics_middleware(request, call_next):
 @app.get("/metrics")
 def metrics():
     return snapshot()
+
+# Lightweight built-in status summary endpoint (mirrors routes.status)
+def _read_secret(env_name: str, file_env: str, default_file: str | None = None) -> str | None:
+    val = os.getenv(env_name)
+    if val:
+        return val
+    fpath = os.getenv(file_env) or default_file
+    if fpath and os.path.exists(fpath):
+        try:
+            with open(fpath, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except Exception:
+            return None
+    return None
+
+@app.get("/status/summary")
+async def status_summary_ep():
+    base = os.getenv("BASE_URL_PUBLIC", "http://127.0.0.1:8001")
+    openai_configured = bool(
+        _read_secret("OPENAI_API_KEY", "OPENAI_API_KEY_FILE", "/run/secrets/openai_api_key")
+        or _read_secret("FALLBACK_API_KEY", "FALLBACK_API_KEY_FILE", "/run/secrets/openai_api_key")
+    )
+    llm = {"path": "down", "model": os.getenv("OPENAI_MODEL", "gpt-oss:20b")}
+    rag = {"ok": False, "db": os.getenv("RAG_DB", "data/rag.sqlite")}
+    ready_ok = False
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as x:
+            # LLM health
+            try:
+                r = await x.get(f"{base}/llm/health")
+                if r.status_code == 200:
+                    st = (r.json() or {}).get("status", {})
+                    if st.get("ollama") == "up":
+                        llm["path"] = "local"
+                    elif st.get("openai") == "configured":
+                        llm["path"] = "fallback"
+            except Exception:
+                pass
+            # Ready
+            try:
+                r2 = await x.get(f"{base}/ready")
+                ready_ok = (r2.status_code == 200)
+            except Exception:
+                ready_ok = False
+            # RAG quick probe
+            try:
+                r3 = await x.post(f"{base}/api/rag/query", json={"question": "ping", "k": 1})
+                rag["ok"] = (r3.status_code == 200)
+            except Exception:
+                rag["ok"] = False
+    except Exception:
+        pass
+    primary_info = {
+        "base_url": PRIMARY_BASE_URL,
+        "model": PRIMARY_MODEL_NAME,
+        "enabled": not DISABLE_PRIMARY,
+        "model_present": globals().get("PRIMARY_MODEL_PRESENT"),
+        "models_sample": PRIMARY_MODELS[:8],
+        "last_error": globals().get("LAST_PRIMARY_ERROR"),
+        "last_status": globals().get("LAST_PRIMARY_STATUS"),
+    }
+    return {
+        "llm": llm,
+        "openai_configured": openai_configured,
+        "rag": rag,
+        "ready": ready_ok,
+        "metrics_hint": {"providers": ["primary", "fallback"], "fields": ["req", "5xx", "p95_ms", "tok_in", "tok_out"]},
+        "tooltip": f"Ollama/OpenAI configured: {openai_configured}. RAG DB: {rag.get('db')}",
+        "last_served_by": LAST_SERVED_BY,
+        "primary": primary_info,
+    }
 
 class ChatReq(BaseModel):
     messages: list
@@ -113,6 +214,15 @@ async def chat(req: ChatReq):
         tag, resp = await llm_chat(messages, stream=False)
         data = resp.json()
         data["_served_by"] = tag
+        try:
+            import time as _t
+            LAST_SERVED_BY["provider"] = tag
+            LAST_SERVED_BY["ts"] = _t.time()
+            # update last primary diagnostics if available
+            globals()["LAST_PRIMARY_ERROR"] = globals().get("LAST_PRIMARY_ERROR")
+            globals()["LAST_PRIMARY_STATUS"] = globals().get("LAST_PRIMARY_STATUS")
+        except Exception:
+            pass
         return data
     except Exception as e:
         # Gather rich debug info when provider calls fail
@@ -155,6 +265,12 @@ async def chat_stream_ep(req: ChatReq):
         async for tag, line in llm_chat_stream(messages):
             if source is None:
                 source = tag
+                try:
+                    import time as _t
+                    LAST_SERVED_BY["provider"] = tag
+                    LAST_SERVED_BY["ts"] = _t.time()
+                except Exception:
+                    pass
                 meta = {"_served_by": source}
                 yield f"event: meta\ndata: {json.dumps(meta)}\n\n"
             # passthrough OpenAI-style data lines
@@ -169,3 +285,10 @@ async def chat_stream_ep(req: ChatReq):
 async def trigger_ingest():
     await ingest()
     return {"ok": True}
+
+
+
+
+
+
+

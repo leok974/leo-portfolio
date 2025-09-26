@@ -93,3 +93,20 @@ Set RAG_URL=http://backend:8000/api/rag/query in env/compose.
 Ensure secrets/openai_api_key exists and mounted.
 
 Run scripts/smoke.sh http://127.0.0.1:8000 on the host or from a toolbox container.
+
+## Restart helpers (PowerShell)
+
+**Dev (uvicorn)**
+
+```powershell
+Get-Process -Name "uvicorn" -ErrorAction SilentlyContinue | Stop-Process -Force
+python -m uvicorn assistant_api.main:app --host 0.0.0.0 --port 8000
+```
+
+**Docker Compose (backend container)**
+
+```powershell
+$FILES = @('-f','docker-compose.prod.yml','-f','docker-compose.prod.override.yml')
+docker compose $FILES restart backend
+docker compose $FILES logs -f backend --tail=100
+```

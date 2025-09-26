@@ -1,9 +1,9 @@
-// Minimal dependency-free module for status pill
+// Minimal dependency-free module for a single global status pill
 (function(){
   if (window.__AGENT_STATUS_INIT__) return; window.__AGENT_STATUS_INIT__ = true;
 
-  const STATUS_URL = (window.AGENT_BASE_URL || 'http://127.0.0.1:8001') + '/status/summary';
-  const SSE_URL    = (window.AGENT_BASE_URL || 'http://127.0.0.1:8001') + '/chat/stream';
+  const BASE       = (window.AGENT_BASE_URL || 'http://127.0.0.1:8001');
+  const STATUS_URL = BASE + '/status/summary';
   const REFRESH_MS = 30_000;
 
   const el = () => document.getElementById('agent-status');
@@ -33,33 +33,36 @@
     const node = el(); if (!node) return;
     node.classList.remove('ok','warn','err');
     node.classList.add(classify(s));
+    const color = s.llm.path==='local' ? '#2ecc71' : s.llm.path==='fallback' ? '#f1c40f' : '#e74c3c';
+    const text = document.createElement('span');
+    text.className = 'agent-kv';
+    text.textContent = 'Status';
     node.replaceChildren(
-      dot(s.llm.path==='local' ? '#2ecc71' : s.llm.path==='fallback' ? '#f1c40f' : '#e74c3c'),
-      (()=>{const span=document.createElement('span'); span.className='agent-kv'; span.textContent = label(s); return span;})()
+      dot(color),
+      text
     );
-    node.title = s.tooltip || 'Model & RAG status';
+    const tip = s.tooltip ? `${label(s)}\n${s.tooltip}` : label(s);
+    node.setAttribute('data-tip', tip);
+    node.title = tip;
   }
 
-  async function tick(){ try { render(await fetchStatus()); } catch { render({ llm:{path:'down'}, openai_configured:false, rag:{ok:false} }); } }
+  async function tick(){
+    try { render(await fetchStatus()); }
+    catch { render({ llm:{path:'down'}, openai_configured:false, rag:{ok:false} }); }
+  }
+
+  function updateServed(served){
+    // Programmatic quick update when we know which path served the response
+    const path = served === 'fallback' ? 'fallback' : 'local';
+    render({ llm:{ path }, openai_configured:true, rag:{ ok:true }, tooltip: 'Live stream metadata' });
+  }
 
   function start(){
-    // If pill exists in DOM (external one), start polling immediately
     if (el()) { tick(); setInterval(tick, REFRESH_MS); }
-
-    // Optional: listen for meta events to live-update served_by
-    try {
-      const es = new EventSource(SSE_URL, { withCredentials:true });
-      es.addEventListener('meta', e => {
-        try {
-          const m = JSON.parse(e.data||'{}');
-          if (m && m._served_by) {
-            render({ llm:{ path: m._served_by==='fallback' ? 'fallback' : 'local' }, openai_configured:true, rag:{ok:true} });
-          }
-        } catch {}
-      });
-    } catch {}
+    // Live path updates come from chat streaming (assistant-dock.js) via AgentStatus.updateServed.
+    // We intentionally avoid opening an EventSource here because /chat/stream is POST-only.
   }
 
-  window.AgentStatus = window.AgentStatus || { start };
+  window.AgentStatus = Object.assign(window.AgentStatus||{}, { start, updateServed });
   window.addEventListener('DOMContentLoaded', start);
 })();

@@ -74,6 +74,13 @@ This repo is **Copilot‑friendly**. Open VS Code with Copilot Chat enabled and 
 
 ---
 
+## Backend Diagnostics
+
+- `./scripts/Probe-Chat.ps1` runs a minimal `/chat` request (default base `http://127.0.0.1:8001`) and echoes the `_served_by → served path` banner.
+- `./scripts/smoke.ps1` covers readiness, health, RAG, metrics, and now invokes the chat probe for parity.
+
+---
+
 ## Structure
 
 ```
@@ -107,3 +114,6 @@ This repo is **Copilot‑friendly**. Open VS Code with Copilot Chat enabled and 
 ## License
 
 MIT © 2025 Leo Klemet
+
+
+

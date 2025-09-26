@@ -119,6 +119,13 @@ Write-Host "`n== CHAT (fallback test) =="
 $chatBody = @{ messages = @(@{ role = "user"; content = "Explain the portfolio assistant chip" }) }
 $chat = Invoke-Http -Method POST -Url "$BaseUrl/chat" -Body $chatBody -TimeoutSec 25
 Write-Status $chat.ok "POST /chat" $chat
+Write-Host "`n== CHAT PROBE =="
+try {
+  & "$PSScriptRoot/Probe-Chat.ps1" -Base $BaseUrl
+} catch {
+  Write-Host "[FAIL] Probe-Chat.ps1" -ForegroundColor Red
+  Write-Host $_
+}
 
 Write-Host "`n== METRICS =="
 $metrics = Invoke-Http -Method GET -Url "$BaseUrl/metrics" -TimeoutSec 10
@@ -133,3 +140,4 @@ if ($sum.ok) {
 } else {
   Write-Status $false "GET /status/summary" $sum
 }
+
