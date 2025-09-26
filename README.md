@@ -115,5 +115,18 @@ This repo is **Copilot‑friendly**. Open VS Code with Copilot Chat enabled and 
 
 MIT © 2025 Leo Klemet
 
+---
+
+## Backend Latency Endpoints
+
+Two latency measurement modes are exposed for the primary LLM path:
+
+| Endpoint | Purpose | Notes |
+|----------|---------|-------|
+| `GET /llm/primary/latency` | Direct backend probe hitting the primary `/models` endpoint repeatedly | Returns statistical distribution: `stats` (min/p50/p95/p99/max/avg, count, ok_rate) plus raw statuses. Low overhead. |
+| `GET /llm/primary/chat-latency` | (DEPRECATED) Micro chat pipeline latency including minimal message build and provider call | Response adds `deprecated: true` and a `replacement` pointer. Will be removed after comparison period. |
+
+The probe endpoint is preferred for tracking provider/network performance in isolation; the deprecated chat-latency helps differentiate application overhead from provider regression while both coexist.
+
 
 

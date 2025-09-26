@@ -36,13 +36,15 @@ def test_primary_ping_ok(monkeypatch):
     assert response.json()['ok'] is True
 
 
-def test_primary_latency(monkeypatch):
+def test_primary_chat_latency(monkeypatch):
     async def ok_chat(messages, max_tokens=1):  # noqa: ARG001
         return ({'choices': [{}]}, None, 200)
 
     monkeypatch.setattr(llm_routes, 'primary_chat', ok_chat)
-    response = client.get('/llm/primary/latency?n=2')
+    response = client.get('/llm/primary/chat-latency?n=2')
     assert response.status_code == 200
     payload = response.json()
+    assert payload.get('deprecated') is True
+    assert payload.get('replacement') == '/llm/primary/latency'
     assert isinstance(payload.get('runs'), list)
     assert len(payload['runs']) == 2

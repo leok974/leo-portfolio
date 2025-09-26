@@ -64,12 +64,13 @@ async def primary_ping():
     return {"ok": False, "reason": reason, "status": status}
 
 
-@router.get("/primary/latency")
-async def primary_latency(n: int = 1):
-    """Run up to 5 micro chat calls (1 token) and report per-run latency.
+@router.get("/primary/chat-latency")
+async def primary_chat_latency(n: int = 1):
+    """DEPRECATED chat-pipeline micro latency.
 
-    Query param n limits number of samples (1..5). Each run attempts a minimal
-    primary_chat request; failures are captured with reason/status for diagnostics.
+    Previously at /llm/primary/latency. Kept temporarily for comparison with the
+    lightweight direct /llm/primary/latency probe (which hits /models directly).
+    Returns per-run ms plus basic stats and deprecation metadata.
     """
     runs = []
     for _ in range(max(1, min(n, 5))):
@@ -87,4 +88,10 @@ async def primary_latency(n: int = 1):
     if ok_lat:
         s = sorted(ok_lat)
         p50 = s[len(s)//2]
-    return {"runs": runs, "p50_ms": p50}
+    return {
+        "mode": "chat",
+        "deprecated": True,
+        "replacement": "/llm/primary/latency",
+        "runs": runs,
+        "p50_ms": p50,
+    }

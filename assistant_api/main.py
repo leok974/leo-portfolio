@@ -22,8 +22,9 @@ from .llm_client import (
 from .auto_rag import needs_repo_context, fetch_context, build_context_message
 from .llm_health import router as llm_health_router
 from .ready import router as ready_router
-from .metrics import record, snapshot
+from .metrics import record, snapshot, recent_latency_stats, recent_latency_stats_by_provider
 from .routes import status as status_routes, llm as llm_routes
+from .routes import llm_latency as llm_latency_routes
 from .health import router as health_router
 import httpx
 import time
@@ -79,6 +80,7 @@ app.include_router(ready_router)
 app.include_router(status_routes.router)
 app.include_router(llm_routes.router)
 app.include_router(health_router)
+app.include_router(llm_latency_routes.router)
 
 ## Startup logic migrated to lifespan context in lifespan.py
 
@@ -165,6 +167,8 @@ async def status_summary_ep():
         "openai_configured": openai_configured,
         "rag": rag,
         "ready": ready_ok,
+        "latency_recent": recent_latency_stats(),
+    "latency_recent_by_provider": recent_latency_stats_by_provider(),
         "metrics_hint": {"providers": ["primary", "fallback"], "fields": ["req", "5xx", "p95_ms", "tok_in", "tok_out"]},
         "tooltip": f"Ollama/OpenAI configured: {openai_configured}. RAG DB: {rag.get('db')}",
         "last_served_by": LAST_SERVED_BY,

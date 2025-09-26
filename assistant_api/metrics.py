@@ -4,6 +4,9 @@ from typing import Deque, Tuple
 
 _lock = threading.Lock()
 _events: Deque[Tuple[float, int, float, str, int, int]] = deque(maxlen=5000)  # (ts, status, ms, provider, in_toks, out_toks)
+# Recent latency window (lightweight) for status summary (default ~ last 200 requests)
+_recent_lat: Deque[float] = deque(maxlen=200)
+_recent_lat_by_provider: dict[str, Deque[float]] = defaultdict(lambda: deque(maxlen=200))
 _totals = defaultdict(int)
 
 # New high-level counters (simple) -------------------------------------------------
@@ -33,6 +36,8 @@ def record(status: int, ms: float, provider: str | None = None, in_toks: int = 0
     with _lock:
         prov = provider or "-"
         _events.append((time.time(), status, ms, prov, in_toks, out_toks))
+        _recent_lat.append(ms)
+        _recent_lat_by_provider[prov].append(ms)
         _totals["req"] += 1
         if status >= 500:
             _totals["5xx"] += 1
@@ -72,3 +77,58 @@ def snapshot():
             "providers": merged_providers,
             "primary_fail_reason": top_fail,
         }
+
+def recent_latency_stats() -> dict:
+    """Return rolling latency distribution for last N requests (cheap computation)."""
+    with _lock:
+        data = list(_recent_lat)
+    if not data:
+        return {"count": 0, "min_ms": 0.0, "p50_ms": 0.0, "p95_ms": 0.0, "p99_ms": 0.0, "max_ms": 0.0, "avg_ms": 0.0}
+    s = sorted(data)
+    def _pct(p: float):
+        if not s:
+            return 0.0
+        k = (len(s) - 1) * (p / 100.0)
+        f = int(k)
+        c = min(f + 1, len(s) - 1)
+        if f == c:
+            return s[f]
+        return s[f] + (s[c] - s[f]) * (k - f)
+    import statistics as _st
+    return {
+        "count": len(s),
+        "min_ms": s[0],
+        "p50_ms": _pct(50.0),
+        "p95_ms": _pct(95.0),
+        "p99_ms": _pct(99.0),
+        "max_ms": s[-1],
+        "avg_ms": _st.fmean(s),
+    }
+
+def recent_latency_stats_by_provider() -> dict:
+    """Return rolling latency stats split by provider (primary, fallback, etc.)."""
+    with _lock:
+        snap = {k: list(v) for k, v in _recent_lat_by_provider.items()}
+    out: dict[str, dict] = {}
+    import statistics as _st
+    def _dist(arr: list[float]):
+        if not arr:
+            return {"count":0,"min_ms":0.0,"p50_ms":0.0,"p95_ms":0.0,"p99_ms":0.0,"max_ms":0.0,"avg_ms":0.0}
+        s = sorted(arr)
+        def _pct(p: float):
+            k = (len(s) - 1) * (p / 100.0)
+            f = int(k); c = min(f+1, len(s)-1)
+            return s[f] if f==c else s[f] + (s[c]-s[f])*(k-f)
+        return {
+            "count": len(s),
+            "min_ms": s[0],
+            "p50_ms": _pct(50.0),
+            "p95_ms": _pct(95.0),
+            "p99_ms": _pct(99.0),
+            "max_ms": s[-1],
+            "avg_ms": _st.fmean(s),
+        }
+    for prov, arr in snap.items():
+        if prov != "-":
+            out[prov] = _dist(arr)
+    return out

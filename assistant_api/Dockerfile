@@ -9,7 +9,8 @@ WORKDIR /wheels
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential gcc rustc cargo curl ca-certificates \
   && rm -rf /var/lib/apt/lists/*
-COPY requirements.in requirements.txt ./
+COPY assistant_api/requirements.in ./requirements.in
+COPY assistant_api/requirements.txt ./requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip wheel --no-cache-dir --wheel-dir /wheels/dist -r requirements.txt
 
@@ -27,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install wheels (fast, reproducible)
 COPY --from=wheels /wheels/dist /tmp/wheels
-COPY requirements.txt ./requirements.txt
+COPY assistant_api/requirements.txt ./requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir --no-index --find-links /tmp/wheels -r requirements.txt && \
     rm -rf /tmp/wheels
@@ -45,8 +46,7 @@ RUN useradd --system --create-home --uid 1001 appuser && \
 
 EXPOSE 8000
 
-# Container-level healthcheck using dedicated script
-COPY assistant_api/healthcheck.py ./assistant_api/healthcheck.py
+# Container-level healthcheck using existing script (already in assistant_api directory)
 HEALTHCHECK --interval=30s --timeout=6s --start-period=20s --retries=3 CMD python assistant_api/healthcheck.py
 
 USER appuser

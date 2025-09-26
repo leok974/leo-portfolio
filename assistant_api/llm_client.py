@@ -62,6 +62,20 @@ def diag() -> dict:
         "primary_disabled": DISABLE_PRIMARY,
     }
 
+def get_primary_base_url() -> str:
+    """Return the OpenAI-compatible base URL for the primary (Ollama) runtime.
+    Falls back to existing PRIMARY_BASE if override not set."""
+    return os.getenv("PRIMARY_BASE_URL", PRIMARY_BASE)
+
+async def ping_primary_once(timeout_s: float = 0.5) -> int:
+    """One-off /models GET against primary base. Returns status code (200 expected).
+    Raises httpx exceptions on network issues."""
+    base = get_primary_base_url().rstrip('/')
+    url = f"{base}/models"
+    async with httpx.AsyncClient(timeout=timeout_s) as client:
+        r = await client.get(url)
+        return r.status_code
+
 def get_primary_status() -> dict:
     return {
         "base_url": PRIMARY_BASE,
