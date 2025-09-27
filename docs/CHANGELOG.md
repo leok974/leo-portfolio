@@ -11,6 +11,8 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
 - **Status:** Optional environment flags `STATUS_RAG_VIA_HTTP=1` and `RAG_PROBE_TIMEOUT` (seconds) to force legacy HTTP RAG probe for diagnostics.
 - **Deploy:** Example override file (`deploy/docker-compose.override.example.yml`) documenting tuning knobs.
 - **Scripts:** `test-warm-transition.ps1` for observing `llm.path` transition (`down→warming→primary`).
+- **CI/CD:** GHCR multi-arch publish workflow (`publish-backend.yml`) pushing `backend` image (tags: main, semantic tags, SHA) to `ghcr.io`.
+- **Tests:** `test_status_rag.py` covering status heuristic (primary vs warming, rag ok, missing index).
 
 ### Changed
 - **status/summary:** Unified OpenAI detection; explicit `warming` state when Ollama is up but model tag not present.
