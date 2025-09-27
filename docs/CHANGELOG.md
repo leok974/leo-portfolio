@@ -3,6 +3,19 @@
 All notable changes to this project will be documented here.
 Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD).
 
+## [Unreleased]
+
+### Added
+- **README:** “Model selection & warming” section explaining `PRIMARY_MODEL`, `llm.path` states (`down`→`warming`→`primary`), readiness vs. status, and local-model fallback.
+
+### Changed
+- **status/summary:** Unified OpenAI detection; explicit `warming` state when Ollama is up but model tag not present.
+- **RAG health:** Reports `ok: true` with `mode: local-fallback` when cloud embeddings are absent, preventing false negatives.
+- **smoke.ps1:** Auto-detects `/api` prefix vs root; prints a note when `llm.path=warming`.
+
+### Fixed
+- Consistent `openai: configured|not_configured` across `/ready`, `/llm/health`, and `/status/summary`.
+
 ## [0.2.0] - 2025-09-27
 ### Added
 - Full-stack Docker Compose (`docker-compose.full.yml`) including frontend + edge proxy.

@@ -1,5 +1,7 @@
 # Leo Klemet — Portfolio (HTML/CSS/JS)
 
+[![Smoke](https://github.com/leok974/leo-portfolio/actions/workflows/smoke.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/smoke.yml)
+
 A fast, modern, **framework-free** portfolio for **Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist**.
 
 - ✅ Sticky nav + smooth scroll
