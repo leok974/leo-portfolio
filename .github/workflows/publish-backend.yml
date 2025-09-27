@@ -23,6 +23,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('assistant_api/requirements.txt') }}
+          restore-keys: |
+            pip-${{ runner.os }}-
       - name: Install deps (backend)
         working-directory: assistant_api
         run: |

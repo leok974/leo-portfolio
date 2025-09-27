@@ -14,6 +14,7 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
 - **CI/CD:** GHCR multi-arch publish workflow (`publish-backend.yml`) pushing `backend` image (tags: main, semantic tags, SHA) to `ghcr.io`.
 - **Tests:** `test_status_rag.py` covering status heuristic (primary vs warming, rag ok, missing index).
 - **CI/CD:** Publish workflow now gated by passing backend tests (tests job must succeed before image build/push).
+- **CI/CD:** Test job pip cache (actions/cache) for faster iterative runs.
 
 ### Changed
 - **status/summary:** Unified OpenAI detection; explicit `warming` state when Ollama is up but model tag not present.
