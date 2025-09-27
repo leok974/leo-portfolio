@@ -74,6 +74,27 @@ Nginx config (`deploy/nginx.conf`) provides:
 - `/api/`, `/chat/stream`, `/llm/`, `/status/` proxy pass-through
 - SSE buffering disabled on streaming path
 
+### Convenience Shortcuts
+For local production-mode runs from repo root:
+
+Make targets:
+```
+make prod-up        # start prod stack (deploy/docker-compose.prod.yml)
+make prod-logs      # tail logs
+make prod-down      # stop stack
+make prod-rebuild   # rebuild images + recreate
+```
+
+PowerShell tasks (via `tasks.ps1`):
+```
+pwsh -File .\tasks.ps1 prod          # same as ProdUp
+pwsh -File .\tasks.ps1 prod-logs
+pwsh -File .\tasks.ps1 prod-down
+pwsh -File .\tasks.ps1 prod-rebuild
+```
+
+These wrap the explicit `docker compose -f deploy/docker-compose.prod.yml ...` commands to speed iteration.
+
 ## GitHub Pages (Legacy Option)
 You can still host the static site on Pages, but the default deployment path is now the integrated nginx container. Keep `ALLOWED_ORIGINS` updated to include whichever origin(s) you serve from.
 

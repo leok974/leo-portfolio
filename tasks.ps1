@@ -48,6 +48,27 @@ function WebDev {
   npx browser-sync start --server --no-ui --no-notify --host 127.0.0.1 --port $env:WEB_PORT --files "index.html,*.css,main.js,js/**/*.js,projects/**/*.html,assets/**/*,manifest.webmanifest,sw.js,projects.json"
 }
 
+function ProdUp {
+  Write-Host "Starting production stack (deploy/docker-compose.prod.yml)" -ForegroundColor Cyan
+  docker compose -f deploy/docker-compose.prod.yml up -d
+}
+
+function ProdDown {
+  Write-Host "Stopping production stack" -ForegroundColor Cyan
+  docker compose -f deploy/docker-compose.prod.yml down
+}
+
+function ProdLogs {
+  Write-Host "Tailing production stack logs (Ctrl+C to exit)" -ForegroundColor Cyan
+  docker compose -f deploy/docker-compose.prod.yml logs -f
+}
+
+function ProdRebuild {
+  Write-Host "Rebuilding + recreating production stack" -ForegroundColor Cyan
+  docker compose -f deploy/docker-compose.prod.yml build --pull
+  docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate --remove-orphans
+}
+
 function Latency {
   Write-Host "Probing primary latency (direct /models sampling)..."
   try {
@@ -69,5 +90,10 @@ switch ($Task) {
   "cmddev" { CmdDev }
   "hyperdev" { HyperDev }
   "webdev" { WebDev }
+  "prod" { ProdUp }
+  "prod-up" { ProdUp }
+  "prod-down" { ProdDown }
+  "prod-logs" { ProdLogs }
+  "prod-rebuild" { ProdRebuild }
   default { Write-Host "Tasks: deps | test | build | run | audit" }
 }

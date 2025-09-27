@@ -1,4 +1,4 @@
-.PHONY: deps test build run audit latency models dev cmddev hyperdev webdev
+.PHONY: deps test build run audit latency models dev cmddev hyperdev webdev prod-up prod-down prod-logs prod-rebuild
 
 # Lock dependencies from requirements.in
 deps:
@@ -57,3 +57,17 @@ hyperdev:
 webdev:
 	@PORT=$${PORT:-5530}; echo "Starting static web server on 127.0.0.1:$$PORT"; \
 	npx browser-sync start --server --no-ui --no-notify --host 127.0.0.1 --port $$PORT --files "index.html,*.css,main.js,js/**/*.js,projects/**/*.html,assets/**/*,manifest.webmanifest,sw.js,projects.json"
+
+# --- Production stack shortcuts (deploy/docker-compose.prod.yml) ---
+prod-up:
+	docker compose -f deploy/docker-compose.prod.yml up -d
+
+prod-down:
+	docker compose -f deploy/docker-compose.prod.yml down
+
+prod-logs:
+	docker compose -f deploy/docker-compose.prod.yml logs -f
+
+prod-rebuild:
+	docker compose -f deploy/docker-compose.prod.yml build --pull && \
+	  docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate --remove-orphans
