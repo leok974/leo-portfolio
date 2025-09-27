@@ -9,8 +9,8 @@ WORKDIR /wheels
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential gcc rustc cargo curl ca-certificates \
   && rm -rf /var/lib/apt/lists/*
-COPY assistant_api/requirements.in ./requirements.in
-COPY assistant_api/requirements.txt ./requirements.txt
+COPY requirements.in ./requirements.in
+COPY requirements.txt ./requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip wheel --no-cache-dir --wheel-dir /wheels/dist -r requirements.txt
 
@@ -28,14 +28,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install wheels (fast, reproducible)
 COPY --from=wheels /wheels/dist /tmp/wheels
-COPY assistant_api/requirements.txt ./requirements.txt
+COPY requirements.txt ./requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir --no-index --find-links /tmp/wheels -r requirements.txt && \
     rm -rf /tmp/wheels
 
 # Copy only necessary source (exclude tests, docs, etc.)
-COPY assistant_api ./assistant_api
-COPY assistant_api/entrypoint.sh ./entrypoint.sh
+COPY . ./assistant_api
+COPY entrypoint.sh ./entrypoint.sh
 
 # Create non-root user and adjust ownership (minimal privileges)
 RUN useradd --system --create-home --uid 1001 appuser && \

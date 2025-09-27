@@ -67,6 +67,21 @@ Summarized system state (model presence, fallback mode, counts) – if implement
 ### GET /metrics
 JSON metrics: request totals, 5xx, token in/out, latency buckets, provider distribution.
 
+Status response (fields excerpt):
+```json
+{
+  "llm": { "path": "fallback", "primary_model_present": false, "ready_probe": false },
+  "rag": { "ok": true, "db": "./data/rag.sqlite", "mode": "local-model" },
+  "ready": false
+}
+```
+
+RAG health is now determined in‑process (SQLite open + vector index dimension heuristic) instead of issuing an internal HTTP POST to `/api/rag/query`. This removes failure coupling with edge routing and avoids false negatives during partial outages. Legacy HTTP probing can be forced (for debugging) by setting `STATUS_RAG_VIA_HTTP=1` (timeout seconds via `RAG_PROBE_TIMEOUT`, default 2–3s).
+
+Warmup / startup environment flags:
+- `MODEL_WAIT_MAX_SECONDS` (default 180) – Maximum seconds to wait for Ollama API + model tag before continuing (server starts even if model not yet pulled).
+- `DISABLE_PRIMARY=1` – Skip waiting entirely; service starts in fallback mode (`llm.path=fallback`). Useful for CI and fast local dev.
+
 ## Errors
 Standard JSON error form:
 ```json

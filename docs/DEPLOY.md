@@ -33,6 +33,8 @@ ALLOWED_ORIGINS=https://leok974.github.io,http://localhost:8080
 | `deploy/Dockerfile.frontend` | Static-first nginx image (optional future Node build) |
 | `assistant_api/Dockerfile` | FastAPI backend multi-stage (wheels + slim runtime) |
 
+Port Remap Note: Production compose maps edge to host `8080` (HTTP) / `8443` (HTTPS) instead of privileged 80/443 to reduce conflicts on developer laptops. Adjust in `deploy/docker-compose.prod.yml` if deploying to a clean server and binding low ports with CAP_NET_BIND.
+
 ## Quick Start (Full Stack)
 ```bash
 cd deploy
@@ -44,7 +46,7 @@ docker exec -it $(docker ps -qf "name=ollama") bash -lc "ollama pull qwen2.5:7b-
 ```
 
 Access:
-- Edge: http://127.0.0.1:8080
+- Edge: http://127.0.0.1:8080 (prod compose remap)
 - Backend direct (internal): `backend:8000`
 - Ollama (host mapped): http://127.0.0.1:11435
 
@@ -99,3 +101,23 @@ docker compose -f docker-compose.full.yml down --volumes --remove-orphans
 - Add automated GHCR image publish workflow
 - Synthesize architecture diagram (Mermaid)
 - Add rate limit + client IP logging in edge config
+
+## Fast Fallback / Warm Startup
+
+Large model pulls can delay first response minutes. Two environment flags optimize startup:
+
+| Variable | Effect |
+|----------|--------|
+| `MODEL_WAIT_MAX_SECONDS=15` | Bound wait for Ollama API + model tag; continue after timeout (status shows warming) |
+| `DISABLE_PRIMARY=1` | Skip model wait entirely; service starts with `llm.path=fallback` |
+
+Example (override compose):
+```yaml
+services:
+	backend:
+		environment:
+			- DISABLE_PRIMARY=1
+			- MODEL_WAIT_MAX_SECONDS=15
+```
+
+To re-enable primary later, remove `DISABLE_PRIMARY` and ensure `PRIMARY_MODEL` is pulled (`docker exec ollama ollama pull <model>`). Status will transition `down → warming → primary`.

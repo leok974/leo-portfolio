@@ -1,6 +1,7 @@
 import os
 import os.path
 import httpx
+from .db import connect, index_dim
 from .llm_client import (
     PRIMARY_BASE,
     OPENAI_MODEL,
@@ -41,24 +42,52 @@ async def build_status(base: str) -> dict:
         except Exception:
             llm_status = {}
 
+        # --- RAG health (prefer direct) ---
         rag_ok = False
         rag_mode = None
-        try:
-            rag_resp = await client.post(
-                f"{base}/api/rag/query",
-                json={'question': 'ping', 'k': 1},
-            )
-            rag_ok = rag_resp.status_code == 200
-            if rag_ok:
-                try:
-                    rag_json = rag_resp.json()
-                except Exception:
-                    rag_json = {}
-                if isinstance(rag_json, dict):
-                    rag_mode = rag_json.get('mode')
-        except Exception:
-            rag_ok = False
-            rag_mode = None
+        rag_http_error = None
+        rag_timeout = float(os.getenv('RAG_PROBE_TIMEOUT', '3'))
+        force_http = os.getenv('STATUS_RAG_VIA_HTTP', '0') == '1'
+
+        def _direct_rag() -> tuple[bool, str | None]:
+            try:
+                conn = connect()
+                dim = index_dim(conn)
+                if dim is None:
+                    return False, None
+                # Heuristic mode inference (matches embed_query logic)
+                if dim in (1536, 3072):
+                    mode = 'openai' if is_openai_configured() else 'local-fallback'
+                elif dim in (384, 768):
+                    mode = 'local-model'
+                else:
+                    mode = 'local-fallback'
+                return True, mode
+            except Exception:
+                return False, None
+
+        direct_ok, direct_mode = _direct_rag()
+        rag_ok = direct_ok
+        rag_mode = direct_mode
+
+        if force_http:
+            try:
+                rag_resp = await client.post(
+                    f"{base}/api/rag/query",
+                    json={'question': 'ping', 'k': 1},
+                    timeout=rag_timeout,
+                )
+                if rag_resp.status_code == 200:
+                    try:
+                        rag_json = rag_resp.json()
+                    except Exception:
+                        rag_json = {}
+                    rag_ok = True
+                    rag_mode = (rag_json.get('mode') if isinstance(rag_json, dict) else rag_mode) or rag_mode
+                else:
+                    rag_http_error = f"status:{rag_resp.status_code}"
+            except Exception as e:
+                rag_http_error = str(e)
 
     rag_db = os.getenv('RAG_DB', './data/rag.sqlite')
     openai_flag = is_openai_configured()
@@ -81,6 +110,8 @@ async def build_status(base: str) -> dict:
     rag_info = {'ok': rag_ok, 'db': rag_db}
     if rag_mode:
         rag_info['mode'] = rag_mode
+    if rag_http_error:
+        rag_info['http_error'] = rag_http_error
 
     return {
         'llm': llm_info,

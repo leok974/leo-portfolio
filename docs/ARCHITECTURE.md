@@ -66,6 +66,8 @@ User Browser -> (Edge nginx) -> Backend FastAPI -> (Primary: Ollama / Fallback: 
 - Rolling latency probe endpoint `/llm/primary/latency`
 - Explicit deprecation notice on legacy `chat-latency` endpoint
 - Health classification used for readiness gating
+- Direct (in‑process) RAG health probe (bypasses HTTP) prevents edge routing issues from surfacing as false-negative `rag.ok=false`.
+- Bounded model warmup (`MODEL_WAIT_MAX_SECONDS`) + optional `DISABLE_PRIMARY=1` fast path for CI / rapid dev.
 
 ## Security & Isolation
 - Backend runs as non-root `appuser` UID 1001

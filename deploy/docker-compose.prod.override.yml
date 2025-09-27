@@ -9,7 +9,8 @@ services:
       - ../data:/app/data
     environment:
       - PRIMARY_DEBUG=1
-      - DISABLE_PRIMARY=
+      - DISABLE_PRIMARY=1
+      - MODEL_WAIT_MAX_SECONDS=15
     ports:
       - "8001:8000"
     command: uvicorn assistant_api.main:app --host 0.0.0.0 --port 8000 --workers 1 --reload
