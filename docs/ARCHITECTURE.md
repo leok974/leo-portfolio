@@ -4,8 +4,8 @@
 
 ## Overview
 A hybrid AI assistant platform consisting of:
-- Frontend: static site (GitHub Pages or nginx container) + assistant dock JS components.
-- Edge Proxy (optional): nginx consolidating static + API + SSE streaming.
+- Frontend: static site (now baked into the edge nginx image via multi-target Dockerfile) or optionally hosted on GitHub Pages.
+- Edge Proxy: nginx serving SPA assets + reverse proxy for API + SSE streaming.
 - Backend: FastAPI service exposing chat, RAG query, health/metrics, and LLM diagnostics.
 - Model Host: Ollama container (primary) with automatic fallback to OpenAI-compatible API.
 - RAG Store: SQLite (`data/rag.sqlite`) + embeddings (OpenAI or local model) accessed via lightweight query endpoint.
@@ -58,7 +58,8 @@ User Browser -> (Edge nginx) -> Backend FastAPI -> (Primary: Ollama / Fallback: 
 | Mode | Components | Notes |
 |------|------------|-------|
 | Local Dev | Backend + Ollama + static served by `run_web.bat` or Live Server | Fast iteration; no edge |
-| Full Compose | `ollama`, `backend`, `frontend`, `edge` | Simulates production routing |
+| Full Compose (legacy) | `ollama`, `backend`, `frontend`, `edge` | Previous separate frontend container (superseded by unified edge build) |
+| Unified Edge (current) | `ollama`, `backend`, `nginx(edge+frontend)` | Preferred production mode |
 | GitHub Pages + Backend | Frontend on Pages, backend + edge on a VPS | CORS allowlist must include Pages domain |
 
 ## Key Resilience Mechanisms

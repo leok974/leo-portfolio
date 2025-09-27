@@ -29,8 +29,8 @@ ALLOWED_ORIGINS=https://leok974.github.io,http://localhost:8080
 | File | Purpose |
 |------|---------|
 | `deploy/docker-compose.yml` | Core stack (ollama + backend + nginx proxy) |
-| `deploy/docker-compose.full.yml` | Adds standalone frontend + edge proxy |
-| `deploy/Dockerfile.frontend` | Static-first nginx image (optional future Node build) |
+| `deploy/docker-compose.full.yml` | (Legacy) previously added separate frontend + edge; now unified build in prod compose |
+| `deploy/Dockerfile.frontend` | Multi-target (static or Vite) edge + SPA build + API proxy |
 | `assistant_api/Dockerfile` | FastAPI backend multi-stage (wheels + slim runtime) |
 
 Port Remap Note: Production compose maps edge to host `8080` (HTTP) / `8443` (HTTPS) instead of privileged 80/443 to reduce conflicts on developer laptops. Adjust in `deploy/docker-compose.prod.yml` if deploying to a clean server and binding low ports with CAP_NET_BIND.
@@ -58,16 +58,24 @@ curl -s http://127.0.0.1:8080/api/metrics
 curl -N -X POST http://127.0.0.1:8080/chat/stream -H 'Content-Type: application/json' -d '{"messages":[{"role":"user","content":"Ping"}]}'
 ```
 
-## Edge Proxy Notes
-`deploy/edge/nginx.conf`:
-- `proxy_buffering off` on `/chat/stream` (SSE)
-- CORS allowlist dynamic via map
-- Static cache headers for immutable assets
+## Integrated Edge / Frontend
+The `nginx` service now builds from `deploy/Dockerfile.frontend` embedding the static site directly into the proxy layer. Two targets:
 
-## GitHub Pages Frontend
-1. Build nothing (static only); push to `main`.
-2. Enable Pages → GitHub Actions workflow handles deployment.
-3. Set `ALLOWED_ORIGINS` to include the Pages URL.
+| Target | Purpose |
+|--------|---------|
+| `frontend-static-final` | Copies existing repo root files (no Node build) |
+| `frontend-vite-final` | Runs Node build (expects `package.json` + `npm run build` producing `dist/`) |
+
+Switch targets by editing `docker-compose.prod.yml` service build target. Adjust `FRONTEND_DIR` if your source moves.
+
+Nginx config (`deploy/nginx.conf`) provides:
+- Long-cache assets (`Cache-Control: immutable`)
+- SPA fallback (`try_files $uri /index.html`)
+- `/api/`, `/chat/stream`, `/llm/`, `/status/` proxy pass-through
+- SSE buffering disabled on streaming path
+
+## GitHub Pages (Legacy Option)
+You can still host the static site on Pages, but the default deployment path is now the integrated nginx container. Keep `ALLOWED_ORIGINS` updated to include whichever origin(s) you serve from.
 
 ## Custom Domain
 - Add CNAME in repo (or configure Pages settings).

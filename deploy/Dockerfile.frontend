@@ -1,51 +1,40 @@
-########## Frontend Static-First Dockerfile ##########
-# Safe today (no Node build). Seamless future upgrade when a ./frontend
-# app with a build step appears. Uncomment the build stage + overlay
-# lines below once you add a real frontend toolchain.
+## syntax=docker/dockerfile:1.7
 
-# ---------- (optional) build stage ----------
-# FROM node:20-alpine AS build
-# WORKDIR /app
-# COPY frontend/package*.json ./
-# RUN npm ci --no-audit --no-fund
-# COPY frontend/ .
-# RUN npm run build
-# RUN mkdir -p /out && cp -a dist/. /out/ || true
+# ===========================
+# Optional Node/Vite build stage
+# ===========================
+FROM node:20-alpine AS vite-build
+ARG FRONTEND_DIR=.
+WORKDIR /app
+COPY ${FRONTEND_DIR}/package*.json ./
+RUN test -f package.json
+RUN npm ci
+COPY ${FRONTEND_DIR}/ ./
+RUN npm run build
 
-# ---------- static collector (current static site at repo root) ----------
-FROM alpine:3.20 AS static
+# ===========================
+# Static copy stage (no build)
+# ===========================
+FROM alpine:3.20 AS static-copy
+ARG FRONTEND_DIR=.
 WORKDIR /src
-COPY . .
-RUN set -eux; \
-		mkdir -p /out; \
-		for p in \
-			index.html \
-			favicon.ico \
-			robots.txt \
-			assets \
-			js \
-			css \
-			styles \
-			images \
-			img \
-			fonts \
-			media \
-		; do \
-			if [ -e "$p" ]; then \
-				cp -a "$p" /out/; \
-			fi; \
-		done
+COPY ${FRONTEND_DIR}/ ./
+RUN test -f index.html
+RUN mkdir -p /out && cp -r . /out
 
-# ---------- runtime ----------
-FROM nginx:1.27-alpine
-COPY --from=static /out/ /usr/share/nginx/html/
-# (future) overlay built assets if build stage enabled
-# COPY --from=build /out/ /tmp/dist/
-# RUN [ ! -d /tmp/dist ] || cp -a /tmp/dist/. /usr/share/nginx/html/
+# ===========================
+# Final (Vite build)
+# ===========================
+FROM nginx:1.27-alpine AS frontend-vite-final
+ARG NGINX_CONF=deploy/nginx.conf
+COPY ${NGINX_CONF} /etc/nginx/conf.d/default.conf
+COPY --chmod=0644 --from=vite-build /app/dist/ /usr/share/nginx/html/
 
-# Lightweight healthcheck (edge proxy can still expose /healthz)
-RUN printf 'ok' > /usr/share/nginx/html/healthz
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD wget -qO- http://localhost/healthz || exit 1
-
-EXPOSE 8080
+# ===========================
+# Final (Static copy)
+# ===========================
+FROM nginx:1.27-alpine AS frontend-static-final
+ARG NGINX_CONF=deploy/nginx.conf
+COPY ${NGINX_CONF} /etc/nginx/conf.d/default.conf
+COPY --chmod=0644 --from=static-copy /out/ /usr/share/nginx/html/
 

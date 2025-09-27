@@ -6,6 +6,20 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
 ## [Unreleased]
 
 ### Added
+- Unified frontend + edge nginx container via multi-target `deploy/Dockerfile.frontend` (targets: `frontend-static-final`, `frontend-vite-final`).
+
+### Changed
+- `docker-compose.prod.yml`: `nginx` service now builds integrated image (serves SPA + proxies API) replacing separate static frontend path.
+- Simplified `deploy/nginx.conf` to serve SPA (history fallback) and proxy `/api/`, `/chat/stream`, diagnostics endpoints.
+
+### Deprecated
+- Separate `frontend` container pattern (legacy compose mode retained only for reference).
+
+### Docs
+- Updated `DEPLOY.md` for integrated edge targets.
+- Updated `ARCHITECTURE.md` to reflect unified edge.
+
+### Added
 - **README:** “Model selection & warming” section explaining `PRIMARY_MODEL`, `llm.path` states (`down`→`warming`→`primary`), readiness vs. status, and local-model fallback.
 - **Entrypoint:** Timeout-based model warmup control via `MODEL_WAIT_MAX_SECONDS` with early continue (non-blocking startup) and opt-out fast path `DISABLE_PRIMARY=1`.
 - **Status:** Optional environment flags `STATUS_RAG_VIA_HTTP=1` and `RAG_PROBE_TIMEOUT` (seconds) to force legacy HTTP RAG probe for diagnostics.

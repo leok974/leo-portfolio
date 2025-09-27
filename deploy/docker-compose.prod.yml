@@ -60,11 +60,15 @@ services:
       - openai_api_key
 
   nginx:
-    image: nginx:1.27-alpine
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+      target: frontend-static-final
+      args:
+        FRONTEND_DIR: .
+        NGINX_CONF: deploy/nginx.conf
     depends_on:
       - backend
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "8080:80"
       - "8443:443"
