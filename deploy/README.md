@@ -38,12 +38,13 @@ ENV
 cd deploy
 docker compose up -d --build
 
-# 4) Pull primary Ollama model
-docker exec -it $(docker ps -qf "name=ollama") bash -lc "ollama pull qwen2.5:7b-instruct-q4_K_M"
+# 4) Ensure the primary model is cached (repeat any time you change PRIMARY_MODEL)
+docker compose run --rm ollama-init
 
 # Sanity checks
-curl -s http://127.0.0.1/ready
-curl -s http://127.0.0.1/llm/health
+curl -s http://127.0.0.1/api/ready
+curl -s http://127.0.0.1/api/status/summary
+curl -s http://127.0.0.1/api/llm/health
 curl -s http://127.0.0.1/metrics
 curl -N -X POST http://127.0.0.1/chat/stream \
   -H "Content-Type: application/json" \
@@ -66,10 +67,12 @@ script-src 'self';
 
 ## Ops
 
-- Health: GET /llm/health → Ollama status + whether OpenAI key is set
-- Metrics: GET /metrics → { req, 5xx, tok_in, tok_out, p95_ms, providers }
-- RAG: POST /api/rag/query {question,k}
-- Chat: POST /chat or POST /chat/stream (SSE emits event: meta with _served_by)
+- Readiness: GET /api/ready (edge) � backend waits for the primary model and reports `llm.path = "warming"` until it is cached.
+- Status: GET /api/status/summary (pass-through `/status/summary` works) � aggregated Ollama/OpenAI/RAG view.
+- Health: GET /api/llm/health � direct `/llm/health` if you bypass nginx.
+- Metrics: GET /metrics � { req, 5xx, tok_in, tok_out, p95_ms, providers }.
+- RAG: POST /api/rag/query {question,k}.
+- Chat: POST /chat or POST /chat/stream (SSE emits `meta` with _served_by).
 
 ## Failure modes
 

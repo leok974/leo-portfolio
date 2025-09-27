@@ -11,58 +11,81 @@ from .llm_client import (
     LAST_PRIMARY_STATUS,
 )
 from .metrics import providers, primary_fail_reason
+from .keys import is_openai_configured
 
 
-def _openai_configured() -> bool:
-    if os.getenv('OPENAI_API_KEY') or os.getenv('FALLBACK_API_KEY'):
-        return True
-    for env_name in ('OPENAI_API_KEY_FILE', 'FALLBACK_API_KEY_FILE'):
-        fp = os.getenv(env_name)
-        if fp and os.path.exists(fp):
-            return True
-    if os.path.exists('/run/secrets/openai_api_key'):
-        return True
-    return False
+def _llm_path(ollama_state: str | None, primary_present: bool, openai_state: str | None) -> str:
+    if ollama_state == 'up':
+        return 'primary' if primary_present else 'warming'
+    if openai_state == 'configured':
+        return 'fallback'
+    return 'down'
 
 
 async def build_status(base: str) -> dict:
     async with httpx.AsyncClient(timeout=3.0) as client:
         try:
-            ready = (await client.get(f"{base}/ready")).status_code == 200
+            ready_probe = (await client.get(f"{base}/ready")).status_code == 200
         except Exception:
-            ready = False
+            ready_probe = False
 
+        llm_status: dict = {}
+        primary_model = OPENAI_MODEL
         try:
             health_resp = await client.get(f"{base}/llm/health")
-            health_json = health_resp.json() if health_resp.status_code == 200 else {}
-            status = health_json.get('status', {}) if isinstance(health_json, dict) else {}
-            ollama = status.get('ollama')
-            openai_state = status.get('openai')
-            if ollama == 'up':
-                llm_path = 'local'
-            elif openai_state == 'configured':
-                llm_path = 'fallback'
-            else:
-                llm_path = 'down'
+            if health_resp.status_code == 200:
+                health_json = health_resp.json()
+                if isinstance(health_json, dict):
+                    llm_status = health_json.get('status', {}) or {}
+                    primary_model = health_json.get('primary_model', OPENAI_MODEL)
         except Exception:
-            llm_path = 'down'
+            llm_status = {}
 
+        rag_ok = False
+        rag_mode = None
         try:
             rag_resp = await client.post(
                 f"{base}/api/rag/query",
                 json={'question': 'ping', 'k': 1},
             )
             rag_ok = rag_resp.status_code == 200
+            if rag_ok:
+                try:
+                    rag_json = rag_resp.json()
+                except Exception:
+                    rag_json = {}
+                if isinstance(rag_json, dict):
+                    rag_mode = rag_json.get('mode')
         except Exception:
             rag_ok = False
+            rag_mode = None
 
     rag_db = os.getenv('RAG_DB', './data/rag.sqlite')
-    openai_flag = _openai_configured()
+    openai_flag = is_openai_configured()
+
+    ollama_state = llm_status.get('ollama') if isinstance(llm_status, dict) else None
+    openai_state = 'configured' if openai_flag else 'not_configured'
+    primary_present = bool(llm_status.get('primary_model_present')) if isinstance(llm_status, dict) else False
+    llm_path = _llm_path(ollama_state, primary_present, openai_state)
+    ready = (ollama_state == 'up') and primary_present and rag_ok
+
+    llm_info = {
+        'path': llm_path,
+        'model': primary_model,
+        'ollama': ollama_state,
+        'openai': openai_state,
+        'primary_model_present': primary_present,
+        'ready_probe': ready_probe,
+    }
+
+    rag_info = {'ok': rag_ok, 'db': rag_db}
+    if rag_mode:
+        rag_info['mode'] = rag_mode
 
     return {
-        'llm': {'path': llm_path, 'model': OPENAI_MODEL},
+        'llm': llm_info,
         'openai_configured': openai_flag,
-        'rag': {'ok': rag_ok, 'db': rag_db},
+        'rag': rag_info,
         'ready': ready,
         'primary': {
             'base_url': PRIMARY_BASE,
@@ -80,6 +103,7 @@ async def build_status(base: str) -> dict:
         },
         'tooltip': (
             f"Ollama/OpenAI configured: {bool(openai_flag)}. "
-            f"RAG DB: {rag_db}"
+            f"RAG DB: {rag_db}. "
+            f"LLM path: {llm_path}"
         ),
     }

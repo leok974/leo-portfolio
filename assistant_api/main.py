@@ -26,6 +26,7 @@ from .metrics import record, snapshot, recent_latency_stats, recent_latency_stat
 from .routes import status as status_routes, llm as llm_routes
 from .routes import llm_latency as llm_latency_routes
 from .health import router as health_router
+from .status_common import build_status
 import httpx
 import time
 import json
@@ -103,77 +104,15 @@ def metrics():
     return snapshot()
 
 # Lightweight built-in status summary endpoint (mirrors routes.status)
-def _read_secret(env_name: str, file_env: str, default_file: str | None = None) -> str | None:
-    val = os.getenv(env_name)
-    if val:
-        return val
-    fpath = os.getenv(file_env) or default_file
-    if fpath and os.path.exists(fpath):
-        try:
-            with open(fpath, "r", encoding="utf-8") as f:
-                return f.read().strip()
-        except Exception:
-            return None
-    return None
-
 @app.get("/status/summary")
 async def status_summary_ep():
     base = os.getenv("BASE_URL_PUBLIC", "http://127.0.0.1:8001")
-    openai_configured = bool(
-        _read_secret("OPENAI_API_KEY", "OPENAI_API_KEY_FILE", "/run/secrets/openai_api_key")
-        or _read_secret("FALLBACK_API_KEY", "FALLBACK_API_KEY_FILE", "/run/secrets/openai_api_key")
-    )
-    llm = {"path": "down", "model": os.getenv("OPENAI_MODEL", "gpt-oss:20b")}
-    rag = {"ok": False, "db": os.getenv("RAG_DB", "data/rag.sqlite")}
-    ready_ok = False
-    try:
-        async with httpx.AsyncClient(timeout=3.0) as x:
-            # LLM health
-            try:
-                r = await x.get(f"{base}/llm/health")
-                if r.status_code == 200:
-                    st = (r.json() or {}).get("status", {})
-                    if st.get("ollama") == "up":
-                        llm["path"] = "local"
-                    elif st.get("openai") == "configured":
-                        llm["path"] = "fallback"
-            except Exception:
-                pass
-            # Ready
-            try:
-                r2 = await x.get(f"{base}/ready")
-                ready_ok = (r2.status_code == 200)
-            except Exception:
-                ready_ok = False
-            # RAG quick probe
-            try:
-                r3 = await x.post(f"{base}/api/rag/query", json={"question": "ping", "k": 1})
-                rag["ok"] = (r3.status_code == 200)
-            except Exception:
-                rag["ok"] = False
-    except Exception:
-        pass
-    primary_info = {
-        "base_url": PRIMARY_BASE_URL,
-        "model": PRIMARY_MODEL_NAME,
-        "enabled": not DISABLE_PRIMARY,
-        "model_present": globals().get("PRIMARY_MODEL_PRESENT"),
-        "models_sample": PRIMARY_MODELS[:8],
-        "last_error": globals().get("LAST_PRIMARY_ERROR"),
-        "last_status": globals().get("LAST_PRIMARY_STATUS"),
-    }
-    return {
-        "llm": llm,
-        "openai_configured": openai_configured,
-        "rag": rag,
-        "ready": ready_ok,
-        "latency_recent": recent_latency_stats(),
-    "latency_recent_by_provider": recent_latency_stats_by_provider(),
-        "metrics_hint": {"providers": ["primary", "fallback"], "fields": ["req", "5xx", "p95_ms", "tok_in", "tok_out"]},
-        "tooltip": f"Ollama/OpenAI configured: {openai_configured}. RAG DB: {rag.get('db')}",
-        "last_served_by": LAST_SERVED_BY,
-        "primary": primary_info,
-    }
+    summary = await build_status(base)
+    summary["latency_recent"] = recent_latency_stats()
+    summary["latency_recent_by_provider"] = recent_latency_stats_by_provider()
+    summary["last_served_by"] = LAST_SERVED_BY
+    return summary
+
 
 class ChatReq(BaseModel):
     messages: list

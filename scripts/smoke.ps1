@@ -1,143 +1,67 @@
-param(
-  [string]$BaseUrl = "http://127.0.0.1:8001"
+Param(
+  [string]$BaseUrl = "http://localhost",
+  [switch]$VerboseOutput
 )
 
-$ErrorActionPreference = 'Stop'
-
-function Write-Status {
-  param(
-    [bool]$Ok,
-    [string]$Name,
-    $Extra = $null
-  )
-  if ($Ok) { Write-Host "[PASS] $Name" -ForegroundColor Green }
-  else     { Write-Host "[FAIL] $Name" -ForegroundColor Red }
-  if ($null -ne $Extra) {
-    try { $Extra | ConvertTo-Json -Depth 8 }
-    catch { $Extra | Out-String }
-  }
+function Get-Json { param($u)
+  try { return Invoke-RestMethod -Uri $u -TimeoutSec 10 }
+  catch { return $null }
 }
 
-function ConvertFrom-JsonSafe {
-  param([string]$Text)
-  if ([string]::IsNullOrWhiteSpace($Text)) { return $null }
-  try { return $Text | ConvertFrom-Json -Depth 100 } catch { return $Text }
-}
+ # Determine if an edge proxy (which prefixes core endpoints with /api) is in front.
+ $api = "$BaseUrl/api"
+ $rootStatus = Get-Json "$BaseUrl/status/summary"
+ $useRoot = $false
+ if ($rootStatus -and $rootStatus.llm) { $useRoot = $true }
 
-function Read-ResponseBody {
-  param($Response)
-  try {
-    if ($Response -and $Response.Content) { return $Response.Content }
-    if ($Response -and $Response.GetResponseStream) {
-      $sr = New-Object System.IO.StreamReader($Response.GetResponseStream())
-      $text = $sr.ReadToEnd()
-      $sr.Dispose()
-      return $text
-    }
-  } catch { }
-  return $null
-}
+ # Build endpoint URLs conditionally:
+ if ($useRoot) {
+  $readyUrl  = "$BaseUrl/ready"
+  $statusUrl = "$BaseUrl/status/summary"
+  $llmUrl    = "$BaseUrl/llm/health"
+ } else {
+  $readyUrl  = "$api/ready"
+  $statusUrl = "$api/status/summary"
+  $llmUrl    = "$api/llm/health"
+ }
+ # RAG endpoints stay under /api even without edge for consistency
+ $ragUrl = "$api/rag/query"
 
-function Invoke-Http {
-  [CmdletBinding()]
-  param(
-    [Parameter(Mandatory=$true)][ValidateSet('GET','POST')] [string]$Method,
-    [Parameter(Mandatory=$true)][string]$Url,
-    $Body = $null,
-    [int]$TimeoutSec = 25
-  )
-
-  # PowerShell 7+: -SkipHttpErrorCheck keeps non-2xx as non-throw
-  $isPwsh7 = $PSVersionTable.PSVersion.Major -ge 7
-
-  try {
-    if ($Method -eq 'GET') {
-      if ($isPwsh7) {
-        $res = Invoke-WebRequest -Method GET -Uri $Url -TimeoutSec $TimeoutSec -SkipHttpErrorCheck
-      } else {
-        $res = Invoke-WebRequest -Method GET -Uri $Url -TimeoutSec $TimeoutSec -ErrorAction Stop
-      }
-    } else {
-      $json = if ($null -ne $Body) { $Body | ConvertTo-Json -Depth 100 } else { $null }
-      if ($isPwsh7) {
-        $res = Invoke-WebRequest -Method POST -Uri $Url -Body $json -ContentType 'application/json' -TimeoutSec $TimeoutSec -SkipHttpErrorCheck
-      } else {
-        $res = Invoke-WebRequest -Method POST -Uri $Url -Body $json -ContentType 'application/json' -TimeoutSec $TimeoutSec -ErrorAction Stop
-      }
-    }
-
-    $status = if ($res.StatusCode) { [int]$res.StatusCode } else { 200 }
-    $ok = ($status -ge 200 -and $status -lt 300)
-    $bodyText = $res.Content
-    $body = ConvertFrom-JsonSafe $bodyText
-
-    return [pscustomobject]@{
-      status = $status
-      ok     = $ok
-      body   = $body
-      error  = $null
-    }
-  }
-  catch {
-    # Windows PowerShell throws for non-2xx; extract details
-    $status = $null
-    $bodyText = $null
-    try {
-      $resp = $_.Exception.Response
-      if ($resp -and $resp.StatusCode) { $status = [int]$resp.StatusCode }
-      $bodyText = Read-ResponseBody $resp
-    } catch { }
-
-    $body = ConvertFrom-JsonSafe $bodyText
-    $ok = ($status -ge 200 -and $status -lt 300)
-
-    return [pscustomobject]@{
-      status = $status
-      ok     = $ok
-      body   = $body
-      error  = $_.Exception.Message
-    }
-  }
-}
-
-# ---------- Checks ----------
-
-Write-Host "== READY =="
-$ready = Invoke-Http -Method GET -Url "$BaseUrl/ready" -TimeoutSec 10
-Write-Status $ready.ok "GET /ready" $ready
-
-Write-Host "`n== HEALTH =="
-$health = Invoke-Http -Method GET -Url "$BaseUrl/llm/health" -TimeoutSec 10
-Write-Status $health.ok "GET /llm/health" $health
-
-Write-Host "`n== RAG QUERY =="
-$ragBody = @{ question = "Where is the assistant chip wired?"; k = 5 }
-$rag = Invoke-Http -Method POST -Url "$BaseUrl/api/rag/query" -Body $ragBody -TimeoutSec 25
-Write-Status $rag.ok "POST /api/rag/query" $rag
-
-Write-Host "`n== CHAT (fallback test) =="
-$chatBody = @{ messages = @(@{ role = "user"; content = "Explain the portfolio assistant chip" }) }
-$chat = Invoke-Http -Method POST -Url "$BaseUrl/chat" -Body $chatBody -TimeoutSec 25
-Write-Status $chat.ok "POST /chat" $chat
-Write-Host "`n== CHAT PROBE =="
+Write-Host "=== Smoke @ $BaseUrl ==="
+$ready   = Get-Json $readyUrl
+$status  = Get-Json $statusUrl
+$llm     = Get-Json $llmUrl
+$ragNull = $false
 try {
-  & "$PSScriptRoot/Probe-Chat.ps1" -Base $BaseUrl
-} catch {
-  Write-Host "[FAIL] Probe-Chat.ps1" -ForegroundColor Red
-  Write-Host $_
-}
+  $ragQ = Invoke-RestMethod -Method Post -Uri $ragUrl -Body (@{ q = "hello"; k = 1 } | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 10
+} catch { $ragNull = $true }
 
-Write-Host "`n== METRICS =="
-$metrics = Invoke-Http -Method GET -Url "$BaseUrl/metrics" -TimeoutSec 10
-Write-Status $metrics.ok "GET /metrics" $metrics
-Write-Host "`n== STATUS SUMMARY =="
-$sum = Invoke-Http -Method GET -Url "$BaseUrl/status/summary" -TimeoutSec 10
-if ($sum.ok) {
-  $llm = $sum.body.llm.path
-  $key = if ($sum.body.openai_configured) { 'yes' } else { 'no' }
-  $rag = if ($sum.body.rag.ok) { 'ok' } else { 'err' }
-  Write-Host ("[status] LLM:{0} • OpenAI key:{1} • RAG:{2}" -f $llm,$key,$rag) -ForegroundColor Cyan
-} else {
-  Write-Status $false "GET /status/summary" $sum
-}
+$ok = @()
+$fail = @()
 
+if ($ready -and $ready.ok) { $ok += "ready" } else { $fail += "ready" }
+if ($status) {
+  if ($status.ready) { $ok += "status.ready" } else { $fail += "status.ready" }
+  $lp = $status.llm.path
+  Write-Host ("llm.path: {0}" -f $lp)
+  if ($lp -eq "warming") { Write-Host "note: model present pending; retry shortly." }
+} else { $fail += "status" }
+
+if ($llm) {
+  $llmStatus = $llm.status
+  $ollamaState = $llmStatus.ollama
+  if ($ollamaState -eq "up") { $ok += "ollama" } else { $fail += "ollama" }
+  if ($llmStatus.primary_model_present) { $ok += "model.present" } else { $fail += "model.present" }
+  Write-Host ("openai: {0}" -f $llmStatus.openai)
+} else { $fail += "llm" }
+
+if (-not $ragNull) { $ok += "rag.query" } else { $fail += "rag.query" }
+
+Write-Host "`nPASS:" ($ok -join ", ")
+if ($fail.Count) { Write-Host "FAIL:" ($fail -join ", ") -ForegroundColor Red }
+
+if ($VerboseOutput) {
+  Write-Host "`n--- ready ($readyUrl) ---";   $ready   | ConvertTo-Json -Depth 5
+  Write-Host "`n--- status ($statusUrl) ---";  $status  | ConvertTo-Json -Depth 8
+  Write-Host "`n--- llm ($llmUrl) ---";     $llm     | ConvertTo-Json -Depth 5
+}

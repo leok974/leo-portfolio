@@ -11,6 +11,12 @@
   - Dev default: http://127.0.0.1:8001/api/rag/query
   - Prod example (Compose): http://backend:8000/api/rag/query
 
+### Endpoints (behind edge)
+When the backend sits behind the edge nginx, prefix API routes with `/api`: `/api/status/summary`, `/api/ready`, `/api/llm/health`, `/api/rag/query`, while `/chat/stream` stays unprefixed for SSE.
+A convenience pass-through keeps `/status/summary` working without the prefix for dashboards and quick checks.
+
+**Cold starts:** expect `llm.path = "warming"` until the primary model is cached. Compose pre-pulls the configured model, but large weights still take time on first deploy.
+
 ## Examples
 
 PowerShell

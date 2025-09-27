@@ -10,10 +10,30 @@ A hybrid AI assistant platform consisting of:
 - Model Host: Ollama container (primary) with automatic fallback to OpenAI-compatible API.
 - RAG Store: SQLite (`data/rag.sqlite`) + embeddings (OpenAI or local model) accessed via lightweight query endpoint.
 
+### Component Diagram (Mermaid)
+```mermaid
+flowchart LR
+    subgraph Browser[User Browser]
+        UI[Assistant Dock / JS Widgets]
+    end
+
+    UI -->|HTTPS| Edge{Edge nginx?}
+    Edge -->|/api/* /chat/*| Backend[FastAPI Backend]
+    UI -->|Direct (no edge mode)| Backend
+    Backend -->|Primary LLM API| Ollama[(Ollama)]
+    Backend -->|Fallback (OpenAI)| OpenAI[(OpenAI API)]
+    Backend -->|Embeddings / Vector Query| RAG[(SQLite + Vectors)]
+
+    classDef svc fill=#0d3b66,stroke=#0d3b66,color=#fff;
+    classDef ext fill=#5f0f40,stroke=#5f0f40,color=#fff;
+    class Backend,Edge,UI svc;
+    class Ollama,OpenAI,RAG ext;
+```
+
 ## Data Flow
 ```
 User Browser -> (Edge nginx) -> Backend FastAPI -> (Primary: Ollama / Fallback: OpenAI)
-                                 |                
+                                 |
                                  +--> RAG (SQLite embeddings)
 ```
 
@@ -54,6 +74,54 @@ User Browser -> (Edge nginx) -> Backend FastAPI -> (Primary: Ollama / Fallback: 
 - SSE route disables buffering to avoid head-of-line blocking
 
 ## Future Enhancements (TODO)
+### RAG Ingestion (mini sequence)
+
+```mermaid
+sequenceDiagram
+  participant U as Admin
+  participant FE as SPA (Pages)
+  participant N as Nginx (Edge)
+  participant BE as FastAPI Backend
+  participant DB as rag.sqlite
+  U->>FE: Upload docs / click "Ingest"
+  FE->>N: POST /api/rag/ingest {files, meta}
+  N->>BE: /api/rag/ingest
+  BE->>BE: chunk -> embed (OpenAI or local-hash)
+  BE->>DB: upsert chunks + vectors
+  BE-->>FE: 200 {count, stats}
+```
+
+### Chat Streaming (Detailed)
+```mermaid
+sequenceDiagram
+    participant U as Browser
+    participant E as Edge nginx
+    participant B as Backend (FastAPI)
+    participant P as Primary (Ollama)
+    participant F as Fallback (OpenAI)
+    participant R as RAG (SQLite)
+
+    U->>E: POST /chat/stream (messages[])
+    alt Edge enabled
+        E->>B: Proxy /chat/stream
+    else Direct mode
+        U->>B: POST /chat/stream
+    end
+    par Optional RAG Context
+        B->>R: Similarity query (k)
+        R-->>B: Top-k chunks
+    end
+    B->>P: Stream chat completion
+    alt Primary failure / disabled
+        B->>F: Stream fallback completion
+        F-->>B: Token deltas
+        B-->>U: SSE data: token (fallback)
+    else Primary OK
+        P-->>B: Token deltas
+        B-->>U: SSE data: token (primary)
+    end
+    B-->>U: SSE data: {"event":"meta", provider, usage, latency}
+```
 - Add rate limiting at edge layer (limit_req)
 - Expand RAG ingestion pipeline & incremental update path
 - Structured logging with request IDs propagated via headers

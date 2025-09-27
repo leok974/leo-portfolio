@@ -1,7 +1,7 @@
 # Copilot Documentation Drafting Instructions
 
 ## Goal
-When code changes, always **draft or update Markdown files** so context is captured.  
+When code changes, always **draft or update Markdown files** so context is captured.
 Drafts don’t need to be perfect prose — just structured, factual, and complete enough to hand off for polish.
 
 ## Required Draft Files

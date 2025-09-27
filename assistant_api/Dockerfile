@@ -35,11 +35,13 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 # Copy only necessary source (exclude tests, docs, etc.)
 COPY assistant_api ./assistant_api
+COPY assistant_api/entrypoint.sh ./entrypoint.sh
 
 # Create non-root user and adjust ownership (minimal privileges)
 RUN useradd --system --create-home --uid 1001 appuser && \
   mkdir -p /app/data && \
-  chown -R appuser:appuser /app
+  chown -R appuser:appuser /app && \
+  chmod +x /app/entrypoint.sh
 
 EXPOSE 8000
 
@@ -48,4 +50,5 @@ HEALTHCHECK --interval=30s --timeout=6s --start-period=20s --retries=3 CMD pytho
 
 USER appuser
 
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["uvicorn", "assistant_api.main:app", "--host", "0.0.0.0", "--port", "8000"]

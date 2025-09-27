@@ -47,6 +47,29 @@ LAST_PRIMARY_STATUS: Optional[int] = None
 LAST_PRIMARY_ERROR: Optional[str] = None
 DISABLE_PRIMARY = os.getenv("DISABLE_PRIMARY", "").lower() in ("1","true","yes")
 
+def set_primary_model_present(value: Optional[bool]) -> Optional[bool]:
+    global PRIMARY_MODEL_PRESENT
+    PRIMARY_MODEL_PRESENT = value
+    return PRIMARY_MODEL_PRESENT
+
+
+def mark_primary_models(models: Iterable[str] | None) -> Optional[bool]:
+    global PRIMARY_MODELS
+    if models is None:
+        return set_primary_model_present(None)
+    data = [m for m in models if isinstance(m, str)]
+    PRIMARY_MODELS.clear()
+    PRIMARY_MODELS.extend(data)
+    if not data:
+        return set_primary_model_present(False)
+    target = (PRIMARY_MODEL or "").lower()
+    for name in data:
+        lowered = (name or "").lower()
+        if lowered == target or lowered.startswith(target):
+            return set_primary_model_present(True)
+    return set_primary_model_present(False)
+
+
 def diag() -> dict:
     """Return runtime config for debugging (no secrets)."""
     return {
@@ -111,14 +134,16 @@ async def primary_list_models() -> List[str]:
             for it in j.get("data", []):
                 if isinstance(it, dict) and "id" in it:
                     ids.append(it["id"])
+            mark_primary_models(ids)
             return ids
     except Exception as e:
         _debug_log(f"list_models error: {e}")
+        mark_primary_models(None)
         return []
 
 async def primary_chat(messages: list[dict], max_tokens: int = 64) -> Tuple[Optional[dict], Optional[str], Optional[int]]:
     """Attempt primary. Returns (json, reason, http_status). reason None on success."""
-    global LAST_PRIMARY_ERROR, LAST_PRIMARY_STATUS
+    global LAST_PRIMARY_ERROR, LAST_PRIMARY_STATUS, PRIMARY_MODEL_PRESENT
     if DISABLE_PRIMARY:
         LAST_PRIMARY_ERROR = "disabled"; LAST_PRIMARY_STATUS = None
         primary_fail_reason["disabled"] += 1
@@ -142,6 +167,8 @@ async def primary_chat(messages: list[dict], max_tokens: int = 64) -> Tuple[Opti
                         reason = "model_missing"
                 except Exception:
                     pass
+                if reason == "model_missing":
+                    set_primary_model_present(False)
                 primary_fail_reason[reason] += 1
                 LAST_PRIMARY_ERROR = reason
                 _debug_log(f"primary fail status={r.status_code} reason={reason} body={(r.text or '')[:200]}")
@@ -152,20 +179,24 @@ async def primary_chat(messages: list[dict], max_tokens: int = 64) -> Tuple[Opti
             # Reset error/status indicators on successful completion
             LAST_PRIMARY_ERROR = None
             LAST_PRIMARY_STATUS = r.status_code
+            set_primary_model_present(True)
             return j, None, r.status_code
     except httpx.ReadTimeout:
         primary_fail_reason["timeout"] += 1
         LAST_PRIMARY_ERROR = "timeout"; LAST_PRIMARY_STATUS = None
+        set_primary_model_present(None)
         _debug_log("primary timeout")
         return None, "timeout", None
     except httpx.ConnectError as e:
         primary_fail_reason["connect_error"] += 1
         LAST_PRIMARY_ERROR = "connect_error"; LAST_PRIMARY_STATUS = None
+        set_primary_model_present(None)
         _debug_log(f"primary connect_error: {e}")
         return None, "connect_error", None
     except Exception as e:
         primary_fail_reason["unknown"] += 1
         LAST_PRIMARY_ERROR = f"unknown:{type(e).__name__}"; LAST_PRIMARY_STATUS = None
+        set_primary_model_present(None)
         _debug_log(f"primary unknown error: {e}")
         return None, "unknown", None
 
