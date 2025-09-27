@@ -67,6 +67,7 @@ services:
       args:
         FRONTEND_DIR: .
         NGINX_CONF: deploy/nginx.conf
+        VITE_BUILD_SHA: ${GIT_SHA:-local}
     depends_on:
       - backend
     ports:

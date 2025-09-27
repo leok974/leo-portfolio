@@ -44,6 +44,16 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
 - False negative `rag.ok=false` in `/status/summary` when edge pathing or fallback-only mode previously blocked internal HTTP probe.
 - Startup hangs waiting indefinitely for large model pulls (now bounded by `MODEL_WAIT_MAX_SECONDS`).
 
+### Added
+- Security headers in `deploy/nginx.conf` (CSP, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`) applied to all responses (including errors) via `always`.
+- Build provenance: Docker/Vite build arg `VITE_BUILD_SHA` injected (compose passes `${GIT_SHA:-local}`) and surfaced in footer (`main.js` uses `import.meta.env.VITE_BUILD_SHA`).
+- Footer build info element (`<small data-build-info>` in `index.html`) displaying short SHA + timestamp for traceability.
+- Smoke test enhancement (`scripts/smoke.ps1`): fetches first hashed asset (`/assets/*.js`), asserts `Cache-Control` includes `immutable`, verifying long-lived caching policy.
+
+### Changed
+- `deploy/nginx.conf`: Added CSP (`default-src 'self'`) and long-cache directives now paired with explicit security headers; will tighten `style-src` (remove `'unsafe-inline'`) in a future pass once inline styles are refactored.
+- `docker-compose.prod.yml`: Passes `VITE_BUILD_SHA` build arg enabling reproducible build metadata across environments.
+
 ## [0.2.0] - 2025-09-27
 ### Added
 - Full-stack Docker Compose (`docker-compose.full.yml`) including frontend + edge proxy.

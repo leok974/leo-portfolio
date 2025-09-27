@@ -79,6 +79,17 @@ chips.forEach(chip=>{
 });
 
 // -----------------------------
+// BUILD INFO (injected via Vite env var)
+// -----------------------------
+(() => {
+  const el = document.querySelector('[data-build-info]');
+  if (!el) return;
+  const sha = import.meta.env.VITE_BUILD_SHA || 'local';
+  const dt = new Date().toISOString().slice(0,16).replace('T',' ');
+  el.textContent = `build ${sha} · ${dt}`;
+})();
+
+// -----------------------------
 // KEYBOARD NAVIGATION ENHANCEMENTS
 // -----------------------------
 document.addEventListener('keydown', (e) => {

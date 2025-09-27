@@ -65,3 +65,21 @@ if ($VerboseOutput) {
   Write-Host "`n--- status ($statusUrl) ---";  $status  | ConvertTo-Json -Depth 8
   Write-Host "`n--- llm ($llmUrl) ---";     $llm     | ConvertTo-Json -Depth 5
 }
+
+# --- Hashed asset probe (Vite) ---
+try {
+  $index = Invoke-WebRequest -Uri "$BaseUrl/" -TimeoutSec 10
+  $m = [regex]::Match($index.Content, "/assets/[^\"']+\.js")
+  if ($m.Success) {
+    $assetPath = $m.Value
+    $assetUrl = "$BaseUrl$assetPath"
+    $asset = Invoke-WebRequest -Uri $assetUrl -TimeoutSec 10
+    $cc = $asset.Headers["Cache-Control"]
+    if ($asset.StatusCode -eq 200) { Write-Host "asset.ok: $assetPath" } else { Write-Host "asset.fail: $assetPath" }
+    if ($cc -match "immutable") { Write-Host "asset.cache: immutable" } else { Write-Host "asset.cache: missing-immutable" }
+  } else {
+    Write-Host "asset.note: no /assets/*.js reference found in index.html"
+  }
+} catch {
+  Write-Host "asset.error: $($_.Exception.Message)"
+}
