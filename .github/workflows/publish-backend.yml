@@ -14,7 +14,27 @@ env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}/backend
 
 jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps (backend)
+        working-directory: assistant_api
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+      - name: Run tests
+        run: |
+          pytest -q tests/test_status_rag.py || pytest -q
+
   build-and-push:
+    needs: [tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
