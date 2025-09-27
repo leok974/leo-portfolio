@@ -9,7 +9,6 @@ services:
       - ../data:/app/data
     environment:
       - PRIMARY_DEBUG=1
-      - DISABLE_PRIMARY=1
       - MODEL_WAIT_MAX_SECONDS=15
     ports:
       - "8001:8000"
