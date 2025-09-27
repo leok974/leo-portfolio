@@ -63,7 +63,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.frontend
-      target: frontend-static-final
+      target: frontend-vite-final
       args:
         FRONTEND_DIR: .
         NGINX_CONF: deploy/nginx.conf

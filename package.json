@@ -1,7 +1,7 @@
 {
-  "name": "leo-portfolio-tools",
+  "name": "leo-portfolio",
   "version": "1.0.0",
-  "description": "Portfolio optimization tools",
+  "description": "Leo portfolio site + tooling (Vite integrated)",
   "scripts": {
     "fetch:assets": "node scripts/fetch-assets.mjs",
     "optimize": "node optimize-media.js",
@@ -9,9 +9,12 @@
     "optimize:videos": "node optimize-media.js --videos-only",
     "generate-projects": "node generate-projects.js",
     "copy:fonts": "node scripts/copy-fonts.mjs",
-    "build": "npm run generate-projects && npm run fetch:assets && npm run copy:fonts && npm run optimize && node scripts/rev.mjs",
-    "dev": "browser-sync start --server --no-ui --no-notify --host 127.0.0.1 --port 5530 --files \"index.html,*.css,main.js,js/**/*.js,projects/**/*.html,assets/**/*,manifest.webmanifest,sw.js,projects.json\"",
-  "web": "npm run dev",
+    "build:legacy": "npm run generate-projects && npm run fetch:assets && npm run copy:fonts && npm run optimize && node scripts/rev.mjs",
+    "dev:legacy": "browser-sync start --server --no-ui --no-notify --host 127.0.0.1 --port 5530 --files \"index.html,*.css,main.js,js/**/*.js,projects/**/*.html,assets/**/*,manifest.webmanifest,sw.js,projects.json\"",
+    "build": "vite build",
+    "dev": "vite",
+    "preview": "vite preview --port 5173",
+    "web": "npm run dev",
     "lh": "lhci autorun --collect.url=https://leok974.github.io/leo-portfolio/ --upload.target=temporary-public-storage",
     "snapshot": "node scripts/snapshot.mjs"
   },
@@ -19,6 +22,7 @@
     "sharp": "^0.33.0"
   },
   "devDependencies": {
+    "vite": "^5.4.0",
     "browser-sync": "^2.29.3",
     "@fontsource-variable/inter": "^5.2.8",
     "@lhci/cli": "^0.13.0",
