@@ -5,27 +5,32 @@
 Base URL (edge): `http://<host>:8080`
 Backend direct (compose network): `http://backend:8000`
 
+## OpenAPI Schema
+- Live JSON: `http://<host>:8080/openapi.json` (edge) or backend direct `http://127.0.0.1:8001/openapi.json`
+- Documentation UI (FastAPI Swagger): `http://<host>:8080/docs`
+- ReDoc UI (if enabled): `http://<host>:8080/redoc`
+- Exported snapshot: `docs/openapi.json` (regenerated via `python -m assistant_api.export_openapi`)
+
+Regeneration command (from repo root):
+```bash
+python -m assistant_api.export_openapi
+```
+
 ## Chat
 ### POST /chat
 Request:
 ```json
-{
-  "messages": [ { "role": "user", "content": "Hello" } ]
-}
+{ "messages": [ { "role": "user", "content": "Hello" } ] }
 ```
 Response (truncated):
 ```json
-{
-  "id": "chatcmpl-...", 
-  "choices": [{ "message": { "role": "assistant", "content": "Hi!" }}],
-  "_served_by": "primary"
-}
+{ "id": "chatcmpl-...", "choices": [{ "message": { "role": "assistant", "content": "Hi!" }}], "_served_by": "primary" }
 ```
 
 ### POST /chat/stream (SSE)
 - Content-Type: application/json
 - Server-Sent Events stream
-- Events: `data:` chunks containing partial tokens; final `data: {"event":"meta",...}` with provider + usage stats.
+- Events: `data:` chunks containing partial tokens; initial `event: meta` then token deltas; trailing `event: done`.
 
 Example:
 ```bash
@@ -37,17 +42,11 @@ curl -N -X POST http://127.0.0.1:8080/chat/stream \
 ## RAG
 ### POST /api/rag/query
 ```json
-{
-  "question": "What models are supported?",
-  "k": 4
-}
+{ "question": "What models are supported?", "k": 4 }
 ```
 Response snippet:
 ```json
-{
-  "matches": [ { "score": 0.82, "source": "README.md", "text": "..." } ],
-  "count": 4
-}
+{ "matches": [ { "score": 0.82, "source": "README.md", "text": "..." } ], "count": 4 }
 ```
 
 ## LLM Diagnostics
@@ -71,16 +70,12 @@ JSON metrics: request totals, 5xx, token in/out, latency buckets, provider distr
 ## Errors
 Standard JSON error form:
 ```json
-{
-  "detail": "Descriptive message",
-  "code": "fallback_unavailable"
-}
+{ "detail": "Descriptive message", "code": "fallback_unavailable" }
 ```
 
 ## Versioning
 Breaking changes recorded in `docs/CHANGELOG.md`. Deprecated endpoints include a `deprecated: true` flag and a `replacement` field.
 
 ## TODO
-- Add OpenAPI schema link (if route exposed)
 - Enumerate specific metric fields
 - Include embedding model field in RAG response example
