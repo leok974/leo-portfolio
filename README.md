@@ -221,4 +221,19 @@ netstat -ano | Select-String ":8010" ; `
 ---
 
 
+## Docs Policy
+
+All code changes must be reflected in project documentation:
+
+- Update `README.md` for any usage, quick start, or command changes.
+- Update `docs/` (e.g. `ARCHITECTURE.md`, `DEPLOY.md`, `DEVELOPMENT.md`, `SECURITY.md`, `API.md`) for architecture, deployment, security, or endpoint changes.
+- Add or adjust endpoint descriptions in both `README.md` and `docs/API.md` when new routes are introduced.
+- Record meaningful changes (features, fixes, refactors) in `docs/CHANGELOG.md` using a concise semantic style.
+- Note added tests or tooling in `DEVELOPMENT.md`.
+
+Copilot is configured (see `.github/copilot-instructions.md`) to nudge for doc updates whenever code impacts setup, APIs, or deployment. PRs without necessary doc updates may be flagged.
+
+---
+
+
 

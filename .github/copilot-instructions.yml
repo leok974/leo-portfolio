@@ -12,3 +12,21 @@ overview:
     Always reflect the *current state of the repo* without hallucination.
   format: json
   output: overview.json
+
+documentation_policy:
+  description: >
+    Enforce repository documentation hygiene. Use .github/copilot-instructions.md as a canonical policy.
+    Whenever code changes impact setup, architecture, APIs, deployment, security, or developer workflow:
+      - Update README.md (usage, quick start, new commands)
+      - Update docs/ (ARCHITECTURE.md, DEPLOY.md, DEVELOPMENT.md, SECURITY.md, API.md, CHANGELOG.md)
+      - Append CHANGELOG.md with concise semantic-style entries
+      - Ensure new endpoints appear in README.md and docs/API.md
+      - Reflect new Docker services in deploy docs
+    Reject or flag code suggestions that add endpoints or services without doc updates.
+  references:
+    - .github/copilot-instructions.md
+  triggers:
+    - added_files: ["**/*.py", "deploy/**", "Dockerfile*", "**/*.yml", "**/*.yaml"]
+    - modified_files: ["assistant_api/**", "deploy/**", "docs/**"]
+  actions:
+    - ensure_files_updated: ["README.md", "docs/CHANGELOG.md"]
