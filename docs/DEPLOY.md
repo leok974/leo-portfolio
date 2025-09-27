@@ -121,3 +121,15 @@ services:
 ```
 
 To re-enable primary later, remove `DISABLE_PRIMARY` and ensure `PRIMARY_MODEL` is pulled (`docker exec ollama ollama pull <model>`). Status will transition `down → warming → primary`.
+
+### Example Override File
+See `deploy/docker-compose.override.example.yml` (committed) for documented environment knobs you can copy locally (rename to `docker-compose.prod.override.yml` and adjust). This pattern keeps experimental tuning out of source control.
+
+### Warm Transition Test Script
+Script: `scripts/test-warm-transition.ps1`
+
+Usage (after unsetting `DISABLE_PRIMARY`):
+```powershell
+pwsh ./scripts/test-warm-transition.ps1 -BaseUrl "http://localhost:8080" -MaxSeconds 420
+```
+Outputs a timestamped stream of `llm.path` state transitions and exits 0 only after `primary` + `ready=true`.

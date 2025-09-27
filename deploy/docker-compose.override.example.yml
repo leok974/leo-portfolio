@@ -1,0 +1,31 @@
+# Example override for local dev or staging tuning.
+# Copy to docker-compose.prod.override.yml (NOT committed) when you need to change behavior.
+# This file is committed as an example only.
+
+services:
+  backend:
+    environment:
+      # PRIMARY MODEL TAG (ensure it's pulled in ollama)
+      PRIMARY_MODEL: ${PRIMARY_MODEL:-gpt-oss:20b}
+
+      # Fast startup toggle (skip waiting for primary entirely)
+      # Set to "1" for fallback-only fast dev / CI; leave unset or empty for normal behavior.
+      # DISABLE_PRIMARY: "1"
+
+      # Bounded wait (seconds) for Ollama API + model tag before continuing (warming state)
+      MODEL_WAIT_MAX_SECONDS: ${MODEL_WAIT_MAX_SECONDS:-180}
+
+      # RAG status probe behavior
+      # Default is direct in-process probe (reliable). Set to "1" to force legacy HTTP probe for debugging routing.
+      STATUS_RAG_VIA_HTTP: ${STATUS_RAG_VIA_HTTP:-0}
+      RAG_PROBE_TIMEOUT: ${RAG_PROBE_TIMEOUT:-3}
+
+      # Optional explicit OpenAI env (if using fallback cloud)
+      # OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+    # You can also add resource limits, e.g.:
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2.0'
+    #       memory: 2g
