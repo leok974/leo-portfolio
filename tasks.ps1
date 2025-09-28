@@ -69,6 +69,22 @@ function ProdRebuild {
   docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate --remove-orphans
 }
 
+function Tunnel {
+  Write-Host "Starting Cloudflare tunnel sidecar" -ForegroundColor Cyan
+  if (-not $env:CLOUDFLARE_TUNNEL_TOKEN) {
+    $tokenFile = Join-Path $PSScriptRoot 'secrets/cloudflared_token'
+    if (-not (Test-Path $tokenFile)) { $tokenFile = Join-Path $PSScriptRoot '../secrets/cloudflared_token' }
+    if (Test-Path $tokenFile) { $env:CLOUDFLARE_TUNNEL_TOKEN = Get-Content $tokenFile -Raw | Select-Object -First 1 }
+  }
+  if (-not $env:CLOUDFLARE_TUNNEL_TOKEN) { Write-Host "Token missing. Set CLOUDFLARE_TUNNEL_TOKEN or create secrets/cloudflared_token" -ForegroundColor Red; exit 1 }
+  docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.tunnel.override.yml up -d cloudflared
+}
+
+function TunnelDown {
+  Write-Host "Stopping Cloudflare tunnel sidecar" -ForegroundColor Cyan
+  docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.tunnel.override.yml rm -sfv cloudflared | Out-Null
+}
+
 function Latency {
   Write-Host "Probing primary latency (direct /models sampling)..."
   try {
@@ -95,5 +111,7 @@ switch ($Task) {
   "prod-down" { ProdDown }
   "prod-logs" { ProdLogs }
   "prod-rebuild" { ProdRebuild }
+  "tunnel" { Tunnel }
+  "tunnel-down" { TunnelDown }
   default { Write-Host "Tasks: deps | test | build | run | audit" }
 }

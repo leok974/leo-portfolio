@@ -113,7 +113,7 @@ secrets/
 ```
 
 ### 2. Compose Override Service
-Create `docker-compose.tunnel.override.yml` (ignored from production by default) to run cloudflared sidecar on the same network. It will proxy to `backend:8000` (or `nginx:80` if you want full site exposure). Example:
+Create `deploy/docker-compose.tunnel.override.yml` (optional override) to run cloudflared sidecar on the same network. It will proxy to `backend:8000` (or `nginx:80` if you want full site exposure). Example:
 
 ```yaml
 services:
@@ -131,7 +131,7 @@ services:
 Launch with:
 ```bash
 export CLOUDFLARE_TUNNEL_TOKEN=$(cat secrets/cloudflared_token)
-docker compose -f deploy/docker-compose.prod.yml -f docker-compose.tunnel.override.yml up -d cloudflared
+docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.tunnel.override.yml up -d cloudflared
 ```
 
 ### 3. Derive Stable Origin

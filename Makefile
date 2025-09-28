@@ -1,4 +1,4 @@
-.PHONY: deps test build run audit latency models dev cmddev hyperdev webdev prod-up prod-down prod-logs prod-rebuild
+.PHONY: deps test build run audit latency models dev cmddev hyperdev webdev prod-up prod-down prod-logs prod-rebuild tunnel-up tunnel-down
 
 # Lock dependencies from requirements.in
 deps:
@@ -71,3 +71,13 @@ prod-logs:
 prod-rebuild:
 	docker compose -f deploy/docker-compose.prod.yml build --pull && \
 	  docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate --remove-orphans
+
+# Cloudflare tunnel sidecar (requires deploy/docker-compose.tunnel.override.yml and secrets/cloudflared_token)
+tunnel-up:
+	@if [ ! -f secrets/cloudflared_token ]; then echo "secrets/cloudflared_token missing"; exit 1; fi; \
+	export CLOUDFLARE_TUNNEL_TOKEN=$$(cat secrets/cloudflared_token); \
+	 echo "Starting cloudflared tunnel"; \
+	 docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.tunnel.override.yml up -d cloudflared
+
+tunnel-down:
+	 docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.tunnel.override.yml rm -sfv cloudflared || true
