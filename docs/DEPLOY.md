@@ -134,6 +134,8 @@ export CLOUDFLARE_TUNNEL_TOKEN=$(cat secrets/cloudflared_token)
 docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.tunnel.override.yml up -d cloudflared
 ```
 
+Readiness guard: Makefile (`make tunnel-up`) and PowerShell (`tasks.ps1 tunnel` / `start-cloudflared.ps1`) now refuse to start the tunnel unless `/ready` returns 200 to avoid exposing a failing backend.
+
 ### 3. Derive Stable Origin
 Once the tunnel connects, Cloudflare assigns your configured hostname (e.g. `assistant.example.com`). Set:
 ```bash

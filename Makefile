@@ -75,9 +75,11 @@ prod-rebuild:
 # Cloudflare tunnel sidecar (requires deploy/docker-compose.tunnel.override.yml and secrets/cloudflared_token)
 tunnel-up:
 	@if [ ! -f secrets/cloudflared_token ]; then echo "secrets/cloudflared_token missing"; exit 1; fi; \
+	READY=$$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8001/ready || true); \
+	if [ "$$READY" != "200" ]; then echo "Backend not healthy (/ready $$READY). Start stack first: make prod-up"; exit 2; fi; \
 	export CLOUDFLARE_TUNNEL_TOKEN=$$(cat secrets/cloudflared_token); \
-	 echo "Starting cloudflared tunnel"; \
-	 docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.tunnel.override.yml up -d cloudflared
+	echo "Starting cloudflared tunnel (backend healthy)"; \
+	docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.tunnel.override.yml up -d cloudflared
 
 tunnel-down:
 	 docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.tunnel.override.yml rm -sfv cloudflared || true

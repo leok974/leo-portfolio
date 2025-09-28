@@ -37,6 +37,19 @@ if (-not $token) {
 $target = if ($Mode -eq 'edge') { 'http://host.docker.internal:8080' } else { 'http://host.docker.internal:8001' }
 Write-Host "[cloudflared] Starting tunnel targeting $target" -ForegroundColor Cyan
 
+# Readiness guard (checks direct backend /ready when mode=backend, or edge when mode=edge)
+$probe = if ($Mode -eq 'edge') { 'http://127.0.0.1:8080/ready' } else { 'http://127.0.0.1:8001/ready' }
+try {
+  $res = Invoke-WebRequest -UseBasicParsing -Uri $probe -Method GET -TimeoutSec 3
+  if ($res.StatusCode -ne 200) {
+    Write-Host "[cloudflared] Abort: readiness endpoint returned $($res.StatusCode) ($probe)" -ForegroundColor Red
+    exit 2
+  }
+} catch {
+  Write-Host "[cloudflared] Abort: readiness probe failed ($probe)" -ForegroundColor Red
+  exit 2
+}
+
 # Run ephemeral container; user can CTRL+C to terminate
 # Note: Using host.docker.internal for Windows host to reach local services.
 

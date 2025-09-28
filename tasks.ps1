@@ -71,6 +71,13 @@ function ProdRebuild {
 
 function Tunnel {
   Write-Host "Starting Cloudflare tunnel sidecar" -ForegroundColor Cyan
+  # Health check backend readiness
+  try {
+    $resp = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:8001/ready" -Method GET -TimeoutSec 3
+    if ($resp.StatusCode -ne 200) { Write-Host "Backend /ready returned $($resp.StatusCode); aborting tunnel start." -ForegroundColor Red; exit 2 }
+  } catch {
+    Write-Host "Backend /ready unreachable; start backend first (tasks.ps1 prod)." -ForegroundColor Red; exit 2
+  }
   if (-not $env:CLOUDFLARE_TUNNEL_TOKEN) {
     $tokenFile = Join-Path $PSScriptRoot 'secrets/cloudflared_token'
     if (-not (Test-Path $tokenFile)) { $tokenFile = Join-Path $PSScriptRoot '../secrets/cloudflared_token' }
