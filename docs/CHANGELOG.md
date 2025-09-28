@@ -53,6 +53,11 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
 ### Changed
 - `deploy/nginx.conf`: Added CSP (`default-src 'self'`) and long-cache directives now paired with explicit security headers; will tighten `style-src` (remove `'unsafe-inline'`) in a future pass once inline styles are refactored.
 - `docker-compose.prod.yml`: Passes `VITE_BUILD_SHA` build arg enabling reproducible build metadata across environments.
+ - `assistant_api/Dockerfile`: Optimized wheel build & install (persistent pip cache, wheels cache, removed `--no-cache-dir`, binary-only fast fail via `PIP_ONLY_BINARY=:all:`) dramatically reducing repeat build times.
+ - `.dockerignore`: Pruned additional paths (`node_modules`, temp asset dirs, coverage, IDE metadata) to shrink build context and stabilize layer caching.
+ - Frontend service worker: Disabled on GitHub Pages (auto-unregister) to prevent stale `index.html`; new network-first + hashed asset cache-first strategy (`sw.js`).
+ - Dynamic API base selection in `main.js` (`window.__API_BASE__`) chooses external assistant domain on GitHub Pages and `/api` when self-hosted.
+ - Backend CORS allowlist expanded (`ALLOWED_ORIGINS`) to include `https://leok974.github.io` enabling chat/diagnostic requests from Pages.
 
 ## [0.2.0] - 2025-09-27
 ### Added

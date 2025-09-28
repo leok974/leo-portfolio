@@ -403,26 +403,21 @@ document.addEventListener('DOMContentLoaded', async function() {
 // -----------------------------
 // SERVICE WORKER REGISTRATION
 // -----------------------------
+// Dynamic API base selection (GitHub Pages uses external domain; dockerized uses same-origin /api)
+const IS_GH_PAGES = location.hostname.endsWith('github.io');
+const API_BASE = IS_GH_PAGES ? 'https://assistant.ledger-mind.org/api' : '/api';
+window.__API_BASE__ = API_BASE; // expose for inline scripts / debugging
+
 if ('serviceWorker' in navigator) {
   const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
-  if (isLocal) {
-    // During local development, avoid SW caching. Actively unregister any existing SWs.
-    navigator.serviceWorker.getRegistrations?.().then(regs => {
-      regs.forEach(reg => reg.unregister());
-    });
+  if (isLocal || IS_GH_PAGES) {
+    // Avoid SW on local dev or GitHub Pages (prevents stale index.html caching)
+    navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
   } else {
-    // Use subpath-aware URL so it works on GitHub Pages
     const basePath = location.pathname.includes('/leo-portfolio/') ? '/leo-portfolio/' : '/';
     const swUrl = `${basePath}sw.js`;
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register(swUrl)
-        .then(reg => {
-          // Optional: log for diagnostics
-          console.log('Service worker registered:', reg.scope);
-        })
-        .catch(err => {
-          console.warn('Service worker registration failed:', err);
-        });
+      navigator.serviceWorker.register(swUrl).catch(err => console.warn('Service worker registration failed:', err));
     });
   }
 }

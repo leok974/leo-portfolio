@@ -43,6 +43,7 @@ services:
       - PRIMARY_MODEL=${PRIMARY_MODEL:-gpt-oss:20b}
       - FALLBACK_API_KEY_FILE=/run/secrets/openai_api_key
       - OPENAI_API_KEY_FILE=/run/secrets/openai_api_key
+      - ALLOWED_ORIGINS=https://leok974.github.io,http://localhost:8080,https://assistant.ledger-mind.org
     depends_on:
       - ollama
       - ollama-init
