@@ -24,6 +24,9 @@
   }
 
   async function fetchStatus(){
+    if (window.API?.status) {
+      try { return await window.API.status(); } catch (e) { /* fall through */ }
+    }
     const res = await fetch(STATUS_URL, { headers:{ 'Accept':'application/json' } });
     if (!res.ok) throw new Error('status fetch failed');
     return res.json();

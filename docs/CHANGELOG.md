@@ -58,6 +58,7 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
  - Frontend service worker: Disabled on GitHub Pages (auto-unregister) to prevent stale `index.html`; new network-first + hashed asset cache-first strategy (`sw.js`).
  - Dynamic API base selection in `main.js` (`window.__API_BASE__`) chooses external assistant domain on GitHub Pages and `/api` when self-hosted.
  - Backend CORS allowlist expanded (`ALLOWED_ORIGINS`) to include `https://leok974.github.io` enabling chat/diagnostic requests from Pages.
+ - Centralized frontend API helpers (`js/api.js`) unify status, chat, and streaming calls and expose `window.API`.
 
 ## [0.2.0] - 2025-09-27
 ### Added

@@ -39,9 +39,8 @@
   // Apply muted tint from CSS vars to the header label
   try{ if (servedBySpan) servedBySpan.style.color = getComputedStyle(document.documentElement).getPropertyValue('--lk-muted') || '#b4c0cf'; } catch {}
 
-  const API_BASE   = (window.AGENT_BASE_URL || 'http://127.0.0.1:8001');
-  const API_STREAM = API_BASE + '/chat/stream';
-  const API_CHAT   = API_BASE + '/chat';
+  const API_STREAM = (window.API?.base || (window.AGENT_BASE_URL || 'http://127.0.0.1:8001')) + '/chat/stream';
+  const API_CHAT   = (window.API?.base || (window.AGENT_BASE_URL || 'http://127.0.0.1:8001')) + '/chat';
   // Streaming config constants
   const STREAM_MAX_RETRIES = 2;            // additional attempts after first try
   const STREAM_RETRY_BASE_MS = 500;        // base backoff
@@ -207,12 +206,9 @@
   }
 
   async function streamChatOnce(payload, {onMeta, onChunk, onDone, signal}){
-    const resp = await fetch(API_STREAM, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify(payload),
-      signal
-    });
+    const resp = await (window.API?.streamChat ? window.API.streamChat(payload.messages, { signal }) : fetch(API_STREAM, {
+      method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload), signal
+    }));
     if (!resp.ok || !resp.body) throw new Error('bad_stream_response');
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
@@ -281,15 +277,10 @@
 
     const fallbackNonStream = async () => {
       try{
-        const r = await fetch(API_CHAT, {
-          method: 'POST',
-          headers: { 'Content-Type':'application/json' },
-          body: JSON.stringify({ messages: [{ role:'user', content: q }] })
-        });
-        if (!r.ok){
-          throw new Error(`fallback http ${r.status}`);
-        }
-        const payload = await r.json();
+        const r = window.API?.chat ? await window.API.chat([{ role:'user', content: q }]) : await fetch(API_CHAT, {
+          method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ messages: [{ role:'user', content: q }] })
+        }).then(r=> r.json());
+        const payload = r; // unified shape when using API.chat
         const servedBy = payload?._served_by || 'unknown';
         const accent = accentColor();
         ai.bubble.innerHTML = '';
