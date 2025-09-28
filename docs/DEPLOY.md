@@ -99,9 +99,70 @@ These wrap the explicit `docker compose -f deploy/docker-compose.prod.yml ...` c
 You can still host the static site on Pages, but the default deployment path is now the integrated nginx container. Keep `ALLOWED_ORIGINS` updated to include whichever origin(s) you serve from.
 
 ## Custom Domain
-- Add CNAME in repo (or configure Pages settings).
-- Update DNS provider with CNAME pointing at `<user>.github.io` OR A/AAAA via Cloudflare proxy.
-- If using edge on VPS, terminate TLS at Cloudflare or at nginx (add cert + listen 443 block).
+
+## Cloudflare Tunnel (Optional Public Exposure)
+
+Use a Cloudflare Tunnel to expose the backend (and optionally the nginx edge) without opening inbound firewall ports. Prefer a named tunnel with a DNS route for stability.
+
+### 1. Create Tunnel & Token
+Via Cloudflare dashboard (Access -> Tunnels) create a tunnel and copy the token (long JWT‑like string). Store it locally at `secrets/cloudflared_token` (not committed) or as a secret in your deployment platform.
+
+```
+secrets/
+	cloudflared_token   # contains single-line token
+```
+
+### 2. Compose Override Service
+Create `docker-compose.tunnel.override.yml` (ignored from production by default) to run cloudflared sidecar on the same network. It will proxy to `backend:8000` (or `nginx:80` if you want full site exposure). Example:
+
+```yaml
+services:
+	cloudflared:
+		image: cloudflare/cloudflared:latest
+		command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+		restart: unless-stopped
+		environment:
+			- TUNNEL_TRANSPORT_PROTOCOL=auto
+		depends_on:
+			- backend
+		# If you want to expose the full edge instead of raw backend, change url in Cloudflare config or use ingress rules.
+```
+
+Launch with:
+```bash
+export CLOUDFLARE_TUNNEL_TOKEN=$(cat secrets/cloudflared_token)
+docker compose -f deploy/docker-compose.prod.yml -f docker-compose.tunnel.override.yml up -d cloudflared
+```
+
+### 3. Derive Stable Origin
+Once the tunnel connects, Cloudflare assigns your configured hostname (e.g. `assistant.example.com`). Set:
+```bash
+export DOMAIN=assistant.example.com
+```
+or append to `ALLOWED_ORIGINS` if you prefer explicit control. Then restart backend:
+```bash
+docker compose up -d backend
+```
+Verify:
+```bash
+curl http://127.0.0.1:8001/status/cors | jq
+```
+
+### 4. PowerShell Helper (Local Dev)
+You can automate token export + container run (see `scripts/start-cloudflared.ps1` if added):
+```powershell
+./scripts/start-cloudflared.ps1 -Mode backend
+```
+Modes could map to backend (8001) or edge (8080) if you extend the script.
+
+### 5. Security Notes
+- Do not bake the token into an image or commit it to Git.
+- Rotate the tunnel token in Cloudflare if it leaks; old one invalidates immediately.
+- Use Cloudflare Access policies (Zero Trust) for additional protection if exposing non-public endpoints.
+
+### 6. Troubleshooting
+- If `/status/cors` lacks your tunnel hostname, ensure `DOMAIN` or `ALLOWED_ORIGINS` env was set before container start.
+- SSE buffering: Cloudflare generally supports SSE; if issues arise, confirm response headers and disable any cache rule for the path.
 
 ## Production Hardening Checklist
 - [ ] Non-root backend user verified (`id` inside container)
