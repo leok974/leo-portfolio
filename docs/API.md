@@ -64,6 +64,38 @@ Extended diagnostic info (models list, fallback readiness) – if implemented.
 Basic readiness (DB + provider reachability) for container orchestration.
 ### GET /status/summary
 Summarized system state (model presence, fallback mode, counts) – if implemented.
+### GET /status/cors
+Current CORS configuration snapshot – useful for debugging cross‑origin failures without redeploying.
+
+Response example:
+```json
+{
+  "raw_env": "https://site.example, https://admin.example",
+  "allow_all": false,
+  "allowed_origins": [
+    "https://site.example",
+    "https://admin.example",
+    "https://example.com",
+    "http://example.com",
+    "https://www.example.com",
+    "http://www.example.com"
+  ],
+  "derived_from_domain": [
+    "https://example.com",
+    "http://example.com",
+    "https://www.example.com",
+    "http://www.example.com"
+  ],
+  "domain_env": "example.com",
+  "timestamp": 1730000000.123
+}
+```
+
+Derivation rules:
+- `ALLOWED_ORIGINS` accepts comma, space, or newline separated values.
+- If `DOMAIN` is set (e.g. `portfolio.example`), the service auto-adds both HTTP + HTTPS plus `www.` variants unless already present.
+- Set `CORS_ALLOW_ALL=1` for temporary wildcard troubleshooting (credentials disabled automatically in that mode – avoid for production).
+- Enable verbose preflight logging with `CORS_LOG_PREFLIGHT=1` to print method, Origin, and Access-Control-Request-* headers.
 ### GET /metrics
 JSON metrics: request totals, 5xx, token in/out, latency buckets, provider distribution.
 

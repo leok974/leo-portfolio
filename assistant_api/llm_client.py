@@ -1,6 +1,22 @@
 import os, time, httpx, traceback, asyncio
 from typing import Optional, Tuple, List, Iterable, AsyncGenerator
 from .metrics import record, providers, primary_fail_reason
+from dataclasses import dataclass
+
+@dataclass
+class LLMHealth:  # Backwards-compatible minimal structure for tests
+    ollama: str = "unknown"
+    primary_model_present: bool | None = None
+    openai: str = "unknown"
+
+def llm_health() -> LLMHealth:
+    """Return a best-effort health snapshot (test compatibility shim).
+    Real implementation may live elsewhere; this prevents AttributeError in tests
+    that monkeypatch llm_client.llm_health.
+    """
+    # Heuristic: derive openai configured state by presence of fallback key
+    openai_state = "configured" if _get_fallback_key() else "not_configured"
+    return LLMHealth(ollama="unknown", primary_model_present=PRIMARY_MODEL_PRESENT, openai=openai_state)
 
 def _norm_base(url: str) -> str:
     u = (url or "").rstrip('/')

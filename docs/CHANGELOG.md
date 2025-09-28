@@ -60,6 +60,9 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
  - Backend CORS allowlist expanded (`ALLOWED_ORIGINS`) to include `https://leok974.github.io` enabling chat/diagnostic requests from Pages.
  - Centralized frontend API helpers (`js/api.js`) unify status, chat, and streaming calls and expose `window.API`.
  - Backend CORS handling: enhanced parsing for `ALLOWED_ORIGINS` (comma/space/newline separated) plus `CORS_ALLOW_ALL=1` emergency wildcard (credentials disabled when wildcard in effect).
+ - Automatic CORS origin derivation from `DOMAIN` (adds https/http + www variants unless explicitly provided) stored with metadata.
+ - Preflight logging middleware gated by `CORS_LOG_PREFLIGHT=1` prints Origin + Access-Control-Request-* headers for auditing.
+ - `/status/cors` endpoint exposes current CORS configuration (raw env, derived origins, wildcard mode) for rapid diagnostics.
 
 ## [0.2.0] - 2025-09-27
 ### Added
