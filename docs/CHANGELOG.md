@@ -59,6 +59,7 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
  - Dynamic API base selection in `main.js` (`window.__API_BASE__`) chooses external assistant domain on GitHub Pages and `/api` when self-hosted.
  - Backend CORS allowlist expanded (`ALLOWED_ORIGINS`) to include `https://leok974.github.io` enabling chat/diagnostic requests from Pages.
  - Centralized frontend API helpers (`js/api.js`) unify status, chat, and streaming calls and expose `window.API`.
+ - Backend CORS handling: enhanced parsing for `ALLOWED_ORIGINS` (comma/space/newline separated) plus `CORS_ALLOW_ALL=1` emergency wildcard (credentials disabled when wildcard in effect).
 
 ## [0.2.0] - 2025-09-27
 ### Added

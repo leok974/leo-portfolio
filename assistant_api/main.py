@@ -56,7 +56,18 @@ app = FastAPI(title="Leo Portfolio Assistant", lifespan=lifespan)
 # Track last provider that served a response (primary|fallback|none)
 LAST_SERVED_BY: dict[str, str | float] = {"provider": "none", "ts": 0.0}
 
-origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+raw_origins = os.getenv("ALLOWED_ORIGINS", "")
+# Support comma, space, or newline separated entries
+tokens = []
+for part in raw_origins.replace("\n", ",").replace(" ", ",").split(","):
+    part = part.strip()
+    if part:
+        tokens.append(part)
+origins = tokens
+allow_all = os.getenv("CORS_ALLOW_ALL", "0") in {"1", "true", "TRUE", "yes", "on"}
+if allow_all:
+    # Fast path: allow all origins for temporary troubleshooting (avoid in prod long-term)
+    origins = ["*"]
 if not origins:
     origins = [
         "https://leok974.github.io",
@@ -66,13 +77,22 @@ if not origins:
         "http://127.0.0.1:5530",
     ]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
+if origins == ["*"]:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,  # cannot use credentials with wildcard origin
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
 
 # RAG API routes
 app.include_router(rag_router, prefix="/api")
