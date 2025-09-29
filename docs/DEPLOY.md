@@ -281,3 +281,20 @@ After hostname works, set `API_BASE='/api'` on the frontend (already proxied by 
 
 ### Infra-as-Code Alternative
 You can instead provision a `cloudflared` named tunnel with `config.yml` + credentials JSON committed to an ops repo and mount them. Token method kept for minimal friction here.
+
+### Token Sanitation Helper
+Run the helper script to trim and export the token safely (avoids stray CR/LF):
+```powershell
+pwsh ./scripts/sanitize-cloudflared-token.ps1
+docker compose -f deploy/docker-compose.prod.yml up -d cloudflared-portfolio
+```
+
+### Automatic DOMAIN → CORS Origins
+If you set `DOMAIN=portfolio.example.com` the backend derives and appends:
+```
+https://portfolio.example.com
+http://portfolio.example.com
+https://www.portfolio.example.com
+http://www.portfolio.example.com
+```
+Only entries not already in `ALLOWED_ORIGINS` are added. This keeps configs minimal while preserving explicit overrides.

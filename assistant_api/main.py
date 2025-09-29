@@ -27,6 +27,7 @@ from .routes import status as status_routes, llm as llm_routes
 from .routes import llm_latency as llm_latency_routes
 from .health import router as health_router
 from .status_common import build_status
+from .state import LAST_SERVED_BY
 import httpx
 import time
 import json
@@ -53,8 +54,6 @@ from .lifespan import lifespan
 
 app = FastAPI(title="Leo Portfolio Assistant", lifespan=lifespan)
 
-# Track last provider that served a response (primary|fallback|none)
-LAST_SERVED_BY: dict[str, str | float] = {"provider": "none", "ts": 0.0}
 
 raw_origins = os.getenv("ALLOWED_ORIGINS", "")
 # Support comma, space, or newline separated entries
@@ -174,15 +173,6 @@ if os.getenv("CORS_LOG_PREFLIGHT", "0") in {"1", "true", "TRUE", "yes", "on"}:
 def metrics():
     return snapshot()
 
-# Lightweight built-in status summary endpoint (mirrors routes.status)
-@app.get("/status/summary")
-async def status_summary_ep():
-    base = os.getenv("BASE_URL_PUBLIC", "http://127.0.0.1:8001")
-    summary = await build_status(base)
-    summary["latency_recent"] = recent_latency_stats()
-    summary["latency_recent_by_provider"] = recent_latency_stats_by_provider()
-    summary["last_served_by"] = LAST_SERVED_BY
-    return summary
 
 @app.get("/status/cors")
 async def status_cors():
