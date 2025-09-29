@@ -27,7 +27,7 @@ from .routes import status as status_routes, llm as llm_routes
 from .routes import llm_latency as llm_latency_routes
 from .health import router as health_router
 from .status_common import build_status
-from .state import LAST_SERVED_BY
+from .state import LAST_SERVED_BY, sse_inc, sse_dec
 import httpx
 import time
 import json
@@ -267,6 +267,11 @@ async def chat_stream_ep(req: ChatReq):
     messages = _build_messages(req)
 
     async def gen():
+        # Increment live SSE connection count
+        try:
+            sse_inc()
+        except Exception:
+            pass
         source = None
         async for tag, line in llm_chat_stream(messages):
             if source is None:
@@ -284,6 +289,11 @@ async def chat_stream_ep(req: ChatReq):
                 line = f"data: {line}"
             yield line + "\n"
         yield "event: done\ndata: {}\n\n"
+        # Decrement on normal completion
+        try:
+            sse_dec()
+        except Exception:
+            pass
 
     return StreamingResponse(gen(), media_type="text/event-stream")
 
