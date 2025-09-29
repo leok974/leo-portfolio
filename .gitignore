@@ -49,6 +49,11 @@ data/
 # Secrets (Docker secrets)
 secrets/
 
+# Cloudflared named tunnel credentials (do not commit)
+cloudflared/*.json
+cloudflared/cert.pem
+
+
 # Cache files
 .cache/
 .parcel-cache/

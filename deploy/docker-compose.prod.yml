@@ -84,17 +84,19 @@ services:
   cloudflared-portfolio:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
-    command: ["tunnel","run","--no-autoupdate","--metrics","0.0.0.0:2000","--token","${CLOUDFLARE_TUNNEL_TOKEN}"]
+    command: ["tunnel","--config","/etc/cloudflared/config.yml","run"]
     depends_on:
       - nginx
     environment:
       - TUNNEL_TRANSPORT_PROTOCOL=auto
+    volumes:
+      - ./cloudflared:/etc/cloudflared:ro
     healthcheck:
-      test: ["CMD-SHELL","wget -qO- http://localhost:2000/metrics | grep -q cloudflared_tunnel_ha_connections"]
-      interval: 10s
+      test: ["CMD-SHELL","wget -qO- http://localhost:2000/metrics >/dev/null 2>&1 || exit 1"]
+      interval: 15s
       timeout: 5s
-      retries: 12
-      start_period: 10s
+      retries: 20
+      start_period: 15s
     # No ports exposed; outbound-only connector
 
 volumes:

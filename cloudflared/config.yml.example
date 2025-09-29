@@ -1,0 +1,19 @@
+# Named Cloudflare Tunnel configuration (example)
+# Copy to cloudflared/config.yml and replace placeholders.
+
+# The UUID of the tunnel (output of `cloudflared tunnel create <name>`)
+tunnel: <TUNNEL_UUID>
+# Credentials file path inside container (volume-mounted)
+credentials-file: /etc/cloudflared/<TUNNEL_UUID>.json
+
+# Ingress rules (first match wins)
+ingress:
+  # Public hostname mapping to nginx service (entire SPA + API)
+  - hostname: portfolio.<your-domain>
+    service: http://nginx:80
+  # Fallback (any unmatched path/status)
+  - service: http_status:404
+
+# Optional logging / metrics
+loglevel: info
+metrics: 0.0.0.0:2000
