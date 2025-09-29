@@ -298,3 +298,17 @@ https://www.portfolio.example.com
 http://www.portfolio.example.com
 ```
 Only entries not already in `ALLOWED_ORIGINS` are added. This keeps configs minimal while preserving explicit overrides.
+
+### Existing Named Tunnel Helper
+If you already have a tunnel UUID (e.g., created previously in Cloudflare dashboard) you can generate credentials + config + DNS in one go:
+```powershell
+pwsh ./scripts/cloudflared-gen-creds.ps1 -Uuid <TUNNEL_UUID> -Hostname app.example.com
+```
+The script will:
+1. Run `tunnel login` if `cloudflared/cert.pem` is missing.
+2. Create (or refresh) `<UUID>.json` credentials.
+3. Write/update `cloudflared/config.yml` with ingress to `http://nginx:80` and metrics.
+4. Add DNS route (CNAME → `<UUID>.cfargotunnel.com`).
+5. Recreate the `cloudflared-portfolio` service via compose and tail logs.
+
+After success you should see repeated `Registered tunnel connection` lines and your site available at the hostname with `/api/*` served same-origin.
