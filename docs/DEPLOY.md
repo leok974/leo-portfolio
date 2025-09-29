@@ -225,3 +225,59 @@ Usage (after unsetting `DISABLE_PRIMARY`):
 pwsh ./scripts/test-warm-transition.ps1 -BaseUrl "http://localhost:8080" -MaxSeconds 420
 ```
 Outputs a timestamped stream of `llm.path` state transitions and exits 0 only after `primary` + `ready=true`.
+
+## Cloudflare Tunnel (Managed / Token)
+Use the connector token from Zero Trust → Tunnels → <your tunnel> → **Connect** → "Run a connector". Copy only the value after `--token` (single line, no quotes, typically JWT-like with multiple `.`).
+
+### Compose (Integrated Service)
+`deploy/docker-compose.prod.yml` now supports adding a service:
+```yaml
+services:
+	cloudflared-portfolio:
+		image: cloudflare/cloudflared:latest
+		restart: unless-stopped
+		command: ["tunnel","run","--no-autoupdate","--token","${CLOUDFLARE_TUNNEL_TOKEN}"]
+		depends_on: [nginx]
+		environment:
+			- TUNNEL_TRANSPORT_PROTOCOL=auto
+```
+
+### Environment (.env or shell)
+```
+CLOUDFLARE_TUNNEL_TOKEN=<paste-one-line-token>
+```
+Or load from a local secrets file (PowerShell):
+```powershell
+$env:CLOUDFLARE_TUNNEL_TOKEN = (Get-Content secrets/cloudflared_token -Raw).Trim()
+docker compose -f deploy/docker-compose.prod.yml up -d cloudflared-portfolio
+```
+
+### Public Hostname Mapping
+In Cloudflare Zero Trust → Tunnels → <your tunnel> → Public Hostnames add:
+```
+Hostname: portfolio.<your-domain>
+Service:  http://nginx:80
+```
+Then test:
+```bash
+curl -I https://portfolio.<your-domain>/
+curl -s https://portfolio.<your-domain>/api/ready
+```
+
+### Verification Checklist
+- Logs show multiple `Registered tunnel connection` lines.
+- No "invalid token" or auth errors.
+- Hitting the hostname returns the SPA and `/api/status/summary` JSON.
+
+### Troubleshooting
+| Symptom | Likely Cause | Fix |
+|---------|--------------|-----|
+| `Provided Tunnel token is not valid` | Truncated / wrong token (secret vs connector) | Re-copy connector token from Connect screen |
+| `tunnel not found` | Deleted or different tunnel | Regenerate token in selected tunnel |
+| Looping reconnect without auth errors | Network egress blocked (443/7844) | Allow outbound TCP:443 (and optionally UDP:7844) |
+
+### Same-Origin API Calls
+After hostname works, set `API_BASE='/api'` on the frontend (already proxied by nginx) so CORS is unnecessary.
+
+### Infra-as-Code Alternative
+You can instead provision a `cloudflared` named tunnel with `config.yml` + credentials JSON committed to an ops repo and mount them. Token method kept for minimal friction here.

@@ -1,17 +1,22 @@
-version: "3.9"
-
-# Optional tunnel sidecar. Launch with:
-#   export CLOUDFLARE_TUNNEL_TOKEN=$(cat secrets/cloudflared_token)
-#   docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.tunnel.override.yml up -d cloudflared
-# Or via Makefile target (see tunnel-up).
+## Optional Cloudflare Tunnel sidecar.
+## Supply the token via environment before bringing the service up:
+##   PowerShell:
+##     $env:CLOUDFLARE_TUNNEL_TOKEN = (Get-Content secrets/cloudflared_token -Raw).Trim()
+##     docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.tunnel.override.yml up -d cloudflared
+## If the token is missing the container will emit an error and restart.
 services:
   cloudflared:
     image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     restart: unless-stopped
+    command: ["tunnel", "run", "--token", "${CLOUDFLARE_TUNNEL_TOKEN}"]
     environment:
       - TUNNEL_TRANSPORT_PROTOCOL=auto
     depends_on:
       - backend
+    healthcheck:
+      test: ["CMD", "cloudflared", "version"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
     # By default Cloudflare will route to the hostname configured for this token.
-    # Configure ingress rules in Cloudflare dashboard if you need to expose nginx instead of backend.
+    # Configure ingress rules in the Cloudflare dashboard if you need to expose nginx instead of backend.

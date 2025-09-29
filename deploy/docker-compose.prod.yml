@@ -33,8 +33,10 @@ services:
 
   backend:
     build:
-      context: ../assistant_api
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+      args:
+        GIT_SHA: ${GIT_SHA:-local}
     env_file:
       - ../assistant_api/.env.prod
     environment:
@@ -44,6 +46,9 @@ services:
       - FALLBACK_API_KEY_FILE=/run/secrets/openai_api_key
       - OPENAI_API_KEY_FILE=/run/secrets/openai_api_key
       - ALLOWED_ORIGINS=https://leok974.github.io,http://localhost:8080,https://assistant.ledger-mind.org
+      - BASE_URL_PUBLIC=${BASE_URL_PUBLIC:-http://localhost:8000}
+      # (Optional) For bounded model warm wait you can set MODEL_WAIT_MAX_SECONDS=<seconds>
+      # - MODEL_WAIT_MAX_SECONDS=180
     depends_on:
       - ollama
       - ollama-init
@@ -75,6 +80,16 @@ services:
       - "8080:80"
       - "8443:443"
     restart: unless-stopped
+
+  cloudflared-portfolio:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: ["tunnel","run","--no-autoupdate","--token","${CLOUDFLARE_TUNNEL_TOKEN}"]
+    depends_on:
+      - nginx
+    environment:
+      - TUNNEL_TRANSPORT_PROTOCOL=auto
+    # No ports exposed; outbound-only connector
 
 volumes:
   ollama:
