@@ -1,0 +1,63 @@
+{
+  "repo": {
+    "name": "leo-portfolio",
+    "description": "Portfolio site for Leo Klemet with a FastAPI assistant relay, optimized static assets, PWA, and CI for GitHub Pages/Lighthouse.",
+    "language": "HTML/CSS/JavaScript (frontend), Python (backend)",
+    "context": "Web portfolio (static site) with an auxiliary backend API (FastAPI) acting as an OpenAI-compatible relay for a chat assistant.",
+    "structure": {
+      "frontend": "Root-level static site: index.html, styles.*.css, main.js, js/assistant-chip.js, assets/, fonts/, projects/, manifest.webmanifest, sw.js",
+      "backend": "assistant_api/ (FastAPI app with /chat, /chat/stream (SSE), /health); task to run via uvicorn",
+      "tests": "No explicit unit test directories found; CI workflows include link check, schema validation, Lighthouse",
+      "config": ".github/workflows/*.yml (deploy/pages-deploy/lighthouse/link-check/schema-validate), package.json (tooling), lighthouserc.json, robots.txt, sitemap.xml"
+    },
+    "core_components": [
+      {
+        "name": "Static Site (index.html + styles + main.js)",
+        "description": "Portfolio UI with hero, filterable project grid, modal case studies, light/dark theme toggle, lazy-loading, and accessibility features."
+      },
+      {
+        "name": "Assistant Chip + Panel (js/assistant-chip.js)",
+        "description": "Bottom-right chat chip opening a lightweight panel that streams responses via a host-gated relay; idempotent, non-intrusive mount."
+      },
+      {
+        "name": "FastAPI Relay (assistant_api/main.py)",
+        "description": "OpenAI-compatible relay for chat; endpoints: /chat (JSON), /chat/stream (SSE), /health; CORS allowlist for Pages/localhost; client+server system prompt pattern."
+      },
+      {
+        "name": "PWA & SEO",
+        "description": "manifest.webmanifest, sw.js, canonical/OG/Twitter meta, sitemap.xml, robots.txt; self-hosted variable Inter fonts with preload."
+      },
+      {
+        "name": "Media & Build Utilities",
+        "description": "Node scripts to fetch and optimize assets (sharp), rev hashed assets, snapshot repo; projects.json for case-study data."
+      }
+    ],
+    "infrastructure": {
+      "docker": false,
+      "ci_cd": true,
+      "cloud": "GitHub Pages (static site). Backend relay is run locally or via an external tunnel/service; no cloud IaC present in repo."
+    },
+    "dependencies": [
+      "Frontend: vanilla JS/CSS (no framework)",
+      "Backend: FastAPI, Uvicorn (implied by task and code)",
+      "Tooling: sharp, @lhci/cli (Lighthouse CI), lighthouse, glob, commander, @fontsource-variable/inter"
+    ],
+    "tests": {
+      "framework": "None detected",
+      "coverage": "N/A (CI includes link and schema validation, Lighthouse audits)"
+    },
+    "docs": true,
+    "skills": [
+      "Full-stack development: static frontend + Python backend",
+      "FastAPI for API design and OpenAI-compatible relay",
+      "Web performance optimization (Lighthouse CI, asset hashing, sharp)",
+      "Progressive Web App features (manifest, service worker, offline readiness)",
+      "Accessibility-first design (keyboard nav, aria-live, alt text)",
+      "SEO best practices (structured data, sitemap, meta tags, robots.txt)",
+      "CI/CD with GitHub Actions (deploy, link check, schema validation, Lighthouse)",
+      "Frontend engineering (vanilla JS, modular scripts, lazy loading)",
+      "Cloud deployment on GitHub Pages with automated workflows",
+      "Security practices (CORS allowlist, static asset integrity)"
+    ]
+  }
+}

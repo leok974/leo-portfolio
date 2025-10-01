@@ -1,0 +1,103 @@
+name: Nightly – Streaming (Fallback)
+
+on:
+  schedule:
+    - cron: "35 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  fallback-streaming:
+    runs-on: ubuntu-latest
+    env:
+      BASE: ${{ secrets.FALLBACK_BASE }}
+      UA: Mozilla/5.0
+      STREAM_TIMEOUT_MS: "20000"
+      STRICT_STREAM_MARKER: "1"
+      EXPECT_SERVED_BY: "fallback"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skip if secret not set
+        shell: bash
+        run: |
+          if [ -z "${BASE:-}" ]; then
+            echo "FALLBACK_BASE not set; skipping gracefully.";
+            mkdir -p .github/badges
+            echo '{ "schemaVersion":1, "label":"streaming", "message":"fallback: skip", "color":"lightgrey" }' > .github/badges/streaming-fallback.json
+            exit 0
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci || npm i
+
+      - name: Warm public service (fallback)
+        shell: bash
+        run: |
+          echo "Warming $BASE ..."
+          for i in {1..60}; do
+            R="$(curl -fsSL -A "$UA" "$BASE/api/status/summary" || true)"
+            READY="$(jq -r '.ready // false' <<<"$R" 2>/dev/null || echo false)"
+            echo "try $i: ready=$READY"
+            if [ "$READY" = "true" ]; then
+              echo "Warm ✅"; break
+            fi
+            sleep 2
+          done
+
+      - name: Run fallback streaming test (1 retry)
+        id: test
+        shell: bash
+        run: |
+          set +e
+          run_test() { BASE="$BASE" npm test -- --reporter=list tests/chat.stream.served_by.spec.mjs; }
+          run_test; CODE=$?
+          if [ $CODE -ne 0 ]; then
+            echo "retrying once after 15s..."; sleep 15; run_test; CODE=$?
+          fi
+          set -e
+          echo "code=$CODE" >> $GITHUB_OUTPUT
+
+      - name: Build badge JSON
+        id: badge
+        shell: bash
+        run: |
+          mkdir -p .github/badges
+          if [ "${{ steps.test.outputs.code }}" = "0" ]; then
+            STATUS="ok"; COLOR="brightgreen"; MSG="fallback: pass"
+          else
+            STATUS="fail"; COLOR="red"; MSG="fallback: fail"
+          fi
+          cat > .github/badges/streaming-fallback.json <<EOF
+          { "schemaVersion": 1, "label": "streaming", "message": "$MSG", "color": "$COLOR" }
+          EOF
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+
+      - name: Commit badge
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "ci(badge): update nightly fallback streaming badge"
+          file_pattern: .github/badges/streaming-fallback.json
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Nightly fallback streaming: **${{ steps.badge.outputs.status }}**" >> $GITHUB_STEP_SUMMARY
+          echo "- Base: $BASE" >> $GITHUB_STEP_SUMMARY
+          echo "- Timeout: $STREAM_TIMEOUT_MS ms" >> $GITHUB_STEP_SUMMARY
+      - name: Mirror badges to status-badges branch (optional)
+        if: always()
+        run: |
+          git fetch origin status-badges || true
+          git checkout -B status-badges
+          mkdir -p .github/badges
+          cp .github/badges/streaming*.json .github/badges/ 2>/dev/null || true
+          git add .github/badges/
+          git commit -m "ci(badge): mirror badges" || true
+          git push origin status-badges

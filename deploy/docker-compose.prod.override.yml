@@ -1,0 +1,22 @@
+version: "3.9"
+
+# Override for local iterative debugging of the production stack.
+# Adds bind mount & optional reload.
+services:
+  backend:
+    volumes:
+      - ../assistant_api:/app/assistant_api:ro
+      - ../data:/app/data
+    environment:
+      - PRIMARY_DEBUG=1
+      - MODEL_WAIT_MAX_SECONDS=15
+    ports:
+      - "8001:8000"
+    command: uvicorn assistant_api.main:app --host 0.0.0.0 --port 8000 --workers 1 --reload
+    # NOTE: --reload uses inotify; with ro bind mount it will still detect changes.
+
+  ollama:
+    # Optionally pin a model pull at startup (uncomment to prefetch).
+    # entrypoint: ["/bin/sh","-c","ollama pull gpt-oss:20b || true; exec /bin/ollama serve"]
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h

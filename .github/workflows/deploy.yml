@@ -1,0 +1,72 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  integrity:
+    name: SRI integrity check
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: ${{ always() }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Snapshot existing manifest
+        id: snap
+        run: |
+          if [ -f sri-manifest.json ]; then cp sri-manifest.json sri-manifest.prev.json; fi
+      - name: Run integrity check
+        run: node scripts/check-integrity.mjs
+      - name: Regenerate SRI (expected no drift) and diff
+        run: |
+          node scripts/generate-sri.mjs --root . --html index.html,projects/*.html --assets . --manifest sri-manifest.json
+          if [ -f sri-manifest.prev.json ]; then
+            if ! diff -u sri-manifest.prev.json sri-manifest.json; then
+              echo "Manifest changed unexpectedly. Review diff above."; exit 1; fi
+          fi
+      - name: Save integrity report
+        if: ${{ failure() }}
+        run: echo "Integrity drift detected. See job logs for details." > integrity-failure.txt
+        shell: bash
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: integrity-report
+          path: integrity-failure.txt
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: [build, integrity]
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,39 @@
+name: Dist SRI Consistency
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  sri-dist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install deps
+        run: npm ci --no-audit --no-fund
+      - name: Build (Vite)
+        run: npm run build
+      - name: Snapshot dist manifest (pre)
+        run: |
+          if [ -f dist/sri-manifest.json ]; then cp dist/sri-manifest.json dist/sri-manifest.prev.json; fi
+      - name: Generate dist SRI
+        # Run with root=dist so relative asset resolution works; omit --assets to avoid dist/dist path.
+        run: node scripts/generate-sri.mjs --root dist --html index.html --manifest sri-manifest.json
+      - name: Diff manifest
+        run: |
+          if [ -f dist/sri-manifest.prev.json ]; then
+            if ! diff -u dist/sri-manifest.prev.json dist/sri-manifest.json; then
+              echo "Unexpected dist SRI manifest change."; exit 1; fi
+          fi
+      - name: Integrity check
+        run: node scripts/check-integrity.mjs || true  # root check (optional)
+      - name: Upload dist SRI manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-sri-manifest
+          path: dist/sri-manifest.json

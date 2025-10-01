@@ -1,0 +1,36 @@
+name: Repo Overview
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  generate-overview:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Copilot CLI (experimental)
+      - name: Generate overview.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npx @githubnext/github-copilot-cli \
+            --config .github/copilot-instructions.yml
+
+      - name: Commit overview.json
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add overview.json
+          git commit -m "chore: update repo overview [skip ci]" || echo "No changes"
+          git push

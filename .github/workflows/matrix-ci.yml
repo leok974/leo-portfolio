@@ -1,0 +1,50 @@
+name: Lint, Scripts, Tests (Node LTS Matrix)
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - name: Install deps
+        run: npm ci || npm i
+      - name: Lint (ESM guard)
+        run: npm run lint
+      - name: CI smoke
+        run: npm run ci:smoke
+      - name: Unit tests
+        run: npm run test
+      - name: Coverage badges (Node 20 only)
+        if: matrix.node == '20'
+        run: npm run cov:badges
+      - name: Coverage threshold gate (Node 20 only)
+        if: matrix.node == '20'
+        run: npm run coverage:gate
+      - name: Dispatcher unknown command test (Node 20 only)
+        if: matrix.node == '20'
+        run: node tests/dispatcher.unknown.spec.mjs
+      - name: Coverage gate failure test (Node 20 only)
+        if: matrix.node == '20'
+        run: node tests/coverage-gate.fail.spec.mjs
+      - name: Upload coverage HTML
+        if: matrix.node == '20'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: coverage/
+          if-no-files-found: warn
+          retention-days: 7

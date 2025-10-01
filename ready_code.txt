@@ -1,0 +1,1 @@
+{"ok":true,"checks":{"rag_db":{"ok":true,"detail":["docs"]},"ollama":{"ok":true},"openai_fallback":{"configured":true}}}

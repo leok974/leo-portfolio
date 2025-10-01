@@ -1,0 +1,21 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "America/New_York",
+  "labels": ["deps"],
+  "pip_requirements": {
+    "fileMatch": ["^assistant_api/requirements\\.in$"]
+  },
+  "regexManagers": [
+    {
+      "fileMatch": ["^assistant_api/requirements\\.in$"],
+      "matchStrings": [".+"],
+      "depNameTemplate": "{{{depName}}}"
+    }
+  ],
+  "postUpdateTasks": {
+    "commands": ["scripts/update-deps.sh"],
+    "executionMode": "update"
+  },
+  "schedule": ["before 9am on monday"]
+}

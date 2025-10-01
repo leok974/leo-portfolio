@@ -1,0 +1,61 @@
+name: Status / CORS Health
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"  # hourly at minute 17
+  push:
+    branches: [ main ]
+
+env:
+  ORIGIN: https://leok974.github.io
+  ASSIST_HOST: assistant.ledger-mind.org
+  FAIL_ON_LEGACY: "false" # set to "true" later to enforce api-only
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Warm public status (best-effort)
+        run: |
+          set -euo pipefail
+          for i in {1..10}; do
+            curl -fsS "https://$ASSIST_HOST/api/status/summary" >/dev/null 2>&1 && echo "warm check ok" && break || true
+            sleep 3
+          done
+      - name: GET /api/status/summary
+        run: |
+          set -euo pipefail
+          API_HEADERS="$(curl -sS -D - -o /dev/null -H "Origin: $ORIGIN" "https://$ASSIST_HOST/api/status/summary")"
+          echo "$API_HEADERS"
+          echo "$API_HEADERS" | grep -E '^HTTP/.* 200'
+          echo "$API_HEADERS" | grep -F "Access-Control-Allow-Origin: $ORIGIN"
+          echo "$API_HEADERS" | grep -F 'Vary: Origin'
+          echo "$API_HEADERS" | grep -F 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0'
+          # Optional debugging header
+          echo "$API_HEADERS" | grep -F 'X-Status-Path: api' || echo 'X-Status-Path header missing (ok if not deployed yet)'
+
+      - name: OPTIONS /api/status/summary
+        run: |
+          set -euo pipefail
+          OPT_HEADERS="$(curl -sS -D - -o /dev/null -X OPTIONS \
+            -H "Origin: $ORIGIN" -H "Access-Control-Request-Method: GET" \
+            "https://$ASSIST_HOST/api/status/summary")"
+          echo "$OPT_HEADERS"
+          echo "$OPT_HEADERS" | grep -E '^HTTP/.* (204|200)'
+          echo "$OPT_HEADERS" | grep -F "Access-Control-Allow-Origin: $ORIGIN"
+          echo "$OPT_HEADERS" | grep -F 'Vary: Origin'
+
+      - name: Legacy GET /status/summary (warn now, enforce later)
+        run: |
+          set -euo pipefail
+          LEG_HEADERS="$(curl -sS -D - -o /dev/null -H "Origin: $ORIGIN" "https://$ASSIST_HOST/status/summary" || true)"
+          echo "$LEG_HEADERS"
+          if [ "$FAIL_ON_LEGACY" = "true" ]; then
+            echo "$LEG_HEADERS" | grep -E '^HTTP/.* (404|410)$'
+          else
+            echo "Legacy still reachable (tolerated). Set FAIL_ON_LEGACY=true later to enforce removal.";
+          fi
+          # Optional debugging header
+          echo "$LEG_HEADERS" | grep -F 'X-Status-Path: legacy' && echo 'Legacy path still serving' || true

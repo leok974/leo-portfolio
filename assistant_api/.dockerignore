@@ -1,0 +1,48 @@
+# ---- General VCS / editor ----
+.git
+.gitignore
+.vscode
+*.swp
+*.log
+.DS_Store
+
+# ---- Python cache ----
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.coverage
+.coverage*
+htmlcov/
+.pytest_cache/
+
+# ---- Node / frontend caches ----
+node_modules/
+.dist/
+.tmp/
+
+# ---- Tests & local tooling ----
+tests/
+.docs/
+examples/
+notebooks/
+
+# ---- Secrets & env ----
+.env
+.env.*
+secrets/
+
+# ---- Large / generated data (keep runtime DB volume mounted instead) ----
+data/
+!.keep
+
+# ---- Models / embeddings (if any local copies) ----
+models/
+
+# ---- Misc build artifacts ----
+/build/
+/dist/
+coverage.xml
+
+# Keep only what runtime stage COPY uses:
+# assistant_api/*, assets/*, js/*, index.html

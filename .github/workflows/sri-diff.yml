@@ -1,0 +1,26 @@
+name: sri-diff
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+jobs:
+  sri-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Determine previous tag
+        id: prev
+        run: |
+          echo "prev=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo '')" >> $GITHUB_OUTPUT
+      - name: Diff SRI manifest
+        if: steps.prev.outputs.prev != ''
+        run: |
+          git show ${{ steps.prev.outputs.prev }}:sri-manifest.json > /tmp/prev.json || echo '{}' > /tmp/prev.json
+          jq -S . sri-manifest.json > /tmp/cur.json || echo '{}' > /tmp/cur.json
+          if diff -u /tmp/prev.json /tmp/cur.json; then
+            echo "No SRI changes."
+          else
+            echo "::warning::SRI manifest changed vs ${{ steps.prev.outputs.prev }} (review above diff)"
+          fi

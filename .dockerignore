@@ -1,0 +1,81 @@
+# Core VCS & metadata
+.git
+.gitignore
+*.swp
+*.DS_Store
+
+# Python build + virtual environments
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.build/
+.eggs/
+*.egg-info/
+.venv/
+venv/
+ENV/
+.env
+.env.*
+
+# Node / frontend deps
+node_modules/
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
+
+# Local data & generated artifacts
+/data/
+*.sqlite
+*.db
+
+# Tests (exclude from prod images unless explicitly needed)
+/tests/
+.coverage
+htmlcov/
+
+# Secrets (never copy into images)
+/secrets/
+!secrets/.keep
+
+# Logs & diagnostics
+*.log
+logs/
+uvicorn_stdout.log
+uvicorn_stderr.log
+
+# Docker local files
+Dockerfile.local
+
+# Caches
+.cache/
+.mypy_cache/
+.pytest_cache/
+
+# Dist / build outputs (frontend build will copy explicitly when present)
+dist/
+build/
+
+# Additional pruning (frontend artifacts, temp, editor, coverage, logs)
+node_modules
+dist
+.wheels
+*.log
+coverage/
+.idea/
+.vscode/
+assets/outputs
+assets/tmp
+*.pyc
+*.py.cache
+*.log
+*.env*
+.DS_Store
+
+# Misc large design/media sources (keep optimized versions only)
+assets/originals/
+
+# Ignore snapshot & repo analysis artifacts if any
+repo-snapshot.json
+snapshot.json
