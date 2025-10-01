@@ -35,6 +35,37 @@ cd deploy
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
+### Dev Frontend Override & CSP
+For rapid UI iteration without rebuilding the frontend image each change:
+
+```bash
+cd deploy
+docker compose \
+  -f docker-compose.prod.yml \
+  -f docker-compose.dev.override.yml \
+  up -d --force-recreate nginx
+```
+
+What this does:
+* Binds your local `./dist` into the Nginx container (immediate asset refresh on rebuild).
+* Swaps in `nginx.dev.conf` which relaxes CSP (`'unsafe-inline'` / `'unsafe-eval'`) to avoid blocking inline dev styles or Vite-injected snippets.
+* Leaves backend services untouched (only recreates `nginx`).
+
+IMPORTANT: Do not deploy `nginx.dev.conf` to production. The production config (`nginx.conf`) is strict (no inline). Refactor remaining inline `<style>` tags into the Vite pipeline so you can keep the strong CSP everywhere.
+
+Manifest MIME: The production config now declares `application/manifest+json` for `webmanifest` ensuring browsers no longer warn about `site.webmanifest` being served as `text/plain` or `text/html`.
+
+Troubleshooting 404s:
+1. Ensure you actually built assets: `npm run build` (creates `dist/`).
+2. Confirm the files exist locally: `dir dist` (PowerShell) or `ls dist`.
+3. If still 404 in container, exec in Nginx: `docker compose exec nginx ls -1 /usr/share/nginx/html/assets`.
+4. Cache: Hashed assets are cached aggressively; force refresh with Ctrl+Shift+R.
+
+Next Hardening Steps (planned):
+* Remove remaining inline styles → drop `'unsafe-inline'` from dev.
+* Consider hashing critical inline script (if ever introduced) with CSP `script-src` sha256.
+* Add build check that fails if inline `<style>` blocks persist (simple grep in CI).
+
 ## Dependency Management
 - Source constraints: `assistant_api/requirements.in`
 - Locked/pinned: `assistant_api/requirements.txt`

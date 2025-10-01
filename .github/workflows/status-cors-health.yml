@@ -17,6 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Warm public status (best-effort)
+        run: |
+          set -euo pipefail
+          for i in {1..10}; do
+            curl -fsS "https://$ASSIST_HOST/api/status/summary" >/dev/null 2>&1 && echo "warm check ok" && break || true
+            sleep 3
+          done
       - name: GET /api/status/summary
         run: |
           set -euo pipefail

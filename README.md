@@ -89,6 +89,33 @@ Core helper scripts:
 
 Pick one for your workflow (daily check → all-green; CI streaming sanity → chat-probe; Windows-native streaming → chat-stream).
 
+### Frontend Dev: Assets 404 / CSP Inline Styles
+If you see 404s for `/assets/*.css` or fonts and an unstyled page:
+1. Ensure the Vite build produced `dist/` (run `npm run build`).
+2. For local dev, apply the override: `docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.dev.override.yml up -d --force-recreate nginx`.
+3. Use relaxed CSP in `deploy/nginx.dev.conf` (allows inline while you refactor inline styles).
+4. `site.webmanifest` served with proper MIME via added `types` block (avoid text/html warning).
+
+Production: revert to strict CSP (no `unsafe-inline`) after moving inline `<style>` into bundled CSS.
+
+### Workflows Summary JSON
+An automated workflow (`workflows-summary.yml`) publishes `.github/badges/workflows.json` to the `status-badge` branch every 30 minutes (and on demand). It aggregates latest run metadata for key pipelines: unit-ci, prod-assistant-probe, e2e-prod, publish-backend. Field `overall` is `ok|degraded|empty` based on conclusions. Consume it in dashboards or Shields via a dynamic endpoint.
+
+### Nightly Strict Streaming Badge
+Nightly workflow enforces `_served_by` presence in streaming output (strict mode). Badge (replace OWNER/REPO if forked):
+
+![Streaming (strict)](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/main/.github/badges/streaming.json)
+
+### Nightly Fallback Streaming Badge
+Ensures fallback path (e.g., OpenAI) continues to emit `_served_by` marker. Skips gracefully if fallback host secret unset.
+
+![Streaming (fallback)](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/main/.github/badges/streaming-fallback.json)
+
+### Combined Streaming Health Badge
+Aggregates strict + fallback results (color matrix in `aggregate-streaming.mjs`).
+
+![Streaming (combined)](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/main/.github/badges/streaming-combined.json)
+
 For production / day-2 operational procedures (status headers, legacy cutover, integrity drift, CI health workflow), see `OPERATIONS.md` (root) and the extended guide in `docs/OPERATIONS.md`.
 
 ---
