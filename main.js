@@ -1,52 +1,68 @@
+// Partial typing remediation (keep JS, add JSDoc for stricter checkJs)
 // -----------------------------
 // UTIL: THEME TOGGLE + STORAGE
 // -----------------------------
+/**
+ * Initialize theme toggle reflecting saved preference or OS scheme.
+ */
 (function themeInit(){
   const saved = localStorage.getItem('theme');
   const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
   const initial = saved || (prefersLight ? 'light' : 'dark');
   document.documentElement.setAttribute('data-theme', initial);
-  const toggleBtn = document.getElementById('themeToggle');
+  const toggleBtn = /** @type {HTMLButtonElement | null} */ (document.getElementById('themeToggle'));
   if (toggleBtn) {
-    toggleBtn.setAttribute('aria-pressed', (initial === 'light'));
+  toggleBtn.setAttribute('aria-pressed', String(initial === 'light'));
     toggleBtn.addEventListener('click', () => {
       const current = document.documentElement.getAttribute('data-theme') || 'dark';
       const next = current === 'light' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', next);
-      toggleBtn.setAttribute('aria-pressed', (next === 'light'));
+  toggleBtn.setAttribute('aria-pressed', String(next === 'light'));
       localStorage.setItem('theme', next);
     });
   }
 })();
 
+// ---------------------------------
+// STATUS PILL (TypeScript module)
+// ---------------------------------
+// Wire the migrated TypeScript polling logic into the bundle. The module
+// attaches itself (DOM ready guarded) and drives the [data-status-pill]
+// element based on /status/summary. Previously this lived at js/status-ui.js
+// loaded via a direct <script>; now it is tree‑shaken & built by Vite.
+import './src/status/status-ui.ts';
+
 // -----------------------------
 // FOOTER YEAR
 // -----------------------------
-const yearEl = document.getElementById('year');
-if (yearEl) yearEl.textContent = new Date().getFullYear();
+const yearEl = /** @type {HTMLElement | null} */ (document.getElementById('year'));
+if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
 // -----------------------------
 // LAZY-LOAD IMAGES/VIDEOS OUT OF VIEW (extra safety beyond native)
 // -----------------------------
 const io = new IntersectionObserver((entries)=>{
-  entries.forEach(e=>{
+  for (const e of entries){
     if (e.isIntersecting) {
-      const el = e.target;
-      if (el.dataset.src) { el.src = el.dataset.src; }
-      if (el.dataset.poster) { el.poster = el.dataset.poster; }
-      io.unobserve(el);
+      const el = /** @type {HTMLElement} */ (e.target);
+      if (el instanceof HTMLImageElement && el.dataset.src) { el.src = el.dataset.src; }
+      if (el instanceof HTMLVideoElement) {
+        if (el.dataset.poster) el.poster = el.dataset.poster;
+      }
+      io.unobserve(e.target);
     }
-  });
+  }
 }, { rootMargin: '200px' });
 document.querySelectorAll('img[loading="lazy"], video[preload="metadata"]').forEach(el=> io.observe(el));
 
 // -----------------------------
 // PROJECT FILTERING
 // -----------------------------
-const chips = document.querySelectorAll('.chip');
-const cards = document.querySelectorAll('.card');
+const chips = /** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('.chip'));
+const cards = /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.card'));
 
 // Announce filter changes to screen readers
+/** @param {string} filterName */
 function announceFilterChange(filterName) {
   const announcement = document.createElement('div');
   announcement.setAttribute('aria-live', 'polite');
@@ -63,12 +79,12 @@ function announceFilterChange(filterName) {
 chips.forEach(chip=>{
   chip.addEventListener('click', ()=>{
     chips.forEach(c=>c.setAttribute('aria-pressed','false'));
-    chip.setAttribute('aria-pressed','true');
-    const f = chip.dataset.filter;
+  chip.setAttribute('aria-pressed','true');
+  const f = /** @type {string} */ (chip.dataset.filter);
     const filterName = chip.textContent.trim();
 
     cards.forEach(card=>{
-      const cats = card.dataset.cats.split(' ');
+  const cats = (card.dataset.cats || '').split(' ');
       const show = (f === 'all') || cats.includes(f);
       card.style.display = show ? '' : 'none';
     });
@@ -79,28 +95,41 @@ chips.forEach(chip=>{
 });
 
 // -----------------------------
+// BUILD INFO (injected via Vite env var)
+// -----------------------------
+(() => {
+  const el = document.querySelector('[data-build-info]');
+  if (!el) return;
+  // Vite import.meta.env shim typing
+  const metaEnv = /** @type {any} */ (import.meta).env || {};
+  const sha = metaEnv.VITE_BUILD_SHA || 'local';
+  const dt = new Date().toISOString().slice(0,16).replace('T',' ');
+  el.textContent = `build ${sha} · ${dt}`;
+})();
+
+// -----------------------------
 // KEYBOARD NAVIGATION ENHANCEMENTS
 // -----------------------------
-document.addEventListener('keydown', (e) => {
-  // ESC key handling for modals
-  if (e.key === 'Escape') {
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
     const openDialog = document.querySelector('dialog[open]');
-    if (openDialog) openDialog.close();
+    if (openDialog instanceof HTMLDialogElement) openDialog.close();
   }
 
-  // Arrow key navigation for filter chips
-  if (e.target.classList.contains('chip')) {
-    const chips = Array.from(document.querySelectorAll('.chip'));
-    const currentIndex = chips.indexOf(e.target);
+  const target = event.target;
+  if (target instanceof HTMLElement && target.classList.contains('chip')) {
+    const chipButtons = Array.from(document.querySelectorAll('.chip')).map(el=> /** @type {HTMLButtonElement} */ (el));
+    const currentIndex = chipButtons.indexOf(/** @type {HTMLButtonElement} */(target));
+    if (currentIndex === -1) return;
 
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      const nextIndex = (currentIndex + 1) % chips.length;
-      chips[nextIndex].focus();
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      const prevIndex = currentIndex === 0 ? chips.length - 1 : currentIndex - 1;
-      chips[prevIndex].focus();
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      const nextIndex = (currentIndex + 1) % chipButtons.length;
+      chipButtons[nextIndex].focus();
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const prevIndex = currentIndex === 0 ? chipButtons.length - 1 : currentIndex - 1;
+      chipButtons[prevIndex].focus();
     }
   }
 });
@@ -108,12 +137,20 @@ document.addEventListener('keydown', (e) => {
 // -----------------------------
 // PROJECT DATA LOADING
 // -----------------------------
+/** @typedef {{
+ * title: string; images?: Array<{src:string; alt:string; caption?:string}>; videos?: Array<{poster?:string; captions?:string; sources: Array<{src:string; type:string}>}>;
+ * goals?: string; stack?: string[]; outcomes?: string[]; downloads?: Array<{href:string; label:string}>; repo?: string; demo?: string;
+ * }} ProjectDetail
+ */
+/** @type {Record<string, ProjectDetail>} */
 let PROJECT_DETAILS = {};
 
 // Load project data from JSON file
 async function loadProjectData() {
   try {
-    const response = await fetch('projects.json');
+  // Use centralized API http only for API-base aware endpoints; this is a static asset fetch.
+  // Keeping direct fetch here is fine; if moved behind edge under /api adjust accordingly.
+  const response = await fetch('projects.json');
     PROJECT_DETAILS = await response.json();
   } catch (error) {
     console.error('Failed to load project data:', error);
@@ -121,12 +158,13 @@ async function loadProjectData() {
 }
 
 // Generate project detail HTML from data
+/** @param {ProjectDetail} project */
 function generateProjectHTML(project) {
   let html = '<div>';
 
   // Add images
   if (project.images && project.images.length > 0) {
-    project.images.forEach(img => {
+  project.images.forEach(img => {
       if (img.caption) {
         html += `<figure>
           <img src="${img.src}" alt="${img.alt}"/>
@@ -140,9 +178,9 @@ function generateProjectHTML(project) {
 
   // Add videos
   if (project.videos && project.videos.length > 0) {
-    project.videos.forEach(video => {
+  project.videos.forEach(video => {
       html += `<video controls preload="metadata"${video.poster ? ` poster="${video.poster}"` : ''}>`;
-      video.sources.forEach(source => {
+  video.sources.forEach(source => {
         html += `<source src="${source.src}" type="${source.type}"/>`;
       });
       if (video.captions) {
@@ -208,27 +246,29 @@ function initializeProjectModals() {
   const contentEl = document.getElementById('detailContent');
   if (!dialogEl || !contentEl) return; // Guard on pages without modal
 
-  document.querySelectorAll('[data-detail]').forEach(btn => {
+  document.querySelectorAll('[data-detail]').forEach((btn) => {
     btn.addEventListener('click', (e)=>{
       e.preventDefault();
-      const key = btn.getAttribute('data-detail');
-      const data = PROJECT_DETAILS[key];
+    const key = btn.getAttribute('data-detail');
+  if (!key) return;
+  const data = PROJECT_DETAILS[key];
       if (!data) return;
-  document.getElementById('detailTitle').textContent = data.title;
+  const titleEl = document.getElementById('detailTitle'); if (titleEl) titleEl.textContent = data.title;
       contentEl.innerHTML = generateProjectHTML(data);
-      if (typeof dialogEl.showModal === 'function') dialogEl.showModal();
-      else dialogEl.setAttribute('open','');
+  const dlg = /** @type {HTMLDialogElement} */ (dialogEl);
+  if (typeof dlg.showModal === 'function') dlg.showModal();
+  else dlg.setAttribute('open','');
     });
   });
 
     const closeBtn = document.getElementById('detailClose');
-    if (closeBtn) closeBtn.addEventListener('click', ()=> dialogEl.close());
+  if (closeBtn) closeBtn.addEventListener('click', ()=> { (/** @type {HTMLDialogElement} */(dialogEl)).close(); });
 
   // -----------------------------
   // ACCESSIBILITY ENHANCEMENTS
   // -----------------------------
   // Keyboard ESC closes the dialog
-  dialogEl.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') dialogEl.close(); });
+  dialogEl.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') (/** @type {HTMLDialogElement} */(dialogEl)).close(); });
   // Focus trap for dialog (very light)
   dialogEl.addEventListener('close', ()=>{ contentEl.innerHTML = ''; });
 }
@@ -238,16 +278,18 @@ document.addEventListener('DOMContentLoaded', async function() {
   await loadProjectData();
   initializeProjectModals();
   // Make project cards clickable to case study pages
-  document.querySelectorAll('.card-click').forEach(card => {
+  document.querySelectorAll('.card-click').forEach((card) => {
     card.addEventListener('click', (e)=> {
-      // Avoid triggering if a direct interactive child (buttons/links) was clicked
-      const tag = e.target.tagName.toLowerCase();
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      if (!target) return;
+      const tag = target.tagName.toLowerCase();
       if (['a','button'].includes(tag)) return;
       const slug = card.getAttribute('data-slug');
       if (slug) window.location.href = `projects/${slug}.html`;
     });
     card.addEventListener('keydown', (e)=> {
-      if (e.key === 'Enter' || e.key === ' ') {
+      const key = /** @type {KeyboardEvent} */ (e).key;
+      if (key === 'Enter' || key === ' ') {
         e.preventDefault();
         const slug = card.getAttribute('data-slug');
         if (slug) window.location.href = `projects/${slug}.html`;
@@ -256,130 +298,182 @@ document.addEventListener('DOMContentLoaded', async function() {
   });
   // Gallery (on project detail pages)
   function initGallery(){
-    const galleryDialog = document.getElementById('galleryDialog');
+  const galleryDialog = /** @type {HTMLDialogElement | null} */ (document.getElementById('galleryDialog'));
     if (!galleryDialog) return; // Not on project page
-    const imgEl = document.getElementById('galleryImage');
-    const captionEl = document.getElementById('galleryCaption');
-    const announcerEl = document.getElementById('galleryAnnouncer');
-    const prevBtn = document.getElementById('galleryPrev');
-    const nextBtn = document.getElementById('galleryNext');
-    const closeBtnG = document.getElementById('galleryClose');
-    const thumbsWrap = document.getElementById('galleryThumbs');
-    const items = Array.from(document.querySelectorAll('.gallery-item'));
-    if (!items.length) return;
+    const imgEl = /** @type {HTMLImageElement | null} */ (document.getElementById('galleryImage'));
+    const captionEl = /** @type {HTMLParagraphElement | null} */ (document.getElementById('galleryCaption'));
+    const announcerEl = /** @type {HTMLElement | null} */ (document.getElementById('galleryAnnouncer'));
+    const prevBtn = /** @type {HTMLButtonElement | null} */ (document.getElementById('galleryPrev'));
+    const nextBtn = /** @type {HTMLButtonElement | null} */ (document.getElementById('galleryNext'));
+    const closeBtnG = /** @type {HTMLButtonElement | null} */ (document.getElementById('galleryClose'));
+    const thumbsWrap = /** @type {HTMLElement | null} */ (document.getElementById('galleryThumbs'));
+    const items = Array.from(
+      document.querySelectorAll('.gallery-item'),
+      (el) => /** @type {HTMLImageElement} */ (el)
+    );
+    if (!items.length || !imgEl || !captionEl || !closeBtnG) return;
     let idx = 0;
+    /** @type {HTMLElement | null} */
     let lastFocusedBeforeOpen = null;
+    /** @type {HTMLButtonElement[]} */
     let thumbButtons = [];
 
-    function preload(i){
-      const t = items[(i+items.length)%items.length];
-      if (!t) return;
-      const src = t.getAttribute('src');
+  /** @param {number} i */
+  function preload(i){
+      const target = items[(i + items.length) % items.length];
+      if (!target) return;
+      const src = target.getAttribute('src');
+      if (!src) return;
       const img = new Image();
       img.src = src;
     }
-    function openAt(i){
-      idx = (i+items.length)%items.length;
+
+  /** @param {number} i */
+  function openAt(i){
+      idx = (i + items.length) % items.length;
       const target = items[idx];
-      imgEl.src = target.getAttribute('src');
-      imgEl.alt = target.getAttribute('alt') || '';
-      // Get caption if inside figure
+      if (imgEl){
+        imgEl.src = target.getAttribute('src') || '';
+        imgEl.alt = target.getAttribute('alt') || '';
+      }
       const fig = target.closest('figure');
-      captionEl.textContent = fig ? (fig.querySelector('figcaption')?.textContent || '') : '';
-      if (typeof galleryDialog.showModal === 'function') galleryDialog.showModal(); else galleryDialog.setAttribute('open','');
-      // mark current thumb
+      if (captionEl) captionEl.textContent = fig ? (fig.querySelector('figcaption')?.textContent || '') : '';
+      if (galleryDialog){
+        if (typeof galleryDialog.showModal === 'function') {
+          galleryDialog.showModal();
+        } else {
+          galleryDialog.setAttribute('open', '');
+        }
+      }
       if (thumbsWrap) {
-        thumbButtons.forEach((b,bi)=>{
-          b.setAttribute('aria-current', bi===idx ? 'true':'false');
-          // roving tabindex
-          b.tabIndex = bi===idx ? 0 : -1;
+        thumbButtons.forEach((button, buttonIndex) => {
+          button.setAttribute('aria-current', buttonIndex === idx ? 'true' : 'false');
+          button.tabIndex = buttonIndex === idx ? 0 : -1;
         });
       }
-      // Announce slide change
-      if (announcerEl) {
+      if (announcerEl && captionEl) {
         const total = items.length;
         const slideNum = idx + 1;
         const caption = captionEl.textContent ? `: ${captionEl.textContent}` : '';
         announcerEl.textContent = `Slide ${slideNum} of ${total}${caption}`;
       }
-      // focus trap start
-      lastFocusedBeforeOpen = document.activeElement;
-      closeBtnG.focus();
-      // Preload neighbors
-      preload(idx+1); preload(idx-1);
+      lastFocusedBeforeOpen = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  closeBtnG?.focus();
+      preload(idx + 1);
+      preload(idx - 1);
     }
-    items.forEach(it=>{
-      it.addEventListener('click', ()=> openAt(parseInt(it.dataset.galleryIndex,10)) );
-      it.addEventListener('keydown', (e)=> { if(e.key==='Enter'){ openAt(parseInt(it.dataset.galleryIndex,10)); } });
-      it.setAttribute('tabindex','0');
-    });
-    function prev(){ openAt(idx-1); }
-    function next(){ openAt(idx+1); }
-    prevBtn?.addEventListener('click', prev);
-    nextBtn?.addEventListener('click', next);
-    closeBtnG?.addEventListener('click', ()=> galleryDialog.close());
-    galleryDialog.addEventListener('keydown', (e)=>{ if(e.key==='ArrowLeft'){ prev(); } else if(e.key==='ArrowRight'){ next(); } else if(e.key==='Escape'){ galleryDialog.close(); } });
 
-    // Focus trap enforcement
-    galleryDialog.addEventListener('keydown', (e)=>{
-      if (e.key==='Tab') {
-        const focusable = Array.from(galleryDialog.querySelectorAll('button, [href], img[tabindex="0"]')).filter(el=> !el.hasAttribute('disabled'));
-        if (!focusable.length) return;
+  items.forEach((item) => {
+      item.addEventListener('click', () => {
+        const parsed = Number.parseInt(item.dataset.galleryIndex || '', 10);
+        if (Number.isInteger(parsed)) openAt(parsed);
+      });
+      item.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          const parsed = Number.parseInt(item.dataset.galleryIndex || '', 10);
+          if (Number.isInteger(parsed)) openAt(parsed);
+        }
+      });
+      item.setAttribute('tabindex', '0');
+    });
+
+    const prev = () => openAt(idx - 1);
+    const next = () => openAt(idx + 1);
+  prevBtn?.addEventListener('click', prev);
+  nextBtn?.addEventListener('click', next);
+  closeBtnG.addEventListener('click', () => galleryDialog.close());
+    galleryDialog.addEventListener('keydown', (event) => {
+      const e = /** @type {KeyboardEvent} */ (event);
+      if (e.key === 'ArrowLeft') prev();
+      else if (e.key === 'ArrowRight') next();
+      else if (e.key === 'Escape') galleryDialog.close();
+    });
+
+    galleryDialog.addEventListener('keydown', (event) => {
+      const e = /** @type {KeyboardEvent} */ (event);
+      if (e.key === 'Tab') {
+        const focusables = Array.from(
+          galleryDialog.querySelectorAll('button, [href], img[tabindex="0"]')
+        ).filter((el) => el instanceof HTMLElement && !el.hasAttribute('disabled'));
+        if (!focusables.length) return;
+        const focusable = /** @type {HTMLElement[]} */ (focusables);
         const first = focusable[0];
-        const last = focusable[focusable.length-1];
-        if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     });
-    galleryDialog.addEventListener('close', ()=> { if(lastFocusedBeforeOpen) lastFocusedBeforeOpen.focus(); });
 
-    // Build thumbnails
-    if (thumbsWrap) {
-      items.forEach((it,i)=>{
+    galleryDialog.addEventListener('close', () => {
+      if (lastFocusedBeforeOpen) lastFocusedBeforeOpen.focus();
+    });
+
+  if (thumbsWrap) {
+  items.forEach((item, imageIndex) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.setAttribute('role','listitem');
-        btn.setAttribute('aria-label', `Slide ${i+1}`);
-        btn.innerHTML = `<img src="${it.getAttribute('src')}" alt="">`;
-        btn.addEventListener('click', ()=> openAt(i));
-        btn.addEventListener('keydown', (e)=>{
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAt(i); }
-          if (['ArrowRight','ArrowLeft','Home','End'].includes(e.key)) {
-            e.preventDefault();
-            let newIndex = i;
-            if (e.key==='ArrowRight') newIndex = (i+1)%items.length;
-            else if (e.key==='ArrowLeft') newIndex = (i-1+items.length)%items.length;
-            else if (e.key==='Home') newIndex = 0;
-            else if (e.key==='End') newIndex = items.length-1;
-            thumbButtons[newIndex].focus();
+        btn.setAttribute('role', 'listitem');
+        btn.setAttribute('aria-label', `Slide ${imageIndex + 1}`);
+        const src = item.getAttribute('src') || '';
+        btn.innerHTML = `<img src="${src}" alt="">`;
+  btn.addEventListener('click', () => openAt(imageIndex));
+  btn.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openAt(imageIndex);
+            return;
+          }
+          if (['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) {
+            event.preventDefault();
+            let newIndex = imageIndex;
+            if (event.key === 'ArrowRight') newIndex = (imageIndex + 1) % items.length;
+            else if (event.key === 'ArrowLeft') newIndex = (imageIndex - 1 + items.length) % items.length;
+            else if (event.key === 'Home') newIndex = 0;
+            else if (event.key === 'End') newIndex = items.length - 1;
+            thumbButtons[newIndex]?.focus();
           }
         });
         thumbsWrap.appendChild(btn);
       });
-      thumbButtons = Array.from(thumbsWrap.querySelectorAll('button'));
-      // initialize roving tabindex
-      thumbButtons.forEach((b,i)=> b.tabIndex = i===0 ? 0 : -1);
+      thumbButtons = Array.from(thumbsWrap.querySelectorAll('button'), (el) =>
+        /** @type {HTMLButtonElement} */ (el)
+      );
+      thumbButtons.forEach((button, buttonIndex) => {
+        button.tabIndex = buttonIndex === 0 ? 0 : -1;
+      });
     }
 
-    // Swipe support
-    let touchStartX = 0; let touchActive = false;
-    function onTouchStart(e){ touchActive = true; touchStartX = e.touches[0].clientX; }
-    function onTouchEnd(e){ if(!touchActive) return; const dx = e.changedTouches[0].clientX - touchStartX; if (Math.abs(dx) > 40) { dx<0 ? next() : prev(); } touchActive=false; }
-    galleryDialog.addEventListener('touchstart', onTouchStart, {passive:true});
-    galleryDialog.addEventListener('touchend', onTouchEnd, {passive:true});
+    let touchStartX = 0;
+    let touchActive = false;
+  galleryDialog.addEventListener('touchstart', (event) => {
+      touchActive = true;
+      touchStartX = event.touches[0]?.clientX ?? 0;
+    }, { passive: true });
+  galleryDialog.addEventListener('touchend', (event) => {
+      if (!touchActive) return;
+      const dx = (event.changedTouches[0]?.clientX ?? touchStartX) - touchStartX;
+      if (Math.abs(dx) > 40) {
+        if (dx < 0) next();
+        else prev();
+      }
+      touchActive = false;
+    }, { passive: true });
   }
   initGallery();
 
   // Global IMG error fallback
-  document.addEventListener('error', (e) => {
-    const el = e.target;
-    if (el && el.tagName === 'IMG') {
-      // Prefer optimized card fallback if present
-      const fallback = 'assets/optimized/hero-placeholder-sm.webp';
-      if (el.src.endsWith(fallback)) return; // avoid loop
-      el.src = fallback;
-      el.style.background = 'linear-gradient(180deg,#141b2d,#0b1223)';
-    }
+  document.addEventListener('error', (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLImageElement)) return;
+    const fallback = 'assets/optimized/hero-placeholder-sm.webp';
+    if (target.src.endsWith(fallback)) return;
+    target.src = fallback;
+    target.style.background = 'linear-gradient(180deg,#141b2d,#0b1223)';
   }, true);
 });
 
@@ -392,26 +486,22 @@ document.addEventListener('DOMContentLoaded', async function() {
 // -----------------------------
 // SERVICE WORKER REGISTRATION
 // -----------------------------
+// Dynamic API base selection (GitHub Pages uses external domain; dockerized uses same-origin /api)
+const IS_GH_PAGES = location.hostname.endsWith('github.io');
+const API_BASE = IS_GH_PAGES ? 'https://assistant.ledger-mind.org/api' : '/api';
+const windowWithApi = /** @type {typeof window & { __API_BASE__?: string }} */ (window);
+windowWithApi.__API_BASE__ = API_BASE; // expose for inline scripts / debugging
+
 if ('serviceWorker' in navigator) {
   const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
-  if (isLocal) {
-    // During local development, avoid SW caching. Actively unregister any existing SWs.
-    navigator.serviceWorker.getRegistrations?.().then(regs => {
-      regs.forEach(reg => reg.unregister());
-    });
+  if (isLocal || IS_GH_PAGES) {
+    // Avoid SW on local dev or GitHub Pages (prevents stale index.html caching)
+    navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
   } else {
-    // Use subpath-aware URL so it works on GitHub Pages
     const basePath = location.pathname.includes('/leo-portfolio/') ? '/leo-portfolio/' : '/';
     const swUrl = `${basePath}sw.js`;
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register(swUrl)
-        .then(reg => {
-          // Optional: log for diagnostics
-          console.log('Service worker registered:', reg.scope);
-        })
-        .catch(err => {
-          console.warn('Service worker registration failed:', err);
-        });
+      navigator.serviceWorker.register(swUrl).catch(err => console.warn('Service worker registration failed:', err));
     });
   }
 }

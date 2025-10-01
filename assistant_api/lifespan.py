@@ -1,6 +1,13 @@
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 import asyncio
+import time as _time
+try:
+    # Initialize uptime start timestamp early
+    from .routes.status import set_start_time  # type: ignore
+    set_start_time(_time.time())
+except Exception:  # pragma: no cover
+    pass
 import sys
 import time
 

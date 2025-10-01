@@ -6,11 +6,26 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
 ## [Unreleased]
 
 ### Added
+- Coverage Shields generation script `scripts/coverage-shield.mjs` producing `.github/badges/*.json` (combined + per-metric) for Shields.io endpoints.
+- CI integration (unit-ci) step to publish coverage badges & summary to `status-badge` branch.
+
+### Changed
+- Lint cleanup: removed stray unused expressions; standardized unused parameter/catch naming via underscore prefix.
 - Unified frontend + edge nginx container via multi-target `deploy/Dockerfile.frontend` (targets: `frontend-static-final`, `frontend-vite-final`).
+- Production convenience shortcuts: Makefile targets (`prod-up`, `prod-down`, `prod-logs`, `prod-rebuild`) and PowerShell tasks (`prod`, `prod-logs`, `prod-down`, `prod-rebuild`).
+- Vite scaffolding (`package.json` scripts, `vite.config.ts`) and switched prod compose target to `frontend-vite-final`.
 
 ### Changed
 - `docker-compose.prod.yml`: `nginx` service now builds integrated image (serves SPA + proxies API) replacing separate static frontend path.
 - Simplified `deploy/nginx.conf` to serve SPA (history fallback) and proxy `/api/`, `/chat/stream`, diagnostics endpoints.
+- Frontend status pill polling now imported from TypeScript module (`src/status/status-ui.ts`) via Vite entry (`main.js`), replacing legacy `js/status-ui.js` inline script tag (improves type safety & bundling consistency).
+ - Frontend status pill polling now imported from TypeScript module (`src/status/status-ui.ts`) via Vite entry (migrated to `src/main.ts`), replacing legacy `js/status-ui.js` inline script tag (improves type safety & bundling consistency).
+ - Migrated root `main.js` to TypeScript entry `src/main.ts` (added strong typings for project data, gallery, lazy loading, filtering, and build info injection; removed `@ts-nocheck`).
+ - Migrated remaining legacy scripts to TypeScript: `js/api.js` → `src/api.ts`, `js/agent-status.js` → `src/agent-status.ts`, `js/assistant-dock.js` → `src/assistant-dock.ts`; consolidated loading via a single Vite module graph (no direct `<script>` tags).
+ - Removed deleted legacy JS files from repository; index.html now only references the single module entry (`/src/main.ts`).
+ - Frontend unit test harness (Vitest + jsdom) added with initial tests for filtering (`filters.ts`) and gallery navigation (`gallery-nav.ts`).
+ - CSP tightened in `deploy/nginx.conf`: `script-src` no longer allows `'unsafe-inline'`; TODO left to remove `'unsafe-inline'` from `style-src` after refactoring inline styles.
+ - Inline style refactor complete: extracted all inline `<style>` blocks & `style=""` attributes to `assets/site.css`; CSP `style-src 'self'` now enforced (dropped `'unsafe-inline'`).
 
 ### Deprecated
 - Separate `frontend` container pattern (legacy compose mode retained only for reference).
@@ -41,6 +56,34 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
 - Consistent `openai: configured|not_configured` across `/ready`, `/llm/health`, and `/status/summary`.
 - False negative `rag.ok=false` in `/status/summary` when edge pathing or fallback-only mode previously blocked internal HTTP probe.
 - Startup hangs waiting indefinitely for large model pulls (now bounded by `MODEL_WAIT_MAX_SECONDS`).
+
+### Added
+- Security headers in `deploy/nginx.conf` (CSP, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`) applied to all responses (including errors) via `always`.
+- Build provenance: Docker/Vite build arg `VITE_BUILD_SHA` injected (compose passes `${GIT_SHA:-local}`) and surfaced in footer (`main.js` uses `import.meta.env.VITE_BUILD_SHA`).
+- Footer build info element (`<small data-build-info>` in `index.html`) displaying short SHA + timestamp for traceability.
+- Smoke test enhancement (`scripts/smoke.ps1`): fetches first hashed asset (`/assets/*.js`), asserts `Cache-Control` includes `immutable`, verifying long-lived caching policy.
+
+### Changed
+- `deploy/nginx.conf`: Added CSP (`default-src 'self'`) and long-cache directives now paired with explicit security headers; will tighten `style-src` (remove `'unsafe-inline'`) in a future pass once inline styles are refactored.
+- `docker-compose.prod.yml`: Passes `VITE_BUILD_SHA` build arg enabling reproducible build metadata across environments.
+ - `assistant_api/Dockerfile`: Optimized wheel build & install (persistent pip cache, wheels cache, removed `--no-cache-dir`, binary-only fast fail via `PIP_ONLY_BINARY=:all:`) dramatically reducing repeat build times.
+ - `.dockerignore`: Pruned additional paths (`node_modules`, temp asset dirs, coverage, IDE metadata) to shrink build context and stabilize layer caching.
+ - Frontend service worker: Disabled on GitHub Pages (auto-unregister) to prevent stale `index.html`; new network-first + hashed asset cache-first strategy (`sw.js`).
+ - Dynamic API base selection in `main.js` (`window.__API_BASE__`) chooses external assistant domain on GitHub Pages and `/api` when self-hosted.
+ - Backend CORS allowlist expanded (`ALLOWED_ORIGINS`) to include `https://leok974.github.io` enabling chat/diagnostic requests from Pages.
+ - Centralized frontend API helpers (`js/api.js`) unify status, chat, and streaming calls and expose `window.API`.
+ - Backend CORS handling: enhanced parsing for `ALLOWED_ORIGINS` (comma/space/newline separated) plus `CORS_ALLOW_ALL=1` emergency wildcard (credentials disabled when wildcard in effect).
+ - Automatic CORS origin derivation from `DOMAIN` (adds https/http + www variants unless explicitly provided) stored with metadata.
+ - Preflight logging middleware gated by `CORS_LOG_PREFLIGHT=1` prints Origin + Access-Control-Request-* headers for auditing.
+ - `/status/cors` endpoint exposes current CORS configuration (raw env, derived origins, wildcard mode) for rapid diagnostics.
+
+### Added (Unreleased – Monitoring & E2E)
+- Scheduled production probe workflow (`prod-assistant-probe.yml`) publishing `status.json` (Shields endpoint) + `probe.json` to `status-badge` branch.
+- Dynamic badge payload with latency-derived color + message (`ok|degraded|error|partial`) and captured `X-Build-ID`.
+- SLO gating step (soft >5s, hard >10s, partial disallowed) failing workflow when thresholds breached.
+- Playwright production E2E workflow (`e2e-prod.yml`) validating status pill and redirect.
+- Redirect verification test (`redirect.spec.ts`) ensuring GitHub Pages → unified host transition.
+- README status badge legend (color semantics) and OPERATIONS / DEVELOPMENT guidance additions.
 
 ## [0.2.0] - 2025-09-27
 ### Added

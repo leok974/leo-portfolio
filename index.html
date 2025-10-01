@@ -16,78 +16,13 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/optimized/leo-avatar-xs.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/optimized/leo-avatar-sm.png">
-  <link rel="preload" href="fonts/Inter-roman.var.woff2" as="font" type="font/woff2" crossorigin>
-  <style>
-    @font-face {
-      font-family: 'Inter var';
-      font-style: normal;
-      font-weight: 100 900;
-      font-display: swap;
-      src: url('fonts/Inter-roman.var.woff2') format('woff2-variations');
-    }
-    @font-face {
-      font-family: 'Inter var';
-      font-style: italic;
-      font-weight: 100 900;
-      font-display: swap;
-      src: url('fonts/Inter-italic.var.woff2') format('woff2-variations');
-    }
-    /* Neutralize any old padding toggle */
-    body.assistant-open { padding-bottom: 0 !important; }
-    /* Ensure mascots are off */
-  #riv-wrap, #vrm-wrap, #svg-avatar-wrap, #svg-mascot { display:none !important; }
-  /* Also hide any legacy assistant panels */
-  #assistant-panel, #assistant-log, #assistant-form { display:none !important; }
-  </style>
-  <style>
-    /* Critical CSS: minimal layout to paint above-the-fold quickly */
-    :root{--bg:#0b1020;--bg-elev:#0f172a;--text:#e5e7eb;--muted:#94a3b8;--border:#1f2937}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;line-height:1.6;color:var(--text);background:var(--bg)}
-    header{position:sticky;top:0;z-index:50;background:#0f172acc;border-bottom:1px solid var(--border)}
-    .container{width:min(1200px,92vw);margin-inline:auto}
-    .nav{display:flex;align-items:center;justify-content:space-between;padding:.85rem 0}
-    nav ul{display:flex;gap:1rem;list-style:none;margin:0;padding:0}
-    .hero{padding:clamp(3rem,6vw + 1rem,7rem) 0;display:grid;grid-template-columns:1.2fr .8fr;gap:2rem;align-items:center}
-    @media(max-width:900px){.hero{grid-template-columns:1fr}}
-    .headline{font-size:clamp(1.8rem,2.3rem + 1.5vw,3.2rem);line-height:1.15;margin:0 0 1rem}
-    .subline{color:var(--muted);margin:0 0 1.5rem}
-    .hero-visual{aspect-ratio:4/3;border:1px solid var(--border);border-radius:1rem;overflow:hidden;background:#111827}
-  </style>
-  <!-- Leo Portfolio — Assistant palette -->
-  <style>
-    :root{
-      --lk-bg:           #0b1220;
-      --lk-surface:      #0f1a2d;
-      --lk-surface-2:    #111b30;
-      --lk-border:       rgba(255,255,255,.06);
-      --lk-border-strong:rgba(255,255,255,.12);
-      --lk-text:         #e8eef8;
-      --lk-muted:        #b4c0cf;
-      --lk-accent:       #2d6cdf;
-      --lk-accent-contrast: #ffffff;
-      --lk-shadow:       0 10px 35px rgba(0,0,0,.45);
-      --lk-radius:       16px;
-      --lk-radius-pill:  999px;
-    }
-    [data-theme="light"], .theme-light{
-      --lk-bg:           #f6f8fc;
-      --lk-surface:      #ffffff;
-      --lk-surface-2:    #f1f5fb;
-      --lk-border:       rgba(0,0,0,.08);
-      --lk-border-strong:rgba(0,0,0,.12);
-      --lk-text:         #0f172a;
-      --lk-muted:        #52627a;
-      --lk-accent:       #2d6cdf;
-      --lk-accent-contrast: #ffffff;
-      --lk-shadow:       0 10px 24px rgba(0,0,0,.12);
-    }
-  </style>
+  <link rel="preload" href="fonts/Inter-roman.var.woff2" integrity="sha384-l0ql7Q1zqvX5klAVRwYjcMVCkCxg5dMTdghsIlC3pYkX6wwEHerh2bP/4yAao3Im" as="font" type="font/woff2" crossorigin crossorigin="anonymous">
+  <link rel="stylesheet" href="assets/site.css" integrity="sha384-gGHK0MKLrP/Jxix7PnyZRvUHOJjSZiZfrbkKIjj6SdEtAg5sjIliZ3IeUFaa1THy" crossorigin="anonymous" />
 
-  <link rel="preload" as="style" href="styles.74e2bb05ef.css">
-  <link rel="stylesheet" href="styles.74e2bb05ef.css" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="styles.74e2bb05ef.css"></noscript>
-  <style>:root{--font-sans:"Inter var","Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif}html{font-family:var(--font-sans)}</style>
+  <link rel="preload" as="style" href="styles.74e2bb05ef.css" integrity="sha384-Bp86n13LRPxqyh7RngavGBlcQnHZXldK0VhgAq8t3ja88ppT161c8PHnYqzE3ioF" crossorigin="anonymous">
+  <link rel="stylesheet" href="styles.74e2bb05ef.css" media="print" onload="this.media='all'" integrity="sha384-Bp86n13LRPxqyh7RngavGBlcQnHZXldK0VhgAq8t3ja88ppT161c8PHnYqzE3ioF" crossorigin="anonymous">
+  <noscript><link rel="stylesheet" href="styles.74e2bb05ef.css" integrity="sha384-Bp86n13LRPxqyh7RngavGBlcQnHZXldK0VhgAq8t3ja88ppT161c8PHnYqzE3ioF" crossorigin="anonymous"></noscript>
+
   <script type="application/ld+json">{
     "@context": "https://schema.org",
     "@graph": [
@@ -119,21 +54,6 @@
       }
     ]
   }</script>
-  <!-- Hide any legacy assistants/avatars -->
-  <style>
-    #leo-assistant, #la-open, #la-panel,
-    #ai-avatar-wrap, #ai-controls, #ai-text,
-    #live2d-wrap, #vrm-wrap, #riv-wrap,
-    #svg-avatar-wrap, #svg-mascot { display: none !important; }
-  </style>
-  <!-- Small styles for icon-only link buttons -->
-  <style>
-    .icon-links { display:flex; flex-wrap:wrap; gap:.5rem; }
-    .icon-links .icon-btn { display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; border:1px solid var(--border); border-radius:999px; background:#121a2e; color:#e8ecf8; text-decoration:none; }
-    .icon-links .icon-btn:hover { background:#0f1830; }
-    .icon-links .icon-btn:focus-visible { outline:2px solid #60a5fa; outline-offset:2px; }
-    .icon-links .icon-btn svg { width:20px; height:20px; fill:currentColor; }
-  </style>
 
 </head>
 <body>
@@ -156,6 +76,8 @@
       docks.forEach((el,i)=>{ if(i>0) try{ el.remove(); }catch{} });
     });
   </script>
+  <!-- Add JS module with integrity (ensure SRI manifest picks it up) -->
+  <script type="module" src="main.js" integrity="sha384-fTyus81R8SlyGho55XvB/3/SxGQv3lITU+jXTw3pMd3afzZfv1DgXB9jL0eR+dGM" integrity="" crossorigin="anonymous"></script>
 
   <!-- Main site content -->
   <a class="sr-only skip-link" href="#projects">Skip to content</a>
@@ -174,6 +96,7 @@
         <input id="themeSwitch" type="checkbox" aria-hidden="true" />
         <span aria-hidden="true">☀️</span>
       </button>
+  <span data-status-pill role="status" aria-live="polite" class="badge badge-neutral status-pill">Checking…</span>
     </div>
   </header>
 
@@ -187,7 +110,7 @@
         <a class="cta" href="#projects">⟶ See My Work</a>
         <a class="cta secondary" href="assets/Leo-Klemet-Resume.pdf" download title="Download Resume PDF">📄 Download Resume</a>
       </div>
-      <p class="muted" style="margin-top:.75rem">Tip: Use the category filters to explore AI Agents, ML/Analytics, 3D & Generative Art, and DevOps/Security projects.</p>
+  <p class="muted mt-3">Tip: Use the category filters to explore AI Agents, ML/Analytics, 3D & Generative Art, and DevOps/Security projects.</p>
     </div>
     <div class="hero-visual" aria-hidden="true">
       <picture>
@@ -288,7 +211,7 @@
         </div>
         <div>
           <p>Hey, I’m Leo — I build agentic apps, grounded analytics, and cinematic creative pipelines. I love shipping fast, clean systems that balance reliable infra with playful, art‑driven UX.</p>
-          <div class="icon-links" style="margin:.75rem 0 1rem">
+          <div class="icon-links">
             <!-- GitHub -->
             <a class="icon-btn" href="https://github.com/leok974" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub">
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -392,7 +315,7 @@
         </div>
         <button class="btn submit" type="submit">Send Message</button>
       </form>
-  <p class="muted" style="margin-top:1rem">Find me on <a href="https://www.linkedin.com/in/leo-klemet-1241662a6/" target="_blank" rel="noopener">LinkedIn</a> · <a href="https://github.com/leok974" target="_blank" rel="noopener">GitHub</a></p>
+  <p class="muted mt-4">Find me on <a href="https://www.linkedin.com/in/leo-klemet-1241662a6/" target="_blank" rel="noopener">LinkedIn</a> · <a href="https://github.com/leok974" target="_blank" rel="noopener">GitHub</a></p>
     </div>
   </section>
 
@@ -401,9 +324,10 @@
     <div class="container footer-grid">
       <div>© <span id="year"></span> Leo Klemet</div>
       <div class="muted">AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist</div>
-      <div style="text-align:right">
+  <div class="text-right">
         <a href="#home">Back to top ↑</a>
       </div>
+  <div class="muted footer-build"><small id="build-info" data-build-info>build: resolving…</small></div>
     </div>
   </footer>
 
@@ -438,7 +362,7 @@
   <!-- PROJECT DETAIL DIALOG (reusable) -->
   <dialog class="project-detail" id="detailDialog" aria-labelledby="detailTitle">
     <div class="detail-header">
-      <h3 id="detailTitle" style="margin:0">Project</h3>
+  <h3 id="detailTitle" class="detail-title">Project</h3>
       <button class="btn" id="detailClose" aria-label="Close project details">✕ Close</button>
     </div>
     <div class="detail-body">
@@ -535,8 +459,7 @@
     })();
   </script>
 
-  <!-- Lightweight status pill script -->
-  <script defer src="js/agent-status.js"></script>
+  <!-- Status pill & assistant dock logic now bundled via Vite (src/agent-status.ts, src/assistant-dock.ts) -->
 
   <script>
     // One-time cleanup to keep page layout intact
@@ -546,13 +469,13 @@
     });
   </script>
 
-  <!-- Main site JS (filters, modals, SW registration, a11y helpers) -->
-  <script defer src="main.js"></script>
+  <!-- Central API helpers now bundled (src/api.ts) -->
+  <!-- Main site JS (now TypeScript entry compiled by Vite) -->
+  <script type="module" src="/src/main.ts"></script>
 
 
 
-  <!-- Assistant Dock behavior (streaming) -->
-  <script type="module" defer src="js/assistant-dock.js"></script>
+  <!-- Removed legacy assistant-dock.js reference (now bundled via Vite) -->
 
 
 

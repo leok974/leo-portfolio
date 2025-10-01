@@ -1,0 +1,265 @@
+generate-projects.js(19,28): error TS7006: Parameter 'iso' implicitly has an 'any' type.
+generate-projects.js(23,15): error TS2345: Argument of type 'Date' is not assignable to parameter of type 'number'.
+generate-projects.js(30,22): error TS7006: Parameter 'project' implicitly has an 'any' type.
+generate-projects.js(39,33): error TS7006: Parameter 'i' implicitly has an 'any' type.
+generate-projects.js(40,33): error TS7006: Parameter 'v' implicitly has an 'any' type.
+generate-projects.js(40,77): error TS7006: Parameter 's' implicitly has an 'any' type.
+generate-projects.js(50,8): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+generate-projects.js(51,5): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+generate-projects.js(52,14): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+generate-projects.js(54,5): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+generate-projects.js(55,5): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+generate-projects.js(59,8): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+generate-projects.js(59,42): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+generate-projects.js(59,77): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+generate-projects.js(63,22): error TS7006: Parameter 'project' implicitly has an 'any' type.
+generate-projects.js(63,31): error TS7006: Parameter 'slug' implicitly has an 'any' type.
+generate-projects.js(74,22): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+generate-projects.js(74,44): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+generate-projects.js(74,74): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+generate-projects.js(75,21): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+generate-projects.js(75,43): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+generate-projects.js(75,79): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+generate-projects.js(79,42): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ '@type': string; name: any; description: any; url: string; codeRepository: any; programmingLanguage: any; image: string | undefined; dateModified: any; datePublished: any; author: { '@type': string; name: string; }; keywords: any; }'.
+  No index signature with a parameter of type 'string' was found on type '{ '@type': string; name: any; description: any; url: string; codeRepository: any; programmingLanguage: any; image: string | undefined; dateModified: any; datePublished: any; author: { '@type': string; name: string; }; keywords: any; }'.
+generate-projects.js(79,82): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ '@type': string; name: any; description: any; url: string; codeRepository: any; programmingLanguage: any; image: string | undefined; dateModified: any; datePublished: any; author: { '@type': string; name: string; }; keywords: any; }'.
+  No index signature with a parameter of type 'string' was found on type '{ '@type': string; name: any; description: any; url: string; codeRepository: any; programmingLanguage: any; image: string | undefined; dateModified: any; datePublished: any; author: { '@type': string; name: string; }; keywords: any; }'.
+generate-projects.js(105,38): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ '@type': string; name: any; description: any; url: string; dateModified: any; datePublished: any; lastReviewed: any; creator: { '@type': string; name: string; }; keywords: any; about: any; thumbnailUrl: string | undefined; }'.
+  No index signature with a parameter of type 'string' was found on type '{ '@type': string; name: any; description: any; url: string; dateModified: any; datePublished: any; lastReviewed: any; creator: { '@type': string; name: string; }; keywords: any; about: any; thumbnailUrl: string | undefined; }'.
+generate-projects.js(105,74): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ '@type': string; name: any; description: any; url: string; dateModified: any; datePublished: any; lastReviewed: any; creator: { '@type': string; name: string; }; keywords: any; about: any; thumbnailUrl: string | undefined; }'.
+  No index signature with a parameter of type 'string' was found on type '{ '@type': string; name: any; description: any; url: string; dateModified: any; datePublished: any; lastReviewed: any; creator: { '@type': string; name: string; }; keywords: any; about: any; thumbnailUrl: string | undefined; }'.
+generate-projects.js(111,30): error TS7006: Parameter 'project' implicitly has an 'any' type.
+generate-projects.js(111,39): error TS7006: Parameter 'slug' implicitly has an 'any' type.
+generate-projects.js(224,30): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+generate-projects.js(227,72): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+generate-projects.js(227,127): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+generate-projects.js(228,70): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+generate-projects.js(228,119): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+generate-projects.js(271,31): error TS7006: Parameter 'project' implicitly has an 'any' type.
+generate-projects.js(274,34): error TS7006: Parameter 'relPath' implicitly has an 'any' type.
+generate-projects.js(285,13): error TS7034: Variable 'webp' implicitly has type 'any[]' in some locations where its type cannot be determined.
+generate-projects.js(286,13): error TS7034: Variable 'avif' implicitly has type 'any[]' in some locations where its type cannot be determined.
+generate-projects.js(287,13): error TS7034: Variable 'jpeg' implicitly has type 'any[]' in some locations where its type cannot be determined.
+generate-projects.js(288,13): error TS7034: Variable 'png' implicitly has type 'any[]' in some locations where its type cannot be determined.
+generate-projects.js(299,16): error TS7005: Variable 'webp' implicitly has an 'any[]' type.
+generate-projects.js(299,22): error TS7005: Variable 'avif' implicitly has an 'any[]' type.
+generate-projects.js(299,28): error TS7005: Variable 'jpeg' implicitly has an 'any[]' type.
+generate-projects.js(299,34): error TS7005: Variable 'png' implicitly has an 'any[]' type.
+generate-projects.js(305,36): error TS7006: Parameter 'relPath' implicitly has an 'any' type.
+generate-projects.js(305,45): error TS7006: Parameter 'alt' implicitly has an 'any' type.
+generate-projects.js(305,62): error TS7006: Parameter 'idx' implicitly has an 'any' type.
+generate-projects.js(329,29): error TS7006: Parameter 'img' implicitly has an 'any' type.
+generate-projects.js(329,34): error TS7006: Parameter 'idx' implicitly has an 'any' type.
+generate-projects.js(341,28): error TS7006: Parameter 'video' implicitly has an 'any' type.
+generate-projects.js(343,29): error TS7006: Parameter 'source' implicitly has an 'any' type.
+generate-projects.js(356,33): error TS7006: Parameter 'project' implicitly has an 'any' type.
+generate-projects.js(367,27): error TS7006: Parameter 'item' implicitly has an 'any' type.
+generate-projects.js(376,30): error TS7006: Parameter 'outcome' implicitly has an 'any' type.
+generate-projects.js(385,31): error TS7006: Parameter 'download' implicitly has an 'any' type.
+generate-projects.js(398,39): error TS7006: Parameter 'project' implicitly has an 'any' type.
+generate-projects.js(413,70): error TS7006: Parameter 'i' implicitly has an 'any' type.
+generate-projects.js(424,71): error TS7006: Parameter 'o' implicitly has an 'any' type.
+generate-projects.js(432,33): error TS7006: Parameter 'd' implicitly has an 'any' type.
+generate-projects.js(472,22): error TS2532: Object is possibly 'undefined'.
+generate-projects.js(473,21): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+generate-projects.js(473,43): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+generate-projects.js(473,73): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+js/agent-status.js(3,14): error TS2339: Property '__AGENT_STATUS_INIT__' does not exist on type 'Window & typeof globalThis'.
+js/agent-status.js(3,52): error TS2339: Property '__AGENT_STATUS_INIT__' does not exist on type 'Window & typeof globalThis'.
+js/agent-status.js(5,30): error TS2339: Property 'AGENT_BASE_URL' does not exist on type 'Window & typeof globalThis'.
+js/agent-status.js(11,16): error TS7006: Parameter 'color' implicitly has an 'any' type.
+js/agent-status.js(13,21): error TS7006: Parameter 's' implicitly has an 'any' type.
+js/agent-status.js(19,18): error TS7006: Parameter 's' implicitly has an 'any' type.
+js/agent-status.js(27,16): error TS2339: Property 'API' does not exist on type 'Window & typeof globalThis'.
+js/agent-status.js(28,33): error TS2339: Property 'API' does not exist on type 'Window & typeof globalThis'.
+js/agent-status.js(35,19): error TS7006: Parameter 's' implicitly has an 'any' type.
+js/agent-status.js(57,25): error TS7006: Parameter 'served' implicitly has an 'any' type.
+js/agent-status.js(69,10): error TS2339: Property 'AgentStatus' does not exist on type 'Window & typeof globalThis'.
+js/agent-status.js(69,45): error TS2339: Property 'AgentStatus' does not exist on type 'Window & typeof globalThis'.
+js/api.js(4,14): error TS2339: Property 'API' does not exist on type 'Window & typeof globalThis'.
+js/api.js(5,24): error TS2339: Property '__API_BASE__' does not exist on type 'Window & typeof globalThis'.
+js/api.js(5,47): error TS2339: Property 'AGENT_BASE_URL' does not exist on type 'Window & typeof globalThis'.
+js/api.js(7,23): error TS7006: Parameter 'path' implicitly has an 'any' type.
+js/api.js(7,57): error TS2339: Property 'body' does not exist on type '{ method?: string | undefined; headers?: {} | undefined; stream?: boolean | undefined; }'.
+js/api.js(7,77): error TS2339: Property 'signal' does not exist on type '{ method?: string | undefined; headers?: {} | undefined; stream?: boolean | undefined; }'.
+js/api.js(11,7): error TS7053: Element implicitly has an 'any' type because expression of type '"Content-Type"' can't be used to index type '{}'.
+  Property 'Content-Type' does not exist on type '{}'.
+js/api.js(11,38): error TS7053: Element implicitly has an 'any' type because expression of type '"Content-Type"' can't be used to index type '{}'.
+  Property 'Content-Type' does not exist on type '{}'.
+js/api.js(27,17): error TS7006: Parameter 'messages' implicitly has an 'any' type.
+js/api.js(27,61): error TS2353: Object literal may only specify known properties, and 'body' does not exist in type '{ method?: string | undefined; headers?: {} | undefined; stream?: boolean | undefined; }'.
+js/api.js(28,29): error TS7006: Parameter 'messages' implicitly has an 'any' type.
+js/api.js(29,50): error TS2353: Object literal may only specify known properties, and 'body' does not exist in type '{ method?: string | undefined; headers?: {} | undefined; stream?: boolean | undefined; }'.
+js/api.js(29,108): error TS2339: Property 'signal' does not exist on type '{}'.
+js/api.js(32,10): error TS2339: Property 'API' does not exist on type 'Window & typeof globalThis'.
+js/assistant-chip.js(3,14): error TS2339: Property '__ASSISTANT_CHIP_STUB__' does not exist on type 'Window & typeof globalThis'.
+js/assistant-chip.js(4,10): error TS2339: Property '__ASSISTANT_CHIP_STUB__' does not exist on type 'Window & typeof globalThis'.
+js/assistant-dock.js(4,14): error TS2339: Property '__assistantDockMounted' does not exist on type 'Window & typeof globalThis'.
+js/assistant-dock.js(9,10): error TS2339: Property '__assistantDockMounted' does not exist on type 'Window & typeof globalThis'.
+js/assistant-dock.js(14,36): error TS2339: Property 'hot' does not exist on type 'ImportMeta'.
+js/assistant-dock.js(15,19): error TS2339: Property 'hot' does not exist on type 'ImportMeta'.
+js/assistant-dock.js(17,16): error TS2339: Property '__assistantDockMounted' does not exist on type 'Window & typeof globalThis'.
+js/assistant-dock.js(40,39): error TS2339: Property 'style' does not exist on type 'Element'.
+js/assistant-dock.js(42,30): error TS2339: Property 'API' does not exist on type 'Window & typeof globalThis'.
+js/assistant-dock.js(42,51): error TS2339: Property 'AGENT_BASE_URL' does not exist on type 'Window & typeof globalThis'.
+js/assistant-dock.js(43,30): error TS2339: Property 'API' does not exist on type 'Window & typeof globalThis'.
+js/assistant-dock.js(43,51): error TS2339: Property 'AGENT_BASE_URL' does not exist on type 'Window & typeof globalThis'.
+js/assistant-dock.js(52,7): error TS7034: Variable 'lastTriggerEl' implicitly has type 'any' in some locations where its type cannot be determined.
+js/assistant-dock.js(59,39): error TS2339: Property 'focus' does not exist on type 'Element'.
+js/assistant-dock.js(67,9): error TS7005: Variable 'lastTriggerEl' implicitly has an 'any' type.
+js/assistant-dock.js(72,24): error TS7006: Parameter 'e' implicitly has an 'any' type.
+js/assistant-dock.js(78,25): error TS7006: Parameter 'e' implicitly has an 'any' type.
+js/assistant-dock.js(86,25): error TS7006: Parameter 'e' implicitly has an 'any' type.
+js/assistant-dock.js(104,23): error TS7006: Parameter 'e' implicitly has an 'any' type.
+js/assistant-dock.js(121,19): error TS7006: Parameter 'text' implicitly has an 'any' type.
+js/assistant-dock.js(126,21): error TS7006: Parameter 'md' implicitly has an 'any' type.
+js/assistant-dock.js(143,21): error TS7006: Parameter 'type' implicitly has an 'any' type.
+js/assistant-dock.js(153,26): error TS7006: Parameter 'role' implicitly has an 'any' type.
+js/assistant-dock.js(153,45): error TS2339: Property 'served_by' does not exist on type '{ streaming?: boolean | undefined; }'.
+js/assistant-dock.js(170,5): error TS18049: 'log' is possibly 'null' or 'undefined'.
+js/assistant-dock.js(170,21): error TS18049: 'log' is possibly 'null' or 'undefined'.
+js/assistant-dock.js(170,37): error TS18049: 'log' is possibly 'null' or 'undefined'.
+js/assistant-dock.js(174,25): error TS7006: Parameter 'id' implicitly has an 'any' type.
+js/assistant-dock.js(174,29): error TS7006: Parameter 'chunk' implicitly has an 'any' type.
+js/assistant-dock.js(175,16): error TS18049: 'log' is possibly 'null' or 'undefined'.
+js/assistant-dock.js(177,20): error TS18047: 'b' is possibly 'null'.
+js/assistant-dock.js(178,5): error TS18047: 'b' is possibly 'null'.
+js/assistant-dock.js(179,5): error TS18049: 'log' is possibly 'null' or 'undefined'.
+js/assistant-dock.js(179,21): error TS18049: 'log' is possibly 'null' or 'undefined'.
+js/assistant-dock.js(181,23): error TS7006: Parameter 'id' implicitly has an 'any' type.
+js/assistant-dock.js(182,16): error TS18049: 'log' is possibly 'null' or 'undefined'.
+js/assistant-dock.js(187,18): error TS7006: Parameter 'ms' implicitly has an 'any' type.
+js/assistant-dock.js(189,27): error TS7006: Parameter 'buffer' implicitly has an 'any' type.
+js/assistant-dock.js(196,33): error TS7006: Parameter 'l' implicitly has an 'any' type.
+js/assistant-dock.js(197,35): error TS7006: Parameter 'l' implicitly has an 'any' type.
+js/assistant-dock.js(208,33): error TS7006: Parameter 'payload' implicitly has an 'any' type.
+js/assistant-dock.js(208,43): error TS7031: Binding element 'onMeta' implicitly has an 'any' type.
+js/assistant-dock.js(208,51): error TS7031: Binding element 'onChunk' implicitly has an 'any' type.
+js/assistant-dock.js(208,60): error TS7031: Binding element 'onDone' implicitly has an 'any' type.
+js/assistant-dock.js(208,68): error TS7031: Binding element 'signal' implicitly has an 'any' type.
+js/assistant-dock.js(209,32): error TS2339: Property 'API' does not exist on type 'Window & typeof globalThis'.
+js/assistant-dock.js(209,57): error TS2339: Property 'API' does not exist on type 'Window & typeof globalThis'.
+js/assistant-dock.js(245,34): error TS7006: Parameter 'basePayload' implicitly has an 'any' type.
+js/assistant-dock.js(245,47): error TS7006: Parameter 'handlers' implicitly has an 'any' type.
+js/assistant-dock.js(268,15): error TS18049: 'input' is possibly 'null' or 'undefined'.
+js/assistant-dock.js(268,21): error TS2339: Property 'value' does not exist on type 'Element'.
+js/assistant-dock.js(270,5): error TS18049: 'input' is possibly 'null' or 'undefined'.
+js/assistant-dock.js(270,11): error TS2339: Property 'value' does not exist on type 'Element'.
+js/assistant-dock.js(272,39): error TS2339: Property 'focus' does not exist on type 'Element'.
+js/assistant-dock.js(275,65): error TS2339: Property 'focus' does not exist on type 'Element'.
+js/assistant-dock.js(280,26): error TS2339: Property 'API' does not exist on type 'Window & typeof globalThis'.
+js/assistant-dock.js(280,51): error TS2339: Property 'API' does not exist on type 'Window & typeof globalThis'.
+js/assistant-dock.js(289,16): error TS2339: Property 'AgentStatus' does not exist on type 'Window & typeof globalThis'.
+js/assistant-dock.js(307,16): error TS7006: Parameter 'meta' implicitly has an 'any' type.
+js/assistant-dock.js(312,18): error TS2339: Property 'AgentStatus' does not exist on type 'Window & typeof globalThis'.
+js/assistant-dock.js(314,17): error TS7006: Parameter 'chunk' implicitly has an 'any' type.
+main.js(11,45): error TS2345: Argument of type 'boolean' is not assignable to parameter of type 'string'.
+main.js(16,47): error TS2345: Argument of type 'boolean' is not assignable to parameter of type 'string'.
+main.js(26,13): error TS2322: Type 'number' is not assignable to type 'string'.
+main.js(35,14): error TS2339: Property 'dataset' does not exist on type 'Element'.
+main.js(35,32): error TS2339: Property 'src' does not exist on type 'Element'.
+main.js(35,41): error TS2339: Property 'dataset' does not exist on type 'Element'.
+main.js(36,14): error TS2339: Property 'dataset' does not exist on type 'Element'.
+main.js(36,35): error TS2339: Property 'poster' does not exist on type 'Element'.
+main.js(36,47): error TS2339: Property 'dataset' does not exist on type 'Element'.
+main.js(50,31): error TS7006: Parameter 'filterName' implicitly has an 'any' type.
+main.js(67,20): error TS2339: Property 'dataset' does not exist on type 'Element'.
+main.js(71,25): error TS2339: Property 'dataset' does not exist on type 'Element'.
+main.js(73,12): error TS2339: Property 'style' does not exist on type 'Element'.
+main.js(87,27): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+main.js(99,32): error TS2551: Property 'close' does not exist on type 'Element'. Did you mean 'closest'?
+main.js(103,7): error TS18047: 'e.target' is possibly 'null'.
+main.js(103,16): error TS2339: Property 'classList' does not exist on type 'EventTarget'.
+main.js(105,40): error TS2345: Argument of type 'EventTarget | null' is not assignable to parameter of type 'Element'.
+  Type 'null' is not assignable to type 'Element'.
+main.js(110,24): error TS2339: Property 'focus' does not exist on type 'Element'.
+main.js(114,24): error TS2339: Property 'focus' does not exist on type 'Element'.
+main.js(137,30): error TS7006: Parameter 'project' implicitly has an 'any' type.
+main.js(142,28): error TS7006: Parameter 'img' implicitly has an 'any' type.
+main.js(156,28): error TS7006: Parameter 'video' implicitly has an 'any' type.
+main.js(158,29): error TS7006: Parameter 'source' implicitly has an 'any' type.
+main.js(178,27): error TS7006: Parameter 'item' implicitly has an 'any' type.
+main.js(187,30): error TS7006: Parameter 'outcome' implicitly has an 'any' type.
+main.js(196,31): error TS7006: Parameter 'download' implicitly has an 'any' type.
+main.js(228,36): error TS2538: Type 'null' cannot be used as an index type.
+main.js(230,3): error TS2531: Object is possibly 'null'.
+main.js(232,27): error TS2339: Property 'showModal' does not exist on type 'HTMLElement'.
+main.js(232,62): error TS2339: Property 'showModal' does not exist on type 'HTMLElement'.
+main.js(238,68): error TS2551: Property 'close' does not exist on type 'HTMLElement'. Did you mean 'closest'?
+main.js(244,80): error TS2551: Property 'close' does not exist on type 'HTMLElement'. Did you mean 'closest'?
+main.js(257,19): error TS18047: 'e.target' is possibly 'null'.
+main.js(257,28): error TS2339: Property 'tagName' does not exist on type 'EventTarget'.
+main.js(263,13): error TS2339: Property 'key' does not exist on type 'Event'.
+main.js(263,34): error TS2339: Property 'key' does not exist on type 'Event'.
+main.js(284,9): error TS7034: Variable 'lastFocusedBeforeOpen' implicitly has type 'any' in some locations where its type cannot be determined.
+main.js(285,9): error TS7034: Variable 'thumbButtons' implicitly has type 'any[]' in some locations where its type cannot be determined.
+main.js(287,22): error TS7006: Parameter 'i' implicitly has an 'any' type.
+main.js(292,7): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+main.js(294,21): error TS7006: Parameter 'i' implicitly has an 'any' type.
+main.js(297,7): error TS18047: 'imgEl' is possibly 'null'.
+main.js(297,13): error TS2339: Property 'src' does not exist on type 'HTMLElement'.
+main.js(298,7): error TS18047: 'imgEl' is possibly 'null'.
+main.js(298,13): error TS2339: Property 'alt' does not exist on type 'HTMLElement'.
+main.js(301,7): error TS18047: 'captionEl' is possibly 'null'.
+main.js(302,18): error TS18047: 'galleryDialog' is possibly 'null'.
+main.js(302,32): error TS2339: Property 'showModal' does not exist on type 'HTMLElement'.
+main.js(302,58): error TS18047: 'galleryDialog' is possibly 'null'.
+main.js(302,72): error TS2339: Property 'showModal' does not exist on type 'HTMLElement'.
+main.js(302,90): error TS18047: 'galleryDialog' is possibly 'null'.
+main.js(305,9): error TS7005: Variable 'thumbButtons' implicitly has an 'any[]' type.
+main.js(315,25): error TS18047: 'captionEl' is possibly 'null'.
+main.js(315,54): error TS18047: 'captionEl' is possibly 'null'.
+main.js(320,7): error TS18047: 'closeBtnG' is possibly 'null'.
+main.js(325,60): error TS2339: Property 'dataset' does not exist on type 'Element'.
+main.js(326,51): error TS2339: Property 'key' does not exist on type 'Event'.
+main.js(326,86): error TS2339: Property 'dataset' does not exist on type 'Element'.
+main.js(333,61): error TS2551: Property 'close' does not exist on type 'HTMLElement'. Did you mean 'closest'?
+main.js(334,171): error TS2551: Property 'close' does not exist on type 'HTMLElement'. Did you mean 'closest'?
+main.js(343,87): error TS2339: Property 'focus' does not exist on type 'Element'.
+main.js(344,93): error TS2339: Property 'focus' does not exist on type 'Element'.
+main.js(347,55): error TS7005: Variable 'lastFocusedBeforeOpen' implicitly has an 'any' type.
+main.js(367,13): error TS7005: Variable 'thumbButtons' implicitly has an 'any[]' type.
+main.js(379,27): error TS7006: Parameter 'e' implicitly has an 'any' type.
+main.js(380,25): error TS7006: Parameter 'e' implicitly has an 'any' type.
+main.js(389,18): error TS2339: Property 'tagName' does not exist on type 'EventTarget'.
+main.js(392,14): error TS2339: Property 'src' does not exist on type 'EventTarget'.
+main.js(393,10): error TS2339: Property 'src' does not exist on type 'EventTarget'.
+main.js(394,10): error TS2339: Property 'style' does not exist on type 'EventTarget'.
+main.js(411,8): error TS2339: Property '__API_BASE__' does not exist on type 'Window & typeof globalThis'.
+optimize-media.js(61,30): error TS7006: Parameter 'inputPath' implicitly has an 'any' type.
+optimize-media.js(61,41): error TS7006: Parameter 'outputDir' implicitly has an 'any' type.
+optimize-media.js(128,61): error TS18046: 'error' is of type 'unknown'.
+optimize-media.js(133,24): error TS7006: Parameter 'inputPath' implicitly has an 'any' type.
+optimize-media.js(133,35): error TS7006: Parameter 'outputDir' implicitly has an 'any' type.
+optimize-media.js(190,61): error TS18046: 'error' is of type 'unknown'.
+optimize-media.js(195,40): error TS7006: Parameter 'inputPath' implicitly has an 'any' type.
+optimize-media.js(195,51): error TS7006: Parameter 'outputDir' implicitly has an 'any' type.
+optimize-media.js(252,62): error TS18046: 'error' is of type 'unknown'.
+sw.js(6,46): error TS2339: Property 'skipWaiting' does not exist on type 'Window & typeof globalThis'.
+sw.js(7,44): error TS2339: Property 'waitUntil' does not exist on type 'Event'.
+sw.js(7,59): error TS2339: Property 'clients' does not exist on type 'Window & typeof globalThis'.
+sw.js(9,24): error TS7006: Parameter 'path' implicitly has an 'any' type.
+sw.js(14,21): error TS2339: Property 'request' does not exist on type 'Event'.
+sw.js(21,11): error TS2339: Property 'respondWith' does not exist on type 'Event'.
+sw.js(27,11): error TS2339: Property 'respondWith' does not exist on type 'Event'.
+validate-schema.js(5,24): error TS7006: Parameter 'html' implicitly has an 'any' type.
+validate-schema.js(12,51): error TS18046: 'e' is of type 'unknown'.
+validate-schema.js(18,10): error TS7023: 'flattenGraph' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+validate-schema.js(18,23): error TS7006: Parameter 'obj' implicitly has an 'any' type.
+validate-schema.js(27,25): error TS7006: Parameter 'blocks' implicitly has an 'any' type.
+validate-schema.js(27,33): error TS7006: Parameter 'file' implicitly has an 'any' type.
+validate-schema.js(32,17): error TS7006: Parameter 'node' implicitly has an 'any' type.
+validate-schema.js(43,48): error TS7006: Parameter 'n' implicitly has an 'any' type.
+validate-schema.js(59,51): error TS18046: 'e' is of type 'unknown'.

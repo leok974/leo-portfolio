@@ -130,3 +130,46 @@ sequenceDiagram
 - Structured logging with request IDs propagated via headers
 - Multi-model routing (policy based on cost/perf)
 
+### Edge CORS for Status Endpoints
+Status data must be reliably retrievable cross-origin (GitHub Pages or app domain) even on error paths.
+
+Strategy:
+* Prefer clients use `/api/status/summary` (edge rewrites internally to `/status/summary`).
+* Nginx injects CORS headers for both `/api/status/*` and legacy `/status/*` so 4xx/5xx responses still include `Access-Control-Allow-Origin`.
+* Legacy path normalizes headers: upstream `Access-Control-Allow-Origin` and `Vary` are hidden (`proxy_hide_header`) and a single canonical pair is added.
+* Cache disabled via `Cache-Control: no-store, no-cache, must-revalidate, max-age=0` to reflect live model / readiness state.
+* OPTIONS preflight returns `204` when intercepted by edge; otherwise backend may answer `200` and CI accepts both.
+
+Rationale: Avoiding silent CORS failures simplifies external health dashboards and GitHub Pages integrations.
+
+#### CORS Decision Flow (Mermaid)
+```mermaid
+flowchart LR
+    A[Incoming Request] --> B{Path matches /api/status/ or /status/ ?}
+    B -->|No| Z[Normal routing (no special CORS injection)]
+    B -->|Yes| C{Has Origin header?}
+    C -->|No| D[Pass through + add Cache-Control no-store]
+    C -->|Yes| E{Origin in allowlist regex?}
+    E -->|No| F[Pass through (no A-C-A-O) + no-store]
+    E -->|Yes| G[Inject A-C-A-O + Vary]
+    G --> H{Legacy /status/?}
+    H -->|Yes| I[Hide upstream duplicates (proxy_hide_header) then add canonical]
+    H -->|No| J[Rewrite /api/status/* -> /status/*]
+    I --> K[Return]
+    J --> K[Return]
+```
+
+### Edge Readiness & Warming Behavior
+To eliminate user-visible 502s and provide deterministic readiness signaling, the edge layer (nginx) implements:
+
+1. Health-gated startup: `nginx` defers until `backend` passes a compose healthcheck hitting `/api/ready` (alias of backend readiness).
+2. Warming JSON intercept: During model warmup or backend restart, upstream 5xx responses for `/api/status/summary` are intercepted and replaced with a stable HTTP 200 JSON payload:
+    ```json
+    {"ok":false,"ready":false,"llm":{"path":"warming"},"rag":{"ok":true}}
+    ```
+3. No-store caching headers ensure clients always reflect live readiness.
+4. Frontend polls every 5–10s; `llm.path == "warming"` is treated as transitional, not failure.
+
+Combined these mechanisms remove cold-start error noise while preserving transparent state for dashboards.
+
+

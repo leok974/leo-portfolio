@@ -1,5 +1,6 @@
 import os
 import os.path
+from datetime import datetime, timezone
 import httpx
 from .db import connect, index_dim
 from .llm_client import (
@@ -113,19 +114,26 @@ async def build_status(base: str) -> dict:
     if rag_http_error:
         rag_info['http_error'] = rag_http_error
 
+    primary_block = {
+        'base_url': PRIMARY_BASE,
+        'model': OPENAI_MODEL,
+        'enabled': not DISABLE_PRIMARY,
+        # Normalize: prefer live llm_status-derived primary_present over possibly stale global
+        'model_present': primary_present,
+        'models_sample': PRIMARY_MODELS[:8],
+        'last_error': LAST_PRIMARY_ERROR,
+        'last_status': LAST_PRIMARY_STATUS,
+    }
+
     return {
         'llm': llm_info,
         'openai_configured': openai_flag,
         'rag': rag_info,
         'ready': ready,
-        'primary': {
-            'base_url': PRIMARY_BASE,
-            'model': OPENAI_MODEL,
-            'enabled': not DISABLE_PRIMARY,
-            'model_present': bool(PRIMARY_MODEL_PRESENT),
-            'models_sample': PRIMARY_MODELS[:8],
-            'last_error': LAST_PRIMARY_ERROR,
-            'last_status': LAST_PRIMARY_STATUS,
+        'primary': primary_block,
+        'build': {
+            'sha': os.getenv('BACKEND_BUILD_SHA', 'local'),
+            'time': datetime.now(timezone.utc).isoformat(timespec='seconds')
         },
         'metrics_hint': {
             'providers': dict(providers),

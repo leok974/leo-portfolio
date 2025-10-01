@@ -27,6 +27,7 @@ from .routes import status as status_routes, llm as llm_routes
 from .routes import llm_latency as llm_latency_routes
 from .health import router as health_router
 from .status_common import build_status
+from .state import LAST_SERVED_BY, sse_inc, sse_dec
 import httpx
 import time
 import json
@@ -50,29 +51,30 @@ except Exception:
     pass
 
 from .lifespan import lifespan
+from . import settings as _settings
 
 app = FastAPI(title="Leo Portfolio Assistant", lifespan=lifespan)
 
-# Track last provider that served a response (primary|fallback|none)
-LAST_SERVED_BY: dict[str, str | float] = {"provider": "none", "ts": 0.0}
+_CORS_META = _settings.get_settings()
+origins = _CORS_META["allowed_origins"]
+allow_all = _CORS_META["allow_all"]
 
-origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()]
-if not origins:
-    origins = [
-        "https://leok974.github.io",
-        "http://localhost:5500",
-        "http://127.0.0.1:5500",
-        "http://localhost:5530",
-        "http://127.0.0.1:5530",
-    ]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
+if origins == ["*"]:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,  # cannot use credentials with wildcard origin
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
 
 # RAG API routes
 app.include_router(rag_router, prefix="/api")
@@ -99,19 +101,31 @@ async def _metrics_middleware(request, call_next):
             status = 500
         record(status, duration_ms)
 
+# Conditional preflight (CORS) logging middleware
+if os.getenv("CORS_LOG_PREFLIGHT", "0") in {"1", "true", "TRUE", "yes", "on"}:
+    @app.middleware("http")
+    async def _cors_preflight_logger(request, call_next):  # type: ignore
+        # Only log OPTIONS or requests with Origin header
+        if request.method == "OPTIONS" or request.headers.get("origin"):
+            try:
+                print("[CORS] method=", request.method,
+                      "origin=", request.headers.get("origin"),
+                      "acr-method=", request.headers.get("access-control-request-method"),
+                      "acr-headers=", request.headers.get("access-control-request-headers"))
+            except Exception:
+                pass
+        return await call_next(request)
+
 @app.get("/metrics")
 def metrics():
     return snapshot()
 
-# Lightweight built-in status summary endpoint (mirrors routes.status)
-@app.get("/status/summary")
-async def status_summary_ep():
-    base = os.getenv("BASE_URL_PUBLIC", "http://127.0.0.1:8001")
-    summary = await build_status(base)
-    summary["latency_recent"] = recent_latency_stats()
-    summary["latency_recent_by_provider"] = recent_latency_stats_by_provider()
-    summary["last_served_by"] = LAST_SERVED_BY
-    return summary
+
+@app.get("/status/cors")
+async def status_cors():
+    data = dict(_CORS_META)
+    data["timestamp"] = time.time()
+    return data
 
 
 class ChatReq(BaseModel):
@@ -196,6 +210,11 @@ async def chat_stream_ep(req: ChatReq):
     messages = _build_messages(req)
 
     async def gen():
+        # Increment live SSE connection count
+        try:
+            sse_inc()
+        except Exception:
+            pass
         source = None
         async for tag, line in llm_chat_stream(messages):
             if source is None:
@@ -213,6 +232,11 @@ async def chat_stream_ep(req: ChatReq):
                 line = f"data: {line}"
             yield line + "\n"
         yield "event: done\ndata: {}\n\n"
+        # Decrement on normal completion
+        try:
+            sse_dec()
+        except Exception:
+            pass
 
     return StreamingResponse(gen(), media_type="text/event-stream")
 

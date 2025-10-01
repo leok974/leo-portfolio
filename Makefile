@@ -1,4 +1,4 @@
-.PHONY: deps test build run audit latency models dev cmddev hyperdev webdev
+.PHONY: deps test build run audit latency models dev cmddev hyperdev webdev prod-up prod-down prod-logs prod-rebuild tunnel-up tunnel-down env-init
 
 # Lock dependencies from requirements.in
 deps:
@@ -57,3 +57,33 @@ hyperdev:
 webdev:
 	@PORT=$${PORT:-5530}; echo "Starting static web server on 127.0.0.1:$$PORT"; \
 	npx browser-sync start --server --no-ui --no-notify --host 127.0.0.1 --port $$PORT --files "index.html,*.css,main.js,js/**/*.js,projects/**/*.html,assets/**/*,manifest.webmanifest,sw.js,projects.json"
+
+# --- Production stack shortcuts (deploy/docker-compose.prod.yml) ---
+prod-up:
+	docker compose -f deploy/docker-compose.prod.yml up -d
+
+prod-down:
+	docker compose -f deploy/docker-compose.prod.yml down
+
+prod-logs:
+	docker compose -f deploy/docker-compose.prod.yml logs -f
+
+prod-rebuild:
+	docker compose -f deploy/docker-compose.prod.yml build --pull && \
+	  docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate --remove-orphans
+
+# Cloudflare tunnel sidecar (requires deploy/docker-compose.tunnel.override.yml and secrets/cloudflared_token)
+tunnel-up:
+	@if [ ! -f secrets/cloudflared_token ]; then echo "secrets/cloudflared_token missing"; exit 1; fi; \
+	READY=$$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8001/ready || true); \
+	if [ "$$READY" != "200" ]; then echo "Backend not healthy (/ready $$READY). Start stack first: make prod-up"; exit 2; fi; \
+	export CLOUDFLARE_TUNNEL_TOKEN=$$(cat secrets/cloudflared_token); \
+	echo "Starting cloudflared tunnel (backend healthy)"; \
+	docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.tunnel.override.yml up -d cloudflared
+
+tunnel-down:
+	 docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.tunnel.override.yml rm -sfv cloudflared || true
+
+# Initialize .env from template (idempotent)
+env-init:
+	@if [ -f .env ]; then echo ".env already exists (skipping)."; else cp .env.deploy.example .env && echo "Created .env from template"; fi

@@ -2,6 +2,23 @@
 
 [![Smoke](https://github.com/leok974/leo-portfolio/actions/workflows/smoke.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/smoke.yml)
 [![Publish Backend](https://github.com/leok974/leo-portfolio/actions/workflows/publish-backend.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/publish-backend.yml)
+[![Assistant Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/status-badge/status.json)](docs/OPERATIONS.md#status-badge)
+[![CI (Node 18/20)](https://img.shields.io/github/actions/workflow/status/leok974/leo-portfolio/matrix-ci.yml?branch=main)](https://github.com/leok974/leo-portfolio/actions/workflows/matrix-ci.yml)
+
+![Coverage (Combined)](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/status-badge/.github/badges/coverage.json)
+![Lines](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/status-badge/.github/badges/lines.json)
+![Branches](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/status-badge/.github/badges/branches.json)
+![Functions](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/status-badge/.github/badges/functions.json)
+![Statements](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/status-badge/.github/badges/statements.json)
+
+
+<sub>
+<strong>Assistant status badge legend</strong> —  🟢 <strong>green = ok</strong> (all checks ≤ 5s) · 🟠 <strong>orange = degraded</strong> (any check > 5s) · 🔴 <strong>red = error</strong> (any check > 10s) · ⚪ <strong>lightgrey = partial</strong> (one or more checks missing)
+</sub>
+
+<sup>Probe SLO: soft 5s / hard 10s enforced via workflow; see `docs/OPERATIONS.md#slo-gating-implemented` for tuning & baseline extraction.</sup>
+
+<sub>Coverage badges derive from Vitest `coverage-summary.json` published to the shared `status-badge` branch (`scripts/coverage-shield.mjs`).</sub>
 
 A fast, modern, **framework-free** portfolio for **Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist**.
 
@@ -63,6 +80,8 @@ Visit: <http://localhost:5173>
 
 - `./scripts/smoke.ps1` covers readiness, health, RAG, metrics, and now invokes the chat probe for parity.
 
+For production / day-2 operational procedures (status headers, legacy cutover, integrity drift, CI health workflow), see `OPERATIONS.md` (root) and the extended guide in `docs/OPERATIONS.md`.
+
 ---
 
 ## Structure
@@ -98,6 +117,36 @@ Visit: <http://localhost:5173>
 ## License
 
 MIT © 2025 Leo Klemet
+
+---
+
+## CI & Node Support
+Matrix CI runs on Node 18 and 20:
+
+- Lint (ESM guard forbids `require()` in `.js`)
+- Script smoke imports (ensures safe side-effect-free parsing)
+- Unit tests (Vitest)
+- Coverage badge generation (Node 20 only)
+
+See `.github/workflows/matrix-ci.yml` for the full pipeline.
+
+## Script Entry Pattern
+Scripts are ESM-first and safe to import without executing CLI logic.
+
+```js
+import { isEntrypoint } from './scripts/_esm-utils.mjs';
+export async function main(){ /* ... */ }
+if (isEntrypoint(import.meta.url)) {
+   await main();
+}
+```
+
+Unified dispatcher:
+```bash
+npm run generate:projects
+npm run optimize:media
+npm run validate:schema
+```
 
 ---
 

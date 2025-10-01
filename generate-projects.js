@@ -1,33 +1,67 @@
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { isEntrypoint } from './scripts/_esm-utils.mjs';
 
 // Read the projects data
+/**
+ * @typedef {{
+ *  title?: string;
+ *  description?: string;
+ *  problem?: string;
+ *  solution?: string;
+ *  stack?: string[];
+ *  outcomes?: any[];
+ *  tags?: string[];
+ *  images?: { src?: string; alt?: string; caption?: string }[];
+ *  videos?: { poster?: string; sources?: { src?: string }[] }[];
+ *  repo?: string;
+ * }} Project
+ * @typedef {Record<string, Project>} ProjectMap
+ */
+/** @type {ProjectMap} */
 const projectsData = JSON.parse(fs.readFileSync('projects.json', 'utf8'));
 
 // Read the main index.html to extract the base template structure
-const indexHTML = fs.readFileSync('index.html', 'utf8');
+const _indexHTML = fs.readFileSync('index.html', 'utf8'); // unused template content retained for potential future parsing
 
 // Determine ordering of projects (stable by key order in JSON)
-const orderedSlugs = Object.keys(projectsData);
+const orderedSlugs = /** @type {string[]} */ (Object.keys(projectsData));
 
 // Load last modification metadata store
-const lastmodPath = path.join(__dirname, '.lastmod.json');
+const __ROOT = path.dirname(fileURLToPath(import.meta.url));
+const lastmodPath = path.join(__ROOT, '.lastmod.json');
+/** @typedef {{ hash: string; lastmod: string; datePublished?: string }} LastMod */
+/** @type {Record<string, LastMod>} */
 let lastmodStore = {};
 try { if (fs.existsSync(lastmodPath)) lastmodStore = JSON.parse(fs.readFileSync(lastmodPath,'utf8')); } catch(e){ console.warn('Could not read lastmod store', e); }
 
+/**
+ * @param {string} iso
+ * @returns {string}
+ */
 function formatDisplayDate(iso) {
   try {
     if (!iso) return '';
     const d = new Date(iso);
-    if (isNaN(d)) return iso;
+    if (Number.isNaN(d.getTime())) return iso;
     return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   } catch(_) {
     return iso;
   }
 }
 
+/**
+ * @param {Record<string, any>} project
+ * @returns {string}
+ */
+/**
+ * @param {Project} project
+ */
 function hashProject(project){
+  const images = Array.isArray(project.images) ? /** @type {any[]} */ (project.images) : [];
+  const videos = Array.isArray(project.videos) ? /** @type {any[]} */ (project.videos) : [];
   const relevant = {
     title: project.title,
     description: project.description,
@@ -36,16 +70,19 @@ function hashProject(project){
     stack: project.stack,
     outcomes: project.outcomes,
     tags: project.tags,
-    images: project.images?.map(i=>({src:i.src,alt:i.alt,caption:i.caption})) || [],
-    videos: project.videos?.map(v=>({poster:v.poster,sources:v.sources?.map(s=>s.src)})) || []
+    images: images.map((img) => ({ src: img?.src, alt: img?.alt, caption: img?.caption })),
+    videos: videos.map((/** @type {{poster?:string; sources?: {src?:string}[]}} */ video) => ({
+      poster: video?.poster,
+      sources: Array.isArray(video?.sources) ? video.sources.map((/** @type {{src?:string}} */ source) => source?.src) : []
+    }))
   };
   const str = JSON.stringify(relevant);
   return crypto.createHash('sha256').update(str).digest('hex').slice(0,16);
 }
 
 // Ensure each slug has stable lastmod unless changed and record datePublished
-orderedSlugs.forEach(slug=>{
-  const proj = projectsData[slug];
+orderedSlugs.forEach((slug)=>{
+  const proj = /** @type {Project} */ (projectsData[slug]);
   const hash = hashProject(proj);
   if (!lastmodStore[slug]) {
     lastmodStore[slug] = { hash, lastmod: new Date().toISOString().split('T')[0], datePublished: new Date().toISOString().split('T')[0] };
@@ -60,23 +97,32 @@ orderedSlugs.forEach(slug=>{
 });
 
 // Build JSON-LD structured data for a project
+/**
+ * @param {Record<string, any>} project
+ * @param {string} slug
+ * @returns {string}
+ */
+/**
+ * @param {Project} project
+ * @param {string} slug
+ */
 function buildJsonLd(project, slug) {
   const url = `https://leok974.github.io/leo-portfolio/projects/${slug}.html`;
   const image = project.images && project.images.length ? `https://leok974.github.io/leo-portfolio/${project.images[0].src}` : undefined;
-  const baseSoftware = {
-      '@type': 'SoftwareSourceCode',
-      name: project.title,
-      description: project.description,
-      url,
-      codeRepository: project.repo || undefined,
-      programmingLanguage: project.stack && project.stack.length ? project.stack.join(', ') : undefined,
-      image,
-      dateModified: (lastmodStore[slug] && lastmodStore[slug].lastmod) ? lastmodStore[slug].lastmod : new Date().toISOString().split('T')[0],
+  const baseSoftware = /** @type {Record<string, any>} */ ({
+    '@type': 'SoftwareSourceCode',
+    name: project.title,
+    description: project.description,
+    url,
+    codeRepository: project.repo || undefined,
+    programmingLanguage: project.stack && project.stack.length ? project.stack.join(', ') : undefined,
+    image,
+    dateModified: (lastmodStore[slug] && lastmodStore[slug].lastmod) ? lastmodStore[slug].lastmod : new Date().toISOString().split('T')[0],
     datePublished: (lastmodStore[slug] && lastmodStore[slug].datePublished) ? lastmodStore[slug].datePublished : undefined,
-      author: { '@type': 'Person', name: 'Leo Klemet' },
-      keywords: project.tags ? project.tags.join(', ') : undefined
-  };
-  Object.keys(baseSoftware).forEach(k => baseSoftware[k] === undefined && delete baseSoftware[k]);
+    author: { '@type': 'Person', name: 'Leo Klemet' },
+    keywords: project.tags ? project.tags.join(', ') : undefined
+  });
+  Object.keys(baseSoftware).forEach((key) => { if (baseSoftware[key] === undefined) delete baseSoftware[key]; });
 
   // BreadcrumbList
   const breadcrumb = {
@@ -89,7 +135,7 @@ function buildJsonLd(project, slug) {
   };
 
   // CreativeWork / Project representation
-  const creative = {
+  const creative = /** @type {Record<string, any>} */ ({
     '@type': 'CreativeWork',
     name: project.title,
     description: project.description,
@@ -101,19 +147,30 @@ function buildJsonLd(project, slug) {
     keywords: project.tags ? project.tags.join(', ') : undefined,
     about: project.problem || undefined,
     thumbnailUrl: image || undefined
-  };
-  Object.keys(creative).forEach(k => creative[k] === undefined && delete creative[k]);
+  });
+  Object.keys(creative).forEach((key) => { if (creative[key] === undefined) delete creative[key]; });
 
   return JSON.stringify({ '@context': 'https://schema.org', '@graph': [ baseSoftware, creative, breadcrumb ] }, null, 2);
 }
 
 // Template for individual project pages
+/**
+ * @param {Record<string, any>} project
+ * @param {string} slug
+ * @returns {string}
+ */
+/**
+ * @param {Project} project
+ * @param {string} slug
+ */
 function generateProjectPage(project, slug) {
   const index = orderedSlugs.indexOf(slug);
   const prevSlug = index > 0 ? orderedSlugs[index - 1] : null;
   const nextSlug = index < orderedSlugs.length - 1 ? orderedSlugs[index + 1] : null;
   const prevProj = prevSlug ? projectsData[prevSlug] : null;
   const nextProj = nextSlug ? projectsData[nextSlug] : null;
+  const tags = Array.isArray(project.tags) ? /** @type {string[]} */ (project.tags) : [];
+  const meta = lastmodStore[slug] || { hash: '', lastmod: new Date().toISOString().split('T')[0], datePublished: new Date().toISOString().split('T')[0] };
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -221,11 +278,11 @@ function generateProjectPage(project, slug) {
         <p class="subline">${project.description}</p>
         ${project.repo ? `<p><a class="btn" href="${project.repo}" target="_blank" rel="noopener">GitHub Repo ↗</a></p>` : ''}
         <div class="tags">
-          ${project.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+          ${tags.map((tag) => `<span class="tag">${tag}</span>`).join('')}
         </div>
         <div class="meta-dates" aria-label="Publication and last update dates">
-          <div><span class="label">Published:</span> <time datetime="${lastmodStore[slug].datePublished}">${formatDisplayDate(lastmodStore[slug].datePublished)}</time></div>
-          <div><span class="label">Updated:</span> <time datetime="${lastmodStore[slug].lastmod}">${formatDisplayDate(lastmodStore[slug].lastmod)}</time></div>
+          <div><span class="label">Published:</span> <time datetime="${meta.datePublished}">${formatDisplayDate(meta.datePublished || meta.lastmod)}</time></div>
+          <div><span class="label">Updated:</span> <time datetime="${meta.lastmod}">${formatDisplayDate(meta.lastmod)}</time></div>
         </div>
       </div>
     </section>
@@ -268,9 +325,17 @@ function generateProjectPage(project, slug) {
 </html>`;
 }
 
+/**
+ * @param {Record<string, any>} project
+ * @returns {string}
+ */
 function generateProjectMedia(project) {
   let html = '';
 
+  /**
+   * @param {string} relPath
+   * @returns {Record<string, { width: number; url: string }[]>}
+   */
   function findOptimizedVariants(relPath) {
     try {
       const ext = path.extname(relPath).toLowerCase();
@@ -282,19 +347,20 @@ function generateProjectMedia(project) {
         { suffix: '-lg', width: 1200 },
         { suffix: '-xl', width: 1920 }
       ];
-      const webp = [];
-      const avif = [];
-      const jpeg = [];
-      const png = [];
+  /** @typedef {{ width: number; url: string }} ResponsiveEntry */
+  /** @type {ResponsiveEntry[]} */ const webp = [];
+  /** @type {ResponsiveEntry[]} */ const avif = [];
+  /** @type {ResponsiveEntry[]} */ const jpeg = [];
+  /** @type {ResponsiveEntry[]} */ const png = [];
       sizes.forEach(s => {
         const webpPath = path.join(__dirname, dir, `${base}${s.suffix}.webp`);
         const avifPath = path.join(__dirname, dir, `${base}${s.suffix}.avif`);
         const jpgPath = path.join(__dirname, dir, `${base}${s.suffix}.jpg`);
         const pngPath = path.join(__dirname, dir, `${base}${s.suffix}.png`);
-        if (fs.existsSync(webpPath)) webp.push({ width: s.width, url: path.posix.join('/', dir, `${base}${s.suffix}.webp`).replace(/\\/g,'/') });
-        if (fs.existsSync(avifPath)) avif.push({ width: s.width, url: path.posix.join('/', dir, `${base}${s.suffix}.avif`).replace(/\\/g,'/') });
-        if (fs.existsSync(jpgPath)) jpeg.push({ width: s.width, url: path.posix.join('/', dir, `${base}${s.suffix}.jpg`).replace(/\\/g,'/') });
-        if (fs.existsSync(pngPath)) png.push({ width: s.width, url: path.posix.join('/', dir, `${base}${s.suffix}.png`).replace(/\\/g,'/') });
+  if (fs.existsSync(webpPath)) webp.push({ width: s.width, url: path.posix.join('/', dir, `${base}${s.suffix}.webp`).replace(/\\/g,'/') });
+  if (fs.existsSync(avifPath)) avif.push({ width: s.width, url: path.posix.join('/', dir, `${base}${s.suffix}.avif`).replace(/\\/g,'/') });
+  if (fs.existsSync(jpgPath)) jpeg.push({ width: s.width, url: path.posix.join('/', dir, `${base}${s.suffix}.jpg`).replace(/\\/g,'/') });
+  if (fs.existsSync(pngPath)) png.push({ width: s.width, url: path.posix.join('/', dir, `${base}${s.suffix}.png`).replace(/\\/g,'/') });
       });
       return { webp, avif, jpeg, png };
     } catch(_) {
@@ -302,6 +368,19 @@ function generateProjectMedia(project) {
     }
   }
 
+  /**
+   * @param {string} relPath
+   * @param {string} alt
+   * @param {string} [attrs]
+   * @param {number} idx
+   * @returns {string}
+   */
+  /**
+   * @param {string} relPath
+   * @param {string} alt
+   * @param {string} [attrs]
+   * @param {number} [idx]
+   */
   function renderResponsivePicture(relPath, alt, attrs = '', idx) {
     const variants = findOptimizedVariants(relPath);
     const src = `../${relPath}`;
@@ -326,7 +405,8 @@ function generateProjectMedia(project) {
 
   // Add images
   if (project.images && project.images.length > 0) {
-    project.images.forEach((img, idx) => {
+  project.images.forEach((/** @type {{src?:string;alt?:string;caption?:string}} */ img, /** @type {number} */ idx) => {
+      if (!img.src) return; // guard undefined source
       const picture = renderResponsivePicture(img.src, img.alt || '', '', idx);
       if (img.caption) {
         html += `<figure>${picture}<figcaption class="muted">${img.caption}</figcaption></figure>`;
@@ -338,11 +418,14 @@ function generateProjectMedia(project) {
 
   // Add videos
   if (project.videos && project.videos.length > 0) {
-    project.videos.forEach(video => {
+  project.videos.forEach((/** @type {{poster?:string;sources?:{src?:string;type?:string}[];captions?:string}} */ video) => {
       html += `<video controls preload="metadata"${video.poster ? ` poster="../${video.poster}"` : ''}>`;
-      video.sources.forEach(source => {
-        html += `<source src="../${source.src}" type="${source.type}"/>`;
-      });
+      if (Array.isArray(video.sources)) {
+        video.sources.forEach((/** @type {{src?:string;type?:string}} */ source) => {
+          if (!source?.src) return;
+          html += `<source src="../${source.src}"${source.type?` type="${source.type}`:''}/>`;
+        });
+      }
       if (video.captions) {
         html += `<track label="English" kind="captions" srclang="en" src="../${video.captions}" default>`;
       }
@@ -353,7 +436,11 @@ function generateProjectMedia(project) {
   return html;
 }
 
-function generateProjectDetails(project) {
+/**
+ * @param {Record<string, any>} project
+ * @returns {string}
+ */
+function _generateProjectDetails(project) {
   let html = '';
 
   // Goals section
@@ -364,7 +451,7 @@ function generateProjectDetails(project) {
   // Stack section
   if (project.stack && project.stack.length > 0) {
     html += '<h4>Tools / Stack</h4><ul>';
-    project.stack.forEach(item => {
+  project.stack.forEach((/** @type {string} */ item) => {
       html += `<li>${item}</li>`;
     });
     html += '</ul>';
@@ -373,7 +460,7 @@ function generateProjectDetails(project) {
   // Outcomes section
   if (project.outcomes && project.outcomes.length > 0) {
     html += '<h4>Outcomes</h4><ul>';
-    project.outcomes.forEach(outcome => {
+  project.outcomes.forEach((/** @type {string} */ outcome) => {
       html += `<li>${outcome}</li>`;
     });
     html += '</ul>';
@@ -382,7 +469,7 @@ function generateProjectDetails(project) {
   // Downloads section
   if (project.downloads && project.downloads.length > 0) {
     html += '<div class="downloads">';
-    project.downloads.forEach(download => {
+  project.downloads.forEach((/** @type {{href:string;label:string}} */ download) => {
       html += `<a href="../${download.href}" download>${download.label}</a>`;
     });
     html += '</div>';
@@ -395,6 +482,10 @@ function generateProjectDetails(project) {
 
   return html;
   }
+  /**
+   * @param {Record<string, any>} project
+   * @returns {string}
+   */
   function generateStructuredSections(project) {
     let html = '<article class="case-study">';
 
@@ -410,7 +501,7 @@ function generateProjectDetails(project) {
 
     // Tech Stack
     if (project.stack && project.stack.length) {
-      html += '<section><h2>Tech Stack</h2><ul>' + project.stack.map(i=>`<li>${i}</li>`).join('') + '</ul></section>';
+  html += '<section><h2>Tech Stack</h2><ul>' + project.stack.map((/** @type {string} */ i)=>`<li>${i}</li>`).join('') + '</ul></section>';
     }
 
     // Screenshots / GIFs (media)
@@ -421,7 +512,7 @@ function generateProjectDetails(project) {
 
     // Outcomes
     if (project.outcomes && project.outcomes.length) {
-      html += '<section><h2>Outcomes</h2><ul>' + project.outcomes.map(o=>`<li>${o}</li>`).join('') + '</ul></section>';
+  html += '<section><h2>Outcomes</h2><ul>' + project.outcomes.map((/** @type {string} */ o)=>`<li>${o}</li>`).join('') + '</ul></section>';
     }
 
     // Links
@@ -429,7 +520,7 @@ function generateProjectDetails(project) {
     if (project.repo) links += `<a class="btn" href="${project.repo}" target="_blank" rel="noopener">GitHub Repo ↗</a>`;
     if (project.demo) links += `<a class="btn" href="${project.demo}" target="_blank" rel="noopener">Live Demo ↗</a>`;
     if (project.downloads && project.downloads.length) {
-      project.downloads.forEach(d=>{ links += `<a class="btn" href="../${d.href}" download>${d.label}</a>`; });
+  project.downloads.forEach((/** @type {{href:string;label:string}} */ d)=>{ links += `<a class="btn" href="../${d.href}" download>${d.label}</a>`; });
     }
     if (links) html += `<section><h2>Links</h2><div class="card-actions">${links}</div></section>`;
 
@@ -437,48 +528,44 @@ function generateProjectDetails(project) {
     return html;
 }
 
-// Create projects directory if it doesn't exist
-const projectsDir = path.join(__dirname, 'projects');
-if (!fs.existsSync(projectsDir)) {
-  fs.mkdirSync(projectsDir);
+export async function main(){
+  const projectsDir = path.join(__ROOT, 'projects');
+  if (!fs.existsSync(projectsDir)) fs.mkdirSync(projectsDir);
+
+  // Generate individual project pages
+  Object.entries(projectsData).forEach(([slug, project]) => {
+    const projectHTML = generateProjectPage(project, slug);
+    const fileName = path.join(projectsDir, `${slug}.html`);
+    fs.writeFileSync(fileName, projectHTML);
+    console.log(`Generated: ${fileName}`);
+  });
+
+  try { fs.writeFileSync(lastmodPath, JSON.stringify(lastmodStore, null, 2)); } catch(e){ console.error('Failed to write lastmod store', e); }
+
+  try {
+    const base = 'https://leok974.github.io/leo-portfolio';
+    const urls = [ `${base}/`, ...orderedSlugs.map(slug => `${base}/projects/${slug}.html`) ];
+    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+      `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+      urls.map(u=>{
+        if (u.endsWith('/')) {
+          const newest = Object.values(lastmodStore).map(v=>v.lastmod).sort().slice(-1)[0] || new Date().toISOString().split('T')[0];
+          return `  <url><loc>${u}</loc><lastmod>${newest}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>`;
+        } else {
+          const slug = (u?.split('/')?.pop() || '').replace('.html','');
+          const lm = (lastmodStore[slug] && lastmodStore[slug].lastmod) ? lastmodStore[slug].lastmod : new Date().toISOString().split('T')[0];
+          return `  <url><loc>${u}</loc><lastmod>${lm}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>`;
+        }
+      }).join('\n') + `\n</urlset>`;
+    fs.writeFileSync(path.join(__ROOT, 'sitemap.xml'), sitemap, 'utf8');
+    console.log('sitemap.xml generated');
+  } catch(e) {
+    console.error('Failed to generate sitemap:', e);
+  }
 }
 
-// Generate individual project pages
-Object.entries(projectsData).forEach(([slug, project]) => {
-  const projectHTML = generateProjectPage(project, slug);
-  const fileName = path.join(projectsDir, `${slug}.html`);
-  fs.writeFileSync(fileName, projectHTML);
-  console.log(`Generated: ${fileName}`);
-});
-
-// Persist lastmod store (after successful generation)
-try { fs.writeFileSync(lastmodPath, JSON.stringify(lastmodStore, null, 2)); } catch(e){ console.error('Failed to write lastmod store', e); }
-
-// Generate sitemap.xml
-try {
-  const base = 'https://leok974.github.io/leo-portfolio';
-  const urls = [
-    `${base}/`,
-    ...orderedSlugs.map(slug => `${base}/projects/${slug}.html`)
-  ];
-  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls.map(u=>{
-      if (u.endsWith('/')) {
-        // index lastmod = newest project lastmod
-        const newest = Object.values(lastmodStore).map(v=>v.lastmod).sort().slice(-1)[0] || new Date().toISOString().split('T')[0];
-        return `  <url><loc>${u}</loc><lastmod>${newest}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>`;
-      } else {
-        const slug = u.split('/').pop().replace('.html','');
-        const lm = (lastmodStore[slug] && lastmodStore[slug].lastmod) ? lastmodStore[slug].lastmod : new Date().toISOString().split('T')[0];
-        return `  <url><loc>${u}</loc><lastmod>${lm}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>`;
-      }
-    }).join('\n') +
-    `\n</urlset>`;
-  fs.writeFileSync(path.join(__dirname, 'sitemap.xml'), sitemap, 'utf8');
-  console.log('sitemap.xml generated');
-} catch(e) {
-  console.error('Failed to generate sitemap:', e);
+if (isEntrypoint(import.meta.url)) {
+  await main();
 }
 
 console.log('Project pages generated successfully!');

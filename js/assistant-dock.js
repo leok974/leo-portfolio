@@ -1,20 +1,26 @@
 // assistant-dock.js - stream-capable assistant UI (singleton + HMR-safe)
 (function(){
+  /**
+   * Augment window for dock state & APIs
+   * @typedef {Window & typeof globalThis & { __assistantDockMounted?: boolean; API?: any; AGENT_BASE_URL?: string; AgentStatus?: { updateServed?: (s:string)=>void } }} AssistantWindow
+   */
+  /** @type {AssistantWindow} */
+  const w = /** @type {any} */ (window);
   // ---- Singleton guard (prevents duplicate mounts & listeners) ----
-  if (window.__assistantDockMounted) {
+  if (w.__assistantDockMounted) {
     document.querySelectorAll('.assistant-dock').forEach((el, i) => { if (i > 0) el.remove(); });
     console.warn('[assistant] duplicate mount prevented');
     return;
   }
-  window.__assistantDockMounted = true;
+  w.__assistantDockMounted = true;
 
   // Optional: HMR cleanup so re-mounts don’t stack
-  let __assistantCleanup = () => {};
+  let __assistantCleanup = () => { /* intentionally empty (set during HMR cleanup) */ };
   try {
-    if (import.meta && import.meta.hot) {
-      import.meta.hot.dispose(() => {
+    if (import.meta && /** @type {any} */(import.meta).hot) {
+      /** @type {{ dispose: (fn:()=>void)=>void }} */(/** @type {any} */(import.meta).hot).dispose(() => {
         try { __assistantCleanup(); } catch {}
-        window.__assistantDockMounted = false;
+        w.__assistantDockMounted = false;
       });
     }
   } catch {}
@@ -37,11 +43,10 @@
   const servedBySpan = root?.querySelector('.served-by, #servedBy');
 
   // Apply muted tint from CSS vars to the header label
-  try{ if (servedBySpan) servedBySpan.style.color = getComputedStyle(document.documentElement).getPropertyValue('--lk-muted') || '#b4c0cf'; } catch {}
+  try{ if (servedBySpan instanceof HTMLElement) servedBySpan.style.color = getComputedStyle(document.documentElement).getPropertyValue('--lk-muted') || '#b4c0cf'; } catch {}
 
-  const API_BASE   = (window.AGENT_BASE_URL || 'http://127.0.0.1:8001');
-  const API_STREAM = API_BASE + '/chat/stream';
-  const API_CHAT   = API_BASE + '/chat';
+  const API_STREAM = (w.API?.base || (w.AGENT_BASE_URL || 'http://127.0.0.1:8001')) + '/chat/stream';
+  const API_CHAT   = (w.API?.base || (w.AGENT_BASE_URL || 'http://127.0.0.1:8001')) + '/chat';
   // Streaming config constants
   const STREAM_MAX_RETRIES = 2;            // additional attempts after first try
   const STREAM_RETRY_BASE_MS = 500;        // base backoff
@@ -50,6 +55,7 @@
   const STREAM_INACTIVITY_TIMEOUT_MS = 8_000; // abort if no data events within this window
 
   // Focus management + session persistence helpers
+  /** @type {HTMLElement | null} */
   let lastTriggerEl = null;
 
   function openDock(){
@@ -57,7 +63,7 @@
     dock.hidden = false;
     chipBtn?.classList.add('is-hidden');
     chipBtn?.setAttribute('aria-expanded','true');
-    requestAnimationFrame(()=> input?.focus());
+  requestAnimationFrame(()=> { if (input instanceof HTMLElement) input.focus(); });
   }
 
   function closeDock(){
@@ -70,20 +76,23 @@
     }
   }
 
-  const onChipClick = (e)=>{ e.preventDefault(); e.stopPropagation(); lastTriggerEl = e.currentTarget; openDock(); };
+  /** @param {MouseEvent} e */
+  const onChipClick = (e)=>{ e.preventDefault(); e.stopPropagation(); lastTriggerEl = e.currentTarget instanceof HTMLElement ? e.currentTarget : null; openDock(); };
 
   chipBtn?.addEventListener('click', onChipClick);
 
 
 
+  /** @param {MouseEvent} e */
   const onCloseClick = (e)=>{ e.preventDefault(); closeDock(); };
 
-  close?.addEventListener('click', onCloseClick);
+  if (close instanceof HTMLElement) close.addEventListener('click', onCloseClick);
 
 
 
   // ESC closes the dock from anywhere
 
+  /** @param {KeyboardEvent} e */
   const onDocKeyDown = (e)=>{
 
     if (e.key === 'Escape' && !dock?.hidden) {
@@ -102,14 +111,12 @@
 
   // Click-outside closes the dock
 
+  /** @param {MouseEvent} e */
   const onDocClick = (e)=>{
-
-    if (!dock?.hidden && dock && !dock.contains(e.target) && e.target !== chipBtn) {
-
+    const target = e.target instanceof Node ? e.target : null;
+    if (!dock?.hidden && dock && target && !dock.contains(target) && target !== chipBtn) {
       closeDock();
-
     }
-
   };
 
   document.addEventListener('click', onDocClick);
@@ -119,11 +126,15 @@
 
 
 
+  /** @param {unknown} text */
   function mdSafe(text){
     if (text == null) return '';
     return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  // Lint cleanup: no over-escaped regex patterns present after earlier refactors.
+
+  /** @param {string} md */
   function mdToHtml(md){
     let t = mdSafe(md);
     t = t.replace(/```([\s\S]*?)```/g, (_,c)=> `<pre><code>${c}</code></pre>`);
@@ -135,12 +146,13 @@
         return `<ul>${items.map(i=>`<li>${i}</li>`).join('')}</ul>`;
       });
     }
-    t = t.replace(/\*\*([^*]+)\*\*:/g, '<h4>$1<\/h4>');
-    t = t.replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1<\/a>');
-    t = t.split(/\n{2,}/).map(p=>`<p>${p.trim()}<\/p>`).join('');
+  t = t.replace(/\*\*([^*]+)\*\*:/g, '<h4>$1</h4>');
+  t = t.replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  t = t.split(/\n{2,}/).map(p=>`<p>${p.trim()}</p>`).join('');
     return t;
   }
 
+  /** @param {'ai'|'user'} type */
   function avatarEl(type){
     const el = document.createElement('div');
     el.className = 'avatar';
@@ -151,7 +163,13 @@
   }
 
   let idSeq = 0;
-  function appendMessage(role, content='', {served_by, streaming=false}={}){
+  /**
+   * @param {'user'|'assistant'} role
+   * @param {string} content
+   * @param {{ served_by?: string; streaming?: boolean }} [opts]
+   */
+  function appendMessage(role, content='', opts={}){
+    const { served_by, streaming=false } = opts;
     const id = `m${++idSeq}`;
     const li = document.createElement('li');
     li.className = `msg ${role === 'user' ? 'from-user' : 'from-ai'}`;
@@ -159,34 +177,38 @@
     const avatar = avatarEl(role === 'user' ? 'user' : 'ai');
     const bubble = document.createElement('div');
     bubble.className = 'bubble markdown';
-    bubble.innerHTML = mdToHtml(content) + (streaming ? `<span class=\"cursor\"></span>` : '');
+  bubble.innerHTML = mdToHtml(content) + (streaming ? `<span class="cursor"></span>` : '');
 
     if (role !== 'user' && served_by){
       const accent = getComputedStyle(document.documentElement).getPropertyValue('--lk-accent') || '#2d6cdf';
-      bubble.insertAdjacentHTML('afterbegin', `<div style=\"opacity:.75; font-size:12px; margin-bottom:.25rem; color:${accent}\">served by <strong>${served_by}</strong></div>`);
+  bubble.insertAdjacentHTML('afterbegin', `<div style="opacity:.75; font-size:12px; margin-bottom:.25rem; color:${accent}">served by <strong>${served_by}</strong></div>`);
       if (servedBySpan) servedBySpan.textContent = served_by;
     }
 
     if (role === 'user'){ li.append(bubble, avatar); } else { li.append(avatar, bubble); }
-    log.append(li); log.scrollTop = log.scrollHeight;
+    log?.append(li); if (log) log.scrollTop = log.scrollHeight;
     return { id, el: li, bubble };
   }
 
+  /** @param {string} id @param {string} chunk */
   function streamAppend(id, chunk){
-    const li = log.querySelector(`[data-id="${id}"]`); if (!li) return;
-    const b = li.querySelector('.bubble');
+    const li = log?.querySelector(`[data-id="${id}"]`); if (!li) return;
+    const b = li.querySelector('.bubble'); if (!(b instanceof HTMLElement)) return;
     const cursor = b.querySelector('.cursor'); if (cursor) cursor.remove();
-    b.innerHTML += mdToHtml(chunk) + `<span class=\"cursor\"></span>`;
-    log.scrollTop = log.scrollHeight;
+    b.innerHTML += mdToHtml(chunk) + `<span class="cursor"></span>`;
+    if (log) log.scrollTop = log.scrollHeight;
   }
+  /** @param {string} id */
   function streamDone(id){
-    const li = log.querySelector(`[data-id="${id}"]`); if (!li) return;
+    const li = log?.querySelector(`[data-id="${id}"]`); if (!li) return;
     const cursor = li.querySelector('.cursor'); if (cursor) cursor.remove();
   }
 
   // --- SSE helper utilities -------------------------------------------------
+  /** @param {number} ms */
   function delay(ms){ return new Promise(r=> setTimeout(r, ms)); }
 
+  /** @param {string} buffer */
   function parseSSEBuffer(buffer){
     // Returns { events: Array<{event,data}>, remainder }
     const parts = buffer.split('\n\n');
@@ -206,13 +228,14 @@
     return { events: out, remainder };
   }
 
+  /**
+   * @param {{ messages: Array<{role:string, content:string}>; stream?: boolean }} payload
+   * @param {{ onMeta?: (m:any)=>void; onChunk?: (c:string)=>void; onDone?: ()=>void; signal?: AbortSignal }} handlers
+   */
   async function streamChatOnce(payload, {onMeta, onChunk, onDone, signal}){
-    const resp = await fetch(API_STREAM, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify(payload),
-      signal
-    });
+    const resp = await (w.API?.streamChat ? w.API.streamChat(payload.messages, { signal }) : fetch(API_STREAM, {
+      method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload), signal
+    }));
     if (!resp.ok || !resp.body) throw new Error('bad_stream_response');
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
@@ -246,6 +269,10 @@
     }
   }
 
+  /**
+   * @param {{ messages: Array<{role:string, content:string}>; stream?: boolean }} basePayload
+   * @param {{ onMeta?: (m:any)=>void; onChunk?: (c:string)=>void; onDone?: ()=>void }} handlers
+   */
   async function streamWithRetry(basePayload, handlers){
     const start = Date.now();
     for (let attempt=0; attempt <= STREAM_MAX_RETRIES; attempt++){
@@ -254,7 +281,7 @@
       try {
         await streamChatOnce(basePayload, { ...handlers, signal: controller.signal });
         return true; // success
-      } catch (err){
+  } catch (_err){
         if (controller.signal.aborted) break;
         if (attempt === STREAM_MAX_RETRIES) return false;
         const backoff = STREAM_RETRY_BASE_MS * (2 ** attempt) + Math.random()*STREAM_RETRY_JITTER_MS;
@@ -269,33 +296,28 @@
 
   form?.addEventListener('submit', async (e)=>{
     e.preventDefault();
-    const q = input.value.trim(); if (!q) return;
+    const q = (input instanceof HTMLInputElement ? input.value : '').trim(); if (!q) return;
     appendMessage('user', q);
-    input.value = '';
+    if (input instanceof HTMLInputElement) input.value = '';
     // Return focus to input for rapid follow-ups
-    requestAnimationFrame(()=> input?.focus());
+    requestAnimationFrame(()=> { if (input instanceof HTMLElement) input.focus(); });
 
   const ai = appendMessage('assistant', '', { streaming:true });
-    const ensureFocus = () => requestAnimationFrame(()=> input?.focus());
+  const ensureFocus = () => requestAnimationFrame(()=> { if (input instanceof HTMLElement) input.focus(); });
     const accentColor = () => getComputedStyle(document.documentElement).getPropertyValue('--lk-accent') || '#2d6cdf';
 
-    const fallbackNonStream = async () => {
+  const fallbackNonStream = async () => {
       try{
-        const r = await fetch(API_CHAT, {
-          method: 'POST',
-          headers: { 'Content-Type':'application/json' },
-          body: JSON.stringify({ messages: [{ role:'user', content: q }] })
-        });
-        if (!r.ok){
-          throw new Error(`fallback http ${r.status}`);
-        }
-        const payload = await r.json();
-        const servedBy = payload?._served_by || 'unknown';
+  const r = w.API?.chat ? await w.API.chat([{ role:'user', content: q }]) : await fetch(API_CHAT, {
+          method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ messages: [{ role:'user', content: q }] })
+        }).then(r=> r.json());
+  const payload = r; // unified shape when using API.chat
+  const servedBy = payload?._served_by || 'unknown';
         const accent = accentColor();
         ai.bubble.innerHTML = '';
         ai.bubble.insertAdjacentHTML('afterbegin', `<div style="opacity:.75; font-size:12px; margin-bottom:.25rem; color:${accent}">served by <strong>${servedBy}</strong></div>`);
-        if (servedBySpan) servedBySpan.textContent = servedBy;
-        window.AgentStatus?.updateServed(servedBy);
+  if (servedBySpan) servedBySpan.textContent = servedBy;
+  w.AgentStatus?.updateServed?.(servedBy);
         const message = payload?.choices?.[0]?.message?.content ?? payload?.message ?? payload?.content ?? '';
         if (message){
           ai.bubble.insertAdjacentHTML('beforeend', mdToHtml(message));
@@ -318,7 +340,7 @@
           const accent = accentColor();
           ai.bubble.insertAdjacentHTML('afterbegin', `<div style="opacity:.75; font-size:12px; margin-bottom:.25rem; color:${accent}">served by <strong>${meta._served_by}</strong></div>`);
           if (servedBySpan) servedBySpan.textContent = meta._served_by;
-          window.AgentStatus?.updateServed(meta._served_by);
+          w.AgentStatus?.updateServed?.(meta._served_by);
         },
         onChunk(chunk){ streamAppend(ai.id, chunk); },
         onDone(){ streamDone(ai.id); ensureFocus(); }
@@ -341,7 +363,7 @@
 
       if (chipBtn) chipBtn.removeEventListener('click', onChipClick);
 
-      if (close) close.removeEventListener('click', onCloseClick);
+  if (close instanceof HTMLElement) close.removeEventListener('click', onCloseClick);
 
       // Remove event listeners by cloning nodes (cheap and safe)
 

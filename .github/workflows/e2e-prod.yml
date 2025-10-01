@@ -1,0 +1,39 @@
+name: E2E (Prod)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"  # every 6 hours
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PROD_BASE: https://assistant.ledger-mind.org
+      CI: true
+      # Set to 1 to skip redirect test if legacy Pages retired
+      SKIP_PAGES_REDIRECT: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install deps
+        run: npm ci || npm i
+      - name: Install browsers
+        run: npm run e2e:install
+      - name: Run Playwright tests
+        run: npm run e2e
+        env:
+          PROD_BASE: https://assistant.ledger-mind.org
+          SKIP_E2E: "0"
+          SKIP_PAGES_REDIRECT: ${{ env.SKIP_PAGES_REDIRECT }}
+      - name: Upload Playwright report (if exists)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          if-no-files-found: ignore

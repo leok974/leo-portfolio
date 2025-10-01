@@ -1,0 +1,36 @@
+name: Lint, Scripts, Tests (Node LTS Matrix)
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - name: Install deps
+        run: npm ci || npm i
+      - name: Lint (ESM guard)
+        run: npm run lint
+      - name: Script smoke imports
+        run: |
+          node --eval "await import('./generate-projects.js')"
+          node --eval "await import('./optimize-media.js')"
+          node --eval "await import('./validate-schema.js')"
+      - name: Unit tests
+        run: npm run test
+      - name: Coverage badges (Node 20 only)
+        if: matrix.node == '20'
+        run: npm run cov:badges
