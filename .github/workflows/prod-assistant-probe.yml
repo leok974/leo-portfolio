@@ -95,3 +95,19 @@ jobs:
           git add status.json probe.json
           git commit -m "badge: update $(date -u +"%Y-%m-%dT%H:%M:%SZ")" || echo "nothing to commit"
           git push -u origin status-badge
+      - name: Enforce SLO thresholds
+        env:
+          SLO_MAX_MS: "5"      # soft fail threshold (seconds)
+          HARD_MAX_MS: "10"    # hard fail threshold (seconds)
+          ALLOW_PARTIAL: "false"
+        run: |
+          set -euo pipefail
+          worst=$(jq -r '[.latencies.root,.latencies.ready,.latencies.status,.latencies.chat] | map(select(type=="number")) | max // 0' probe.json)
+          partial=$(jq -e '[.latencies.root,.latencies.ready,.latencies.status,.latencies.chat] | any(. == null)' probe.json >/dev/null && echo "1" || echo "0")
+          echo "worst_latency_seconds=$worst"
+          echo "partial_data=$partial"
+          if [ "$ALLOW_PARTIAL" != "true" ] && [ "$partial" = "1" ]; then
+            echo "::error::Partial probe data (null latency) and ALLOW_PARTIAL=false"; exit 1; fi
+          awk -v w="$worst" -v hard="$HARD_MAX_MS" 'BEGIN{ if (w > hard) exit 1; }' || { echo "::error::Hard SLO breach: worst latency > ${HARD_MAX_MS}s"; exit 1; }
+          awk -v w="$worst" -v slo="$SLO_MAX_MS" 'BEGIN{ if (w > slo) exit 1; }' || { echo "::error::SLO breach: worst latency > ${SLO_MAX_MS}s"; exit 1; }
+          echo "SLO OK"
