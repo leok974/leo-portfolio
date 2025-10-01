@@ -3,6 +3,23 @@
 All notable changes to this project will be documented here.
 Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD).
 
+## [v0.7.0] - 2025-10-01
+### Added
+- CI matrix (Node 18/20), unit tests, probe/status/CORS health checks, SRI dist verification.
+- Scripts dispatcher (`scripts/bin.mjs`), coverage shield generator, integrity/status probe scripts.
+- FastAPI settings module with enhanced status endpoints.
+- TypeScript sources, global type declarations, and new tests.
+- Husky pre-commit hook.
+
+### Changed
+- ESM-first repo (`"type":"module"`). Converted scripts to ESM and added `isEntrypoint()` helper.
+- Relaxed `lint-staged` to skip eslint on JSON/MD/YAML (until dedicated parsers are configured).
+- Docs refreshed: DEPLOY, DEVELOPMENT, ARCHITECTURE, SECURITY, OPERATIONS.
+
+### Notes
+- Coverage badges published from Node 20 job only.
+- Optional: re-enable linting for MD/YAML once parsers are in place.
+
 ## [Unreleased]
 
 ### Added
