@@ -1,0 +1,85 @@
+name: Prod Assistant Host Probe
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check SPA root
+        run: |
+          read code ttotal <<<$(curl -s -o /dev/null -w "%{http_code} %{time_total}" https://assistant.ledger-mind.org/)
+          echo "SPA => $code (${ttotal}s)"; echo "SPA_LATENCY=$ttotal" >> $GITHUB_ENV; test "$code" = "200"
+      - name: Check API ready
+        run: |
+          read code ttotal <<<$(curl -s -o /dev/null -w "%{http_code} %{time_total}" https://assistant.ledger-mind.org/api/ready)
+          echo "API => $code (${ttotal}s)"; echo "API_READY_LATENCY=$ttotal" >> $GITHUB_ENV; test "$code" = "200"
+      - name: Check status summary
+        run: |
+          read code ttotal <<<$(curl -s -o /dev/null -w "%{http_code} %{time_total}" https://assistant.ledger-mind.org/status/summary)
+          echo "Status => $code (${ttotal}s)"; echo "STATUS_SUMMARY_LATENCY=$ttotal" >> $GITHUB_ENV; test "$code" = "200"
+      - name: Synthetic chat probe
+        run: |
+          BODY='{"messages":[{"role":"user","content":"ping"}]}'
+          RESP=$(mktemp)
+          read code ttotal <<<$(curl -s -o $RESP -w "%{http_code} %{time_total}" -X POST \
+            -H 'Content-Type: application/json' \
+            --data "$BODY" https://assistant.ledger-mind.org/chat)
+          echo "CHAT => $code (${ttotal}s)"; echo "CHAT_LATENCY=$ttotal" >> $GITHUB_ENV; test "$code" = "200"
+          # Basic validation: non-empty JSON with 'assistant' or 'choices'
+          if ! grep -q 'assistant' $RESP && ! grep -q 'choices' $RESP; then
+            echo "Chat response missing expected keys"; cat $RESP; exit 1; fi
+      - name: Emit enriched JSON artifact
+        run: |
+          ts=$(date -u +%FT%TZ)
+          spa=${SPA_LATENCY:-null}
+          api=${API_READY_LATENCY:-null}
+          sum=${STATUS_SUMMARY_LATENCY:-null}
+          chat=${CHAT_LATENCY:-null}
+          echo "{\n  \"timestamp\": \"$ts\",\n  \"host\": \"assistant.ledger-mind.org\",\n  \"latency\": {\n    \"spa\": $spa,\n    \"api_ready\": $api,\n    \"status_summary\": $sum,\n    \"chat\": $chat\n  },\n  \"checks\": {\n    \"spa\": true,\n    \"api_ready\": true,\n    \"status\": true,\n    \"chat_basic\": true\n  }\n}" > probe.json
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prod-assistant-probe
+          path: probe.json
+      - name: Publish badge (status-badge branch)
+        if: success()
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@users.noreply.github.com"
+          # Extract metrics
+          spa=$(jq -r '.latency.spa' probe.json)
+          api=$(jq -r '.latency.api_ready' probe.json)
+          sum=$(jq -r '.latency.status_summary' probe.json)
+          chat=$(jq -r '.latency.chat' probe.json)
+          ts=$(jq -r '.timestamp' probe.json)
+          STATUS_COLOR=brightgreen
+          for v in "$spa" "$api" "$sum" "$chat"; do
+            if [ "$v" = "null" ]; then STATUS_COLOR=lightgrey; break; fi
+            awk -v val=$v 'BEGIN{ if (val>5) exit 1 }' || STATUS_COLOR=orange
+            awk -v val=$v 'BEGIN{ if (val>10) exit 1 }' || STATUS_COLOR=red
+          done
+          echo "Generating status.json with color=$STATUS_COLOR"
+          echo "{\"schemaVersion\":1,\"label\":\"assistant\",\"message\":\"ok\",\"color\":\"$STATUS_COLOR\",\"namedLogo\":\"openai\",\"style\":\"flat\",\"cacheSeconds\":300,\"extra\":{\"timestamp\":\"$ts\",\"latency\":{\"spa\":$spa,\"api\":$api,\"summary\":$sum,\"chat\":$chat}}}" > status.json
+          # Ensure branch exists
+          if git show-ref --verify --quiet refs/heads/status-badge; then
+            git checkout status-badge
+          else
+            git checkout -b status-badge || git branch status-badge && git checkout status-badge
+          fi
+          cp ../status.json ./status.json 2>/dev/null || true
+          # (If running in root already, ensure file present)
+          ls -l status.json
+          git add status.json || true
+          git commit -m "chore: update status badge $(date -u +%FT%TZ)" || echo "No changes to commit"
+          git push origin status-badge
