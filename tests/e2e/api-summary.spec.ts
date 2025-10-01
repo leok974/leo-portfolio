@@ -17,7 +17,16 @@ test('backend status summary is healthy', async () => {
   if (!res.ok()) {
     test.skip(!BACKEND_REQUIRED, `Summary returned status ${res.status()} (frontend-only mode allows skip)`);
   }
-  const body: any = await res.json();
+  let body: any = null;
+  try {
+    body = await res.json();
+  } catch (parseErr: any) {
+    const text = await res.text();
+    const looksHtml = /<html/i.test(text);
+    test.skip(!BACKEND_REQUIRED && looksHtml, `Received HTML instead of JSON (likely static frontend only). Skipping.`);
+    // If backend required, rethrow to surface failure
+    throw parseErr;
+  }
   expect(body, 'summary payload should include ready flag').toHaveProperty('ready');
   expect(body.ready).toBe(true);
   expect(body, 'summary payload should include rag.ok').toHaveProperty(['rag', 'ok']);

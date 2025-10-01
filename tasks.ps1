@@ -147,6 +147,8 @@ function Invoke-StrictNginxSmoke {
     $env:REQUIRE_STATUS_PILL_STRICT = '1'
   $env:PLAYWRIGHT_STRICT_STREAM = '1'
   $env:NGINX_STRICT = '1'
+  # Static nginx test stack does not include backend API; allow backend-dependent tests to skip
+  if (-not $env:BACKEND_REQUIRED) { $env:BACKEND_REQUIRED = '0' }
     if ($FullSuite) {
       pnpm exec playwright test
     } else {
