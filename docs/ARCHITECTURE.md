@@ -175,6 +175,27 @@ Strategy:
 
 Rationale: Avoiding silent CORS failures simplifies external health dashboards and GitHub Pages integrations.
 
+### Probe & Status Workflows (Sequence)
+```mermaid
+sequenceDiagram
+    participant UI as CI/Script
+    participant BE as Backend (FastAPI)
+    participant P as Primary LLM
+    participant F as Fallback LLM
+    participant R as RAG Store
+
+    UI->>BE: GET /llm/primary/latency
+    BE->>P: HEAD/GET /models (probe loop)
+    P-->>BE: statuses
+    BE-->>UI: stats{min,p50,p95,p99,max,ok_rate}
+
+    UI->>BE: GET /status/summary
+    BE->>P: health check
+    BE->>F: fallback check
+    BE->>R: RAG ping/query
+    BE-->>UI: summary{primary_ok,fallback_ok,rag_ok,mode}
+```
+
 #### CORS Decision Flow (Mermaid)
 ```mermaid
 flowchart LR

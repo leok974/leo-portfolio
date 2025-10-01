@@ -28,6 +28,7 @@
     "lint": "eslint . --ext .js,.ts",
     "coverage": "vitest run --coverage",
     "cov:badges": "node scripts/coverage-shield.mjs",
+    "coverage:gate": "node scripts/coverage-gate.mjs",
     "generate:projects": "node scripts/bin.mjs generate-projects",
     "optimize:media": "node scripts/bin.mjs optimize-media",
     "validate:schema": "node scripts/bin.mjs validate-schema",

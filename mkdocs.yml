@@ -1,0 +1,15 @@
+site_name: Leo Portfolio Docs
+theme:
+  name: material
+nav:
+  - Home: index.md
+  - Architecture: ARCHITECTURE.md
+  - API: API.md
+  - Deploy: DEPLOY.md
+  - Development: DEVELOPMENT.md
+  - Security: SECURITY.md
+  - Changelog: CHANGELOG.md
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
