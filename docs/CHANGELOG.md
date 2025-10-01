@@ -41,6 +41,7 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
 	- `scripts/chat-probe.mjs` (Node SSE streaming probe with truncation)
 	- `scripts/chat-stream.ps1` (PowerShell HttpClient raw SSE reader)
 	- `tests/chat.stream.served_by.spec.mjs` (soft-skip SSE marker validation test for `_served_by`)
+		- `tests/chat.stream.fallback.spec.mjs` (conditional fallback-mode SSE marker test)
 - Coverage Shields generation script `scripts/coverage-shield.mjs` producing `.github/badges/*.json` (combined + per-metric) for Shields.io endpoints.
 - CI integration (unit-ci) step to publish coverage badges & summary to `status-badge` branch.
 
