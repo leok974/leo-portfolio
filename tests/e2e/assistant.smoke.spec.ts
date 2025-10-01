@@ -82,6 +82,10 @@ test('page renders + css loads + streaming works', async ({ page, request }) => 
     { timeoutMs: STREAM_TIMEOUT_MS }
   );
 
+  if (!result.ok) {
+    // Allow skip in frontend-only mode where backend endpoints are absent
+    test.skip(process.env.BACKEND_REQUIRED === '0', `Streaming endpoint unavailable: ${result.err || 'unknown error'}`);
+  }
   expect(result.ok).toBeTruthy();
   expect(result.bytes).toBeGreaterThan(0);
 

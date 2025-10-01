@@ -1,7 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { BASE } from './helpers/env';
 
+const NGINX_STRICT = process.env.NGINX_STRICT === '1';
+
 test('built assets are served with immutable caching (nginx strict)', async ({ page, request }) => {
+  test.skip(!NGINX_STRICT, 'Skipping immutable header enforcement outside nginx strict env');
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
   const cssLinks = await page.locator('link[rel="stylesheet"]').all();
   const jsLinks = await page.locator('script[src]').all();
