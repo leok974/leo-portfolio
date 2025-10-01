@@ -44,6 +44,13 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
 		- `tests/chat.stream.fallback.spec.mjs` (conditional fallback-mode SSE marker test)
 - Coverage Shields generation script `scripts/coverage-shield.mjs` producing `.github/badges/*.json` (combined + per-metric) for Shields.io endpoints.
 - CI integration (unit-ci) step to publish coverage badges & summary to `status-badge` branch.
+- Nightly strict streaming workflow (`nightly-streaming-strict.yml`) enforcing `_served_by` marker and publishing `streaming.json` badge.
+- README streaming badge for nightly strict run (green=pass, red=fail).
+- Nightly fallback streaming workflow (`nightly-streaming-fallback.yml`) validating `_served_by` under fallback host and publishing `streaming-fallback.json` badge (skips if secret unset).
+- Streaming test enhancement: `EXPECT_SERVED_BY` env allows regex assertion of provider identity when `STRICT_STREAM_MARKER=1`.
+- Aggregate streaming workflow (`nightly-streaming-aggregate.yml`) producing combined badge `streaming-combined.json` summarizing strict + fallback states.
+- Dev frontend override (`docker-compose.dev.override.yml`) enabling local `dist` bind-mount + relaxed CSP (`nginx.dev.conf`).
+- Manifest MIME mapping + explicit `location = /site.webmanifest` in production nginx config eliminating browser console warning.
 
 ### Changed
 - Cloudflare Tunnel now delivered via optional overlay `docker-compose.cloudflared.yml` (removed embedded `cloudflared-portfolio` service from `deploy/docker-compose.prod.yml`).

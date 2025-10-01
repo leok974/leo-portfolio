@@ -1,0 +1,36 @@
+name: Nightly – Streaming (Aggregate)
+
+on:
+  schedule:
+    - cron: "55 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Aggregate badges
+        run: |
+          node .github/scripts/aggregate-streaming.mjs
+      - name: Commit combined badge
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "ci(badge): update streaming-combined"
+          file_pattern: .github/badges/streaming-combined.json
+      - name: Mirror badges to status-badges branch (optional)
+        if: always()
+        run: |
+          git fetch origin status-badges || true
+          git checkout -B status-badges
+          mkdir -p .github/badges
+          cp .github/badges/streaming*.json .github/badges/ 2>/dev/null || true
+          git add .github/badges/
+          git commit -m "ci(badge): mirror badges" || true
+          git push origin status-badges

@@ -1,0 +1,30 @@
+{
+  "llm": {
+    "path": "primary",
+    "model": "gpt-oss:20b",
+    "ollama": "up",
+    "openai": "configured",
+    "primary_model_present": true,
+    "ready_probe": true
+  },
+  "openai_configured": true,
+  "rag": { "ok": true, "db": "./data/rag.sqlite", "mode": "local-model" },
+  "ready": true,
+  "metrics_hint": {
+    "providers": {},
+    "primary_fail_reason": {},
+    "fields": ["req", "5xx", "p95_ms", "tok_in", "tok_out"]
+  },
+  "tooltip": "Ollama/OpenAI configured: True. RAG DB: ./data/rag.sqlite. LLM path: primary",
+  "primary": {
+    "base_url": "http://ollama:11434/v1",
+    "model": "gpt-oss:20b",
+    "enabled": true,
+    "model_present": true,
+    "models_sample": ["gpt-oss:20b"],
+    "last_error": null,
+    "last_status": null
+  },
+  "last_served_by": { "provider": "none", "ts": 0.0 },
+  "build": { "sha": "91735f8", "time": "2025-10-01T15:56:10+00:00" }
+}

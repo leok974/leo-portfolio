@@ -1,0 +1,83 @@
+name: Nightly – Streaming (Strict)
+
+on:
+  schedule:
+    - cron: "20 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  strict-streaming:
+    runs-on: ubuntu-latest
+    env:
+      BASE: ${{ secrets.STRICT_BASE }}
+      STREAM_TIMEOUT_MS: "20000"
+      STRICT_STREAM_MARKER: "1"
+      UA: Mozilla/5.0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install deps
+        run: npm ci || npm i
+      - name: Warm public service
+        shell: bash
+        run: |
+          echo "Warming $BASE ..."
+          for i in {1..60}; do
+            R="$(curl -fsSL -A "$UA" "$BASE/api/status/summary" || true)"
+            READY="$(jq -r '.ready // false' <<<"$R" 2>/dev/null || echo false)"
+            PRESENT="$(jq -r '.primary_model_present // false' <<<"$R" 2>/dev/null || echo false)"
+            echo "try $i: ready=$READY present=$PRESENT"
+            if [ "$READY" = "true" ] && [ "$PRESENT" = "true" ]; then
+              echo "Warm ✅"; break
+            fi
+            sleep 2
+          done
+      - name: Run strict streaming test
+        id: test
+        shell: bash
+        run: |
+          set +e
+          BASE="$BASE" npm test -- --reporter=list tests/chat.stream.served_by.spec.mjs
+          CODE=$?
+          set -e
+          echo "code=$CODE" >> $GITHUB_OUTPUT
+      - name: Build badge JSON
+        id: badge
+        shell: bash
+        run: |
+          mkdir -p .github/badges
+          if [ "${{ steps.test.outputs.code }}" = "0" ]; then
+            STATUS="ok"; COLOR="brightgreen"; MSG="strict: pass"
+          else
+            STATUS="fail"; COLOR="red"; MSG="strict: fail"
+          fi
+          cat > .github/badges/streaming.json <<EOF
+          { "schemaVersion": 1, "label": "streaming", "message": "$MSG", "color": "$COLOR" }
+          EOF
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+      - name: Commit badge
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "ci(badge): update nightly streaming badge"
+          file_pattern: .github/badges/streaming.json
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Nightly strict streaming: **${{ steps.badge.outputs.status }}**" >> $GITHUB_STEP_SUMMARY
+          echo "- Base: $BASE" >> $GITHUB_STEP_SUMMARY
+          echo "- Timeout: $STREAM_TIMEOUT_MS ms" >> $GITHUB_STEP_SUMMARY
+      - name: Mirror badges to status-badges branch (optional)
+        if: always()
+        run: |
+          git fetch origin status-badges || true
+          git checkout -B status-badges
+          mkdir -p .github/badges
+          cp .github/badges/streaming*.json .github/badges/ 2>/dev/null || true
+          git add .github/badges/
+          git commit -m "ci(badge): mirror badges" || true
+          git push origin status-badges

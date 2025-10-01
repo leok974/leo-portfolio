@@ -24,7 +24,9 @@ async function streamChat(prompt, { base = 'http://localhost:8080' } = {}) {
   return res.body;
 }
 
-async function collectUntil(body, predicate, { maxBytes = 8192, hardMs = 6000 } = {}) {
+const STREAM_TIMEOUT_MS = Number(process.env.STREAM_TIMEOUT_MS || 15000);
+
+async function collectUntil(body, predicate, { maxBytes = 8192, hardMs = STREAM_TIMEOUT_MS } = {}) {
   let buf = '';
   const reader = body.getReader();
   const started = Date.now();
@@ -55,12 +57,12 @@ describe('chat streaming fallback (_served_by marker)', () => {
     catch(e){ console.warn('[fallback test] stream unavailable -> skip', e.message); return; }
     if(!body) { console.warn('[fallback test] no body -> skip'); return; }
 
-    const out = await collectUntil(body, txt => /_served_by/i.test(txt), { hardMs: 6000 });
+  const out = await collectUntil(body, txt => /_served_by/i.test(txt));
     if(!/_served_by/i.test(out)) {
       console.warn('[fallback test] marker not observed quickly -> soft skip');
       return;
     }
     expect(out).toMatch(/_served_by/i);
     expect(out).toMatch(/data:/);
-  }, 10000);
+  }, STREAM_TIMEOUT_MS + 2000);
 });
