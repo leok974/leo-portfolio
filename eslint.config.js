@@ -1,11 +1,15 @@
 // eslint.config.js (refined baseline)
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import markdown from '@eslint/markdown';
+import yml from 'eslint-plugin-yml';
+import yamlParser from 'yaml-eslint-parser';
 
 export default [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...tseslint.configs.stylistic,
+  { plugins: { markdown } },
 
   // Global ignores
   {
@@ -237,6 +241,28 @@ export default [
         { name: 'module', message: 'Use ESM exports in .js files (rename to .cjs if CommonJS needed).' },
         { name: 'exports', message: 'Use ESM exports in .js files (rename to .cjs if CommonJS needed).' }
       ]
+    }
+  },
+
+  // Markdown processor (lint fenced code blocks only)
+  {
+    files: ['**/*.md'],
+    processor: 'markdown/markdown'
+  },
+  // Optional: code block overrides (JS/TS) inside Markdown
+  {
+    files: ['**/*.md/*.js', '**/*.md/*.ts', '**/*.md/*.tsx'],
+    // Keep minimal; could extend base JS/TS rules
+    rules: {}
+  },
+  // YAML linting
+  {
+    plugins: { yml },
+    files: ['**/*.{yml,yaml}'],
+    languageOptions: { parser: yamlParser },
+    rules: {
+      'yml/indent': ['error', 2],
+      'yml/no-empty-document': 'error'
     }
   }
 ];

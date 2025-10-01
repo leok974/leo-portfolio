@@ -57,8 +57,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: ${{ failure() }}
         with:
-            name: integrity-report
-            path: integrity-failure.txt
+          name: integrity-report
+          path: integrity-failure.txt
 
   deploy:
     environment:

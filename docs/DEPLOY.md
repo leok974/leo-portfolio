@@ -107,26 +107,26 @@ Serve the portfolio (assistant-enabled SPA) and FastAPI backend from one origin 
 See `deploy/nginx.assistant.conf`:
 ```
 server {
-	listen 80 default_server;
-	server_name assistant.ledger-mind.org;
-	root /usr/share/nginx/html;
-	index index.html;
-	location ~* \.(?:js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?)$ { access_log off; expires 30d; add_header Cache-Control "public, immutable"; try_files $uri =404; }
-	location / { try_files $uri /index.html; }
-	location /api/ { proxy_pass http://backend:8001/; }
-	location = /ready { proxy_pass http://backend:8001/ready; }
-	location = /status/summary { proxy_pass http://backend:8001/status/summary; }
-	location = /_up { return 204; }
+  listen 80 default_server;
+  server_name assistant.ledger-mind.org;
+  root /usr/share/nginx/html;
+  index index.html;
+  location ~* \.(?:js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?)$ { access_log off; expires 30d; add_header Cache-Control "public, immutable"; try_files $uri =404; }
+  location / { try_files $uri /index.html; }
+  location /api/ { proxy_pass http://backend:8001/; }
+  location = /ready { proxy_pass http://backend:8001/ready; }
+  location = /status/summary { proxy_pass http://backend:8001/status/summary; }
+  location = /_up { return 204; }
 }
 ```
 
 Compose volume example:
 ```yaml
 services:
-	nginx:
-		volumes:
-			- ./deploy/nginx.assistant.conf:/etc/nginx/conf.d/default.conf:ro
-			- ./dist:/usr/share/nginx/html:ro
+  nginx:
+    volumes:
+      - ./deploy/nginx.assistant.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./dist:/usr/share/nginx/html:ro
 ```
 
 ### 2. Frontend Fallback
@@ -158,6 +158,7 @@ curl -s https://assistant.ledger-mind.org/api/ready
 curl -s https://assistant.ledger-mind.org/status/summary | jq
 ```
 Browser:
+<!-- eslint-skip -->
 ```js
 fetch('/api/ready').then(r=>r.status)
 ```
@@ -190,7 +191,7 @@ Via Cloudflare dashboard (Access -> Tunnels) create a tunnel and copy the token 
 
 ```
 secrets/
-	cloudflared_token   # contains single-line token
+  cloudflared_token   # contains single-line token
 ```
 
 ### 2. Compose Override Service
@@ -198,15 +199,15 @@ Create `deploy/docker-compose.tunnel.override.yml` (optional override) to run cl
 
 ```yaml
 services:
-	cloudflared:
-		image: cloudflare/cloudflared:latest
-		command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-		restart: unless-stopped
-		environment:
-			- TUNNEL_TRANSPORT_PROTOCOL=auto
-		depends_on:
-			- backend
-		# If you want to expose the full edge instead of raw backend, change url in Cloudflare config or use ingress rules.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    restart: unless-stopped
+    environment:
+      - TUNNEL_TRANSPORT_PROTOCOL=auto
+    depends_on:
+      - backend
+    # If you want to expose the full edge instead of raw backend, change url in Cloudflare config or use ingress rules.
 ```
 
 Launch with:
@@ -263,10 +264,12 @@ When the status pill or assistant dock shows perpetual "Connecting…" and DevTo
 Checklist:
 1. Frontend request path (Network tab) uses `/api/status/summary` (not bare `/status/summary`).
 2. Ensure `ALLOWED_ORIGINS` includes your Pages origin (e.g. `https://leok974.github.io`). Service worker & caches cleared on GitHub Pages:
-	```js
-	navigator.serviceWorker?.getRegistrations().then(r=>r.forEach(x=>x.unregister()));
-	caches?.keys().then(k=>k.forEach(c=>caches.delete(c)));
-	```
+```js
+// eslint-disable-next-line no-undef
+navigator.serviceWorker?.getRegistrations().then(r=>r.forEach(x=>x.unregister()));
+// eslint-disable-next-line no-undef
+caches?.keys().then(k=>k.forEach(c=>caches.delete(c)));
+```
 3. Cloudflare Tunnel mapping: `assistant.ledger-mind.org` → named tunnel → service `http://nginx:80` (same stack as primary site).
 4. Nginx config includes both `/api/status/summary` (preferred) and legacy `/status/summary` blocks with CORS.
 5. Curl (edge):
@@ -316,10 +319,10 @@ Large model pulls can delay first response minutes. Two environment flags optimi
 Example (override compose):
 ```yaml
 services:
-	backend:
-		environment:
-			- DISABLE_PRIMARY=1
-			- MODEL_WAIT_MAX_SECONDS=15
+  backend:
+    environment:
+      - DISABLE_PRIMARY=1
+      - MODEL_WAIT_MAX_SECONDS=15
 ```
 
 To re-enable primary later, remove `DISABLE_PRIMARY` and ensure `PRIMARY_MODEL` is pulled (`docker exec ollama ollama pull <model>`). Status will transition `down → warming → primary`.
@@ -343,16 +346,16 @@ Use the connector token from Zero Trust → Tunnels → <your tunnel> → **Conn
 `deploy/docker-compose.prod.yml` includes an integrated service using the final working pattern (token + UUID + global flag ordering):
 ```yaml
 services:
-	cloudflared-portfolio:
-		image: cloudflare/cloudflared:latest
-		restart: unless-stopped
-		# --no-autoupdate must precede the subcommand; UUID supplied last
-		command: ["--no-autoupdate","tunnel","run","--token","${CLOUDFLARE_TUNNEL_TOKEN}","${CLOUDFLARE_TUNNEL_UUID}"]
-		depends_on: [nginx]
-		environment:
-			- TUNNEL_TRANSPORT_PROTOCOL=auto
- 		volumes:
-			- ../cloudflared:/etc/cloudflared:ro   # optional (dashboard-managed ingress); keep if you later switch to config
+  cloudflared-portfolio:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    # --no-autoupdate must precede the subcommand; UUID supplied last
+    command: ["--no-autoupdate","tunnel","run","--token","${CLOUDFLARE_TUNNEL_TOKEN}","${CLOUDFLARE_TUNNEL_UUID}"]
+    depends_on: [nginx]
+    environment:
+      - TUNNEL_TRANSPORT_PROTOCOL=auto
+    volumes:
+      - ../cloudflared:/etc/cloudflared:ro   # optional (dashboard-managed ingress); keep if you later switch to config
 ```
 
 ### Environment (.env or shell)
@@ -401,9 +404,9 @@ Workflow `.github/workflows/publish-backend.yml` pushes two tags on every `main`
 Use `deploy/docker-compose.ghcr.override.yml` to replace the backend build with an image reference:
 ```yaml
 services:
-	backend:
-		image: ghcr.io/${GH_REPO:-<owner>/<repo>}/backend:${BACKEND_TAG:-main}
-		pull_policy: always
+  backend:
+    image: ghcr.io/${GH_REPO:-<owner>/<repo>}/backend:${BACKEND_TAG:-main}
+    pull_policy: always
 ```
 
 ### Pull & Run (PowerShell)
