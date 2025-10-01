@@ -25,6 +25,7 @@ async function streamChat(prompt, { base = 'http://localhost:8080' } = {}) {
 }
 
 const STREAM_TIMEOUT_MS = Number(process.env.STREAM_TIMEOUT_MS || 15000);
+const STRICT = !!process.env.STRICT_STREAM_MARKER; // reuse same env flag
 
 async function collectUntil(body, predicate, { maxBytes = 8192, hardMs = STREAM_TIMEOUT_MS } = {}) {
   let buf = '';
@@ -48,8 +49,13 @@ describe('chat streaming fallback (_served_by marker)', () => {
     let summary; try { summary = await fetchSummary('http://localhost:8080'); } catch { console.warn('[fallback test] skip: summary unreachable'); return; }
     const path = summary?.llm?.path;
     if(path !== 'fallback') {
-      console.warn(`[fallback test] soft skip: llm.path=${path}`);
-      return; // not in fallback mode
+      if(!STRICT) {
+        console.warn(`[fallback test] soft skip: llm.path=${path}`);
+        return; // not in fallback mode
+      }
+      // STRICT + not fallback => skip (STRICT doesn't enforce fallback path, only primary marker test)
+      console.warn('[fallback test] STRICT set but not in fallback; skipping');
+      return;
     }
 
     let body;

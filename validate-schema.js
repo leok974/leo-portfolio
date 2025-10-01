@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { isEntrypoint } from './scripts/_esm-utils.mjs';
 
 /**
@@ -94,7 +95,8 @@ function validateBlocks(blocks, file) {
 }
 
 export function main() {
-  const root = __dirname;
+  // Derive project root directory; this file resides at repo root.
+  const root = path.dirname(fileURLToPath(import.meta.url));
   const projectsDir = path.join(root, 'projects');
   const projectFiles = fs.existsSync(projectsDir)
     ? fs.readdirSync(projectsDir).filter((file) => file.endsWith('.html')).map((file) => `projects/${file}`)

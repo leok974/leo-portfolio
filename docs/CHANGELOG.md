@@ -131,6 +131,13 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
 - Redirect verification test (`redirect.spec.ts`) ensuring GitHub Pages → unified host transition.
 - README status badge legend (color semantics) and OPERATIONS / DEVELOPMENT guidance additions.
 
+### Fixed (Unreleased – CI Triage)
+- Lint failure in `scripts/chat-probe.mjs` resolved by explicitly importing `URL` from `node:url` (ESLint no-undef under ESM).
+- Schema validation script migrated from CommonJS `__dirname` to ESM-compatible `fileURLToPath(import.meta.url)` resolution avoiding runtime `ReferenceError`.
+
+### Improved (Unreleased – Resilience)
+- `cors-verify` workflow hardened against intermittent Cloudflare bot challenges: added custom User-Agent, up to 5 retries with backoff, challenge HTML detection, and soft-skip behavior when persistent 403 challenge encountered (prevents noisy false negatives while preserving visibility).
+
 ## [0.2.0] - 2025-09-27
 ### Added
 - Full-stack Docker Compose (`docker-compose.full.yml`) including frontend + edge proxy.

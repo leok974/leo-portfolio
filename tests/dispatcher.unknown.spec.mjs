@@ -1,26 +1,16 @@
-import { spawn } from 'node:child_process';
-import { strict as assert } from 'node:assert';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { describe, it, expect } from 'vitest';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const bin = resolve(__dirname, '../scripts/bin.mjs');
 
-const child = spawn(process.execPath, [bin, 'definitely-not-a-cmd'], { stdio: ['ignore','ignore','pipe'] });
-
-let stderr = '';
-child.stderr.on('data', d => { stderr += String(d); });
-
-child.on('close', (code) => {
-  try {
-    assert.equal(code, 2, 'unknown command should exit with code 2');
-    assert.match(stderr, /Unknown command/i);
-    console.log('dispatcher unknown command test: ok');
-    process.exit(0);
-  } catch (e) {
-    console.error('stderr:', stderr);
-    console.error(e.message);
-    process.exit(1);
-  }
+describe('scripts dispatcher', () => {
+  it('exits with code 2 and message for unknown command', () => {
+    const res = spawnSync(process.execPath, [bin, 'definitely-not-a-cmd'], { encoding: 'utf8' });
+    expect(res.status).toBe(2);
+    expect(res.stderr).toMatch(/Unknown command/i);
+  });
 });

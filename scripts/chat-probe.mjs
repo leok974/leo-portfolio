@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import http from 'http';
 import https from 'https';
+import { URL } from 'node:url';
 
 const BASE = process.env.BASE || 'http://localhost:8080';
 const url = new URL('/chat/stream', BASE);
