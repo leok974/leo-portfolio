@@ -31,7 +31,7 @@
     "build:prod": "vite build",
     "serve:dist": "npx http-server ./dist -p 5178 -c-1",
     "strict-local": "npm run build:prod && cross-env BASE=http://localhost:5178 REQUIRE_CSS_200=1 REQUIRE_STATUS_PILL_STRICT=1 PLAYWRIGHT_STRICT_STREAM=1 npm run serve:dist",
-    "strict-local:test": "npm run build:prod && cross-env BASE=http://localhost:5178 REQUIRE_CSS_200=1 REQUIRE_STATUS_PILL_STRICT=1 PLAYWRIGHT_STRICT_STREAM=1 start-server-and-test 'npm run serve:dist' http://localhost:5178 'npx playwright test'",
+    "strict-local:test": "npm run build:prod && cross-env BASE=http://localhost:5178 REQUIRE_CSS_200=1 REQUIRE_STATUS_PILL_STRICT=1 PLAYWRIGHT_STRICT_STREAM=1 start-server-and-test serve:dist http://localhost:5178 e2e",
     "smoke:pr": "playwright test -g 'stylesheet|status pill|summary|ping'",
     "csp:hash": "node scripts/csp-hash-extract.mjs --allow-empty",
     "csp:sync:test": "node scripts/csp-hash-sync-nginx-test.mjs",
