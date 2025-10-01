@@ -25,7 +25,7 @@
     "test:watch": "vitest",
     "e2e:install": "npx playwright install --with-deps",
     "e2e": "playwright test",
-    "test:dev": "cross-env REQUIRE_CSS_200=0 REQUIRE_STATUS_PILL_STRICT=0 playwright test",
+  "test:dev": "cross-env BACKEND_REQUIRED=0 REQUIRE_CSS_200=0 REQUIRE_STATUS_PILL_STRICT=0 playwright test",
     "test:strict": "cross-env REQUIRE_CSS_200=1 REQUIRE_STATUS_PILL_STRICT=1 PLAYWRIGHT_STRICT_STREAM=1 playwright test",
     "test:smoke": "cross-env REQUIRE_CSS_200=0 REQUIRE_STATUS_PILL_STRICT=0 npx playwright test -g 'stylesheet|status pill|summary|ping'",
     "build:prod": "vite build",
