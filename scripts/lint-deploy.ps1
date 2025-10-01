@@ -12,7 +12,7 @@ function Assert-Contains($File, [string]$Pattern, [string]$Msg){
   }
 }
 
-Assert-Contains $Compose  'cloudflared-portfolio'      'compose: cloudflared-portfolio service missing'
+# cloudflared now provided via optional overlay file (docker-compose.cloudflared.yml)
 Assert-Contains $DeployMd 'Cloudflare Tunnel (Managed'  'docs: managed/token tunnel section missing'
 Assert-Contains $DeployMd 'CLOUDFLARE_TUNNEL_TOKEN'     'docs: CLOUDFLARE_TUNNEL_TOKEN missing'
 Assert-Contains $DeployMd 'DOMAIN'                      'docs: DOMAIN explanation missing'

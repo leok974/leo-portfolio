@@ -86,25 +86,6 @@ services:
       - "8443:443"
     restart: unless-stopped
 
-  cloudflared-portfolio:
-    image: cloudflare/cloudflared:latest
-    restart: unless-stopped
-    # Token-based connector; requires tunnel UUID at end and global flags first
-    command: ["--no-autoupdate","tunnel","run","--token","${CLOUDFLARE_TUNNEL_TOKEN}","${CLOUDFLARE_TUNNEL_UUID}"]
-    depends_on:
-      - nginx
-    environment:
-      - TUNNEL_TRANSPORT_PROTOCOL=auto
-    volumes:
-      - ../cloudflared:/etc/cloudflared:ro
-    healthcheck:
-      test: ["CMD-SHELL","wget -qO- http://localhost:2000/metrics >/dev/null 2>&1 || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 20
-      start_period: 15s
-    # No ports exposed; outbound-only connector
-
 volumes:
   ollama:
 

@@ -1,0 +1,11 @@
+version: "3.9"
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: ["tunnel","run","--no-autoupdate","--token","${CLOUDFLARE_TUNNEL_TOKEN:?missing}"]
+    restart: unless-stopped
+    depends_on:
+      - nginx
+    environment:
+      - TUNNEL_LOGLEVEL=warn
+    # No ports; tunnel is outbound-only. Service must share the same network as nginx via Compose.

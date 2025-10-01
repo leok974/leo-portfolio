@@ -40,6 +40,9 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
 - CI integration (unit-ci) step to publish coverage badges & summary to `status-badge` branch.
 
 ### Changed
+- Cloudflare Tunnel now delivered via optional overlay `docker-compose.cloudflared.yml` (removed embedded `cloudflared-portfolio` service from `deploy/docker-compose.prod.yml`).
+	- Simplifies base production stack (no tunnel dependency by default).
+	- Documentation, helper scripts, and operations updated to reference overlay pattern and generic `cloudflared` service name.
 - Lint cleanup: removed stray unused expressions; standardized unused parameter/catch naming via underscore prefix.
 - Unified frontend + edge nginx container via multi-target `deploy/Dockerfile.frontend` (targets: `frontend-static-final`, `frontend-vite-final`).
 - Production convenience shortcuts: Makefile targets (`prod-up`, `prod-down`, `prod-logs`, `prod-rebuild`) and PowerShell tasks (`prod`, `prod-logs`, `prod-down`, `prod-rebuild`).

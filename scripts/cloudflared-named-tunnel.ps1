@@ -81,8 +81,8 @@ Write-Host "[3/5] Adding DNS route ..." -ForegroundColor Cyan
 $dnsOut = & docker run --rm -v "${cfDir}:/etc/cloudflared" "cloudflare/cloudflared:$ImageTag" tunnel route dns $Name $Hostname 2>&1
 Write-Host $dnsOut
 
-Write-Host "[4/5] Launch from compose:" -ForegroundColor Cyan
-Write-Host "  docker compose -f deploy/docker-compose.prod.yml up -d cloudflared-portfolio" -ForegroundColor White
+Write-Host "[4/5] Launch from compose (overlay):" -ForegroundColor Cyan
+Write-Host "  docker compose -f deploy/docker-compose.prod.yml -f docker-compose.cloudflared.yml up -d cloudflared" -ForegroundColor White
 
 Write-Host "[5/5] Validate:" -ForegroundColor Cyan
 Write-Host "  curl -I https://$Hostname" -ForegroundColor White

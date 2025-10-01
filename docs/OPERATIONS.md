@@ -30,7 +30,7 @@ Payload shape:
 ## Tunnel Health
 Container logs (compose example):
 ```bash
-docker compose -f deploy/docker-compose.prod.yml logs -f cloudflared-portfolio | grep -E "Registered tunnel connection|err|fail"
+docker compose -f deploy/docker-compose.prod.yml -f docker-compose.cloudflared.yml logs -f cloudflared | grep -E "Registered tunnel connection|err|fail"
 ```
 If logs show repeated auth errors:
 1. Regenerate token in Cloudflare Zero Trust → Tunnels → (your tunnel) → Connect.

@@ -83,3 +83,62 @@ Edge 52x via CDN/Tunnel → check tunnel container health, QUIC connections, and
 Export a minimal Prometheus gauge from `/status/summary`:
 - `status_ready{service="backend"} 0|1`
 Wire into existing dashboards for red/green at a glance.
+
+### Cloudflared Tunnel — Token Mode (Recommended quick setup)
+
+Cloudflared is deployed as a Compose service on the **same network** as `nginx`. Token mode requires the token to be in the **host** environment because Compose interpolates `${VAR}` at parse time.
+
+**Set token (PowerShell):**
+```powershell
+$Env:CLOUDFLARE_TUNNEL_TOKEN = "<YOUR_TUNNEL_TOKEN>"
+# optional (persist):
+setx CLOUDFLARE_TUNNEL_TOKEN "<YOUR_TUNNEL_TOKEN>"
+```
+
+**Use Compose with overlay:**
+```powershell
+$FILES = @('-f','docker-compose.prod.yml','-f','docker-compose.prod.override.yml','-f','docker-compose.cloudflared.yml')
+docker compose $FILES config | Select-String -Pattern "cloudflared|--token"
+docker compose $FILES up -d --force-recreate --no-deps cloudflared
+docker compose $FILES logs -f cloudflared
+```
+
+Healthy logs: multiple `Registered tunnel connection … protocol=quic` and an ingress config showing `service":"http://nginx:80"`.
+
+**Quick checks:**
+```powershell
+curl -s -o NUL -w "origin_code=%{http_code}`n" http://127.0.0.1/ready
+curl -s -k -D - https://assistant.ledger-mind.org/ready -o NUL | Select-String "HTTP/|cf-ray"
+```
+Expect HTTP 200/204 locally and a `cf-ray` header on edge.
+
+Notes:
+- Origin cert path warning is benign in token mode.
+- UDP buffer warnings on Windows Desktop are ignorable.
+- If token not rendered in `docker compose config`, the host env wasn’t exported (new shell if you used `setx`).
+
+### Cloudflared Tunnel — Credentials File Mode (Durable alternative)
+If avoiding host shell tokens:
+1. Download the tunnel credentials JSON (`<UUID>.json`).
+2. `cloudflared/config.yml`:
+   ```yaml
+   tunnel: <UUID>
+   credentials-file: /etc/cloudflared/<UUID>.json
+   ingress:
+     - hostname: assistant.ledger-mind.org
+       service: http://nginx:80
+     - service: http_status:404
+   ```
+3. Compose service:
+   ```yaml
+   services:
+     cloudflared:
+       image: cloudflare/cloudflared:latest
+       command: ["tunnel","--config","/etc/cloudflared/config.yml","run"]
+       volumes:
+         - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+         - ./cloudflared/<UUID>.json:/etc/cloudflared/<UUID>.json:ro
+       restart: unless-stopped
+       depends_on: [nginx]
+   ```
+This mode persists across shells without exporting a token.

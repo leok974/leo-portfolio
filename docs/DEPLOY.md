@@ -340,33 +340,41 @@ pwsh ./scripts/test-warm-transition.ps1 -BaseUrl "http://localhost:8080" -MaxSec
 Outputs a timestamped stream of `llm.path` state transitions and exits 0 only after `primary` + `ready=true`.
 
 ## Cloudflare Tunnel (Managed / Token)
-Use the connector token from Zero Trust → Tunnels → <your tunnel> → **Connect** → "Run a connector". Copy only the value after `--token` (single line, no quotes, typically JWT-like with multiple `.`).
+Use the connector token from Zero Trust → Tunnels → <your tunnel> → **Connect** → "Run a connector". Copy only the value after `--token` (single line, no quotes, typically JWT-like with multiple `.`). The production compose file no longer embeds a tunnel service; instead an overlay compose file is used to opt-in.
 
-### Compose (Integrated Service – Token + UUID Mode)
-`deploy/docker-compose.prod.yml` includes an integrated service using the final working pattern (token + UUID + global flag ordering):
+### Overlay Pattern (Recommended)
+Run with overlay:
+```powershell
+docker compose -f deploy/docker-compose.prod.yml -f docker-compose.cloudflared.yml up -d --build
+```
+Overlay service (from `docker-compose.cloudflared.yml`):
 ```yaml
 services:
-  cloudflared-portfolio:
+  cloudflared:
     image: cloudflare/cloudflared:latest
-    restart: unless-stopped
-    # --no-autoupdate must precede the subcommand; UUID supplied last
-    command: ["--no-autoupdate","tunnel","run","--token","${CLOUDFLARE_TUNNEL_TOKEN}","${CLOUDFLARE_TUNNEL_UUID}"]
+    command: ["tunnel","run","--no-autoupdate","--token","${CLOUDFLARE_TUNNEL_TOKEN:?missing}"]
     depends_on: [nginx]
     environment:
-      - TUNNEL_TRANSPORT_PROTOCOL=auto
-    volumes:
-      - ../cloudflared:/etc/cloudflared:ro   # optional (dashboard-managed ingress); keep if you later switch to config
+      - TUNNEL_LOGLEVEL=warn
 ```
+Benefits:
+1. Base stack stays environment-agnostic (can run privately or behind another edge).
+2. Decoupled upgrades (swap or pin tunnel versions without touching core services).
+3. Clearer ops mental model (tunnel = optional layer, not core infra).
 
 ### Environment (.env or shell)
+Minimal requirement:
 ```
 CLOUDFLARE_TUNNEL_TOKEN=<paste-one-line-token>
+```
+Optional (for helper scripts / legacy flows):
+```
 CLOUDFLARE_TUNNEL_UUID=<existing-tunnel-uuid>
 ```
-Or load from a local secrets file (PowerShell):
+PowerShell example loading from secrets file:
 ```powershell
 $env:CLOUDFLARE_TUNNEL_TOKEN = (Get-Content secrets/cloudflared_token -Raw).Trim()
-docker compose -f deploy/docker-compose.prod.yml up -d cloudflared-portfolio
+docker compose -f deploy/docker-compose.prod.yml -f docker-compose.cloudflared.yml up -d cloudflared
 ```
 
 ### Public Hostname Mapping
@@ -467,7 +475,7 @@ You can instead provision a `cloudflared` named tunnel with `config.yml` + crede
 Run the helper script to trim and export the token safely (avoids stray CR/LF):
 ```powershell
 pwsh ./scripts/sanitize-cloudflared-token.ps1
-docker compose -f deploy/docker-compose.prod.yml up -d cloudflared-portfolio
+docker compose -f deploy/docker-compose.prod.yml -f docker-compose.cloudflared.yml up -d cloudflared
 ```
 
 ### Automatic DOMAIN → CORS Origins
@@ -490,7 +498,7 @@ The script will:
 2. Create (or refresh) `<UUID>.json` credentials. (NOTE: Newer cloudflared versions removed `tunnel credentials create`; the script auto‑falls back to retrieving a connector token and synthesizing a minimal credentials JSON.)
 3. Write/update `cloudflared/config.yml` with ingress to `http://nginx:80` and metrics.
 4. Add DNS route (CNAME → `<UUID>.cfargotunnel.com`).
-5. Recreate the `cloudflared-portfolio` service via compose and tail logs.
+5. Recreate the `cloudflared` service via overlay compose and tail logs.
 
 After success you should see repeated `Registered tunnel connection` lines and your site available at the hostname (e.g. `assistant.ledger-mind.org`) with `/api/*` served same-origin.
 

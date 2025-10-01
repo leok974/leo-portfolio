@@ -7,7 +7,7 @@
     * tunnel credentials create <UUID>
     * write config.yml with ingress mapping to nginx service
     * tunnel route dns <UUID> <hostname>
-    * start cloudflared-portfolio compose service & tail logs
+  * start cloudflared service via overlay compose & tail logs
 .PARAMETER Uuid
   Existing tunnel UUID (36-char GUID)
 .PARAMETER Hostname
@@ -17,7 +17,7 @@
 .PARAMETER ComposeFile
   Path to compose file (default deploy/docker-compose.prod.yml)
 .PARAMETER Service
-  Compose service name (default cloudflared-portfolio)
+  Compose service name (default cloudflared)
 .EXAMPLE
   pwsh ./scripts/cloudflared-gen-creds.ps1 -Uuid db56892d-4879-4263-99bf-202d46b6aff9 -Hostname app.example.com
 #>
@@ -26,7 +26,7 @@
   [Parameter(Mandatory)] [string]$Hostname,
   [string]$Image = 'cloudflare/cloudflared:2024.8.2',
   [string]$ComposeFile = 'deploy/docker-compose.prod.yml',
-  [string]$Service = 'cloudflared-portfolio'
+  [string]$Service = 'cloudflared'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -110,11 +110,11 @@ Write-Host "[dns] Adding DNS route $Hostname -> $Uuid" -ForegroundColor Cyan
 $dnsOut = docker run --rm -v "${dir}:/etc/cloudflared" $Image tunnel route dns $Uuid $Hostname 2>&1
 Write-Host $dnsOut
 
-Write-Host "[compose] Starting service $Service" -ForegroundColor Cyan
-$composeCmd = "docker compose -f $ComposeFile up -d --force-recreate $Service"
+Write-Host "[compose] Starting service $Service (overlay)" -ForegroundColor Cyan
+$composeCmd = "docker compose -f $ComposeFile -f docker-compose.cloudflared.yml up -d --force-recreate $Service"
 Write-Host $composeCmd -ForegroundColor DarkGray
 Invoke-Expression $composeCmd
 
 Start-Sleep -Seconds 2
 Write-Host '[logs] Tail (Ctrl+C to stop)...' -ForegroundColor Cyan
-Invoke-Expression "docker compose -f $ComposeFile logs -f --tail=120 $Service"
+Invoke-Expression "docker compose -f $ComposeFile -f docker-compose.cloudflared.yml logs -f --tail=120 $Service"

@@ -52,6 +52,7 @@ secrets/
 # Cloudflared named tunnel credentials (do not commit)
 cloudflared/*.json
 cloudflared/cert.pem
+cloudflared/.env.tunnel
 
 
 # Cache files
