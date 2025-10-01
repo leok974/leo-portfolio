@@ -50,10 +50,63 @@ Run all tests:
 ```bash
 pytest -q
 ```
+Frontend unit tests (Vitest + jsdom):
+```bash
+npm run test     # one-off
+npm run test:watch
+```
+Tested helpers:
+- `filters.ts` (category visibility & announcement text)
+- `gallery-nav.ts` (arrow/home/end navigation wrapping logic)
+
+Add new frontend test files under `tests/*.test.ts`.
 Minimal health smoke (PowerShell):
 ```powershell
 pwsh -File scripts/smoke.ps1 -BaseUrl "http://127.0.0.1:8001"
 ```
+
+## Playwright (Prod E2E)
+
+These tests exercise the deployed production host (status pill + readiness) and are intentionally lightweight.
+
+Install browsers (first time):
+```bash
+npm run e2e:install
+```
+
+Run against prod (default base URL embedded):
+```bash
+npm run e2e
+```
+
+Override base:
+```bash
+PROD_BASE=https://assistant.ledger-mind.org npm run e2e
+```
+
+Skip in CI (environment gate):
+```bash
+SKIP_E2E=1 npm run e2e
+```
+
+Artifacts (on failure): traces + screenshots (HTML report not auto-opened). Config: `playwright.config.ts`.
+
+Workflow reference: `.github/workflows/e2e-prod.yml` (scheduled + manual dispatch).
+
+## Status Badge Reference
+The production probe publishes `status.json` to branch `status-badge`. README consumes via Shields endpoint.
+
+Color thresholds:
+| Color | Condition |
+|-------|-----------|
+| green | All latencies ≤ 5s |
+| orange | Any latency > 5s & ≤ 10s |
+| red | Any latency > 10s |
+| lightgrey | One or more null latencies |
+
+Message mapping: `ok`, `degraded`, `error`, `partial`.
+
+Build correlation: `extra.build` (from `X-Build-ID` header) enables linking badge state to a deployed commit.
 
 ## Lint / Format / Audit (suggested tooling)
 ```bash
@@ -92,3 +145,5 @@ curl -s -X POST http://127.0.0.1:8001/api/rag/query \
 - Introduce pre-commit hooks (ruff, trailing whitespace)
 - Add load test harness (Locust/k6 snippets)
 - Add typed return models for diagnostics endpoints
+- Replace inline `<style>` blocks to drop `'unsafe-inline'` from CSP `style-src`
+- Consider nonces or hashes if future inline scripts required (currently avoided)

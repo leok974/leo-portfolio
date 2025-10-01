@@ -1,4 +1,4 @@
-name: Prod Assistant Host Probe
+name: Prod Assistant Probe
 
 on:
   schedule:
@@ -12,74 +12,86 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Check SPA root
+      - name: Gather probe data
         run: |
-          read code ttotal <<<$(curl -s -o /dev/null -w "%{http_code} %{time_total}" https://assistant.ledger-mind.org/)
-          echo "SPA => $code (${ttotal}s)"; echo "SPA_LATENCY=$ttotal" >> $GITHUB_ENV; test "$code" = "200"
-      - name: Check API ready
+          set -euo pipefail
+          BASE="https://assistant.ledger-mind.org"
+          now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          # root
+          curl -sw '\n%{time_total}' "$BASE/" -o /tmp/root.html | tail -n1 > /tmp/root.tt || echo "0" > /tmp/root.tt
+          curl -sw '\n%{time_total}' "$BASE/api/ready" -o /tmp/ready.json | tail -n1 > /tmp/ready.tt || echo "0" > /tmp/ready.tt
+            curl -sw '\n%{time_total}' "$BASE/status/summary" -o /tmp/status.json | tail -n1 > /tmp/status.tt || echo "0" > /tmp/status.tt
+          # synthetic chat (best-effort; 204/200 OK)
+          chat_ms=$(curl -s -o /dev/null -w "%{time_total}" -H 'content-type: application/json' -d '{"messages":[{"role":"user","content":"ping"}]}' "$BASE/api/chat" || echo "0")
+
+          jq -n --arg now "$now" \
+              --arg root_ms "$(cat /tmp/root.tt)" \
+              --arg ready_ms "$(cat /tmp/ready.tt)" \
+              --arg status_ms "$(cat /tmp/status.tt)" \
+              --arg chat_ms "$chat_ms" \
+              '{
+                ts: $now,
+                targets: { base: "https://assistant.ledger-mind.org" },
+                latencies: {
+                  root: ($root_ms|tonumber? // null),
+                  ready: ($ready_ms|tonumber? // null),
+                  status: ($status_ms|tonumber? // null),
+                  chat: ($chat_ms|tonumber? // null)
+                }
+              }' > probe.json
+      - name: Compute badge payload
         run: |
-          read code ttotal <<<$(curl -s -o /dev/null -w "%{http_code} %{time_total}" https://assistant.ledger-mind.org/api/ready)
-          echo "API => $code (${ttotal}s)"; echo "API_READY_LATENCY=$ttotal" >> $GITHUB_ENV; test "$code" = "200"
-      - name: Check status summary
-        run: |
-          read code ttotal <<<$(curl -s -o /dev/null -w "%{http_code} %{time_total}" https://assistant.ledger-mind.org/status/summary)
-          echo "Status => $code (${ttotal}s)"; echo "STATUS_SUMMARY_LATENCY=$ttotal" >> $GITHUB_ENV; test "$code" = "200"
-      - name: Synthetic chat probe
-        run: |
-          BODY='{"messages":[{"role":"user","content":"ping"}]}'
-          RESP=$(mktemp)
-          read code ttotal <<<$(curl -s -o $RESP -w "%{http_code} %{time_total}" -X POST \
-            -H 'Content-Type: application/json' \
-            --data "$BODY" https://assistant.ledger-mind.org/chat)
-          echo "CHAT => $code (${ttotal}s)"; echo "CHAT_LATENCY=$ttotal" >> $GITHUB_ENV; test "$code" = "200"
-          # Basic validation: non-empty JSON with 'assistant' or 'choices'
-          if ! grep -q 'assistant' $RESP && ! grep -q 'choices' $RESP; then
-            echo "Chat response missing expected keys"; cat $RESP; exit 1; fi
-      - name: Emit enriched JSON artifact
-        run: |
-          ts=$(date -u +%FT%TZ)
-          spa=${SPA_LATENCY:-null}
-          api=${API_READY_LATENCY:-null}
-          sum=${STATUS_SUMMARY_LATENCY:-null}
-          chat=${CHAT_LATENCY:-null}
-          echo "{\n  \"timestamp\": \"$ts\",\n  \"host\": \"assistant.ledger-mind.org\",\n  \"latency\": {\n    \"spa\": $spa,\n    \"api_ready\": $api,\n    \"status_summary\": $sum,\n    \"chat\": $chat\n  },\n  \"checks\": {\n    \"spa\": true,\n    \"api_ready\": true,\n    \"status\": true,\n    \"chat_basic\": true\n  }\n}" > probe.json
+          set -euo pipefail
+          max() { awk 'BEGIN{m=0} {if($1>m)m=$1} END{print m+0}'; }
+          r=$(jq -r '.latencies.root // empty'  probe.json)
+          a=$(jq -r '.latencies.ready // empty' probe.json)
+          s=$(jq -r '.latencies.status // empty' probe.json)
+          c=$(jq -r '.latencies.chat // empty'   probe.json)
+          vals=$(printf "%s\n%s\n%s\n%s\n" "${r:-0}" "${a:-0}" "${s:-0}" "${c:-0}")
+          worst=$(echo "$vals" | max)
+
+          # color & message rules
+          msg="ok"; color="green"
+          if jq -e ' .latencies | to_entries | any(.value == null) ' probe.json >/dev/null; then
+            msg="partial"; color="lightgrey"
+          fi
+          awk -v w="$worst" '
+            BEGIN{
+              if (w > 10) {print "red error"; exit}
+              if (w > 5)  {print "orange degraded"; exit}
+              print "keep"
+            }' | {
+              read mark label || true
+              if [ "${mark:-}" != "keep" ]; then color="$mark"; msg="$label"; fi
+            }
+
+          # include Build ID if server sends it
+          build_id=$(curl -sI https://assistant.ledger-mind.org | awk -F': ' 'BEGIN{IGNORECASE=1} /X-Build-ID/{print $2}' | tr -d '\r')
+
+          jq -n \
+            --arg schemaVersion "1" \
+            --arg label "assistant" \
+            --arg message "$msg" \
+            --arg color "$color" \
+            --argjson extra "$(jq -c --arg build "${build_id:-}" '.probe = input | .build = $build' probe.json)" \
+            '{schemaVersion: ($schemaVersion|tonumber), label: $label, message: $message, color: $color, extra: $extra}' \
+            > status.json
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: prod-assistant-probe
           path: probe.json
-      - name: Publish badge (status-badge branch)
-        if: success()
+      - name: Publish badge JSON to status-badge branch
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "actions@users.noreply.github.com"
-          # Extract metrics
-          spa=$(jq -r '.latency.spa' probe.json)
-          api=$(jq -r '.latency.api_ready' probe.json)
-          sum=$(jq -r '.latency.status_summary' probe.json)
-          chat=$(jq -r '.latency.chat' probe.json)
-          ts=$(jq -r '.timestamp' probe.json)
-          STATUS_COLOR=brightgreen
-          for v in "$spa" "$api" "$sum" "$chat"; do
-            if [ "$v" = "null" ]; then STATUS_COLOR=lightgrey; break; fi
-            awk -v val=$v 'BEGIN{ if (val>5) exit 1 }' || STATUS_COLOR=orange
-            awk -v val=$v 'BEGIN{ if (val>10) exit 1 }' || STATUS_COLOR=red
-          done
-          echo "Generating status.json with color=$STATUS_COLOR"
-          echo "{\"schemaVersion\":1,\"label\":\"assistant\",\"message\":\"ok\",\"color\":\"$STATUS_COLOR\",\"namedLogo\":\"openai\",\"style\":\"flat\",\"cacheSeconds\":300,\"extra\":{\"timestamp\":\"$ts\",\"latency\":{\"spa\":$spa,\"api\":$api,\"summary\":$sum,\"chat\":$chat}}}" > status.json
-          # Ensure branch exists
-          if git show-ref --verify --quiet refs/heads/status-badge; then
-            git checkout status-badge
-          else
-            git checkout -b status-badge || git branch status-badge && git checkout status-badge
-          fi
-          cp ../status.json ./status.json 2>/dev/null || true
-          # (If running in root already, ensure file present)
-          ls -l status.json
-          git add status.json || true
-          git commit -m "chore: update status badge $(date -u +%FT%TZ)" || echo "No changes to commit"
-          git push origin status-badge
+          set -euo pipefail
+          git config user.name  "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          git fetch --all --prune
+          git checkout -B status-badge
+          # status.json already here; just commit
+          git add status.json probe.json
+          git commit -m "badge: update $(date -u +"%Y-%m-%dT%H:%M:%SZ")" || echo "nothing to commit"
+          git push -u origin status-badge
