@@ -80,7 +80,14 @@ Visit: <http://localhost:5173>
 
 ## Backend Diagnostics
 
-- `./scripts/smoke.ps1` covers readiness, health, RAG, metrics, and now invokes the chat probe for parity.
+Core helper scripts:
+
+- `./scripts/smoke.ps1` – legacy smoke (readiness, metrics, RAG checks).
+- `./scripts/all-green.ps1` – condensed readiness + summary + latency + non-stream + stream (curl) in one pass.
+- `./scripts/chat-probe.mjs` – Node SSE probe (streams first ~2KB then truncates).
+- `./scripts/chat-stream.ps1` – Pure PowerShell SSE reader (no curl/node dependency).
+
+Pick one for your workflow (daily check → all-green; CI streaming sanity → chat-probe; Windows-native streaming → chat-stream).
 
 For production / day-2 operational procedures (status headers, legacy cutover, integrity drift, CI health workflow), see `OPERATIONS.md` (root) and the extended guide in `docs/OPERATIONS.md`.
 

@@ -185,6 +185,36 @@ Then process in Python or a spreadsheet for median / p95 to refine `SLO_MAX_MS`.
 ---
 *This guide is a living document — update as new operational behaviors emerge.*
 
+## Operational Helper Scripts (Local Diagnostics)
+
+The following scripts streamline recurring health + streaming checks:
+
+| Script | Purpose | Invocation |
+|--------|---------|------------|
+| `scripts/all-green.ps1` | One-shot readiness, summary, latency, chat (non-stream + SSE) | `pwsh ./scripts/all-green.ps1 -Base http://localhost:8080` |
+| `scripts/chat-probe.mjs` | Minimal Node SSE probe (truncates after ~2KB) | `node ./scripts/chat-probe.mjs` |
+| `scripts/chat-stream.ps1` | Native PowerShell raw SSE stream capture (no curl/node) | `pwsh ./scripts/chat-stream.ps1 -Base http://localhost:8080` |
+
+### When to Use Which
+* Quick daily spot check → `all-green.ps1`
+* CI / automated streaming validation → `chat-probe.mjs`
+* Windows-only environment w/out curl/node streaming → `chat-stream.ps1`
+
+### Non-Stream vs SSE
+If `/chat` exists it returns the entire answer JSON at once (blocked until completion). `/chat/stream` emits incremental SSE `data:` lines and should be favored for latency-sensitive UX. The scripts degrade gracefully if the non-stream endpoint is absent.
+
+### curl.exe vs PowerShell Alias
+PowerShell sometimes aliases `curl` to `Invoke-WebRequest`. Use the real binary (Git for Windows provides one) for SSE: `Remove-Item alias:curl -ErrorAction SilentlyContinue` then invoke `curl -N ...`.
+
+### Sample Output (Truncated)
+```
+▶ ready:
+{"status":"ok"}
+▶ summary (key bits): {"ready":true,"primary_model_present":true,"build_sha":"<sha>"}
+▶ latency: {"stats":{"p95_ms":12.1}}
+▶ chat/stream: data: {"role":"assistant","delta":"Hello ... _served_by:primary"}
+```
+
 ## Warming JSON & Health-Gated Startup (Edge Behavior)
 
 Cold starts or mid-life model reloads previously surfaced as transient 502/503 from the backend while the primary model initialized. To provide a stable UX we now employ a two-layer strategy:
