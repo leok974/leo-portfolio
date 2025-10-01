@@ -1,7 +1,7 @@
 // scripts/coverage-gate.mjs - enforce coverage thresholds (env overrides supported)
 import fs from 'node:fs';
 
-const path = 'coverage/coverage-summary.json';
+const path = process.env.COV_SUMMARY || 'coverage/coverage-summary.json';
 if (!fs.existsSync(path)) {
   console.error(`[gate] missing ${path} — run tests with coverage first (npm run coverage)`);
   process.exit(2);

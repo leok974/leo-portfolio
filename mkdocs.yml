@@ -1,4 +1,5 @@
 site_name: Leo Portfolio Docs
+docs_dir: docs
 theme:
   name: material
 nav:

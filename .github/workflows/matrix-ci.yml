@@ -34,6 +34,12 @@ jobs:
       - name: Coverage threshold gate (Node 20 only)
         if: matrix.node == '20'
         run: npm run coverage:gate
+      - name: Dispatcher unknown command test (Node 20 only)
+        if: matrix.node == '20'
+        run: node tests/dispatcher.unknown.spec.mjs
+      - name: Coverage gate failure test (Node 20 only)
+        if: matrix.node == '20'
+        run: node tests/coverage-gate.fail.spec.mjs
       - name: Upload coverage HTML
         if: matrix.node == '20'
         uses: actions/upload-artifact@v4
