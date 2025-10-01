@@ -30,6 +30,39 @@ flowchart LR
     class Ollama,OpenAI,RAG ext;
 ```
 
+### System Overview (Mermaid)
+```mermaid
+flowchart LR
+    subgraph Client
+        U[Browser / ChatDock]
+    end
+
+    subgraph Edge
+        CF[Cloudflare (DNS/Tunnel)]
+    end
+
+    subgraph Web
+        N[Nginx reverse proxy]
+        SPA[Static SPA (portfolio)]
+    end
+
+    subgraph API
+        F[FastAPI assistant relay\n/status /healthz /llm/*]
+        AG[AG-UI / SSE Gateway]
+    end
+
+    subgraph Models
+        OLL[Ollama (gpt-oss:20b)]
+        OAI[(OpenAI Fallback)]
+    end
+
+    U -->|HTTPS| CF --> N
+    N -->|/| SPA
+    N -->|/api/*| F --> AG
+    AG --> OLL
+    AG --> OAI
+```
+
 ## Data Flow
 ```
 User Browser -> (Edge nginx) -> Backend FastAPI -> (Primary: Ollama / Fallback: OpenAI)

@@ -31,6 +31,9 @@
     "generate:projects": "node scripts/bin.mjs generate-projects",
     "optimize:media": "node scripts/bin.mjs optimize-media",
     "validate:schema": "node scripts/bin.mjs validate-schema",
+    "lint:md": "eslint \"**/*.md\"",
+    "lint:yml": "eslint \"**/*.{yml,yaml}\"",
+    "ci:smoke": "node scripts/ci-smoke.mjs",
     "prepare": "husky install"
   },
   "dependencies": {

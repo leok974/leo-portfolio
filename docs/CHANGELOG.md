@@ -3,6 +3,19 @@
 All notable changes to this project will be documented here.
 Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD).
 
+## [v0.7.1] - 2025-10-01
+### Added
+- Markdown & YAML linting via @eslint/markdown, yaml-eslint-parser, eslint-plugin-yml.
+- Dispatcher `--help` and CI smoke step.
+- Coverage threshold gate (Node 20 job).
+- README badges: Release + per-metric shields.
+
+### Fixed
+- Docs normalized for MD/YAML lint (indentation, tabs, illustrative snippet suppressions).
+
+### Notes
+- Thresholds: Lines≥80, Statements≥80, Functions≥70, Branches≥60 (tune in `scripts/coverage-gate.mjs`).
+
 ## [v0.7.0] - 2025-10-01
 ### Added
 - CI matrix (Node 18/20), unit tests, probe/status/CORS health checks, SRI dist verification.
