@@ -1,0 +1,7 @@
+tunnel: db56892d-4879-4263-99bf-202d46b6aff9
+credentials-file: /etc/cloudflared/db56892d-4879-4263-99bf-202d46b6aff9.json
+metrics: 0.0.0.0:2000
+ingress:
+  - hostname: app.ledger-mind.org
+    service: http://nginx:80
+  - service: http_status:404

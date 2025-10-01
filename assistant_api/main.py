@@ -51,66 +51,13 @@ except Exception:
     pass
 
 from .lifespan import lifespan
+from . import settings as _settings
 
 app = FastAPI(title="Leo Portfolio Assistant", lifespan=lifespan)
 
-
-raw_origins = os.getenv("ALLOWED_ORIGINS", "")
-# Support comma, space, or newline separated entries
-tokens: list[str] = []
-for part in raw_origins.replace("\n", ",").replace(" ", ",").split(","):
-    part = part.strip()
-    if part:
-        tokens.append(part)
-
-# Derive origins automatically from DOMAIN env if present
-DOMAIN = os.getenv("DOMAIN", "").strip().rstrip('/')
-derived_origins: list[str] = []
-if DOMAIN:
-    # Accept bare domain like example.com or with scheme; normalize
-    if DOMAIN.startswith("http://") or DOMAIN.startswith("https://"):
-        base_domain = DOMAIN.split("//", 1)[1]
-    else:
-        base_domain = DOMAIN
-    base_domain = base_domain.rstrip('/')
-    # Build candidate HTTPS + HTTP (HTTPS first), include www variant
-    candidates = [
-        f"https://{base_domain}",
-        f"http://{base_domain}",
-    ]
-    if not base_domain.startswith("www."):
-        candidates.extend([
-            f"https://www.{base_domain}",
-            f"http://www.{base_domain}",
-        ])
-    # Only add if not already explicitly listed
-    for c in candidates:
-        if c not in tokens:
-            derived_origins.append(c)
-    tokens.extend(derived_origins)
-
-origins = tokens
-allow_all = os.getenv("CORS_ALLOW_ALL", "0") in {"1", "true", "TRUE", "yes", "on"}
-if allow_all:
-    # Fast path: allow all origins for temporary troubleshooting (avoid in prod long-term)
-    origins = ["*"]
-if not origins:
-    origins = [
-        "https://leok974.github.io",
-        "http://localhost:5500",
-        "http://127.0.0.1:5500",
-        "http://localhost:5530",
-        "http://127.0.0.1:5530",
-    ]
-
-# Store CORS config metadata for health endpoint
-_CORS_META = {
-    "raw_env": raw_origins,
-    "allow_all": allow_all,
-    "allowed_origins": origins,
-    "derived_from_domain": derived_origins,
-    "domain_env": DOMAIN,
-}
+_CORS_META = _settings.get_settings()
+origins = _CORS_META["allowed_origins"]
+allow_all = _CORS_META["allow_all"]
 
 if origins == ["*"]:
     app.add_middleware(
@@ -176,12 +123,8 @@ def metrics():
 
 @app.get("/status/cors")
 async def status_cors():
-    # Return a shallow copy plus timestamp so we don't mutate original meta by accident
     data = dict(_CORS_META)
-    try:
-        data["timestamp"] = time.time()
-    except Exception:
-        pass
+    data["timestamp"] = time.time()
     return data
 
 

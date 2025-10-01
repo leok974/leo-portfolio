@@ -59,6 +59,71 @@ Tested helpers:
 - `filters.ts` (category visibility & announcement text)
 - `gallery-nav.ts` (arrow/home/end navigation wrapping logic)
 
+## Lint & Unit Tests
+
+JavaScript (JSDoc strict) + TypeScript unit helpers:
+
+```bash
+npm run lint      # ESLint (flat config) over .js/.ts
+npm run test      # Vitest unit tests (jsdom)
+npm run coverage  # Generates coverage/ (lcov + HTML)
+```
+
+Notes:
+* Playwright E2E specs are excluded from unit runs via `vitest.config.ts` (`exclude: ['tests/e2e/**']`).
+* Coverage artifact uploaded in CI workflow `.github/workflows/unit-ci.yml`.
+* Non-blocking security audit step logs high severity issues (adjust threshold later if you want gating).
+* Add new frontend tests under `tests/*.spec.ts` or `.test.ts` (avoid `tests/e2e/` for unit scope).
+
+### Coverage Badges (Shields JSON)
+Pipeline (current):
+1. `npm run coverage` generates `coverage/coverage-summary.json` (Vitest).
+2. `npm run cov:badges` (script `scripts/coverage-shield.mjs`) produces multiple Shields endpoints under `.github/badges/`:
+  - `coverage.json` (combined: `L <lines>| B <branches>| F <functions>`)
+  - `lines.json`, `branches.json`, `functions.json` (individual metrics)
+3. CI workflow (`unit-ci.yml`) commits these JSON files to the `status-badge` branch alongside the raw summary.
+4. README references them via Shields endpoint URLs.
+
+Local regeneration after modifying tests:
+```bash
+npm run coverage
+npm run cov:badges
+git checkout -B status-badge
+git add .github/badges/*.json coverage/coverage-summary.json
+git commit -m "chore(badges): update coverage shields"
+git push -u origin status-badge --force
+```
+
+Color bands (default in script):
+| Threshold | Color       |
+|-----------|-------------|
+| >=95%     | brightgreen |
+| >=90%     | green       |
+| >=80%     | yellowgreen |
+| >=70%     | yellow      |
+| >=60%     | orange      |
+| <60%      | red         |
+
+Adjust bands in `scripts/coverage-shield.mjs` (`band()` helper).
+
+### Node Module Type
+This repository is ESM-first (`"type": "module"` in `package.json`).
+* Author new Node scripts with `import` / `export` (use `.mjs` only if you need to force ESM outside the main tree).
+* Any legacy CommonJS scripts that still rely on `require()` should be renamed to `.cjs` (none currently present under `scripts/`).
+* Mixed mode tip: if you introduce tooling that only supports CommonJS, isolate it as `<name>.cjs` instead of reverting the global module type.
+* CI and local commands already target `.mjs` or ESM-aware entry points—no further changes required.
+
+### Pre-commit Hooks (Husky + lint-staged)
+Install dependencies (already in `devDependencies` after setup):
+```bash
+npm run prepare   # installs .husky/ hooks
+```
+Hook behavior:
+* Staged JS/TS: ESLint (`--max-warnings=0`) then `vitest related --run` (fast selective tests).
+* Staged JSON/MD/YAML: ESLint invoked with explicit extensions.
+
+Adjust patterns or commands via `lint-staged` block in `package.json`.
+
 Add new frontend test files under `tests/*.test.ts`.
 Minimal health smoke (PowerShell):
 ```powershell

@@ -1,9 +1,10 @@
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
-const sharp = require('sharp');
-const glob = require('glob');
-const { program } = require('commander');
+import fs from 'node:fs';
+import path from 'node:path';
+import { execSync } from 'node:child_process';
+import sharp from 'sharp';
+import { glob } from 'glob';
+import { program } from 'commander';
+import { isEntrypoint } from './scripts/_esm-utils.mjs';
 
 console.log('🚀 Media Optimization Script Starting...\n');
 
@@ -50,7 +51,7 @@ function checkFFmpeg() {
   try {
     execSync('ffmpeg -version', { stdio: 'ignore' });
     return true;
-  } catch (error) {
+  } catch (_error) {
     console.log('⚠️  FFmpeg not found. Video optimization will be skipped.');
     console.log('   To install FFmpeg: https://ffmpeg.org/download.html\n');
     return false;
@@ -58,6 +59,10 @@ function checkFFmpeg() {
 }
 
 // Optimize images using Sharp
+/**
+ * @param {string} inputPath
+ * @param {string} outputDir
+ */
 async function optimizeImage(inputPath, outputDir) {
   const ext = path.extname(inputPath).toLowerCase();
   const basename = path.basename(inputPath, ext);
@@ -124,12 +129,17 @@ async function optimizeImage(inputPath, outputDir) {
       console.log('');
     }
 
-  } catch (error) {
-    console.error(`   ❌ Error optimizing ${relativePath}: ${error.message}\n`);
+  } catch (_error) {
+    const msg = _error instanceof Error ? _error.message : String(_error);
+    console.error(`   ❌ Error optimizing ${relativePath}: ${msg}\n`);
   }
 }
 
 // Optimize videos using FFmpeg
+/**
+ * @param {string} inputPath
+ * @param {string} outputDir
+ */
 function optimizeVideo(inputPath, outputDir) {
   const ext = path.extname(inputPath).toLowerCase();
   const basename = path.basename(inputPath, ext);
@@ -178,7 +188,7 @@ function optimizeVideo(inputPath, outputDir) {
         // Also create WebP for consistency
         sharp(posterJpg).webp({ quality: CONFIG.imageQuality.webp }).toFile(posterWebp);
         console.log(`   → Poster WebP generated`);
-      } catch (e) {
+  } catch (_e) {
         console.log('   ⚠️  Poster extraction skipped (FFmpeg/sharp error)');
       }
       console.log('');
@@ -186,12 +196,17 @@ function optimizeVideo(inputPath, outputDir) {
       console.log('');
     }
 
-  } catch (error) {
-    console.error(`   ❌ Error optimizing ${relativePath}: ${error.message}\n`);
+  } catch (_error) {
+   const msg = _error instanceof Error ? _error.message : String(_error);
+   console.error(`   ❌ Error optimizing ${relativePath}: ${msg}\n`);
   }
 }
 
 // Generate responsive image sizes
+/**
+ * @param {string} inputPath
+ * @param {string} outputDir
+ */
 async function generateResponsiveSizes(inputPath, outputDir) {
   const ext = path.extname(inputPath).toLowerCase();
   const basename = path.basename(inputPath, ext);
@@ -249,7 +264,8 @@ async function generateResponsiveSizes(inputPath, outputDir) {
     console.log('');
 
   } catch (error) {
-    console.error(`   ❌ Error generating responsive sizes: ${error.message}\n`);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`   ❌ Error generating responsive sizes: ${msg}\n`);
   }
 }
 
@@ -353,17 +369,19 @@ Generated: ${new Date().toISOString()}
   console.log('📚 Usage guide generated: assets/optimized/README.md\n');
 }
 
-// Run the optimization
-if (require.main === module) {
-  optimizeMedia()
-    .then(() => {
-      console.log('✅ Media optimization complete!');
-      console.log('📁 Optimized files saved to:', CONFIG.outputDir);
-    })
-    .catch(error => {
-      console.error('❌ Optimization failed:', error);
-      process.exit(1);
-    });
+export async function main(){
+  try {
+    await optimizeMedia();
+    console.log('✅ Media optimization complete!');
+    console.log('📁 Optimized files saved to:', CONFIG.outputDir);
+  } catch (error) {
+    console.error('❌ Optimization failed:', error);
+    process.exit(1);
+  }
 }
 
-module.exports = { optimizeMedia, CONFIG };
+if (isEntrypoint(import.meta.url)) {
+  await main();
+}
+
+export { optimizeMedia, CONFIG };

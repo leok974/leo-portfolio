@@ -6,6 +6,11 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
 ## [Unreleased]
 
 ### Added
+- Coverage Shields generation script `scripts/coverage-shield.mjs` producing `.github/badges/*.json` (combined + per-metric) for Shields.io endpoints.
+- CI integration (unit-ci) step to publish coverage badges & summary to `status-badge` branch.
+
+### Changed
+- Lint cleanup: removed stray unused expressions; standardized unused parameter/catch naming via underscore prefix.
 - Unified frontend + edge nginx container via multi-target `deploy/Dockerfile.frontend` (targets: `frontend-static-final`, `frontend-vite-final`).
 - Production convenience shortcuts: Makefile targets (`prod-up`, `prod-down`, `prod-logs`, `prod-rebuild`) and PowerShell tasks (`prod`, `prod-logs`, `prod-down`, `prod-rebuild`).
 - Vite scaffolding (`package.json` scripts, `vite.config.ts`) and switched prod compose target to `frontend-vite-final`.

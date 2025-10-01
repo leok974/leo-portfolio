@@ -11,8 +11,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 COPY requirements.in ./requirements.in
 COPY requirements.txt ./requirements.txt
+# Build wheels with persistent pip & wheels cache for faster rebuilds
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip wheel --no-cache-dir --wheel-dir /wheels/dist -r requirements.txt
+  --mount=type=cache,target=/wheels/cache \
+  PIP_NO_CACHE_DIR=off \
+  PIP_ONLY_BINARY=":all:" \
+  pip wheel --prefer-binary --wheel-dir /wheels/dist -r requirements.txt
 
 # ===========================
 # Stage 2: Runtime (slim)
@@ -30,8 +34,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=wheels /wheels/dist /tmp/wheels
 COPY requirements.txt ./requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --no-cache-dir --no-index --find-links /tmp/wheels -r requirements.txt && \
-    rm -rf /tmp/wheels
+  PIP_NO_CACHE_DIR=off \
+  pip install --no-index --find-links /tmp/wheels -r requirements.txt && \
+  pip cache purge && \
+  rm -rf /tmp/wheels
 
 # Copy only necessary source (exclude tests, docs, etc.)
 COPY . ./assistant_api

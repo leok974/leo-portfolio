@@ -1,0 +1,14 @@
+name: Assistant CORS/Status Probe
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/30 * * * *'
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run probe
+        run: |
+          chmod +x scripts/probe-assistant.sh
+          ./scripts/probe-assistant.sh https://assistant.ledger-mind.org

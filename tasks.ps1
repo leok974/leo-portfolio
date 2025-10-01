@@ -92,6 +92,19 @@ function TunnelDown {
   docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.tunnel.override.yml rm -sfv cloudflared | Out-Null
 }
 
+function EnvInit {
+  $template = Join-Path (Get-Location) '.env.deploy.example'
+  $dest = Join-Path (Get-Location) '.env'
+  if (Test-Path $dest) {
+    Write-Host ".env already exists (skipping)" -ForegroundColor Yellow
+  } elseif (-not (Test-Path $template)) {
+    Write-Host ".env.deploy.example missing; cannot initialize." -ForegroundColor Red; exit 1
+  } else {
+    Copy-Item $template $dest
+    Write-Host "Created .env from template" -ForegroundColor Green
+  }
+}
+
 function Latency {
   Write-Host "Probing primary latency (direct /models sampling)..."
   try {
@@ -120,5 +133,6 @@ switch ($Task) {
   "prod-rebuild" { ProdRebuild }
   "tunnel" { Tunnel }
   "tunnel-down" { TunnelDown }
+  "env-init" { EnvInit }
   default { Write-Host "Tasks: deps | test | build | run | audit" }
 }

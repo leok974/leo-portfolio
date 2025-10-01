@@ -13,3 +13,6 @@ jobs:
       - name: Lint deploy/doc sync
         shell: pwsh
         run: pwsh ./scripts/lint-deploy.ps1
+      - name: Lint env template
+        shell: pwsh
+        run: pwsh ./scripts/lint-env-template.ps1

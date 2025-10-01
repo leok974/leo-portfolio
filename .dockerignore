@@ -57,6 +57,22 @@ Dockerfile.local
 dist/
 build/
 
+# Additional pruning (frontend artifacts, temp, editor, coverage, logs)
+node_modules
+dist
+.wheels
+*.log
+coverage/
+.idea/
+.vscode/
+assets/outputs
+assets/tmp
+*.pyc
+*.py.cache
+*.log
+*.env*
+.DS_Store
+
 # Misc large design/media sources (keep optimized versions only)
 assets/originals/
 

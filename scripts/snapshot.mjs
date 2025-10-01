@@ -45,7 +45,7 @@ async function main() {
       const st = fs.statSync(f);
       const hash = await sha256(f);
       out.push({ path: rel(f), size: st.size, mtime: new Date(st.mtimeMs).toISOString(), sha256: hash });
-    } catch (err) {
+  } catch (_err) {
       // If hashing fails, still capture the metadata without hash
       try {
         const st = fs.statSync(f);
@@ -60,7 +60,7 @@ async function main() {
   console.log(`repo-snapshot.json written with ${out.length} files`);
 }
 
-main().catch((e) => {
-  console.error('Snapshot failed:', e);
+main().catch((_e) => {
+  console.error('Snapshot failed:', _e);
   process.exit(1);
 });

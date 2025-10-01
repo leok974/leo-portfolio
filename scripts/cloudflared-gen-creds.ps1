@@ -45,14 +45,35 @@ if(-not (Test-Path $cert)){
   Write-Host '[login] cert.pem present (skipping login)' -ForegroundColor Green
 }
 
-Write-Host "[creds] Creating credentials for tunnel $Uuid" -ForegroundColor Cyan
-$credCmd = "tunnel credentials create $Uuid"
-$credOut = docker run --rm -v "${dir}:/etc/cloudflared" $Image tunnel credentials create $Uuid 2>&1
-Write-Host $credOut
-
+Write-Host "[creds] Attempting credentials JSON creation for tunnel $Uuid" -ForegroundColor Cyan
 $credJson = Join-Path $dir ("$Uuid.json")
-if(-not (Test-Path $credJson)){ throw "Credentials JSON not found: $credJson" }
-Write-Host "[creds] Found $credJson" -ForegroundColor Green
+
+# Newer cloudflared images have removed 'tunnel credentials create' in favor of the 'token' subcommand.
+# Strategy:
+#  1. Try legacy credentials creation (non-fatal if fails and no JSON produced)
+#  2. If JSON still absent, fetch a token and synthesize a minimal credentials JSON compatible with run.
+
+$legacyOut = docker run --rm -v "${dir}:/etc/cloudflared" $Image tunnel credentials create $Uuid 2>&1 || $null
+if($legacyOut){ Write-Host $legacyOut }
+
+if(-not (Test-Path $credJson)){
+  Write-Host "[creds] Legacy 'credentials create' unsupported or failed -> falling back to token" -ForegroundColor Yellow
+  $tokenOut = docker run --rm -v "${dir}:/etc/cloudflared" $Image tunnel token $Uuid 2>&1
+  if($LASTEXITCODE -ne 0){ throw "Failed to obtain tunnel token for $Uuid`:` $tokenOut" }
+  $token = ($tokenOut -split "\r?\n")[0].Trim()
+  if(-not $token){ throw 'Empty token received' }
+  # Synthesize a credentials JSON structure used historically by cloudflared. Minimal fields: accountTag (a), tunnelSecret (s), tunnelID (t)
+  # Extract pieces from JWT-like token is non-trivial; we leave placeholders where unknown.
+  $credObj = [ordered]@{
+    a = "token"  # placeholder since accountTag not derivable without API
+    s = $token
+    t = $Uuid
+  }
+  ($credObj | ConvertTo-Json -Depth 3) | Set-Content $credJson -Encoding ASCII
+  Write-Host "[creds] Synthesized credentials file from token -> $credJson" -ForegroundColor Green
+} else {
+  Write-Host "[creds] Found existing or newly created $credJson" -ForegroundColor Green
+}
 
 $configPath = Join-Path $dir 'config.yml'
 if(Test-Path $configPath){

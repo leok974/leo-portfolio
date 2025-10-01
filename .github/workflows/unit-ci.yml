@@ -1,0 +1,52 @@
+name: Lint & Unit Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci || npm i
+      - name: Lint
+        run: npm run lint
+      - name: Unit tests (Vitest)
+        run: npm run test
+      - name: Coverage (Vitest)
+        run: npm run coverage
+      - name: Generate Shields badges
+        run: npm run cov:badges
+      - name: Upload coverage summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+      - name: Publish coverage JSON & badges to status-badge branch
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ ! -f coverage/coverage-summary.json ]; then echo 'no coverage summary'; exit 0; fi
+          git config user.name  "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          git fetch --all --prune
+          git checkout -B status-badge
+          cp coverage/coverage-summary.json coverage-summary.json
+          # Include generated badge endpoints
+          if [ -d .github/badges ]; then
+            git add .github/badges/*.json || true
+          fi
+          git add coverage-summary.json || true
+          git commit -m "coverage: update $(date -u +"%Y-%m-%dT%H:%M:%SZ")" || echo "nothing to commit"
+          git push -u origin status-badge
+      - name: Audit (non-blocking)
+        continue-on-error: true
+        run: npm audit --audit-level=high

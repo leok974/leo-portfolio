@@ -63,7 +63,7 @@ Extended diagnostic info (models list, fallback readiness) – if implemented.
 ### GET /ready
 Basic readiness (DB + provider reachability) for container orchestration.
 ### GET /status/summary
-Summarized system state (model presence, fallback mode, counts) – if implemented.
+Summarized system state (model presence, fallback mode, counts). Always present; returns HTTP 200 with JSON when healthy, 503 if underlying readiness signals fail (never 404).
 ### GET /status/cors
 Current CORS configuration snapshot – useful for debugging cross‑origin failures without redeploying.
 
@@ -104,11 +104,41 @@ Status response (fields excerpt):
 {
   "llm": { "path": "fallback", "primary_model_present": false, "ready_probe": false },
   "rag": { "ok": true, "db": "./data/rag.sqlite", "mode": "local-model" },
-  "ready": false
+  "ready": false,
+  "_source": "/status/summary"
 }
 ```
 
 RAG health is now determined in‑process (SQLite open + vector index dimension heuristic) instead of issuing an internal HTTP POST to `/api/rag/query`. This removes failure coupling with edge routing and avoids false negatives during partial outages. Legacy HTTP probing can be forced (for debugging) by setting `STATUS_RAG_VIA_HTTP=1` (timeout seconds via `RAG_PROBE_TIMEOUT`, default 2–3s).
+
+### GET /status/uptime
+Minimal payload for lightweight external probes (avoids larger status summary cost). Alias also available at `/api/status/uptime` for clients already namespacing under `/api`.
+
+Request:
+```
+GET /status/uptime
+```
+Response:
+```json
+{
+  "uptime_seconds": 1234.567,
+  "start_time": 1759254897.8170595,
+  "build": { "sha": "40924bf", "time": "2025-09-30T17:50:51+00:00" }
+}
+```
+Field notes:
+- `uptime_seconds`: Seconds since process startup (monotonic wall‑clock difference).
+- `start_time`: Epoch seconds (float) when service process initialized (UTC based on system time).
+- `build`: Present if build metadata env vars (`BUILD_SHA`/`GIT_SHA`, `BUILD_TIME`) were injected at image build or runtime.
+
+Cache policy: edge layer (nginx) injects `Cache-Control: no-store` for `/api/status/*` and `/status/*`; uptime endpoint intentionally mirrors this behavior to avoid stale monitoring data.
+
+Use cases:
+- External uptime probes / SLIs.
+- Rapid readiness gating in orchestrators where full summary is unnecessary.
+- Cross-region latency sampling with minimal transfer.
+
+If `build` is null, ensure build pipeline populates `GIT_SHA` and `BUILD_TIME` when building the backend image.
 
 Warmup / startup environment flags:
 - `MODEL_WAIT_MAX_SECONDS` (default 180) – Maximum seconds to wait for Ollama API + model tag before continuing (server starts even if model not yet pulled).

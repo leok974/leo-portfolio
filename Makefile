@@ -1,4 +1,4 @@
-.PHONY: deps test build run audit latency models dev cmddev hyperdev webdev prod-up prod-down prod-logs prod-rebuild tunnel-up tunnel-down
+.PHONY: deps test build run audit latency models dev cmddev hyperdev webdev prod-up prod-down prod-logs prod-rebuild tunnel-up tunnel-down env-init
 
 # Lock dependencies from requirements.in
 deps:
@@ -83,3 +83,7 @@ tunnel-up:
 
 tunnel-down:
 	 docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.tunnel.override.yml rm -sfv cloudflared || true
+
+# Initialize .env from template (idempotent)
+env-init:
+	@if [ -f .env ]; then echo ".env already exists (skipping)."; else cp .env.deploy.example .env && echo "Created .env from template"; fi

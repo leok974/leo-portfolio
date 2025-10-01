@@ -8,6 +8,13 @@ import urllib.parse
 
 router = APIRouter()
 
+_START_TIME: float | None = None
+
+def set_start_time(ts: float) -> None:
+    global _START_TIME
+    if _START_TIME is None:
+        _START_TIME = ts
+
 
 def _derive_allowed_origins() -> list[str]:
     """Derive allowed origins from ALLOWED_ORIGINS + DOMAIN (auto).
@@ -62,6 +69,11 @@ async def status_summary():
     data['sse'] = {"connections": SSE_CONNECTIONS}
     return Status(**data)
 
+# Alias under /api prefix so callers using /api/status/summary get the same response
+@router.get('/api/status/summary', include_in_schema=False)
+async def status_summary_api_alias():
+    return await status_summary()
+
 
 @router.get('/status/cors')
 async def status_cors(request: Request):
@@ -72,3 +84,31 @@ async def status_cors(request: Request):
         'allowed_origins': allowed,
         'is_allowed': req_origin in allowed,
     }
+
+
+class Uptime(BaseModel):
+    uptime_seconds: float
+    start_time: float
+    build: dict | None = None
+
+
+@router.get('/status/uptime', response_model=Uptime)
+async def status_uptime():
+    import time
+    now = time.time()
+    # Initialize start time lazily if not set (in case lifespan hook not wired)
+    global _START_TIME
+    if _START_TIME is None:
+        _START_TIME = now
+    uptime = max(0.0, now - _START_TIME)
+    build_sha = os.getenv("BUILD_SHA") or os.getenv("GIT_SHA")
+    build_time = os.getenv("BUILD_TIME")
+    build_meta = None
+    if build_sha or build_time:
+        build_meta = {"sha": build_sha, "time": build_time}
+    return Uptime(uptime_seconds=uptime, start_time=_START_TIME, build=build_meta)
+
+
+@router.get('/api/status/uptime', include_in_schema=False)
+async def status_uptime_api_alias():
+    return await status_uptime()

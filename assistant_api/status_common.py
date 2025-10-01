@@ -1,5 +1,6 @@
 import os
 import os.path
+from datetime import datetime, timezone
 import httpx
 from .db import connect, index_dim
 from .llm_client import (
@@ -130,6 +131,10 @@ async def build_status(base: str) -> dict:
         'rag': rag_info,
         'ready': ready,
         'primary': primary_block,
+        'build': {
+            'sha': os.getenv('BACKEND_BUILD_SHA', 'local'),
+            'time': datetime.now(timezone.utc).isoformat(timespec='seconds')
+        },
         'metrics_hint': {
             'providers': dict(providers),
             'primary_fail_reason': dict(primary_fail_reason),

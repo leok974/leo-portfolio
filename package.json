@@ -2,6 +2,7 @@
   "name": "leo-portfolio",
   "version": "1.0.0",
   "description": "Leo portfolio site + tooling (Vite integrated)",
+  "type": "module",
   "scripts": {
     "fetch:assets": "node scripts/fetch-assets.mjs",
     "optimize": "node optimize-media.js",
@@ -23,7 +24,14 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e:install": "npx playwright install --with-deps",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "lint": "eslint . --ext .js,.ts",
+    "coverage": "vitest run --coverage",
+    "cov:badges": "node scripts/coverage-shield.mjs",
+    "generate:projects": "node scripts/bin.mjs generate-projects",
+    "optimize:media": "node scripts/bin.mjs optimize-media",
+    "validate:schema": "node scripts/bin.mjs validate-schema",
+    "prepare": "husky install"
   },
   "dependencies": {
     "sharp": "^0.33.0"
@@ -42,6 +50,20 @@
     "vitest": "^1.6.0",
     "jsdom": "^24.0.0",
     "@types/jsdom": "^21.1.0",
-    "@playwright/test": "^1.48.0"
+    "@playwright/test": "^1.48.0",
+    "eslint": "^9.10.0",
+    "@eslint/js": "^9.10.0",
+    "typescript-eslint": "^8.0.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.2.0"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx}": [
+      "eslint --max-warnings=0",
+      "vitest related --run --passWithNoTests"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "echo Skipping eslint for non-code file types"
+    ]
   }
 }

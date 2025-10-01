@@ -41,6 +41,13 @@ feat: add streaming metadata event for provider attribution
 - Keep API responses stable; mark deprecations with `deprecated: true` and specify `replacement`.
 - Avoid leaking provider exceptions directly; always normalize error shape.
 
+### ESM Conventions (Enforced)
+- Project is ESM-first (`"type": "module"` in `package.json`).
+- Plain `.js` files must not use `require()`, `module`, or `exports` (ESLint guard blocks them).
+- Use native `import` / `export`. If a dependency/tool mandates CommonJS, name that file with a `.cjs` extension.
+- For script entry detection, import and call `isEntrypoint(import.meta.url)` from `scripts/_esm-utils.mjs` and gate `main()` logic.
+- Prefer explicit file extensions in dynamic imports for clarity.
+
 ## Testing
 - Add at least one test for each new endpoint or critical branch.
 - Use existing smoke scripts (`scripts/smoke.ps1` / `.sh`) for quick health validation.

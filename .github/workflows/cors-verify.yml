@@ -1,0 +1,37 @@
+name: CORS Verify
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: GET /api/status/summary
+        run: |
+          set -e
+          curl -is -H "Origin: https://leok974.github.io" https://assistant.ledger-mind.org/api/status/summary | tee /tmp/headers.txt
+          grep -E '^HTTP/.* 200' /tmp/headers.txt
+          grep -F 'Access-Control-Allow-Origin: https://leok974.github.io' /tmp/headers.txt || grep -i 'access-control-allow-origin: https://leok974.github.io' /tmp/headers.txt
+          grep -F 'Vary: Origin' /tmp/headers.txt || grep -i 'vary: Origin' /tmp/headers.txt
+          grep -F 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' /tmp/headers.txt || grep -i 'cache-control: no-store, no-cache, must-revalidate, max-age=0' /tmp/headers.txt
+      - name: OPTIONS /api/status/summary
+        run: |
+          set -e
+          curl -is -X OPTIONS \
+            -H "Origin: https://leok974.github.io" \
+            -H "Access-Control-Request-Method: GET" \
+            https://assistant.ledger-mind.org/api/status/summary | tee /tmp/opt.txt
+          # Accept FastAPI 200 (with body) or 204 patterns; 204 is ideal if nginx intercepts.
+          (grep -E '^HTTP/.* 204' /tmp/opt.txt || grep -E '^HTTP/.* 200' /tmp/opt.txt)
+          grep -F 'Access-Control-Allow-Origin: https://leok974.github.io' /tmp/opt.txt || grep -i 'access-control-allow-origin: https://leok974.github.io' /tmp/opt.txt
+          grep -F 'Vary: Origin' /tmp/opt.txt || grep -i 'vary: Origin' /tmp/opt.txt
+      - name: Legacy /status/summary (GET)
+        run: |
+          set -e
+          curl -is -H "Origin: https://leok974.github.io" https://assistant.ledger-mind.org/status/summary | tee /tmp/legacy.txt
+          grep -E '^HTTP/.* 200' /tmp/legacy.txt
+          grep -F 'Access-Control-Allow-Origin: https://leok974.github.io' /tmp/legacy.txt || grep -i 'access-control-allow-origin: https://leok974.github.io' /tmp/legacy.txt
+          grep -F 'Vary: Origin' /tmp/legacy.txt || grep -i 'vary: Origin' /tmp/legacy.txt

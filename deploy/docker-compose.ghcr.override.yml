@@ -5,6 +5,6 @@
 
 services:
   backend:
-    image: ghcr.io/${GH_REPO:-leok974/leo-portfolio}/backend:main
+    image: ghcr.io/${GH_REPO:-leok974/leo-portfolio}/backend:${BACKEND_TAG:-main}
     pull_policy: always
-    # Comment out or leave base build block; image here takes precedence.
+    # Set BACKEND_TAG=sha-<short> to pin a specific build; default 'main'

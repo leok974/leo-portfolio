@@ -57,11 +57,15 @@ services:
     expose:
       - "8000"
     restart: unless-stopped
+    # Healthcheck: poll internal ready alias (fast) so nginx can gate startup
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/ready"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+      # Use the canonical /ready endpoint (app-level); alias /api/ready is optional
+      test: ["CMD-SHELL","python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/ready', timeout=3).getcode()==200 else 1)\""]
+      interval: 5s
+      timeout: 4s
+      retries: 60
+      # Allow ample time for initial model pull / warm loop before marking unhealthy
+      start_period: 200s
     secrets:
       - openai_api_key
 
@@ -75,7 +79,8 @@ services:
         NGINX_CONF: deploy/nginx.conf
         VITE_BUILD_SHA: ${GIT_SHA:-local}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "8080:80"
       - "8443:443"
@@ -84,13 +89,14 @@ services:
   cloudflared-portfolio:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
-    command: ["tunnel","--config","/etc/cloudflared/config.yml","run"]
+    # Token-based connector; requires tunnel UUID at end and global flags first
+    command: ["--no-autoupdate","tunnel","run","--token","${CLOUDFLARE_TUNNEL_TOKEN}","${CLOUDFLARE_TUNNEL_UUID}"]
     depends_on:
       - nginx
     environment:
       - TUNNEL_TRANSPORT_PROTOCOL=auto
     volumes:
-      - ./cloudflared:/etc/cloudflared:ro
+      - ../cloudflared:/etc/cloudflared:ro
     healthcheck:
       test: ["CMD-SHELL","wget -qO- http://localhost:2000/metrics >/dev/null 2>&1 || exit 1"]
       interval: 15s

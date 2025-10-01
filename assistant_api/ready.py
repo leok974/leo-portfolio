@@ -28,6 +28,7 @@ def _read_secret(env_name: str, file_env: str, default_file: str | None = None) 
 
 
 @router.get("/ready")
+@router.get("/api/ready")
 async def ready():
     checks: dict[str, dict] = {}
 
