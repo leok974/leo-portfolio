@@ -126,7 +126,9 @@ function Invoke-StrictNginxSmoke {
     Write-Host "==> Build dist" -ForegroundColor Cyan
     pnpm build:prod | Out-Null
     Write-Host "==> Sync CSP hash" -ForegroundColor Cyan
-    pnpm csp:hash | Out-Null
+  # Extract hashes from built dist index.html (required by extractor now)
+  if (-not (Test-Path "dist/index.html")) { throw "dist/index.html missing after build" }
+  pnpm exec node scripts/csp-hash-extract.mjs --html dist/index.html | Out-Null
     pnpm csp:sync:test | Out-Null
     Write-Host "==> Compose up ($ComposeFile)" -ForegroundColor Cyan
     docker compose -f $ComposeFile up -d | Out-Null
@@ -143,7 +145,8 @@ function Invoke-StrictNginxSmoke {
     $env:BASE = $Base
     $env:REQUIRE_CSS_200 = '1'
     $env:REQUIRE_STATUS_PILL_STRICT = '1'
-    $env:PLAYWRIGHT_STRICT_STREAM = '1'
+  $env:PLAYWRIGHT_STRICT_STREAM = '1'
+  $env:NGINX_STRICT = '1'
     if ($FullSuite) {
       pnpm exec playwright test
     } else {
