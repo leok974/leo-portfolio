@@ -108,6 +108,17 @@ Message mapping: `ok`, `degraded`, `error`, `partial`.
 
 Build correlation: `extra.build` (from `X-Build-ID` header) enables linking badge state to a deployed commit.
 
+### Probe SLO & Baseline Collection
+The probe workflow enforces SLO thresholds (`SLO_MAX_MS=5`, `HARD_MAX_MS=10`, `ALLOW_PARTIAL=false`). After initial stabilization (24h+), collect samples from `status-badge` branch to consider tuning:
+```bash
+git fetch origin status-badge:status-badge
+git checkout status-badge
+git log --format='%H' -- status.json | head -n 50 | while read sha; do \
+  git show ${sha}:status.json | jq -r '.extra.probe.latencies | [ .root, .ready, .status, .chat ] | @csv'; \
+done > latency-samples.csv
+```
+Analyze medians / p95; adjust `SLO_MAX_MS` if consistently below or above target.
+
 ## Lint / Format / Audit (suggested tooling)
 ```bash
 pip install ruff pip-audit

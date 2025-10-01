@@ -13,6 +13,14 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
 ### Changed
 - `docker-compose.prod.yml`: `nginx` service now builds integrated image (serves SPA + proxies API) replacing separate static frontend path.
 - Simplified `deploy/nginx.conf` to serve SPA (history fallback) and proxy `/api/`, `/chat/stream`, diagnostics endpoints.
+- Frontend status pill polling now imported from TypeScript module (`src/status/status-ui.ts`) via Vite entry (`main.js`), replacing legacy `js/status-ui.js` inline script tag (improves type safety & bundling consistency).
+ - Frontend status pill polling now imported from TypeScript module (`src/status/status-ui.ts`) via Vite entry (migrated to `src/main.ts`), replacing legacy `js/status-ui.js` inline script tag (improves type safety & bundling consistency).
+ - Migrated root `main.js` to TypeScript entry `src/main.ts` (added strong typings for project data, gallery, lazy loading, filtering, and build info injection; removed `@ts-nocheck`).
+ - Migrated remaining legacy scripts to TypeScript: `js/api.js` → `src/api.ts`, `js/agent-status.js` → `src/agent-status.ts`, `js/assistant-dock.js` → `src/assistant-dock.ts`; consolidated loading via a single Vite module graph (no direct `<script>` tags).
+ - Removed deleted legacy JS files from repository; index.html now only references the single module entry (`/src/main.ts`).
+ - Frontend unit test harness (Vitest + jsdom) added with initial tests for filtering (`filters.ts`) and gallery navigation (`gallery-nav.ts`).
+ - CSP tightened in `deploy/nginx.conf`: `script-src` no longer allows `'unsafe-inline'`; TODO left to remove `'unsafe-inline'` from `style-src` after refactoring inline styles.
+ - Inline style refactor complete: extracted all inline `<style>` blocks & `style=""` attributes to `assets/site.css`; CSP `style-src 'self'` now enforced (dropped `'unsafe-inline'`).
 
 ### Deprecated
 - Separate `frontend` container pattern (legacy compose mode retained only for reference).
@@ -63,6 +71,14 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
  - Automatic CORS origin derivation from `DOMAIN` (adds https/http + www variants unless explicitly provided) stored with metadata.
  - Preflight logging middleware gated by `CORS_LOG_PREFLIGHT=1` prints Origin + Access-Control-Request-* headers for auditing.
  - `/status/cors` endpoint exposes current CORS configuration (raw env, derived origins, wildcard mode) for rapid diagnostics.
+
+### Added (Unreleased – Monitoring & E2E)
+- Scheduled production probe workflow (`prod-assistant-probe.yml`) publishing `status.json` (Shields endpoint) + `probe.json` to `status-badge` branch.
+- Dynamic badge payload with latency-derived color + message (`ok|degraded|error|partial`) and captured `X-Build-ID`.
+- SLO gating step (soft >5s, hard >10s, partial disallowed) failing workflow when thresholds breached.
+- Playwright production E2E workflow (`e2e-prod.yml`) validating status pill and redirect.
+- Redirect verification test (`redirect.spec.ts`) ensuring GitHub Pages → unified host transition.
+- README status badge legend (color semantics) and OPERATIONS / DEVELOPMENT guidance additions.
 
 ## [0.2.0] - 2025-09-27
 ### Added

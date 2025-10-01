@@ -151,6 +151,37 @@ Live production health is summarized via a JSON badge published by the scheduled
 - Uptime streak & last failure timestamp.
 - Distinguish network vs application nulls (different color codes).
 
+### SLO Gating (Implemented)
+The probe workflow enforces two latency thresholds:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `SLO_MAX_MS` | 5 | Soft SLO (warn/fail if exceeded) |
+| `HARD_MAX_MS` | 10 | Hard ceiling (immediate failure) |
+| `ALLOW_PARTIAL` | false | If false and any latency is null, job fails |
+
+Failure modes:
+- Partial data (null latency) when `ALLOW_PARTIAL=false`.
+- Any latency > `HARD_MAX_MS`.
+- Any latency > `SLO_MAX_MS` (soft threshold) — still fails to surface degradation.
+
+Adjust by editing the final "Enforce SLO thresholds" step in `.github/workflows/prod-assistant-probe.yml`.
+
+### Establishing Baselines
+Collect several probe cycles (≥ 24h) then derive medians/p95:
+```bash
+git fetch origin status-badge:status-badge
+git checkout status-badge
+grep -h '"latencies"' status.json 2>/dev/null || true
+```
+For a richer approach, script extraction:
+```bash
+git log --format='%H' -- status.json | head -n 40 | while read sha; do
+  git show ${sha}:status.json | jq -r '[.extra.probe.latencies.root,.extra.probe.latencies.ready,.extra.probe.latencies.status,.extra.probe.latencies.chat] | @csv'
+done > latency-samples.csv
+```
+Then process in Python or a spreadsheet for median / p95 to refine `SLO_MAX_MS`.
+
 ---
 *This guide is a living document — update as new operational behaviors emerge.*
 
