@@ -116,6 +116,45 @@ function Latency {
   }
 }
 
+function Invoke-StrictNginxSmoke {
+  param(
+    [string]$Base = "http://localhost:5178",
+    [string]$ComposeFile = "docker-compose.test.yml",
+    [switch]$FullSuite
+  )
+  try {
+    Write-Host "==> Build dist" -ForegroundColor Cyan
+    pnpm build:prod | Out-Null
+    Write-Host "==> Sync CSP hash" -ForegroundColor Cyan
+    pnpm csp:hash | Out-Null
+    pnpm csp:sync:test | Out-Null
+    Write-Host "==> Compose up ($ComposeFile)" -ForegroundColor Cyan
+    docker compose -f $ComposeFile up -d | Out-Null
+    Write-Host "==> Wait for /healthz" -ForegroundColor Cyan
+    $ok = $false
+    foreach ($i in 1..60) {
+      try {
+        $r = Invoke-WebRequest "$Base/healthz" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+        if ($r.StatusCode -eq 204) { $ok = $true; break }
+      } catch {}
+      Start-Sleep -Seconds 1
+    }
+    if (-not $ok) { throw "web-test did not become healthy in time" }
+    $env:BASE = $Base
+    $env:REQUIRE_CSS_200 = '1'
+    $env:REQUIRE_STATUS_PILL_STRICT = '1'
+    $env:PLAYWRIGHT_STRICT_STREAM = '1'
+    if ($FullSuite) {
+      pnpm exec playwright test
+    } else {
+      pnpm test:smoke
+    }
+  } finally {
+    Write-Host "==> Compose down" -ForegroundColor Cyan
+    docker compose -f $ComposeFile down -v | Out-Null
+  }
+}
+
 switch ($Task) {
   "deps"  { Deps }
   "test"  { Test }
@@ -123,6 +162,8 @@ switch ($Task) {
   "run"   { Run }
   "audit" { Audit }
   "latency" { Latency }
+  "strict-nginx" { Invoke-StrictNginxSmoke }
+  "strict-nginx-full" { Invoke-StrictNginxSmoke -FullSuite }
   "cmddev" { CmdDev }
   "hyperdev" { HyperDev }
   "webdev" { WebDev }

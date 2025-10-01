@@ -1,52 +1,38 @@
+/* Asset-guard SW: prevents caching/serving HTML for asset requests */
 /// <reference lib="webworker" />
-
-// Progressive web app strategy (disabled on GitHub Pages by unregister in main.js)
-// Network-first for navigations (HTML) to avoid stale releases.
-// Cache-first for hashed static assets.
 /** @type {ServiceWorkerGlobalScope} */
-// @ts-ignore - self is ServiceWorkerGlobalScope in this file (webworker lib ref)
+// @ts-ignore
 const sw = /** @type {ServiceWorkerGlobalScope} */ (self);
 
-const ASSET_CACHE = 'assets-v1';
-
 sw.addEventListener('install', () => sw.skipWaiting());
-sw.addEventListener('activate', (event) => event.waitUntil(sw.clients.claim()));
-
-/**
- * @param {string} path
- */
-/**
- * @param {string} path
- */
-function isHashedAsset(path) {
-  return /\.(?:js|css|woff2|png|jpe?g|webp|gif|svg|ico)$/.test(path) && /\.[0-9a-f]{8,}\./.test(path);
-}
+sw.addEventListener('activate', (e) => e.waitUntil(sw.clients.claim()));
 
 sw.addEventListener('fetch', (event) => {
   /** @type {FetchEvent} */
-  // @ts-ignore - event is a FetchEvent in SW context
+  // @ts-ignore
   const fe = event;
   const req = fe.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return; // don't proxy cross-origin
+  if (url.origin !== self.location.origin) return;
 
-  // Always network-first for navigations (fresh index.html)
-  if (req.mode === 'navigate') {
-    fe.respondWith(
-      fetch(req).catch(async () => (await caches.match('/index.html')) || new Response('offline', { status: 503, statusText: 'Offline' }))
-    );
-    return;
-  }
+  const assetPath = url.pathname.startsWith('/assets/')
+    || /\.(css|js|mjs|woff2?|ttf|png|jpe?g|webp|avif|svg)$/i.test(url.pathname);
+  const assetKind = ['style','script','image','font'].includes(req.destination);
 
-  const pathname = url.pathname;
-  if (isHashedAsset(pathname)) {
+  if (assetPath || assetKind) {
     fe.respondWith((async () => {
-      const cache = await caches.open(ASSET_CACHE);
-      const hit = await cache.match(req);
-      if (hit) return hit;
-      const res = await fetch(req);
-      cache.put(req, res.clone());
+      let res = null;
+      try {
+        res = await fetch(req, { cache: 'no-cache' });
+      } catch (_err) {
+        return new Response('Gateway Timeout', { status: 504 });
+      }
+      const ct = (res.headers.get('content-type') || '').toLowerCase();
+      if (ct.includes('text/html')) {
+        // Server fallback (likely SPA index) — do not allow HTML for asset URL
+        return new Response('Asset Not Found', { status: 404, statusText: 'Not Found' });
+      }
       return res;
     })());
   }

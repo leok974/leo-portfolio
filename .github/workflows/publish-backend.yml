@@ -16,6 +16,8 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      PYTHONPATH: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -37,7 +39,8 @@ jobs:
           pip install pytest
       - name: Run tests
         run: |
-          pytest -q tests/test_status_rag.py || pytest -q
+          echo "PYTHONPATH=$PYTHONPATH"
+          python -m pytest -q tests/test_status_rag.py || python -m pytest -q
 
   build-and-push:
     needs: [tests]

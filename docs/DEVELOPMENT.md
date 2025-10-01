@@ -189,6 +189,53 @@ Artifacts (on failure): traces + screenshots (HTML report not auto-opened). Conf
 
 Workflow reference: `.github/workflows/e2e-prod.yml` (scheduled + manual dispatch).
 
+## Fast Type Check & UI Smoke (New)
+
+Two lightweight guards were added to catch regressions early:
+
+### 1. TypeScript Check Workflow
+File: `.github/workflows/ts-check.yml`
+
+Runs `npm ci` then `tsc --noEmit` (leveraging `checkJs` + `.d.ts` ambient types) on every push / PR to `main` and `test`. Fails fast if any JS/TS typing drift (e.g., window global removal, module rename) occurs.
+
+Local equivalent:
+```bash
+npm run typecheck
+```
+
+### 2. UI Smoke (Playwright)
+File: `.github/workflows/ui-smoke.yml`
+
+Purpose: Prove end‑to‑end that:
+1. Homepage renders (no blocking CSP errors)
+2. First stylesheet is served as real CSS (not HTML fallback)
+3. Streaming endpoint `/chat/stream` yields bytes (and optionally `_served_by` metadata)
+
+Environment:
+* If secret `UI_SMOKE_BASE` is set → tests hit that public base (no containers).
+* Else spins up `backend` + `nginx` locally via `docker-compose.prod.yml` and waits for `/ready` + `/status/summary`.
+
+Adjust strictness:
+```bash
+PLAYWRIGHT_STRICT_STREAM=1 EXPECT_SERVED_BY="primary|ollama" npx playwright test
+```
+
+Test file: `tests/e2e/assistant.smoke.spec.ts` (single spec, ~<5s on warm host).
+
+### 3. One-File Node Smoke (Optional Local Shortcut)
+Script: `scripts/ui-smoke.mjs`
+
+Runs without browsers (pure fetch API) to validate:
+* CSS asset: 200 + `text/css` + `immutable`
+* Stream produces some bytes (stops early if `_served_by` marker found)
+
+Run locally:
+```bash
+BASE=http://127.0.0.1:8080 node scripts/ui-smoke.mjs
+```
+
+Failures exit non‑zero with a concise message—suitable for embedding in future pre-deploy or canary steps.
+
 ## Status Badge Reference
 The production probe publishes `status.json` to branch `status-badge`. README consumes via Shields endpoint.
 

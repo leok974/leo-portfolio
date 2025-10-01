@@ -1,0 +1,73 @@
+name: CSP Hash Guard
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      autofix:
+        description: "Regenerate and commit hashes automatically"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  csp-hash-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Node version
+        run: node -v
+
+      - name: Regenerate hashes (check mode)
+        run: |
+          node scripts/csp-hash-extract.mjs \
+            --html index.html \
+            --conf deploy/nginx/nginx.prod.conf
+
+      - name: Sync nginx.test.conf hash (no commit)
+        run: pnpm csp:hash || true && pnpm csp:sync:test || true
+
+      - name: Assert nginx.test.conf hash (with diff output)
+        run: node scripts/csp-hash-diff.mjs
+
+      - name: Fail if placeholder remains
+        run: |
+          if grep -q "__INLINE_SCRIPT_HASHES__" deploy/nginx/nginx.prod.conf; then
+            echo "::error ::CSP placeholder still present — run 'make csp-hash' locally (or use workflow dispatch with autofix)."
+            exit 1
+          fi
+
+      - name: Detect working tree changes
+        id: diff
+        run: |
+          git status --porcelain
+          if ! git diff --quiet; then
+            echo "dirty=1" >> $GITHUB_OUTPUT
+          else
+            echo "dirty=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Auto-fix commit (manual dispatch only)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.autofix && steps.diff.outputs.dirty == '1' }}
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "ci(csp): regenerate inline script hashes"
+          file_pattern: |
+            .github/csp/inline-script-hashes.json
+            deploy/nginx/nginx.prod.conf
+
+      - name: Fail on drift in PR/push
+        if: ${{ github.event_name != 'workflow_dispatch' && steps.diff.outputs.dirty == '1' }}
+        run: |
+          echo "::error ::CSP hashes are stale. Run 'make csp-hash' and commit."
+          exit 1

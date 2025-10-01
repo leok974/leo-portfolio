@@ -1,0 +1,42 @@
+name: UI Smoke (Playwright)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BASE: ${{ secrets.UI_SMOKE_BASE || 'http://127.0.0.1:8080' }}
+      STREAM_TIMEOUT_MS: "15000"
+      PLAYWRIGHT_STRICT_STREAM: "0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Optional – start local stack (backend + nginx)
+        if: env.BASE == 'http://127.0.0.1:8080'
+        run: |
+          docker compose -f deploy/docker-compose.prod.yml up -d backend nginx
+          echo "Warming backend until /ready 200 and /status/summary reachable"
+          bash -c 'for i in {1..40}; do curl -fsS http://127.0.0.1:8080/ready && curl -fsS http://127.0.0.1:8080/status/summary && exit 0; sleep 3; done; echo "Backend not ready" >&2; docker ps; exit 1'
+        shell: bash
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install deps
+        run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+      - name: Run Playwright smoke
+        run: npx playwright test --config=playwright.config.ts --reporter=list,html
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report

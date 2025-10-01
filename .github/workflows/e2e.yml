@@ -1,0 +1,60 @@
+name: E2E
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mode: [ dev, strict ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install pnpm
+        run: npm i -g pnpm@9
+      - name: Install deps
+        run: pnpm i
+      - name: Build (strict only)
+        if: matrix.mode == 'strict'
+        run: pnpm build:prod
+      - name: Sync CSP hash (strict only)
+        if: matrix.mode == 'strict'
+        run: pnpm csp:hash && pnpm csp:sync:test
+      - name: Start nginx (strict only)
+        if: matrix.mode == 'strict'
+        run: |
+          docker compose -f docker-compose.test.yml up -d
+          for i in {1..60}; do
+            if curl -fsS http://localhost:5178/healthz >/dev/null; then
+              echo "web-test healthy"; break; fi
+            sleep 1
+          done
+      - name: Playwright install
+        run: pnpm exec playwright install --with-deps
+      - name: Run tests
+        env:
+          BASE: ${{ matrix.mode == 'strict' && 'http://localhost:5178' || '' }}
+          REQUIRE_CSS_200: ${{ matrix.mode == 'strict' && '1' || '' }}
+          REQUIRE_STATUS_PILL_STRICT: ${{ matrix.mode == 'strict' && '1' || '' }}
+          PLAYWRIGHT_STRICT_STREAM: ${{ matrix.mode == 'strict' && '1' || '' }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            pnpm exec playwright test -g "stylesheet|status pill|summary|ping"
+          else
+            pnpm exec playwright test
+          fi
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-${{ matrix.mode }}
+          path: playwright-report
+      - name: Stop nginx (strict only)
+        if: matrix.mode == 'strict'
+        run: docker compose -f docker-compose.test.yml down -v

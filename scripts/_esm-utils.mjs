@@ -11,12 +11,17 @@ import { fileURLToPath } from 'node:url';
  * - Returns false for `node -e`, `node -p`, REPL (no argv[1])
  * @param {string} metaUrl import.meta.url from caller
  */
+/**
+ * @param {string} metaUrl
+ * @returns {boolean}
+ */
 export function isEntrypoint(metaUrl){
   if (!process.argv[1]) return false;
   try {
     const invoked = fs.realpathSync(process.argv[1]);
     const current = fs.realpathSync(fileURLToPath(metaUrl));
-    const norm = p => path.normalize(p);
+  /** @type {(p:string)=>string} */
+  const norm = p => path.normalize(p);
     return norm(invoked) === norm(current);
   } catch {
     return false;

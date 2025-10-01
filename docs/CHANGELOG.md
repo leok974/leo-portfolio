@@ -134,9 +134,19 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
 ### Fixed (Unreleased – CI Triage)
 - Lint failure in `scripts/chat-probe.mjs` resolved by explicitly importing `URL` from `node:url` (ESLint no-undef under ESM).
 - Schema validation script migrated from CommonJS `__dirname` to ESM-compatible `fileURLToPath(import.meta.url)` resolution avoiding runtime `ReferenceError`.
+ - Coverage job failure resolved by adding missing `@vitest/coverage-v8` devDependency and explicit v8 coverage config in `vitest.config.ts`.
+ - Publish backend workflow import failures (`ModuleNotFoundError: assistant_api`) fixed by exporting `PYTHONPATH` and invoking tests via `python -m pytest`.
 
 ### Improved (Unreleased – Resilience)
+### Added (Unreleased – Test Performance)
+- Slim test dependency set (`requirements.test.txt`) excluding heavy ML frameworks.
+- Pytest config (`pytest.ini`) defaulting to skip `@pytest.mark.heavy` tests.
+- Auto-mocking of heavy ML modules via `conftest.py` when `LIGHTWEIGHT_TEST_DEPS=1`.
+- Fast slim CI workflow (`ci-fast.yml`) for quick feedback on PRs/pushes.
+- Heavy model CI workflow (`ci-heavy.yml`) scheduled + manual for full coverage with CPU-only Torch wheel.
+
 - `cors-verify` workflow hardened against intermittent Cloudflare bot challenges: added custom User-Agent, up to 5 retries with backoff, challenge HTML detection, and soft-skip behavior when persistent 403 challenge encountered (prevents noisy false negatives while preserving visibility).
+ - Extended soft-skip / retry logic to OPTIONS preflight in `cors-verify` (mirrors GET logic; avoids failing build on persistent Cloudflare challenge pages).
 
 ## [0.2.0] - 2025-09-27
 ### Added

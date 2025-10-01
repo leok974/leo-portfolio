@@ -6,6 +6,8 @@
 [![Publish Backend](https://github.com/leok974/leo-portfolio/actions/workflows/publish-backend.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/publish-backend.yml)
 [![Smoke](https://github.com/leok974/leo-portfolio/actions/workflows/smoke.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/smoke.yml)
 [![Docs](https://img.shields.io/badge/docs-online-blue)](https://leok974.github.io/leo-portfolio/)
+[![E2E strict (nginx)](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/main/.github/badges/e2e-strict-nginx.json)](./.github/workflows/e2e-strict-nginx.yml)
+[![E2E strict (combined)](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/main/.github/badges/e2e-strict-combined.json)](./.github/workflows/e2e-strict-combined.yml)
 
 ![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/status-badge/.github/badges/coverage.json)
 ![Lines](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/status-badge/.github/badges/lines.json)
@@ -117,6 +119,37 @@ Aggregates strict + fallback results (color matrix in `aggregate-streaming.mjs`)
 ![Streaming (combined)](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/main/.github/badges/streaming-combined.json)
 
 For production / day-2 operational procedures (status headers, legacy cutover, integrity drift, CI health workflow), see `OPERATIONS.md` (root) and the extended guide in `docs/OPERATIONS.md`.
+
+### Playwright Test Modes (Dev vs Strict)
+
+E2E tests are environment‑sensitive to avoid noisy failures during local iteration:
+
+| Script | Command | Behavior |
+|--------|---------|----------|
+| Dev (default soft) | `npm run test:dev` | Skips CSS immutability + status pill finalization if assets or backend not fully ready. |
+| Strict (CI / prod) | `npm run test:strict` | Requires built CSS (200 + immutable), status pill transitions out of "Checking…", and streaming emits `_served_by`. |
+| Smoke (assistant only) | `npm run test:smoke` | Minimal single test (assistant.smoke) in soft mode. |
+
+Environment flags:
+
+- `REQUIRE_CSS_200=1` – Enforce at least one `link[rel=stylesheet]` returning 200 + `text/css` with `immutable` cache-control; otherwise test fails. (Soft mode skips if absent.)
+- `REQUIRE_STATUS_PILL_STRICT=1` – Poll for status pill text to move beyond "Checking…" and acquire class `ok|warn|err`.
+- `PLAYWRIGHT_STRICT_STREAM=1` – Require streaming response to surface `_served_by` token; otherwise only byte count is annotated.
+
+Prerequisites for strict success locally:
+
+1. Build frontend: `npm run build` (serves hashed CSS in `dist/`).
+2. Serve built assets via nginx (see `deploy/docker-compose.prod.yml`) or `vite preview` with correct base path.
+3. Backend running and exposing `/api/ready` + `/api/status/summary` (e.g. `uvicorn assistant_api.main:app --port 8001` behind the nginx `/api` route or adjust `BASE`).
+4. If using custom host/port, export `BASE` (e.g. `BASE=http://localhost:8080`).
+
+Troubleshooting:
+
+- Status pill stuck at Checking…: ensure local `/api` reachable; in dev the script now prioritizes local `/api` before remote domains.
+- CSS preflight 404: you are likely serving raw repo root without `dist/`; run the build or relax strict mode.
+- Missing `_served_by`: verify streaming backend injects marker; fallback providers may differ.
+
+CI workflows should prefer `test:strict` nightly and `test:dev` for PR gating to minimize flaky failures.
 
 ---
 

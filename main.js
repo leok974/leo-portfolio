@@ -486,22 +486,49 @@ document.addEventListener('DOMContentLoaded', async function() {
 // -----------------------------
 // SERVICE WORKER REGISTRATION
 // -----------------------------
-// Dynamic API base selection (GitHub Pages uses external domain; dockerized uses same-origin /api)
+// Dynamic API base selection retained (exposed for potential external scripts)
 const IS_GH_PAGES = location.hostname.endsWith('github.io');
 const API_BASE = IS_GH_PAGES ? 'https://assistant.ledger-mind.org/api' : '/api';
-const windowWithApi = /** @type {typeof window & { __API_BASE__?: string }} */ (window);
-windowWithApi.__API_BASE__ = API_BASE; // expose for inline scripts / debugging
+const windowWithApi = /** @type {typeof window & { __API_BASE__?: string, USE_BOTTOM_RIGHT_ASSISTANT?: boolean }} */ (window);
+windowWithApi.__API_BASE__ = API_BASE;
 
+// Moved from inline <script> (legacy assistant cleanup / duplication guard)
+windowWithApi.USE_BOTTOM_RIGHT_ASSISTANT = false;
+document.addEventListener('DOMContentLoaded', () => {
+  document.body.classList.remove('assistant-open');
+  if (document.body && document.body.style) document.body.style.paddingBottom = '';
+  const legacyIds = ['assistant-panel','leo-assistant','la-panel','la-open'];
+  legacyIds.forEach(id=>{ const el=document.getElementById(id); if (el) try{ el.remove(); }catch{} });
+  const chipRoots = document.querySelectorAll('#assistant-chip-root');
+  chipRoots.forEach((el,i)=>{ if(i>0) try{ el.remove(); }catch{} });
+  const chipsDup = document.querySelectorAll('#assistant-chip');
+  chipsDup.forEach((el,i)=>{ if(i>0) try{ el.remove(); }catch{} });
+  const docks = document.querySelectorAll('.assistant-dock');
+  docks.forEach((el,i)=>{ if(i>0) try{ el.remove(); }catch{} });
+});
+
+// Service worker registration (asset guard) — always enabled except localhost to avoid dev cache confusion.
 if ('serviceWorker' in navigator) {
-  const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
-  if (isLocal || IS_GH_PAGES) {
-    // Avoid SW on local dev or GitHub Pages (prevents stale index.html caching)
-    navigator.serviceWorker.getRegistrations?.().then(regs => regs.forEach(r => r.unregister()));
-  } else {
-    const basePath = location.pathname.includes('/leo-portfolio/') ? '/leo-portfolio/' : '/';
-    const swUrl = `${basePath}sw.js`;
+  const isLocal = ['localhost','127.0.0.1'].includes(location.hostname);
+  if (!isLocal) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register(swUrl).catch(err => console.warn('Service worker registration failed:', err));
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .catch(err => console.warn('SW registration failed', err));
     });
   }
 }
+
+// ---------------------------------
+// ASSISTANT MODULE INTEGRATION
+// ---------------------------------
+// The assistant inline scripts were extracted to modules under src/assistant to
+// reduce CSP surface (only JSON-LD remains inline). We lazy‑init after DOM ready.
+import './src/assistant/chat-bootstrap';
+import { initAgentStatus, wireChatForm } from './src/assistant/boot';
+import { performCleanup } from './src/assistant/cleanup';
+
+document.addEventListener('DOMContentLoaded', () => {
+  try { initAgentStatus(); } catch(e){ console.warn('initAgentStatus failed', e); }
+  try { wireChatForm(); } catch(e){ console.warn('wireChatForm failed', e); }
+  try { performCleanup(); } catch(e){ console.warn('performCleanup failed', e); }
+});

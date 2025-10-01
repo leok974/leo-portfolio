@@ -60,7 +60,9 @@ webdev:
 
 # --- Production stack shortcuts (deploy/docker-compose.prod.yml) ---
 prod-up:
-	docker compose -f deploy/docker-compose.prod.yml up -d
+	@PRIMARY_MODEL=$${PRIMARY_MODEL:-gpt-oss:20b}; \
+	echo "Using PRIMARY_MODEL=$$PRIMARY_MODEL"; \
+	PRIMARY_MODEL=$$PRIMARY_MODEL docker compose -f deploy/docker-compose.prod.yml up -d
 
 prod-down:
 	docker compose -f deploy/docker-compose.prod.yml down
@@ -69,8 +71,10 @@ prod-logs:
 	docker compose -f deploy/docker-compose.prod.yml logs -f
 
 prod-rebuild:
-	docker compose -f deploy/docker-compose.prod.yml build --pull && \
-	  docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate --remove-orphans
+	@PRIMARY_MODEL=$${PRIMARY_MODEL:-gpt-oss:20b}; \
+	echo "Rebuilding with PRIMARY_MODEL=$$PRIMARY_MODEL"; \
+	PRIMARY_MODEL=$$PRIMARY_MODEL docker compose -f deploy/docker-compose.prod.yml build --pull && \
+	PRIMARY_MODEL=$$PRIMARY_MODEL docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate --remove-orphans
 
 # Cloudflare tunnel sidecar (requires deploy/docker-compose.tunnel.override.yml and secrets/cloudflared_token)
 tunnel-up:
@@ -87,3 +91,8 @@ tunnel-down:
 # Initialize .env from template (idempotent)
 env-init:
 	@if [ -f .env ]; then echo ".env already exists (skipping)."; else cp .env.deploy.example .env && echo "Created .env from template"; fi
+
+# Generate CSP hashes for inline scripts and patch nginx prod conf
+csp-hash:
+	node scripts/csp-hash-extract.mjs --html index.html --conf deploy/nginx/nginx.prod.conf
+	@echo "If hashes updated, rebuild nginx: make prod-rebuild"
