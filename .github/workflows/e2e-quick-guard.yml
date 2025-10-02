@@ -1,0 +1,67 @@
+name: e2e-quick-guard
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  quick-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install deps
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Build frontend (prod)
+        run: pnpm build:prod || pnpm build
+
+      - name: Sync CSP hash into deploy nginx.conf
+        run: |
+          pnpm csp:sync:deploy || echo "(skip: script not yet available)"
+
+      - name: Start prod stack (bind dist + bind conf)
+        run: |
+          docker compose -f deploy/docker-compose.prod.yml \
+            -f deploy/docker-compose.prod.bind.override.yml \
+            -f deploy/docker-compose.prod.conf.override.yml up -d --build
+          chmod +x scripts/wait-for-http.sh || true
+          if [ -f scripts/wait-for-http.sh ]; then scripts/wait-for-http.sh http://localhost:8080 60; else echo "Skipping wait-for-http (script missing)"; fi
+
+      - name: Install Playwright Browsers
+        run: pnpm exec playwright install --with-deps
+
+      - name: Focused Playwright guard
+        env:
+          BASE: http://localhost:8080
+          NGINX_STRICT: "1"
+        run: >
+          pnpm exec playwright test
+          -g "security headers drift|projects.json conditional|projects json cache|mime smoke|bundle wiring|dist bind-mount parity|root html mime"
+          --reporter=line
+
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-quick-guard
+          path: playwright-report
+
+      - name: Down stack
+        if: always()
+        run: |
+          docker compose -f deploy/docker-compose.prod.yml \
+            -f deploy/docker-compose.prod.bind.override.yml \
+            -f deploy/docker-compose.prod.conf.override.yml down -v

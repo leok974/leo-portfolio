@@ -8,7 +8,7 @@
   "theme_color": "#0f172a",
   "description": "AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist — projects and contact",
   "icons": [
-    { "src": "assets/optimized/leo-avatar-sm.png", "sizes": "320x320", "type": "image/png", "purpose": "any maskable" },
-    { "src": "assets/optimized/leo-avatar-md.png", "sizes": "800x800", "type": "image/png", "purpose": "any maskable" }
+    { "src": "leo-avatar-sm.png", "sizes": "320x320", "type": "image/png", "purpose": "any maskable" },
+    { "src": "leo-avatar-md.png", "sizes": "800x800", "type": "image/png", "purpose": "any maskable" }
   ]
 }

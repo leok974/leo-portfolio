@@ -1,0 +1,25 @@
+version: "3.9"
+
+# Local-only override: bind-mount existing ./dist build into nginx so hashed assets
+# match the host build immediately (no image rebuild needed after each vite build).
+# Usage:
+#   pnpm build:prod
+#   docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.prod.bind.override.yml up -d --build
+# Or via tasks.ps1 (manual compose invocation required until wired):
+#   pwsh -File .\tasks.ps1 prod-down
+#   pnpm build:prod; docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.prod.bind.override.yml up -d
+
+services:
+  nginx:
+    volumes:
+      - type: bind
+        source: ../dist   # relative to deploy/ directory; run compose from repo root
+        target: /usr/share/nginx/html
+        read_only: true
+      # Windows alternative (uncomment & adjust path if relative fails):
+      # - type: bind
+      #   source: ${PWD}/dist
+      #   target: /usr/share/nginx/html
+      #   read_only: true
+    # Compose applies bind mounts after image extraction; built image assets are masked
+    # by the newer host build so you can iterate without rebuilding the frontend layer.

@@ -1,0 +1,39 @@
+# Full-stack strict (static site + mock backend behind nginx)
+version: "3.8"
+services:
+  web-test:
+    image: nginx:1.27-alpine
+    depends_on:
+      - backend-test
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dist:/usr/share/nginx/html:ro
+      - ./nginx.test.full.conf:/etc/nginx/nginx.conf:ro
+    environment:
+      - NGINX_STRICT=1
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/healthz" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # Ensure Playwright waits until container up
+  backend-test:
+    build: ./tests/backend-mock
+    expose:
+      - "8101"
+    ports:
+      - "8101:8101"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8101/api/ready', timeout=2).status==200 else sys.exit(1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    environment:
+      - PLAYWRIGHT_STRICT_STREAM=1
+      - FAIL_READY=${FAIL_READY:-0}
+      - FAIL_SUMMARY=${FAIL_SUMMARY:-0}
+      - FAIL_CHAT=${FAIL_CHAT:-0}
+      - FAIL_SSE=${FAIL_SSE:-0}
+      - FAIL_PING=${FAIL_PING:-0}
+      - LATENCY_MS=${LATENCY_MS:-0}

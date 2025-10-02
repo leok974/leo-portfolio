@@ -3,6 +3,47 @@
 All notable changes to this project will be documented here.
 Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD).
 
+## [v0.7.2] - 2025-10-01
+### feat(e2e): full-stack strict mode, backend tagging, error injection & security workflow
+**Summary**
+- Dual strict modes: static (fast, nginx strict) and full-stack (nginx + mock FastAPI backend).
+- Backend-aware tagging: `@backend` for targeted runs; security-focused `@security` tag (MIME + CSP).
+- Deterministic mock backend with error & latency injection flags (FAIL_*, LATENCY_MS) enabling negative-path & resilience tests.
+- Nightly full-stack workflow + badge; fast `E2E Security` workflow for MIME/CSP regression detection.
+- Skip logic prevents false failures when backend absent; strict parity enforced on main & nightly.
+
+**Highlights**
+- Scripts: `smoke:strict-nginx`, `smoke:strict-nginx:full`, `test:backend`, `test:smoke:backend`, `test:security`, `smoke:security`.
+- New negative readiness spec (`backend-negative.spec.ts`) gating on injected failure vars.
+- Env flags: `BACKEND_REQUIRED`, `NGINX_STRICT`, `PLAYWRIGHT_STRICT_STREAM`, `FAIL_*`, `LATENCY_MS`, `EXPECT_READY_FALSE`.
+- CI: strict-full job, nightly full-stack, new `e2e-security.yml` workflow (fast @security gate).
+
+**Breaking / Behavior Changes**
+- Backend-dependent Playwright specs now skip unless `BACKEND_REQUIRED=1` (reduces noise in static-only runs).
+- Security specs require `NGINX_STRICT=1`.
+
+**How to Use**
+```bash
+# Static strict smoke
+pnpm smoke:strict-nginx
+# Full-stack strict smoke
+pnpm smoke:strict-nginx:full
+# Security-only (MIME + CSP)
+pnpm test:security
+# Inject failure (ready=false)
+FAIL_READY=1 EXPECT_READY_FALSE=1 pnpm smoke:strict-nginx:full
+```
+
+**Guards Now Enforced**
+- Root `/` served as `text/html` (no download) via `root-html-mime.spec.ts`.
+- CSP header present, hashed script-src (no `unsafe-inline`) via `csp-header.spec.ts`.
+- Immutable caching for hashed assets still validated in broader smoke sets.
+
+**Next (Potential)**
+- Add latency degradation UI spec using `LATENCY_MS`.
+- Expand `@security` to include cache-control assertions & header hardening (X-Frame-Options, Referrer-Policy) once standardized.
+
+
 ## [v0.7.1] - 2025-10-01
 ### Added
 - Markdown & YAML linting via @eslint/markdown, yaml-eslint-parser, eslint-plugin-yml.
@@ -147,6 +188,27 @@ Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD
 
 - `cors-verify` workflow hardened against intermittent Cloudflare bot challenges: added custom User-Agent, up to 5 retries with backoff, challenge HTML detection, and soft-skip behavior when persistent 403 challenge encountered (prevents noisy false negatives while preserving visibility).
  - Extended soft-skip / retry logic to OPTIONS preflight in `cors-verify` (mirrors GET logic; avoids failing build on persistent Cloudflare challenge pages).
+
+### Added (Unreleased – Content Integrity)
+- `public/projects.json` now included in build output (prevents 404 + HTML fallback for project data fetches).
+- E2E spec `projects-json.spec.ts` ensures `projects.json` served with `application/json` and required project keys.
+- E2E spec `manifest-icons.spec.ts` validates each manifest icon URL returns 200 and correct `image/png` MIME.
+- E2E spec `projects-json-cache.spec.ts` validates short-lived Cache-Control for project data.
+
+### Fixed (Unreleased – Manifest)
+- Updated `manifest.webmanifest` icon `src` paths from non-existent `assets/optimized/*` to existing `leo-avatar-sm.png` / `leo-avatar-md.png` in public root (eliminates icon 404s and broken install metadata).
+
+### Changed (Unreleased – Caching Policy)
+- Added targeted 5-minute cache rule (`Cache-Control: public, max-age=300`) for `/projects.json` instead of 1-year immutable asset policy to allow frequent content updates without hard reloads.
+
+### Changed (Unreleased – Security Hardening)
+- Centralized CSP definition in `deploy/nginx.conf` via `$csp_policy` variable to remove six duplicated header strings and reduce drift risk (hash placeholder still replaced during build pipeline).
+ - Automated CSP hash synchronization script (`scripts/csp-hash-sync-deploy.mjs`) now available; CI quick guard workflow can inject the built inline script hash into `$csp_policy` ensuring parity with `dist/index.html`.
+
+### Added (Unreleased – Security Drift Tests)
+- **CI:** Added fast guard workflow (`e2e-quick-guard.yml`) executing focused Playwright groups (MIME, parity, cache, security headers, conditional caching) on PRs/pushes for rapid regression signal.
+- `tests/e2e/security-headers.spec.ts` ensuring presence of hardened `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`, `Permissions-Policy`, and CSP with at least one `sha256-` hash.
+- `tests/e2e/projects-json-conditional.spec.ts` validating 304 conditional GET behavior (ETag / Last-Modified) for `projects.json` alongside short-lived caching policy.
 
 ## [0.2.0] - 2025-09-27
 ### Added

@@ -49,14 +49,52 @@ test('page renders + css loads + streaming works', async ({ page, request }) => 
     test.skip(!REQUIRE_CSS_200, `No stylesheet passed preflight (dev tolerant). ${lastErr}`);
     expect(cssOk, `No stylesheet passed preflight. ${lastErr}\nHint: run production build (npm run build) or ensure nginx serves built assets.`).toBe(true);
   }
+  // --- Backend availability probe (early) ---
+  const backendRequired = process.env.BACKEND_REQUIRED === '1';
+  let backendAvailable = false;
+  let probeHitEndpoint: string | null = null;
+  const probeEndpoints = ['/api/status/summary', '/api/ready', '/ready'];
+  for (const ep of probeEndpoints) {
+    try {
+      const r = await request.get(ep);
+      if (r.status() < 400) { backendAvailable = true; probeHitEndpoint = ep; break; }
+      if (r.status() === 404) {
+        test.info().annotations.push({ type: 'backend-probe', description: `${ep} -> 404` });
+      } else {
+        test.info().annotations.push({ type: 'backend-probe', description: `${ep} -> ${r.status()}` });
+      }
+    } catch (e) {
+      test.info().annotations.push({ type: 'backend-probe-error', description: `${ep} ${(e as Error).message}` });
+    }
+  }
 
+  // if no backend reachable AND BACKEND_REQUIRED != 1, SKIP for clean reporting
+  if (!backendAvailable && process.env.BACKEND_REQUIRED !== '1') {
+    test.info().annotations.push({
+      type: 'skip-reason',
+      description: 'Backend absent; BACKEND_REQUIRED=0 (frontend-only mode)'
+    });
+    test.skip(true, 'Backend absent (frontend-only mode)');
+  }
+  if (!backendAvailable && backendRequired) {
+    expect(backendAvailable, 'Backend required but not reachable via status/ready probes').toBeTruthy();
+  }
+  if (backendAvailable) {
+    // annotate which probe succeeded for debugging
+    test.info().annotations.push({
+      type: 'backend-probe',
+      description: `reachable: ${probeHitEndpoint}`
+    });
+  }
+
+  // --- Streaming test ---
   const result = await page.evaluate(
     async ({ timeoutMs }) => {
       const res = await fetch('/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [{ role: 'user', content: 'hello with _served_by' }] })
-      });
+        body: JSON.stringify({ messages: [{ role: 'user', content: 'hello with _served_by' }] }) }
+      );
       if (!res.ok || !res.body) return { ok: false, err: `HTTP ${res.status}` };
       const reader = res.body.getReader();
       const td = new TextDecoder();
@@ -82,11 +120,7 @@ test('page renders + css loads + streaming works', async ({ page, request }) => 
     { timeoutMs: STREAM_TIMEOUT_MS }
   );
 
-  if (!result.ok) {
-    // Allow skip in frontend-only mode where backend endpoints are absent
-    test.skip(process.env.BACKEND_REQUIRED === '0', `Streaming endpoint unavailable: ${result.err || 'unknown error'}`);
-  }
-  expect(result.ok).toBeTruthy();
+  expect(result.ok, result.err || 'stream failed').toBeTruthy();
   expect(result.bytes).toBeGreaterThan(0);
 
   if (STRICT) {

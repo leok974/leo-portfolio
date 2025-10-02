@@ -1,11 +1,12 @@
 import { test, expect, request as pwRequest } from '@playwright/test';
 import { BASE } from './helpers/env';
 
-const BACKEND_REQUIRED = process.env.BACKEND_REQUIRED !== '0';
+// Only treat backend as strictly required when explicitly set to '1'
+const BACKEND_REQUIRED = process.env.BACKEND_REQUIRED === '1';
 
 // Backend status summary health (structure-aware) separate from UI pill
-
-test('backend status summary is healthy', async () => {
+test.describe('@backend backend status', () => {
+test('summary is healthy', async () => {
   const api = await pwRequest.newContext();
   let res;
   try {
@@ -32,4 +33,5 @@ test('backend status summary is healthy', async () => {
   expect(body, 'summary payload should include rag.ok').toHaveProperty(['rag', 'ok']);
   expect(body.rag.ok).toBe(true);
   test.info().attach('summary.json', { body: JSON.stringify(body, null, 2), contentType: 'application/json' });
+});
 });

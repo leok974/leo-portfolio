@@ -1,0 +1,67 @@
+name: E2E MIME+Cache Smoke (nginx strict)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  mime_smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        run: npm i -g pnpm@9
+
+      - name: Install deps
+        run: pnpm i
+
+      - name: Build dist
+        run: pnpm build:prod
+
+      - name: Start prod stack (bind dist + bind conf)
+        run: |
+          docker compose \
+            -f deploy/docker-compose.prod.yml \
+            -f deploy/docker-compose.prod.bind.override.yml \
+            -f deploy/docker-compose.prod.conf.override.yml \
+            up -d --build
+          for i in {1..60}; do
+            if curl -fsS http://localhost:8080/ >/dev/null; then echo 'nginx up'; break; fi
+            sleep 1
+          done
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps
+
+      - name: Run MIME+cache smoke
+        env:
+          BASE: http://localhost:8080
+          NGINX_STRICT: "1"
+          NGINX_CONTAINER: deploy-nginx-1
+        run: pnpm exec playwright test -g "mime smoke|root html mime|cache smoke"
+
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-mime-smoke
+          path: playwright-report
+
+      - name: Down stack
+        if: always()
+        run: |
+          docker compose \
+            -f deploy/docker-compose.prod.yml \
+            -f deploy/docker-compose.prod.bind.override.yml \
+            -f deploy/docker-compose.prod.conf.override.yml \
+            down -v
