@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2025-10-02T17:11:48.043Z",
+  "base": "http://127.0.0.1:8080",
+  "digests": {
+    "/assets/Inter-roman.var-Dx4kXJAl.woff2": {
+      "sha256": "ff4fae45d223b2295ca4414bcec9430d67b0eebed3c74fceedd34b3b606768b6",
+      "contentType": "font/woff2",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    "/assets/styles.74e2bb05ef-BBOL8RVa.css": {
+      "sha256": "282f2d21f73059b5aacb6f8f02d7db98a29c08f38a2962bf4c18e7fbb100925c",
+      "contentType": "text/css",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    "/assets/index-DGLTNnZp.js": {
+      "sha256": "8ce8f47311ea17293ac93ff3378bfb822aa4c0d4bc2dc29efe909be92081e81a",
+      "contentType": "application/javascript",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    "/assets/index-BeH8MGbI.css": {
+      "sha256": "6828119899224ca6ab5a135b00b50971167ef653ad16c8af306eba1211fc28a3",
+      "contentType": "text/css",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    "/assets/datapipe-ai-cover-ZCr5nOdV.webp": {
+      "sha256": "7c8a21783b0c0e0664844b12c23a0f22d3680ae0808f5a44519bf5f8d67945a9",
+      "contentType": "image/webp",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    "/assets/clarity-companion-DHeFhsoM.webp": {
+      "sha256": "51a751d5550ff0208b68c29da5f1a5bb241c49454baee76dede19cae0263e885",
+      "contentType": "image/webp",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    "/assets/leo-avatar-sm-CMt0ZYX3.jpg": {
+      "sha256": "5d81a42be1386f7e4d92ea4af1b4fdbd56fd558ebf64aa05fcb9a1e043765462",
+      "contentType": "image/jpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    }
+  }
+}
