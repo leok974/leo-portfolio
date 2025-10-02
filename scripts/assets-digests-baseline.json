@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2025-10-02T17:11:48.043Z",
+  "generatedAt": "2025-10-02T17:15:35.649Z",
   "base": "http://127.0.0.1:8080",
   "digests": {
     "/assets/Inter-roman.var-Dx4kXJAl.woff2": {
-      "sha256": "ff4fae45d223b2295ca4414bcec9430d67b0eebed3c74fceedd34b3b606768b6",
+      "sha256": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62",
       "contentType": "font/woff2",
       "cacheControl": "public, max-age=31536000, immutable"
     },
@@ -23,17 +23,17 @@
       "cacheControl": "public, max-age=31536000, immutable"
     },
     "/assets/datapipe-ai-cover-ZCr5nOdV.webp": {
-      "sha256": "7c8a21783b0c0e0664844b12c23a0f22d3680ae0808f5a44519bf5f8d67945a9",
+      "sha256": "8db0afa53af6b339f80b8028e0859dfe6dde2190221e3951646eaaead9389222",
       "contentType": "image/webp",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     "/assets/clarity-companion-DHeFhsoM.webp": {
-      "sha256": "51a751d5550ff0208b68c29da5f1a5bb241c49454baee76dede19cae0263e885",
+      "sha256": "9363997597dced7a6c80b3d01f6ffb98eeb5148c2d895af0d3f9927430cc8f81",
       "contentType": "image/webp",
       "cacheControl": "public, max-age=31536000, immutable"
     },
     "/assets/leo-avatar-sm-CMt0ZYX3.jpg": {
-      "sha256": "5d81a42be1386f7e4d92ea4af1b4fdbd56fd558ebf64aa05fcb9a1e043765462",
+      "sha256": "c94c381abb2673bf26b654d2b06d5b6a68bffd3ca137dfbbd2caecc4931bd07b",
       "contentType": "image/jpeg",
       "cacheControl": "public, max-age=31536000, immutable"
     }
