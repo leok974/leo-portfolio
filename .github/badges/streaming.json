@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "label": "streaming",
+  "message": "strict: fail",
+  "color": "red"
+}
