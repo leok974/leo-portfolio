@@ -14,13 +14,6 @@
     "typeRoots": ["./types", "./node_modules/@types"],
     "noEmit": true
   },
-  "include": [
-    "**/*.js",
-    "types/**/*.d.ts",
-    "vite.config.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["**/*.js", "types/**/*.d.ts", "vite.config.ts"],
+  "exclude": ["node_modules", "dist", "coverage/lcov-report"]
 }

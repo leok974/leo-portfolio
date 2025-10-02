@@ -1,0 +1,58 @@
+name: E2E Strict (nginx)
+on:
+  schedule:
+    - cron: "25 03 * * *"
+  workflow_dispatch:
+
+jobs:
+  strict-nginx:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install pnpm
+        run: npm i -g pnpm@9
+      - name: Install deps
+        run: pnpm i
+      - name: Build
+        run: pnpm build:prod
+      - name: Sync CSP hash
+        run: pnpm csp:hash && pnpm csp:sync:test
+      - name: Start nginx test server
+        run: |
+          docker compose -f docker-compose.test.yml up -d
+          for i in {1..60}; do
+            curl -fsS http://localhost:5178/healthz && break
+            sleep 1
+          done
+      - name: Playwright install
+        run: pnpm exec playwright install --with-deps
+      - name: Run strict tests
+        env:
+          BASE: http://localhost:5178
+          REQUIRE_CSS_200: "1"
+          REQUIRE_STATUS_PILL_STRICT: "1"
+          PLAYWRIGHT_STRICT_STREAM: "1"
+        run: pnpm exec playwright test
+      - name: Badge (pass)
+        if: success()
+        run: |
+          mkdir -p .github/badges
+          echo '{ "schemaVersion":1,"label":"E2E strict (nginx)","message":"passing","color":"green"}' > .github/badges/e2e-strict-nginx.json
+      - name: Badge (fail)
+        if: failure()
+        run: |
+          mkdir -p .github/badges
+          echo '{ "schemaVersion":1,"label":"E2E strict (nginx)","message":"failing","color":"red"}' > .github/badges/e2e-strict-nginx.json
+      - name: Commit badge
+        if: always()
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: .github/badges/e2e-strict-nginx.json
+          message: "ci: update e2e strict (nginx) badge"
+          default_author: github_actions
+      - name: Stop nginx
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v

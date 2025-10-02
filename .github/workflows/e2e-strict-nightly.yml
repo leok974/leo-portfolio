@@ -1,0 +1,57 @@
+name: E2E Strict Nightly
+on:
+  schedule:
+    - cron: "20 03 * * *"
+  workflow_dispatch:
+
+jobs:
+  strict:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install pnpm
+        run: npm i -g pnpm@9
+      - name: Install deps
+        run: pnpm i
+      - name: Build
+        run: pnpm build:prod
+      - name: Serve dist
+        run: |
+          npx http-server ./dist -p 5178 -c-1 &
+          echo $! > server.pid
+      - name: Playwright install
+        run: pnpm exec playwright install --with-deps
+      - name: Run strict tests
+        env:
+          BASE: http://localhost:5178
+          REQUIRE_CSS_200: "1"
+          REQUIRE_STATUS_PILL_STRICT: "1"
+          PLAYWRIGHT_STRICT_STREAM: "1"
+        run: pnpm exec playwright test
+      - name: Write badge (pass)
+        if: success()
+        run: |
+          mkdir -p .github/badges
+          cat > .github/badges/e2e-strict.json <<'JSON'
+          { "schemaVersion":1,"label":"E2E strict","message":"passing","color":"green" }
+          JSON
+      - name: Write badge (fail)
+        if: failure()
+        run: |
+          mkdir -p .github/badges
+          cat > .github/badges/e2e-strict.json <<'JSON'
+          { "schemaVersion":1,"label":"E2E strict","message":"failing","color":"red" }
+          JSON
+      - name: Commit badge
+        if: always()
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: ".github/badges/e2e-strict.json"
+          message: "chore(ci): update E2E strict badge"
+          default_author: github_actions
+      - name: Stop server
+        if: always()
+        run: kill $(cat server.pid) || true

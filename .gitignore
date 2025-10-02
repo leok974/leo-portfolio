@@ -88,3 +88,7 @@ ENV/
 env/
 *.egg-info/
 pip-wheel-metadata/
+
+# Test and E2E artifacts (do not commit)
+playwright-report/
+test-results/

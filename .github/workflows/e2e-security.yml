@@ -1,0 +1,58 @@
+name: E2E Security (nginx strict)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        run: npm i -g pnpm@9
+
+      - name: Install deps
+        run: pnpm i
+
+      - name: Build & sync CSP
+        run: |
+          pnpm build:prod
+          pnpm csp:hash && pnpm csp:sync:test
+
+      - name: Start nginx strict (static)
+        run: |
+          docker compose -f docker-compose.test.yml up -d --build
+          for i in {1..60}; do
+            curl -fsS http://localhost:5178/healthz && break || sleep 1
+          done
+
+      - name: Install Playwright deps
+        run: pnpm exec playwright install --with-deps
+
+      - name: Run @security tests
+        env:
+          BASE: http://localhost:5178
+          NGINX_STRICT: "1"
+          REQUIRE_CSS_200: "1"
+        run: pnpm test:security
+
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-security
+          path: playwright-report
+
+      - name: Down stack
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v

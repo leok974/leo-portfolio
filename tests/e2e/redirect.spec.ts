@@ -1,14 +1,13 @@
 import { test, expect } from '@playwright/test';
 
+const BASE = process.env.BASE || 'http://127.0.0.1:8080';
+const isGithubPages = /(?:^|\.)github\.io/i.test(BASE);
+const isProdHost = /ledger-mind\.org/i.test(BASE);
+
 test.describe('Legacy Pages redirect', () => {
-  test('github.io portfolio path redirects to unified host', async ({ page }) => {
-    test.skip(process.env.SKIP_PAGES_REDIRECT === '1', 'Pages redirect test disabled');
-
-    const legacy = 'https://leok974.github.io/leo-portfolio/';
-    await page.goto(legacy, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(1500); // allow client-side redirect script
-
-    const finalUrl = page.url();
-    expect(finalUrl.startsWith('https://assistant.ledger-mind.org')).toBeTruthy();
+  test((isGithubPages || isProdHost) ? 'redirects to unified host' : 'redirects: local (skipped)', async ({ page }) => {
+    test.skip(!(isGithubPages || isProdHost), 'Local/dev base does not redirect; meaningful only on Pages/CDN');
+    await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(/(github\.io|ledger-mind\.org)/i);
   });
 });

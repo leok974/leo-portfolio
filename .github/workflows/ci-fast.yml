@@ -1,0 +1,38 @@
+name: CI – Fast (slim tests)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  fast-tests:
+    runs-on: ubuntu-latest
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PIP_NO_PYTHON_VERSION_WARNING: "1"
+      PIP_ROOT_USER_ACTION: "ignore"
+      LIGHTWEIGHT_TEST_DEPS: "1"
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements.test.txt') }}
+          restore-keys: |
+            pip-${{ runner.os }}-
+
+      - name: Install slim deps
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements.test.txt
+
+      - name: Run tests (slim)
+        run: python -m pytest

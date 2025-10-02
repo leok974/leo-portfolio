@@ -4,19 +4,32 @@
   /**
    * @typedef {{ llm: { path: string }; rag: { ok: boolean }; openai_configured: boolean; tooltip?: string; _source?: string }} SummaryLike
    * @typedef {{ start: ()=>void; updateServed: (served:string)=>void; _fetchStatus: ()=>Promise<SummaryLike>; probeAll: ()=>Promise<any> }} AgentStatusShape
-   * @typedef {(Window & typeof globalThis & { AgentStatus?: Partial<AgentStatusShape>; __AGENT_STATUS_INIT__?: boolean; __AGENT_FETCH_STATUS?: ()=>Promise<SummaryLike>; __API_BASE__?: string; AGENT_BASE_URL?: string })} AgentWindow
+  * @typedef {Window & { AgentStatus?: Partial<AgentStatusShape>; __AGENT_STATUS_INIT__?: boolean; __AGENT_FETCH_STATUS?: ()=>Promise<SummaryLike>; __API_BASE__?: string; AGENT_BASE_URL?: string }} AgentWindow
    */
   /** @type {AgentWindow} */
   const gw = /** @type {any} */ (global);
-  gw.AgentStatus = gw.AgentStatus || {};
+  // Initialize AgentStatus with a no-op updateServed to satisfy global type expectations
+  gw.AgentStatus = gw.AgentStatus || /** @type {any} */({
+    /** no-op until real method attached */
+  /** @param {string} _s */
+  updateServed: (_s) => { /* intentionally empty */ }
+  });
 
   const _isPages = typeof location !== 'undefined' && location.hostname.endsWith('github.io'); // unused (info only)
   // Multi-base fallback: primary unified assistant domain, then legacy app domain (with /api), then local.
+  // Default remote-first ordering; will be reordered to favor local when running on localhost to speed up readiness.
   const BASES = [
     'https://assistant.ledger-mind.org/api',
     'https://app.ledger-mind.org/api',
     '/api'
   ];
+  try {
+    if (typeof location !== 'undefined' && /^(localhost|127\.0\.0\.1)/.test(location.hostname)) {
+      // Move local '/api' to front to avoid waiting on remote DNS/timeouts in dev.
+      const idx = BASES.indexOf('/api');
+      if (idx > 0) { BASES.splice(0,0, BASES.splice(idx,1)[0]); }
+    }
+  } catch(_e) { /* non-browser or restricted */ }
   const userOverride = (gw.__API_BASE__ || gw.AGENT_BASE_URL || '').replace(/\/$/, '');
   // If user override provided, prioritize it.
   if (userOverride) BASES.unshift(userOverride);
@@ -28,7 +41,7 @@
   const CANDIDATES = ['/status/summary','/llm/health','/ready'];
 
   /** @returns {HTMLElement | null} */
-  const el = () => document.getElementById('agent-status');
+  const el = () => document.querySelector('[data-status-pill], #agent-status');
 
   /** @param {string} color */
   function dot(color){ const d=document.createElement('span'); d.className='agent-dot'; d.style.background=color; return d; }
@@ -151,6 +164,35 @@
     }
   }
 })(typeof window !== 'undefined' ? window : globalThis);
+
+// Fast hydration: opportunistic quick readiness class/text set prior to periodic probes.
+try {
+  if (typeof window !== 'undefined') {
+    const pill = document.querySelector('[data-status-pill], #agent-status');
+    if (pill) {
+      if (!pill.textContent || !pill.textContent.trim()) pill.textContent = 'Checking…';
+      (async () => {
+        const origin = location.origin;
+        /** @type {Response | null} */
+        let res = null;
+        try { res = await fetch(origin + '/api/ready', { headers: { 'Accept':'application/json' } }); } catch { /* ignore */ }
+        if (!res || !res.ok) {
+          try { res = await fetch(origin + '/api/ping', { headers: { 'Accept':'application/json' } }); } catch { /* ignore */ }
+        }
+        if (res && res.ok) {
+          let body = {}; try { body = await res.clone().json(); } catch { /* body may be empty */ }
+          const ready = /** @type {any} */(body).ready === true || /** @type {any} */(body).ok === true;
+          if (ready) {
+            pill.classList.remove('warn','err');
+            pill.classList.add('ok');
+            if (/^Checking…?$/.test(pill.textContent.trim())) pill.textContent = 'Ready';
+            pill.setAttribute('data-tip', pill.getAttribute('data-tip') || 'Backend ready');
+          }
+        }
+      })();
+    }
+  }
+} catch(_e) { /* non-fatal */ }
 
 // Pure helper for CSS class composition (no DOM needed)
 /** @param {'ok'|'warn'|'err'|'pending'|'error'} state */

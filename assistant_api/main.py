@@ -22,6 +22,7 @@ from .llm_client import (
 from .auto_rag import needs_repo_context, fetch_context, build_context_message
 from .llm_health import router as llm_health_router
 from .ready import router as ready_router
+from fastapi import APIRouter
 from .metrics import record, snapshot, recent_latency_stats, recent_latency_stats_by_provider
 from .routes import status as status_routes, llm as llm_routes
 from .routes import llm_latency as llm_latency_routes
@@ -80,6 +81,15 @@ else:
 app.include_router(rag_router, prefix="/api")
 app.include_router(llm_health_router)
 app.include_router(ready_router)
+
+# Ultra-fast ping for UI hydration fallback (/api/ping)
+_ping_router = APIRouter()
+
+@_ping_router.get('/api/ping')
+async def ping():
+    return {"ok": True}
+
+app.include_router(_ping_router)
 app.include_router(status_routes.router)
 app.include_router(llm_routes.router)
 app.include_router(health_router)

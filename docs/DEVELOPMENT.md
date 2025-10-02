@@ -189,6 +189,53 @@ Artifacts (on failure): traces + screenshots (HTML report not auto-opened). Conf
 
 Workflow reference: `.github/workflows/e2e-prod.yml` (scheduled + manual dispatch).
 
+## Fast Type Check & UI Smoke (New)
+
+Two lightweight guards were added to catch regressions early:
+
+### 1. TypeScript Check Workflow
+File: `.github/workflows/ts-check.yml`
+
+Runs `npm ci` then `tsc --noEmit` (leveraging `checkJs` + `.d.ts` ambient types) on every push / PR to `main` and `test`. Fails fast if any JS/TS typing drift (e.g., window global removal, module rename) occurs.
+
+Local equivalent:
+```bash
+npm run typecheck
+```
+
+### 2. UI Smoke (Playwright)
+File: `.github/workflows/ui-smoke.yml`
+
+Purpose: Prove end‑to‑end that:
+1. Homepage renders (no blocking CSP errors)
+2. First stylesheet is served as real CSS (not HTML fallback)
+3. Streaming endpoint `/chat/stream` yields bytes (and optionally `_served_by` metadata)
+
+Environment:
+* If secret `UI_SMOKE_BASE` is set → tests hit that public base (no containers).
+* Else spins up `backend` + `nginx` locally via `docker-compose.prod.yml` and waits for `/ready` + `/status/summary`.
+
+Adjust strictness:
+```bash
+PLAYWRIGHT_STRICT_STREAM=1 EXPECT_SERVED_BY="primary|ollama" npx playwright test
+```
+
+Test file: `tests/e2e/assistant.smoke.spec.ts` (single spec, ~<5s on warm host).
+
+### 3. One-File Node Smoke (Optional Local Shortcut)
+Script: `scripts/ui-smoke.mjs`
+
+Runs without browsers (pure fetch API) to validate:
+* CSS asset: 200 + `text/css` + `immutable`
+* Stream produces some bytes (stops early if `_served_by` marker found)
+
+Run locally:
+```bash
+BASE=http://127.0.0.1:8080 node scripts/ui-smoke.mjs
+```
+
+Failures exit non‑zero with a concise message—suitable for embedding in future pre-deploy or canary steps.
+
 ## Status Badge Reference
 The production probe publishes `status.json` to branch `status-badge`. README consumes via Shields endpoint.
 
@@ -249,8 +296,167 @@ curl -s -X POST http://127.0.0.1:8001/api/rag/query \
 4. Append entry to `docs/CHANGELOG.md`
 
 ## TODO
-- Introduce pre-commit hooks (ruff, trailing whitespace)
-- Add load test harness (Locust/k6 snippets)
-- Add typed return models for diagnostics endpoints
-- Replace inline `<style>` blocks to drop `'unsafe-inline'` from CSP `style-src`
-- Consider nonces or hashes if future inline scripts required (currently avoided)
+
+## Strict Test Modes (Static vs Full-Stack)
+
+There are now TWO flavors of "strict" E2E to balance speed and parity:
+
+### 1. Static Strict (Fast)
+Stack: Nginx + built `dist/` only (no backend container).
+
+Used by:
+* CI job: `E2E (matrix: strict)` (via `docker-compose.test.yml`)
+* Local helper: `pwsh -File tasks.ps1 strict-nginx`
+
+Behavior:
+* BACKEND_REQUIRED=0 so backend-dependent specs auto-skip (status summary JSON, ping API path hits the static shim and is skipped if HTML is returned).
+* Focuses on CSP, cache-control immutability, stylesheet integrity, and basic page boot.
+
+### 2. Full-Stack Strict (Parity)
+Stack: Nginx + Mock FastAPI backend (`tests/backend-mock`) behind proxy (via `docker-compose.test.full.yml`).
+
+Used by:
+* CI job: `strict-full` (non-PR runs only) in `.github/workflows/e2e.yml`.
+* Local helper: `pwsh -File tasks.ps1 strict-nginx-fullstack` (smoke) or `strict-nginx-fullstack-full` (entire suite).
+
+Behavior:
+* BACKEND_REQUIRED=1 so backend specs MUST pass (no skips for summary / streaming tests).
+* Mock backend implements: `/api/ping`, `/api/ready`, `/api/status/summary`, `/chat` (JSON), `/chat/stream` (SSE one-chunk) with `_served_by` + `_strict_stream` markers.
+* Validates proxy wiring, SSE buffering disablement, and CSP still intact under proxied requests.
+
+### Choosing a Mode
+| Goal | Mode |
+|------|------|
+| Fast feedback on HTML/CSS/CSP & cache | Static Strict |
+| Validate chat streaming & API summary routing | Full-Stack Strict |
+| PR gating (speed) | Static Strict |
+| Nightly / main branch deeper guard | Full-Stack Strict |
+
+### Commands Summary
+```powershell
+# Static-only (skips backend-dependent specs)
+pwsh -File tasks.ps1 strict-nginx
+
+# Static full test suite (if you want everything besides backend specs)
+pwsh -File tasks.ps1 strict-nginx-full
+
+# Full-stack (with mock backend) smoke subset
+pwsh -File tasks.ps1 strict-nginx-fullstack
+
+# Full-stack entire Playwright suite
+pwsh -File tasks.ps1 strict-nginx-fullstack-full
+```
+
+### Adding New Backend-Sensitive Specs
+1. Write spec under `tests/e2e/`.
+2. Guard with:
+  ```ts
+  test.skip(process.env.BACKEND_REQUIRED !== '1', 'Backend required for this spec');
+  ```
+3. Ensure it passes with `strict-nginx-fullstack-full` locally.
+4. Confirm it skips (not fails) under `strict-nginx`.
+
+### Mock Backend Notes
+File: `tests/backend-mock/main.py`
+* Minimal; do NOT mirror production logic beyond shape & essential markers.
+* If you add a new proxied route, extend the mock with the shallowest viable response.
+* Keep dependency list tiny (`fastapi`, `uvicorn`).
+
+### CSP Hash Sync
+Both modes rely on the same extraction step:
+```bash
+pnpm csp:hash && pnpm csp:sync:test
+```
+Static mode updates `nginx.test.conf`; full-stack mode references `nginx.test.full.conf` (same placeholder replacement process).
+
+### Troubleshooting
+| Symptom | Likely Cause | Fix |
+|---------|--------------|-----|
+| Backend specs fail in static mode | BACKEND_REQUIRED not 0 | Ensure env var unset or explicitly 0 |
+| SSE test hangs | Proxy buffering accidentally enabled | Verify `proxy_buffering off` in full config |
+| CSP violation errors | Hash drift | Re-run extraction after build |
+| 404 on assets in full-stack | Dist not built before compose | Run build first (tasks handle this automatically) |
+
+### Future Enhancements (Optional)
+* Add real latency shaping (sleep) in mock to exercise client spinners.
+* Parameterize mock responses (error injection) via env flags for resilience tests.
+* Promote some full-stack specs to required on PR once stable & fast.
+
+## Test Tags & Backend Filtering
+
+Backend-sensitive specs are grouped with a `@backend` prefix in the `describe` block. Run only these:
+```bash
+pnpm test:backend
+```
+Smoke subset (only core health):
+```bash
+pnpm test:smoke:backend
+```
+CI static strict path does NOT fail if these skip (`BACKEND_REQUIRED=0`). Full-stack strict sets `BACKEND_REQUIRED=1` forcing pass/fail.
+
+### Adding a New Backend Test
+1. Wrap in `test.describe('@backend <short label>', () => { ... })`.
+2. Guard skip logic the same way existing specs do (conditional `test.skip`).
+3. Ensure it runs green in full-stack mode before merging.
+
+### Streaming Smoke: Backend-Aware Early Probe
+
+The `assistant.smoke` spec now performs an EARLY probe of backend endpoints before attempting the streaming request:
+
+Probe order:
+1. `/api/status/summary`
+2. `/api/ready`
+3. `/ready`
+
+Behavior matrix:
+| Backend Reachable | `BACKEND_REQUIRED` | Outcome |
+|-------------------|--------------------|---------|
+| No                | `0` or unset       | Spec SKIPS (annotations include `skip-reason: Backend absent; BACKEND_REQUIRED=0 (frontend-only mode)`) |
+| No                | `1`                | Spec FAILS (`Backend required but not reachable via status/ready probes`) |
+| Yes               | any                | Streams; annotates `backend-probe: reachable: <endpoint>` |
+
+On success, the streaming segment asserts:
+* At least 1 byte of streamed response.
+* In STRICT mode (`PLAYWRIGHT_STRICT_STREAM=1`), presence of `_served_by` marker and optional match against `EXPECT_SERVED_BY` regex.
+
+Run a frontend-only smoke (CSS + HTML + CSP + wiring) without waiting on backend:
+```bash
+pnpm test:frontend-smoke
+```
+
+This sets `BACKEND_REQUIRED=0` so backend-tagged specs (`@backend`) and the streaming portion skip cleanly.
+
+To enforce backend presence in strict/full runs, ensure `BACKEND_REQUIRED=1` (handled by strict full-stack scripts / tasks).
+
+Annotations of interest in reports:
+* `backend-probe` – each probe result; one with `reachable:` when success.
+* `skip-reason` – why streaming was skipped.
+* `stream-bytes` – number of bytes read (non-strict mode only).
+
+Troubleshooting:
+| Symptom | Note |
+|---------|------|
+| Spec skipped unexpectedly | Check env: is `BACKEND_REQUIRED` unset? Did probes 404? |
+| Fails saying backend required | Ensure backend container/service is running & proxy routes correct |
+| Streams but no `_served_by` | STRICT mode off? Or backend not injecting marker; inspect captured `sample` via trace |
+
+Fast local iteration tip: pair `pnpm build:prod` (or `build`) with `pnpm test:frontend-smoke` after asset or CSP changes for <5s feedback loop.
+
+## Mock Backend Error Injection
+
+The mock service (`tests/backend-mock/main.py`) supports env flags to exercise failure handling:
+
+| Flag | Effect |
+|------|--------|
+| `FAIL_PING=1` | `/api/ping` returns 503 |
+| `FAIL_READY=1` | `/api/ready` returns `{ready:false}` |
+| `FAIL_SUMMARY=1` | Summary returns `rag.ok=false` |
+| `FAIL_CHAT=1` | `/chat` returns 500 |
+| `FAIL_SSE=1` | `/chat/stream` closes immediately (no data) |
+| `LATENCY_MS=250` | Adds 250ms artificial delay per request |
+
+Example (local full-stack strict with injected rag failure + latency):
+```powershell
+FAIL_SUMMARY=1 LATENCY_MS=250 pwsh -File .\tasks.ps1 strict-nginx-fullstack-full
+```
+Use these to harden client-side resilience logic (retry/backoff/UI state) without modifying production code paths.

@@ -34,6 +34,25 @@ DOMAIN=assistant.ledger-mind.org
 | `deploy/Dockerfile.frontend` | Multi-target (static or Vite) edge + SPA build + API proxy |
 | `assistant_api/Dockerfile` | FastAPI backend multi-stage (wheels + slim runtime) |
 
+### Environment Variable Sources (Important)
+Docker Compose resolves variable references like `${PRIMARY_MODEL}` at *parse time* from:
+1. The shell environment you invoke `docker compose` from.
+2. A `.env` file located in the same directory as the compose file (here: `deploy/.env`).
+
+It does **not** read values from the service `env_file:` entries (e.g. `assistant_api/.env.prod`) for interpolation. Those are only injected *inside the container* after it starts.
+
+Implications:
+- If `${PRIMARY_MODEL}` appears in `docker-compose.prod.yml` and you only added it to `assistant_api/.env.prod`, Compose will warn: `The "PRIMARY_MODEL" variable is not set...` and fall back to the default in the compose expression.
+- To avoid the warning and have a single canonical definition, either export it in your shell or put `PRIMARY_MODEL=...` in `deploy/.env` (now added).
+- Container runtime environment still merges: compose interpolation values + `env_file` entries + explicit `environment:` section.
+
+Recommended pattern adopted here:
+- `deploy/.env` (non-secret, interpolation-only): `PRIMARY_MODEL=gpt-oss:20b`
+- `assistant_api/.env.prod` (runtime config: can reference non-secret operational values, excludes secrets)
+- Secrets (API keys) via Docker secrets or environment variables supplied securely at deploy time.
+
+Makefile targets (`prod-up`, `prod-rebuild`) defensively export a fallback `PRIMARY_MODEL` if you invoke them without setting one, ensuring consistent behavior in local and CI environments.
+
 Port Remap Note: Production compose maps edge to host `8080` (HTTP) / `8443` (HTTPS) instead of privileged 80/443 to reduce conflicts on developer laptops. Adjust in `deploy/docker-compose.prod.yml` if deploying to a clean server and binding low ports with CAP_NET_BIND.
 
 ## Quick Start (Full Stack)
@@ -74,6 +93,107 @@ Nginx config (`deploy/nginx.conf`) provides:
 - SPA fallback (`try_files $uri /index.html`)
 - `/api/`, `/chat/stream`, `/llm/`, `/status/` proxy pass-through
 - SSE buffering disabled on streaming path
+
+### Static Asset Handling & Troubleshooting
+
+The production Nginx config now has *explicit directory guards* for ` /assets/` and `/fonts/` plus a generic hashed file rule:
+```
+location ^~ /assets/ { add_header Cache-Control "public, max-age=31536000, immutable"; try_files $uri =404; }
+location ^~ /fonts/  { add_header Cache-Control "public, max-age=31536000, immutable"; try_files $uri =404; }
+location ~* \.(?:js|css|woff2|png|jpe?g|webp|gif|svg|ico)$ { add_header Cache-Control "public, max-age=31536000, immutable"; try_files $uri =404; }
+```
+
+Rationale:
+- Prevent the SPA fallback from masking real 404s for missing CSS/JS (otherwise `index.html` would load and page appears unstyled).
+- Ensure immutable caching for fingerprinted files while returning a hard 404 for typos / stale references.
+
+If you ever see an unstyled page:
+1. Open DevTools Network tab and reload (disable cache). The CSS requests should be `200` not `200 (from service worker)` initially.
+2. If status is `200` but `Content-Type: text/html`, the request was swallowed by the SPA fallback → verify the `location ^~ /assets/` block is present and active (did you mount a different dev config?).
+3. If `404`, rebuild the frontend (maybe `dist/` missing in image):
+  - `npm run build`
+  - `docker compose build nginx && docker compose up -d nginx`
+4. Confirm the file actually exists inside the container:
+  - `docker exec -it <nginx> ls -1 /usr/share/nginx/html/assets | grep site.css`
+5. Rare: Wrong base path. Vite config sets `base: '/'`; ensure requests are root‑relative (they are in `index.html`).
+
+Dev vs Prod Differences:
+- Prod image (default) bakes built files into the image layer (`frontend-vite-final`).
+- Dev override (`deploy/docker-compose.dev.override.yml`) bind mounts `./dist` + `deploy/nginx.dev.conf` (relaxed CSP) for rapid iteration.
+
+Using the dev override:
+```
+docker compose \
+  -f deploy/docker-compose.prod.yml \
+  -f deploy/docker-compose.dev.override.yml \
+  up -d --build
+```
+(Re-run your local `npm run build` whenever frontend assets change; the bind mount serves them instantly without rebuilding the image.)
+
+Cache Busting:
+- Fingerprinted bundle names + `immutable` caching mean you must reference the updated file names after each build (handled automatically by templated HTML or manifest injection in a full Vite setup). Plain static references (like `styles.<hash>.css`) must be updated if hashes change.
+
+Diagnostics Quick Commands:
+```
+curl -I http://127.0.0.1:8080/assets/site.css
+curl -I http://127.0.0.1:8080/styles.74e2bb05ef.css
+```
+Expect `200`, appropriate `Content-Type`, and `Cache-Control: public, max-age=31536000, immutable`.
+
+Service Worker / Offline Note:
+- If you later add a service worker, ensure it does not serve fallback HTML for CSS/JS requests (skip navigation requests or check `request.destination`).
+
+Security Hardening TODOs:
+- Remove `'unsafe-inline'` from style-src once all inline `<style>` tags are eliminated.
+- Consider adding `Permissions-Policy` and `Strict-Transport-Security` (when TLS termination is in place).
+
+### CSP Inline Script Hash Workflow
+
+Production `nginx.prod.conf` uses a placeholder `__INLINE_SCRIPT_HASHES__` in its `script-src` directive. A helper script computes SHA-256 hashes for each inline `<script>` (including JSON-LD) and patches the config so you can retain a zero `'unsafe-inline'` policy without refactoring remaining small inline blocks.
+
+Generate / patch:
+```bash
+make csp-hash   # runs: node scripts/csp-hash-extract.mjs --html index.html --conf deploy/nginx/nginx.prod.conf
+make prod-rebuild  # rebuild nginx image with updated CSP
+```
+
+Artifacts:
+- `.github/csp/inline-script-hashes.json` (audit record: timestamp, count, hashes)
+- Updated `deploy/nginx/nginx.prod.conf` with hashes injected.
+
+Caution: Any change (even whitespace) to an inline `<script>` means hashes become invalid; rerun `make csp-hash` before rebuilding.
+
+CI Guard (optional): Add a step asserting:
+```bash
+curl -I $BASE/ | grep -i 'content-security-policy'
+```
+Contains:
+- `script-src ... sha256-` fragments
+- Does NOT contain `unsafe-inline`
+
+To eliminate hashes entirely: move JSON-LD to a file+hash (still needs inline for structured data indexing) or refactor remaining logic into bundled modules and remove inline scripts, then drop placeholder and hash process.
+
+#### Automated Drift Guard (csp-hash-guard)
+
+CI workflow `csp-hash-guard.yml` regenerates the expected hash list and compares it to:
+- The current `deploy/nginx/nginx.prod.conf` (ensures placeholder replaced + hashes current)
+- The artifact `.github/csp/inline-script-hashes.json`
+
+Fail Conditions:
+1. Placeholder `__INLINE_SCRIPT_HASHES__` still present after generation (means patch step missed).
+2. Regenerated hashes differ (inline script changed but Make target not re-run).
+
+Manual Remediation:
+```
+node scripts/csp-hash-extract.mjs --html index.html --conf deploy/nginx/nginx.prod.conf
+```
+or
+```
+make csp-hash   # if GNU make available
+```
+
+Current State (post‑modularization): Only a single JSON-LD `<script type="application/ld+json">` remains inline; all runtime logic migrated under `src/assistant/*` + `main.js`. Hash list length should now be `1`. Any additional inline script reintroduced will increase the count and trigger the guard if you forget to re-run the hash script.
+
 
 ### Convenience Shortcuts
 For local production-mode runs from repo root:
@@ -256,6 +376,49 @@ Modes could map to backend (8001) or edge (8080) if you extend the script.
 - [ ] Healthchecks green before traffic
 - [ ] Rate limit configured (future) for `/chat` burst control
  - [x] CSP disallows inline scripts and styles (`script-src 'self'; style-src 'self'`) — verify after each release
+
+### Production CSP & Asset Guard SW
+
+The hardened production Nginx config (`deploy/nginx/nginx.prod.conf`) enforces:
+
+```
+default-src 'self';
+base-uri 'self';
+object-src 'none';
+frame-ancestors 'none';
+form-action 'self';
+img-src 'self' data: blob:;
+font-src 'self' data:;
+style-src 'self';
+script-src 'self';
+connect-src 'self' http://localhost:8080 https://localhost:8443;
+```
+
+Key points:
+- All inline `<script>` / `<style>` removed; logic previously inline moved into `main.js`.
+- No `unsafe-inline`, no `unsafe-eval`, no external CDNs required.
+- Add `Strict-Transport-Security` only when terminating HTTPS at this layer.
+
+Service Worker (`sw.js`): implements an asset guard fetch handler:
+- Any request to `/assets/*` or typical asset extensions returning `text/html` is converted to `404` preventing silent SPA fallback masking missing bundles.
+- Uses `cache: 'no-cache'` for guard fetches (no local stale HTML served to assets).
+- Not registered on localhost to avoid dev churn; always registered in production.
+
+CI Enforcement: `asset-health.yml` workflow asserts:
+- First CSS is `200 text/css` with `immutable` in `Cache-Control`.
+- A bogus asset like `/assets/not-real-file.css` returns `404` (not `200` HTML shell).
+
+Operational Checklist After Enabling Tight CSP:
+1. Run `curl -I http://127.0.0.1:8080/assets/site.css` → 200 + proper type + immutable.
+2. `curl -I http://127.0.0.1:8080/assets/not-real.css` → 404.
+3. Confirm DevTools: no CSP violations (Console empty of `Content Security Policy` errors).
+4. Confirm SW registration (`navigator.serviceWorker.getRegistrations()`).
+5. Lighthouse: verify no regression on performance (asset guard is network-pass-through).
+
+Future Hardening Ideas:
+- Add `report-to` / `report-uri` for CSP violation monitoring.
+- Add `Cross-Origin-Opener-Policy: same-origin` & `Cross-Origin-Embedder-Policy: require-corp` if enabling advanced APIs (WASM threads, etc.).
+- Consider splitting `connect-src` when localhost endpoints are no longer needed.
 
 ## Status / CORS Troubleshooting (Assistant Host)
 

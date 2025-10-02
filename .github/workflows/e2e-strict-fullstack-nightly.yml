@@ -1,0 +1,57 @@
+name: E2E Strict Full-Stack (nightly)
+on:
+  schedule:
+    - cron: "50 03 * * *"
+  workflow_dispatch:
+
+jobs:
+  strict-fullstack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install pnpm
+        run: npm i -g pnpm@9
+      - name: Install deps
+        run: pnpm i
+      - name: Build
+        run: pnpm build:prod
+      - name: Sync CSP hash
+        run: pnpm csp:hash && pnpm csp:sync:test
+      - name: Bring up full-stack
+        run: |
+          docker compose -f docker-compose.test.full.yml up -d --build
+          for i in {1..90}; do curl -fsS http://localhost:8080/healthz && break || sleep 1; done
+          for i in {1..60}; do curl -fsS http://localhost:8101/api/ready && break || sleep 1; done
+      - name: Playwright install
+        run: pnpm exec playwright install --with-deps
+      - name: Run full suite
+        env:
+          BASE: http://localhost:8080
+          NGINX_STRICT: "1"
+          BACKEND_REQUIRED: "1"
+          REQUIRE_CSS_200: "1"
+          REQUIRE_STATUS_PILL_STRICT: "1"
+          PLAYWRIGHT_STRICT_STREAM: "1"
+        run: pnpm exec playwright test
+      - name: Badge (pass)
+        if: success()
+        run: |
+          mkdir -p .github/badges
+          echo '{ "schemaVersion":1,"label":"E2E full-stack","message":"passing","color":"green"}' > .github/badges/e2e-fullstack.json
+      - name: Badge (fail)
+        if: failure()
+        run: |
+          mkdir -p .github/badges
+          echo '{ "schemaVersion":1,"label":"E2E full-stack","message":"failing","color":"red"}' > .github/badges/e2e-fullstack.json
+      - uses: EndBug/add-and-commit@v9
+        if: always()
+        with:
+          add: ".github/badges/e2e-fullstack.json"
+          message: "ci: update E2E full-stack badge"
+          default_author: github_actions
+      - name: Down stack
+        if: always()
+        run: docker compose -f docker-compose.test.full.yml down -v

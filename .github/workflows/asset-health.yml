@@ -1,0 +1,65 @@
+name: Asset Health
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+  schedule:
+    - cron: "10 4 * * *"
+
+jobs:
+  asset-health:
+    runs-on: ubuntu-latest
+    env:
+      BASE: http://127.0.0.1:8080
+      UA: Mozilla/5.0
+    steps:
+      - uses: actions/checkout@v4
+
+      # Optional: set BASE via repository/organization secret by adding an env override step manually.
+      # For lint safety we skip direct secrets interpolation here.
+
+      - name: Fetch index and extract first CSS
+        id: grab
+        shell: bash
+        run: |
+          set -e
+          HTML="$(curl -fsSL -A "$UA" "$BASE/")"
+          CSS_PATH="$(printf "%s" "$HTML" | grep -oE '/assets/[^"]+\.css' | head -n1 || true)"
+          if [ -z "$CSS_PATH" ]; then
+            echo "No CSS link found in index.html"; exit 1
+          fi
+          echo "css=$CSS_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Assert CSS has correct headers
+        shell: bash
+        run: |
+          set -e
+          H="$(curl -fsSIL -A "$UA" "$BASE${{ steps.grab.outputs.css }}")"
+          echo "$H"
+          echo "$H" | grep -iq '^HTTP/.* 200'           || (echo "Expected 200"; exit 1)
+          echo "$H" | grep -iq 'content-type: *text/css' || (echo "Wrong Content-Type"; exit 1)
+          echo "$H" | grep -iq 'cache-control: .*immutable' || (echo "Missing immutable"; exit 1)
+
+      - name: Assert bogus asset is 404 (not HTML shell)
+        shell: bash
+        run: |
+          set -e
+          H="$(curl -sIL -A "$UA" "$BASE/assets/not-real-file.css")"
+          echo "$H"
+          echo "$H" | grep -iq '^HTTP/.* 404' || (echo "Missing asset should be 404"; exit 1)
+
+      - name: Assert CSP present & hashed
+        shell: bash
+        run: |
+          set -e
+            HD="$(curl -fsSIL -A "$UA" "$BASE/")"
+            echo "$HD" | grep -iq 'content-security-policy' || (echo 'Missing CSP header'; exit 1)
+            echo "$HD" | grep -iq "script-src[^"]*sha256-" || (echo 'CSP script-src missing hashes'; exit 1)
+            if echo "$HD" | grep -iq "script-src[^"]*unsafe-inline"; then echo 'CSP still contains unsafe-inline'; exit 1; fi
+
+      - name: Summary
+        run: |
+          echo "### Asset health checks passed" >> $GITHUB_STEP_SUMMARY
+          echo "- Base: $BASE" >> $GITHUB_STEP_SUMMARY
+          echo "- CSS: ${{ steps.grab.outputs.css }}" >> $GITHUB_STEP_SUMMARY
