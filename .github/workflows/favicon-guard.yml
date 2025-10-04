@@ -1,0 +1,46 @@
+name: Favicon Guard
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  favicon-guard:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install deps
+        run: npm ci
+      - name: Build (prod) to generate favicons
+        run: npm run build:prod
+      - name: Assert favicon sizes
+        run: |
+          set -e
+          for f in leo-avatar-sm.png leo-avatar-md.png; do
+            if [ ! -f "public/$f" ]; then
+              echo "Missing public/$f" >&2; exit 1; fi
+            size=$(stat -c%s "public/$f")
+            if [ "$size" -le 0 ]; then
+              echo "File public/$f has zero length" >&2; exit 1; fi
+            echo "public/$f size=$size";
+          done
+      - name: Run favicon Playwright spec only
+        env:
+          EXPECT_EDGE: '1'
+          BASE: http://localhost:5178
+        run: |
+          npm run build:prod
+          npx http-server ./dist -p 5178 -c-1 &
+          pid=$!
+          npx playwright test -g "Favicon & Touch Icons" --reporter=line || { kill $pid; exit 1; }
+          kill $pid || true

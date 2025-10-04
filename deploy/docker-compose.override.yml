@@ -1,0 +1,17 @@
+services:
+  ollama:
+    environment:
+      OLLAMA_KEEP_ALIVE: 5m
+    networks:
+      - shared-ollama
+  nginx:
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /var/cache/nginx
+      - /var/log/nginx
+
+networks:
+  shared-ollama:
+    external: true

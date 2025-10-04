@@ -1,85 +1,46 @@
 Param(
-  [string]$BaseUrl = "http://localhost",
-  [switch]$VerboseOutput
+  [string]$Port = '8023',
+  [string]$Db = 'D:/leo-portfolio/data/rag_8023.sqlite'
 )
 
-function Get-Json { param($u)
-  try { return Invoke-RestMethod -Uri $u -TimeoutSec 10 }
-  catch { return $null }
-}
+Write-Host "[smoke] using port $Port" -ForegroundColor Cyan
 
- # Determine if an edge proxy (which prefixes core endpoints with /api) is in front.
- $api = "$BaseUrl/api"
- $rootStatus = Get-Json "$BaseUrl/status/summary"
- $useRoot = $false
- if ($rootStatus -and $rootStatus.llm) { $useRoot = $true }
+# Kill old listener if present
+$pid = (Get-NetTCPConnection -LocalPort [int]$Port -State Listen -ErrorAction SilentlyContinue).OwningProcess
+if ($pid) { taskkill /PID $pid /F | Out-Null; Write-Host "[smoke] killed:$pid" -ForegroundColor Yellow }
 
- # Build endpoint URLs conditionally:
- if ($useRoot) {
-  $readyUrl  = "$BaseUrl/ready"
-  $statusUrl = "$BaseUrl/status/summary"
-  $llmUrl    = "$BaseUrl/llm/health"
- } else {
-  $readyUrl  = "$api/ready"
-  $statusUrl = "$api/status/summary"
-  $llmUrl    = "$api/llm/health"
- }
- # RAG endpoints stay under /api even without edge for consistency
- $ragUrl = "$api/rag/query"
+# Env for local gen via Ollama
+$env:SAFE_LIFESPAN = '1'
+$env:DISABLE_PRIMARY = '0'
+$env:DEV_ALLOW_NO_LLM = '0'
+$env:PRIMARY_BASE_URL = 'http://127.0.0.1:11434/v1'
+$env:OPENAI_API_KEY_OLLAMA = 'ollama'
+$env:OPENAI_MODEL = 'qwen2.5:7b-instruct'
+$env:RAG_DB = $Db
+Remove-Item Env:RAG_URL -ErrorAction SilentlyContinue
 
-Write-Host "=== Smoke @ $BaseUrl ==="
-$ready   = Get-Json $readyUrl
-$status  = Get-Json $statusUrl
-$llm     = Get-Json $llmUrl
-$ragNull = $false
-try {
-  $ragQ = Invoke-RestMethod -Method Post -Uri $ragUrl -Body (@{ q = "hello"; k = 1 } | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 10
-} catch { $ragNull = $true }
+# Start detached
+$args = @('-m','uvicorn','assistant_api.main:app','--host','127.0.0.1','--port',$Port,'--log-level','warning')
+$p = Start-Process -FilePath 'D:/leo-portfolio/.venv/Scripts/python.exe' -ArgumentList $args -PassThru
+Start-Sleep -Seconds 2
+$base = "http://127.0.0.1:$Port"
 
-$ok = @()
-$fail = @()
+# Ping (best-effort)
+try { Invoke-RestMethod -UseBasicParsing -TimeoutSec 5 "$base/api/ping" | Out-Null } catch {}
 
-if ($ready -and $ready.ok) { $ok += "ready" } else { $fail += "ready" }
-if ($status) {
-  if ($status.ready) { $ok += "status.ready" } else { $fail += "status.ready" }
-  $lp = $status.llm.path
-  Write-Host ("llm.path: {0}" -f $lp)
-  if ($lp -eq "warming") { Write-Host "note: model present pending; retry shortly." }
-} else { $fail += "status" }
+# Chat + metrics (best-effort)
+$chat = @{ messages=@(@{role='user';content='Say hi in one sentence with a source note.'}); include_sources=$true } | ConvertTo-Json
+try { Invoke-RestMethod -UseBasicParsing -TimeoutSec 60 -Method POST -Uri "$base/chat" -ContentType 'application/json' -Body $chat | Out-Null } catch {}
+$metrics = $null
+try { $metrics = Invoke-RestMethod -UseBasicParsing -TimeoutSec 10 "$base/api/metrics" } catch {}
 
-if ($llm) {
-  $llmStatus = $llm.status
-  $ollamaState = $llmStatus.ollama
-  if ($ollamaState -eq "up") { $ok += "ollama" } else { $fail += "ollama" }
-  if ($llmStatus.primary_model_present) { $ok += "model.present" } else { $fail += "model.present" }
-  Write-Host ("openai: {0}" -f $llmStatus.openai)
-} else { $fail += "llm" }
+# Output
+[pscustomobject]@{
+  pid            = $p.Id
+  base           = $base
+  gen_backend    = $metrics.metrics.gen.last_backend
+  gen_last_ms    = $metrics.metrics.gen.last_ms
+  embed_backend  = $metrics.metrics.embeddings.last_backend
+  rerank_backend = $metrics.metrics.rerank.last_backend
+} | Format-List
 
-if (-not $ragNull) { $ok += "rag.query" } else { $fail += "rag.query" }
-
-Write-Host "`nPASS:" ($ok -join ", ")
-if ($fail.Count) { Write-Host "FAIL:" ($fail -join ", ") -ForegroundColor Red }
-
-if ($VerboseOutput) {
-  Write-Host "`n--- ready ($readyUrl) ---";   $ready   | ConvertTo-Json -Depth 5
-  Write-Host "`n--- status ($statusUrl) ---";  $status  | ConvertTo-Json -Depth 8
-  Write-Host "`n--- llm ($llmUrl) ---";     $llm     | ConvertTo-Json -Depth 5
-}
-
-# --- Hashed asset probe (Vite) ---
-try {
-  $index = Invoke-WebRequest -Uri "$BaseUrl/" -TimeoutSec 10
-  $m = [regex]::Match($index.Content, "/assets/[^\"']+\.js")
-  if ($m.Success) {
-    $assetPath = $m.Value
-    $assetUrl = "$BaseUrl$assetPath"
-    $asset = Invoke-WebRequest -Uri $assetUrl -TimeoutSec 10
-    $cc = $asset.Headers["Cache-Control"]
-    if ($asset.StatusCode -eq 200) { Write-Host "asset.ok: $assetPath" } else { Write-Host "asset.fail: $assetPath" }
-    if ($cc -match "immutable") { Write-Host "asset.cache: immutable" } else { Write-Host "asset.cache: missing-immutable" }
-  } else {
-    Write-Host "asset.note: no /assets/*.js reference found in index.html"
-  }
-} catch {
-  Write-Host "asset.error: $($_.Exception.Message)"
-}

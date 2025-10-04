@@ -1,6 +1,10 @@
 import re, os, httpx
+from .db import connect, search, index_dim
+from .rag_query import embed_query_matching_dim
 
-RAG_URL = os.getenv("RAG_URL", "http://127.0.0.1:8001/api/rag/query")
+# Default to the backend service URL in containerized/prod; allow override via env.
+# Local dev keeps using 127.0.0.1:8001 when RAG_URL is set by tasks.
+RAG_URL = os.getenv("RAG_URL", "http://backend:8000/api/rag/query")
 PROJECT_HINTS = [
     r"\bledgermind\b", r"\bportfolio\b", r"\bassistant chip\b",
     r"\brag\b", r"\bfastapi\b", r"\brelay\b"
@@ -11,10 +15,32 @@ def needs_repo_context(user_text: str) -> bool:
     return any(re.search(p, t) for p in PROJECT_HINTS) or ("repo" in t) or ("code" in t)
 
 async def fetch_context(question: str, k=6):
-    async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.post(RAG_URL, json={"question": question, "k": k})
-        r.raise_for_status()
-        return (r.json() or {}).get("matches", [])[:k]
+    # Try HTTP first (works in prod/compose), else fall back to in-process search.
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.post(RAG_URL, json={"question": question, "k": k})
+            r.raise_for_status()
+            return (r.json() or {}).get("matches", [])[:k]
+    except Exception:
+        pass
+    try:
+        conn = connect()
+        dim = index_dim(conn)
+        qv, _mode = await embed_query_matching_dim(question, dim)
+        hits = search(conn, qv, k=k)
+        # Shape to match external API: include snippet
+        out = []
+        for h in hits:
+            out.append({
+                "id": h.get("id"),
+                "repo": h.get("repo"),
+                "path": h.get("path"),
+                "score": float(h.get("score", 0.0)),
+                "snippet": (h.get("text") or "")[:600],
+            })
+        return out
+    except Exception:
+        return []
 
 def build_context_message(matches):
     cites = [f"- {m['repo']}/{m['path']}" for m in matches]

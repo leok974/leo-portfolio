@@ -1,13 +1,18 @@
 import os, numpy as np, hashlib
 from fastapi import APIRouter
 from pydantic import BaseModel
+from typing import List, Dict
 from .db import connect, search, index_dim
+from .fts import bm25_search
+from .vector_store import dense_search
+from .reranker import rerank
 
 router = APIRouter()
 
 class QueryIn(BaseModel):
     question: str
     k: int = 8
+    project_id: str | None = None
 
 # Auto-match the query embedder to the stored index dimension
 
@@ -62,14 +67,58 @@ async def embed_query_matching_dim(text: str, dim: int | None) -> tuple[np.ndarr
 
 @router.post("/rag/query")
 async def rag_query(q: QueryIn):
-    conn = connect()
-    dim = index_dim(conn)
-    qv, mode = await embed_query_matching_dim(q.question, dim)
-    hits = search(conn, qv, k=q.k)
-    return {
-        "matches": [
-            {"repo": h["repo"], "path": h["path"], "score": round(h["score"], 4), "snippet": h["text"][:600]}
-            for h in hits
-        ],
-        "mode": mode,
-    }
+    con = connect()
+    try:
+        # 1) Recall: BM25 + dense
+        bm = bm25_search(q.question, topk=50)
+        dn = dense_search(q.question, topk=50)
+        pool_ids = list(dict.fromkeys(bm + dn))  # stable dedupe
+
+        # Optional filter by project_id if provided (if chunks table is used)
+        if q.project_id and pool_ids:
+            ph = ",".join("?" for _ in pool_ids)
+            rows = con.execute(f"SELECT id FROM chunks WHERE id IN ({ph}) AND project_id = ?", (*pool_ids, q.project_id)).fetchall()
+            pool_ids = [r[0] for r in rows]
+
+        # If no index built yet, fall back to existing brute-force vector search
+        if not pool_ids:
+            dim = index_dim(con)
+            qv, mode = await embed_query_matching_dim(q.question, dim)
+            hits = search(con, qv, k=q.k)
+            return {
+                "matches": [
+                    {"repo": h["repo"], "path": h["path"], "score": round(h["score"], 4), "snippet": h["text"][:600]}
+                    for h in hits
+                ],
+                "mode": mode,
+            }
+
+        # 2) Load texts from chunks; map metadata via docs when possible
+        doc_rows: List[Dict] = []
+        for cid in pool_ids:
+            c = con.execute("SELECT id, content, title, source_path FROM chunks WHERE id=?", (cid,)).fetchone()
+            if not c:
+                continue
+            # Try to find a docs row to enrich repo/path/title; fallback to chunk fields
+            d = con.execute("SELECT repo, path, title, text FROM docs WHERE path=? LIMIT 1", (c[3],)).fetchone() if c[3] else None
+            if d:
+                doc_rows.append({"id": c[0], "repo": d[0], "path": d[1], "title": d[2] or c[2], "text": d[3] or c[1]})
+            else:
+                doc_rows.append({"id": c[0], "repo": None, "path": c[3], "title": c[2], "text": c[1]})
+
+        # 3) Rerank by cross-encoder; if unavailable, keep order
+        pairs = [(str(d["id"]), d.get("text") or "") for d in doc_rows]
+        ranked = rerank(q.question, pairs, topk=max(q.k, 5))
+        order = {cid: i for i, (cid, _) in enumerate(ranked)}
+        final = [d for d in doc_rows if str(d["id"]) in order]
+        final.sort(key=lambda d: order[str(d["id"])])
+        final = final[:q.k]
+        return {
+            "ok": True,
+            "matches": [
+                {"repo": d["repo"], "path": d["path"], "title": d.get("title"), "snippet": (d.get("text") or "")[:600]}
+                for d in final
+            ]
+        }
+    finally:
+        con.close()

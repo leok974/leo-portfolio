@@ -142,3 +142,184 @@ If avoiding host shell tokens:
        depends_on: [nginx]
    ```
 This mode persists across shells without exporting a token.
+
+## Windows / WSL2 Docker Stability (Flakiness Mitigation)
+Systems running Docker Desktop on Windows with WSL2 occasionally hit the named pipe error:
+
+```
+open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+```
+
+### Quick Recovery Function (Admin PowerShell)
+```powershell
+function Restart-DockerDesktop {
+  Write-Host "Stopping com.docker.service..." -ForegroundColor Yellow
+  Stop-Service com.docker.service -ErrorAction SilentlyContinue
+  wsl --shutdown
+  Start-Sleep -Seconds 2
+  Write-Host "Starting com.docker.service..." -ForegroundColor Yellow
+  Start-Service com.docker.service
+  Write-Host "Docker Desktop restarted" -ForegroundColor Green
+}
+Restart-DockerDesktop  # invoke when pipe errors occur
+```
+
+### WSL Resource Budget (%UserProfile%\.wslconfig)
+```ini
+[wsl2]
+memory=10GB
+processors=6
+swap=2GB
+localhostForwarding=true
+```
+After editing:
+```powershell
+wsl --shutdown
+Restart-DockerDesktop
+```
+
+### Pre‑Flight Daemon Health Probe
+```powershell
+function Test-Docker {
+  try { docker version --format '{{.Server.Version}}' 1>$null 2>$null; return $true } catch { return $false }
+}
+if (-not (Test-Docker)) { Restart-DockerDesktop }
+```
+
+## Resilient Stack Bring-Up Script
+Script: `scripts/start-prod.ps1` performs:
+1. Docker daemon health check (auto restart if down).
+2. `docker compose up -d` with remove-orphans.
+3. Wait loop for edge `_up` endpoint.
+4. Wait loop for `/api/status/summary` 200.
+5. Emits final `llm.path` and `primary_model_present`.
+
+Usage:
+```powershell
+pwsh ./scripts/start-prod.ps1
+```
+
+Env overrides:
+```powershell
+$Env:PRIMARY_POLL_INTERVAL_S=3   # faster warming→primary promotion
+$Env:PRIMARY_POLL_MAX_S=900      # extend poll budget
+```
+
+## Automatic Primary Model Polling
+Implemented in `lifespan.py`:
+- Polls `primary_list_models()` every 5s (default) until target model detected or timeout.
+- Configurable with `PRIMARY_POLL_INTERVAL_S` and `PRIMARY_POLL_MAX_S`.
+- Eliminates manual `/llm/models?refresh=true` calls when large models finish pulling late.
+
+### Verifying Promotion
+```powershell
+curl http://127.0.0.1:8080/api/status/summary | jq '.llm.path, .llm.primary_model_present'
+```
+Expect transition: `"warming"` → `"primary"` and `true`.
+
+## UI Fallback Indicator
+Frontend badge now displays `fallback (no model)` when primary model absent; shows `Agent — primary` once available.
+- Derived fields: `_ui.provider`, `_ui.modelPresent` injected by status poller.
+- Aids triage when Ollama pull still in progress or model missing.
+
+## Docker Disk Hygiene & Volume Pruning (Safe Workflow)
+Large model images and build layers can accumulate quickly. Use a **review-first** flow to reclaim space without risking critical data.
+
+### 1. Snapshot (Before)
+```powershell
+docker system df -v
+```
+
+### 2. Classify Volumes (In-Use vs Unused)
+Script (preferred):
+```powershell
+pwsh ./scripts/docker-prune-review.ps1
+```
+Manual approach (PowerShell):
+```powershell
+$allVols = docker volume ls -q | Where-Object { $_ }
+$containerIds = docker ps -aq
+$inUse = foreach ($cid in $containerIds) {
+  docker inspect $cid --format '{{range .Mounts}}{{if eq .Type "volume"}}{{println .Name}}{{end}}{{end}}'
+} | Where-Object { $_ } | Sort-Object -Unique
+$candidates = $allVols | Where-Object { $_ -notin $inUse }
+```
+
+### 3. Protect Critical Volumes
+Keep the consolidated Ollama model volume (e.g. `deploy_ollama-data`). The prune script defaults to protecting:
+```
+deploy_ollama-data, ollama-data
+```
+Add more via:
+```powershell
+pwsh ./scripts/docker-prune-review.ps1 -Protect deploy_ollama-data,postgres-data
+```
+
+### 4. Optional: Inspect a Volume Before Deletion
+```powershell
+pwsh ./scripts/docker-prune-review.ps1
+# then inside interactive shell (or manually):
+docker run --rm -v <volume>:/v alpine sh -lc "ls -lah /v; du -sh /v || true"
+```
+
+### 5. Delete Only Reviewed Unused Volumes
+Script (non-interactive, auto-confirm):
+```powershell
+pwsh ./scripts/docker-prune-review.ps1 -Auto -Force
+```
+Manual targeted removal:
+```powershell
+docker volume rm <vol1> <vol2>
+```
+
+Avoid `docker volume prune -f` unless certain no detached-but-needed volumes exist.
+
+### 6. (Optional) Prune Build / Image / Network Cache
+Within script (add flag):
+```powershell
+pwsh ./scripts/docker-prune-review.ps1 -IncludeCaches
+```
+Manually:
+```powershell
+docker container prune -f
+docker network prune -f
+docker image prune -a -f
+docker builder prune -f
+```
+
+### 7. Snapshot (After)
+```powershell
+docker system df -v
+```
+
+### 8. Free WSL Memory Cache (Windows Desktop)
+If disk still appears high due to WSL page cache:
+```powershell
+wsl --shutdown
+```
+Docker Desktop will restart the VM on next command.
+
+### 9. Sanity Checks Post-Prune
+```powershell
+curl -s http://127.0.0.1:8080/api/ready
+docker compose exec backend curl -sf http://deploy-ollama-1:11434/api/version
+```
+
+### RAM Reclamation Without Deleting Models
+If only memory pressure (not disk) is a concern:
+```powershell
+docker exec -it deploy-ollama-1 ollama unload gpt-oss:20b
+```
+Ensure `OLLAMA_KEEP_ALIVE=5m` (already set) to allow idle model eviction from RAM.
+
+### Script Reference
+`scripts/docker-prune-review.ps1` implements:
+- Before/after disk snapshots
+- Volume classification
+- Protected volume list
+- Optional volume inspection helper
+- Conditional cache pruning
+- Non-interactive automation flags: `-Auto -Force -IncludeCaches`
+
+> NOTE: The script intentionally skips volumes still mounted even if they report `0B` usage (often overlay or cert volumes required at runtime).
+

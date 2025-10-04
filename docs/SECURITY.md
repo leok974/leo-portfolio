@@ -10,11 +10,8 @@
 - Observability of fallback vs primary model usage
 
 ## Container Hardening
-| Component | Control |
-|-----------|---------|
-| Backend | Runs as `appuser` (UID 1001) after install phase |
-| Edge / Frontend | Read-only static content (consider `readOnlyRootFilesystem` in orchestration) |
 | Dependencies | Built via wheels stage → slim runtime with only runtime libs |
+| Frontend perms | Dockerfile normalizes `/usr/share/nginx/html` to 0755 dirs / 0644 files post-build so nginx can traverse assets without granting write bits. |
 
 ## Secrets Handling
 - OpenAI fallback key provided at runtime (env or Docker secret `openai_api_key`).
@@ -23,6 +20,10 @@
 
 ## CORS
 Configured allowlist (`ALLOWED_ORIGINS`) includes production domains + localhost dev origins. Deny by default.
+Frontend chat submission now always targets `/api/chat/stream`, keeping traffic on the edge proxy where headers and allowlist enforcement live even if the backend advertises alternate direct URLs.
+- Zero-token fallback reuses the same origin by issuing a follow-up POST to `/api/chat` only after the guarded stream completes, so CORS policy remains centralized at the edge.
+- The sr-only `data-testid="assistant-output"` container introduced for Playwright checks is rendered locally (no fetch) and inherits the same CSP/CORS boundaries; it simply mirrors streamed text for tests.
+- Local Playwright fast loops use `installFastUI` to block image/font/media requests and force reduced motion. The route interception lives only in tests so production surface area and CSP remain unchanged while keeping developer browsers from leaking extra asset fetches.
 
 ## TLS
 Options:
@@ -30,22 +31,56 @@ Options:
 2. Native certbot (DNS-01 recommended) → Add 443 server block to edge nginx.
 
 ## Headers (Edge nginx)
-Recommended additions (future PR):
+All primary security headers are now enforced at the edge and duplicated in the specific `location` blocks that need custom caching (because `add_header` in nginx does not inherit through locations once overridden):
 ```
-add_header X-Frame-Options DENY always;
-add_header X-Content-Type-Options nosniff always;
-add_header Referrer-Policy no-referrer-when-downgrade always;
-add_header Permissions-Policy "geolocation=()" always;
+add_header X-Frame-Options "DENY" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header Referrer-Policy "no-referrer" always;
+add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+add_header Content-Security-Policy "$csp_policy" always;
 ```
-Current enforced CSP (after inline style extraction & SRI):
+### Current enforced CSP (drift-guarded)
 ```
-Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https: http:; script-src 'self'; style-src 'self';
+default-src 'self';
+img-src 'self' data: blob:;
+font-src 'self' data:;
+connect-src 'self' https://assistant.ledger-mind.org;
+script-src 'self' 'sha256-agVi37OvPe9UtrYEB/KMHK3iJVAl08ok4xzbm7ry2JE=';
+style-src 'self';
+object-src 'none';
+base-uri 'self';
+frame-ancestors 'none';
+upgrade-insecure-requests;
 ```
-Hardening notes:
-- Removed `'unsafe-inline'` from both script and style directives.
-- Added Subresource Integrity (SRI) for core stylesheets (`styles.*.css`, `assets/site.css`) using SHA-384.
-- HTML link tags now include `integrity` + `crossorigin="anonymous"`. Any build pipeline changes that re-hash these assets MUST update integrity strings or the browser will block them.
-- Avoid runtime mutation of these files; treat them as immutable versioned artifacts.
+Single-line (as it appears on the wire):
+```
+Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://assistant.ledger-mind.org; script-src 'self' 'sha256-agVi37OvPe9UtrYEB/KMHK3iJVAl08ok4xzbm7ry2JE='; style-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests;
+```
+Hash maintenance is automated by `entrypoint.d/10-csp-render.sh`, which scans the shipped `index.html` on container startup and either replaces `__CSP_INLINE_HASHES__` placeholders or appends missing hashes after `script-src 'self'`. It installs `openssl` on first run when needed, keeping the hash list synchronized with inline bootstrap changes.
+Directive rationale (delta vs earlier draft):
+* `connect-src` narrowed to only the assistant API + self (removes broad network egress surface).
+* `script-src` uses an explicit hash for the single tiny bootstrap inline (remaining inline event handler was removed — see below). No `'unsafe-inline'` or `'unsafe-eval'`.
+* `object-src 'none'` and `frame-ancestors 'none'` block legacy plug-ins & click‑jacking.
+* `base-uri 'self'` prevents `<base>` tag hijack.
+* `upgrade-insecure-requests` ensures mixed content is auto-upgraded under universal TLS/CDN.
+
+### Recent hardening changes
+* Removed former inline stylesheet `onload` handler from `index.html`; logic replaced by a small listener in `main.js` (data attribute `data-media-onload` + script promotion) eliminating the last style-related inline event.
+* Normalized icon & manifest paths to root, removing duplicate/404 variants.
+* Added Playwright tests for:
+	- Security header drift (`security-headers` spec)
+	- CSP baseline equality (`csp-baseline.spec.ts`)
+	- Favicon availability & caching (`icons-favicon.spec.ts`)
+	- Manifest icons enumeration, MIME & long-cache (`manifest-icons.spec.ts`)
+* Established caching policy tiers: immutable year for hashed/static assets & icons; 5‑minute short cache for `projects.json`; `no-cache` for HTML shell.
+
+### SRI & Asset Integrity
+* Subresource Integrity (SRI) applied to core stylesheets (`styles.*.css`, `assets/site.css`) using SHA-384.
+* `scripts/generate-sri.mjs` + postbuild hook keep integrity attributes updated; `sri-manifest.json` records provenance.
+* Treat hashed assets as immutable — change content → new hash → new SRI.
+
+### Inline content policy
+Goal is zero policy hash exceptions. Remaining hash exists only for a minimal bootstrap inline block; future refactor can externalize it and drop the hash from `script-src` entirely (then move to strict nonce or pure external). Track via TODO list in this file.
 
 ### Automated SRI Maintenance
 Run manually:
@@ -66,6 +101,24 @@ The Node script (`scripts/generate-sri.mjs`) will:
 3. Insert or skip if integrity already present.
 4. Add `crossorigin="anonymous"` when missing.
 5. Emit `sri-manifest.json` (or `dist/sri-manifest.json`) mapping asset relative path → integrity value for provenance/auditing.
+
+### CSP Baseline & Regeneration
+
+An authoritative baseline line lives at `scripts/expected-csp.txt` and is enforced by:
+* Playwright spec: `tests/e2e/csp-baseline.spec.ts` (fast fail locally/CI)
+* Drift workflow: `.github/workflows/csp-drift.yml` (secondary guard)
+
+Regenerate intentionally after policy changes:
+```
+make csp-baseline   # or: npm run csp:baseline
+```
+This queries `http://localhost:8080/` (configurable with `--url`) and normalizes whitespace.
+
+### Future Hardening (Status)
+1. (Done) Narrowed `connect-src` to explicit required origin(s) only.
+2. (Planned) Add `form-action 'self';` once forms introduced.
+3. (Done) Add `upgrade-insecure-requests;` since Cloudflare / TLS-only ingress.
+4. (Ongoing) Reduce/remediate any remaining inline script hashing by externalizing logic.
 
 ### Dual Status Endpoint (Deprecation)
 For migration safety the frontend temporarily attempts legacy `/status/summary` if `/api/status/summary` fails on GitHub Pages. Remove this fallback after confirming all public hostnames route through the patched nginx (tunnel + DNS cutover complete). Audit by grepping for `legacyUrl` in `src/status/status-ui.ts` and `src/agent-status.ts`.
@@ -91,4 +144,24 @@ pip-audit -r assistant_api/requirements.txt
 ## Incident Response TODO
 - Add runbook: fallback failure vs both-provider outage
 - Automate model warm pull at deploy time
+
+## CSP Hash Snapshot (2025-10-02)
+
+Served script hash observed in production build:
+
+`sha256-agVi37OvPe9UtrYEB/KMHK3iJVAl08ok4xzbm7ry2JE=`
+
+Source & workflow:
+* Extract with: `npm run csp:hash` (reads `dist/index.html`).
+* Sync into nginx only if `__CSP_HASH__` placeholder is present (current deploy config had none; sync script logged no replacement).
+* Playwright baseline test guards the full policy string; this section is an audit convenience for quick diffing during security reviews.
+
+Rotation guidance:
+1. Change inline bootstrap script → run `npm run build:prod`.
+2. Re-run `npm run csp:hash` and update this snapshot (or leave historic entries chronologically).
+3. If adding placeholder to `deploy/nginx.conf`, run `npm run csp:sync:deploy` to template in new hash.
+
+Historical Hashes:
+* 2025-10-02: `sha256-agVi37OvPe9UtrYEB/KMHK3iJVAl08ok4xzbm7ry2JE=`
+
 

@@ -1,0 +1,1 @@
+Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://assistant.ledger-mind.org; script-src 'self' 'sha256-agVi37OvPe9UtrYEB/KMHK3iJVAl08ok4xzbm7ry2JE='; style-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests;

@@ -96,3 +96,18 @@ env-init:
 csp-hash:
 	node scripts/csp-hash-extract.mjs --html index.html --conf deploy/nginx/nginx.prod.conf
 	@echo "If hashes updated, rebuild nginx: make prod-rebuild"
+
+.PHONY: csp-baseline
+csp-baseline:
+	npm run csp:baseline
+
+# --- Convenience shortcuts (Windows-friendly wrappers) ---
+.PHONY: rag-reset start-stable e2e
+rag-reset:
+	pwsh -File scripts/rag-ingest-min.ps1 -DbPath "D:/leo-portfolio/data/rag_8010.sqlite" -Reset
+
+start-stable:
+	pwsh -File scripts/start-stable.ps1 -BindAddress 127.0.0.1 -Port 8010 -DbPath "D:/leo-portfolio/data/rag_8010.sqlite" -WaitMs 60000
+
+e2e:
+	npm run e2e:local

@@ -1,0 +1,52 @@
+name: Frontend Fast Tests
+
+on:
+  push:
+    branches: [ main, website-patch ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  frontend-fast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install Playwright browsers (Chromium only)
+        run: npx playwright install chromium --with-deps
+
+      - name: Run fast frontend tests
+        env:
+          PLAYWRIGHT_GLOBAL_SETUP_SKIP: "1"
+        run: npm run test:fast
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-fast
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-fast
+          path: test-results/
+          retention-days: 7

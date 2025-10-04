@@ -1,3 +1,23 @@
+## Temporary Fallback Allowance (CI/Test)
+
+During some pipeline stages you may wish to validate infrastructure (routing, CORS, status) before the large primary model finishes pulling. Set:
+
+```pwsh
+$env:ALLOW_FALLBACK='1'; npm run test:backend:req
+```
+
+Effect:
+- Skips strict guard specs `chat-no-fallback.spec.ts` and `chat-stream-no-fallback.spec.ts` that normally fail when responses indicate fallback service.
+- Other backend-tagged tests still run (chat API basic, streaming presence, status summary).
+
+Unset the variable (or set to `0`) once the model is present to re-enable enforcement:
+```pwsh
+Remove-Item Env:ALLOW_FALLBACK
+# or
+$env:ALLOW_FALLBACK='0'
+```
+
+CI Guidance: Use only for transitional stages; persistent reliance may mask degraded primary availability.
 # Operations Guide
 
 Routine operational checks and quick commands to validate health, connectivity, models, and cross-origin behavior.

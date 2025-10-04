@@ -179,6 +179,41 @@ export default [
     },
   },
 
+  // Frontend source inline style guard
+  {
+    files: ['src/**/*.{ts,tsx,js,jsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "AssignmentExpression[left.type='MemberExpression'][left.property.name='style']",
+          message: 'Avoid inline style mutations; use CSS classes or data-attributes.'
+        },
+        {
+          selector: "CallExpression[callee.object.property.name='style'][callee.property.name='setProperty']",
+          message: 'Avoid inline style mutations (setProperty); prefer CSS classes.'
+        },
+        {
+          selector: "Literal[value=/on[a-z]+\\s*=\\s*(\"|')/i]",
+          message: 'Inline event handlers are disallowed. Use addEventListener instead.'
+        },
+        {
+          selector: "TemplateElement[value.raw=/on[a-z]+\\s*=\\s*(\"|')/i]",
+          message: 'Inline event handlers are disallowed in template literals.'
+        },
+        {
+          selector: "AssignmentExpression[left.property.name='innerHTML'][right.regex.pattern=/on[a-z]+\\s*=\\s*(\"|')/i]",
+          message: 'Avoid innerHTML with inline handlers; sanitize and use DOM APIs instead.'
+        },
+        {
+          selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']",
+          message: 'Avoid dangerouslySetInnerHTML; prefer structured rendering.'
+        }
+      ]
+      // Optionally add a no-restricted-properties rule if reads should also be disallowed.
+    }
+  },
+
   // Tests (Vitest / Playwright)
   {
     files: ['tests/**/*.{js,ts,tsx}'],

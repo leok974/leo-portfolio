@@ -83,6 +83,11 @@ FAIL_READY=1 EXPECT_READY_FALSE=1 pnpm smoke:strict-nginx:full
 	- `scripts/chat-stream.ps1` (PowerShell HttpClient raw SSE reader)
 	- `tests/chat.stream.served_by.spec.mjs` (soft-skip SSE marker validation test for `_served_by`)
 		- `tests/chat.stream.fallback.spec.mjs` (conditional fallback-mode SSE marker test)
+ 	- `tests/e2e/chat-stream-no-fallback.spec.ts` (enforces streaming not served by fallback when primary required)
+ 	- `ALLOW_FALLBACK` environment variable to skip fallback guard tests temporarily in CI
+ 	- Accessibility enhancements for agent badge (`role="status"`, `aria-live="polite"`, descriptive `aria-label`)
+- Shared SSE helper `src/lib/sse.ts` exposing `readSSE()` for parsing browser-side Server-Sent Events.
+- Playwright frontend harness: `tests/e2e/assistant-ui-stream.mock.spec.ts`, `tests/e2e/assistant-ui-sends-request.spec.ts`, and script `npm run test:assistant:ui` for backend-free `/api/chat/stream` verification.
 - Coverage Shields generation script `scripts/coverage-shield.mjs` producing `.github/badges/*.json` (combined + per-metric) for Shields.io endpoints.
 - CI integration (unit-ci) step to publish coverage badges & summary to `status-badge` branch.
 - Nightly strict streaming workflow (`nightly-streaming-strict.yml`) enforcing `_served_by` marker and publishing `streaming.json` badge.
@@ -92,6 +97,7 @@ FAIL_READY=1 EXPECT_READY_FALSE=1 pnpm smoke:strict-nginx:full
 - Aggregate streaming workflow (`nightly-streaming-aggregate.yml`) producing combined badge `streaming-combined.json` summarizing strict + fallback states.
 - Dev frontend override (`docker-compose.dev.override.yml`) enabling local `dist` bind-mount + relaxed CSP (`nginx.dev.conf`).
 - Manifest MIME mapping + explicit `location = /site.webmanifest` in production nginx config eliminating browser console warning.
+- Entrypoint script `entrypoint.d/10-csp-render.sh` renders inline `<script>` hashes into nginx’s CSP header on container startup (installs `openssl` on demand, placeholder-aware, idempotent).
 
 ### Changed
 - Cloudflare Tunnel now delivered via optional overlay `docker-compose.cloudflared.yml` (removed embedded `cloudflared-portfolio` service from `deploy/docker-compose.prod.yml`).
@@ -101,6 +107,7 @@ FAIL_READY=1 EXPECT_READY_FALSE=1 pnpm smoke:strict-nginx:full
 - Unified frontend + edge nginx container via multi-target `deploy/Dockerfile.frontend` (targets: `frontend-static-final`, `frontend-vite-final`).
 - Production convenience shortcuts: Makefile targets (`prod-up`, `prod-down`, `prod-logs`, `prod-rebuild`) and PowerShell tasks (`prod`, `prod-logs`, `prod-down`, `prod-rebuild`).
 - Vite scaffolding (`package.json` scripts, `vite.config.ts`) and switched prod compose target to `frontend-vite-final`.
+- Assistant dock fetch path now coerces streaming/chat requests through the `/api` shim and emits console diagnostics when responses fail, ensuring edge headers stay in play during debugging.
 
 ### Changed
 - `docker-compose.prod.yml`: `nginx` service now builds integrated image (serves SPA + proxies API) replacing separate static frontend path.
@@ -140,6 +147,7 @@ FAIL_READY=1 EXPECT_READY_FALSE=1 pnpm smoke:strict-nginx:full
 - **Docker (prod compose):** Edge nginx host ports remapped `80→8080` and `443→8443` to avoid local conflicts.
 
 ### Fixed
+- Fingerprinted frontend bundles returning 404 despite existing on disk; Docker build now restores `/usr/share/nginx/html` to 0755/0644 so nginx retains directory execute bits after `COPY --chmod`.
 - Consistent `openai: configured|not_configured` across `/ready`, `/llm/health`, and `/status/summary`.
 - False negative `rag.ok=false` in `/status/summary` when edge pathing or fallback-only mode previously blocked internal HTTP probe.
 - Startup hangs waiting indefinitely for large model pulls (now bounded by `MODEL_WAIT_MAX_SECONDS`).
@@ -159,6 +167,7 @@ FAIL_READY=1 EXPECT_READY_FALSE=1 pnpm smoke:strict-nginx:full
  - Dynamic API base selection in `main.js` (`window.__API_BASE__`) chooses external assistant domain on GitHub Pages and `/api` when self-hosted.
  - Backend CORS allowlist expanded (`ALLOWED_ORIGINS`) to include `https://leok974.github.io` enabling chat/diagnostic requests from Pages.
  - Centralized frontend API helpers (`js/api.js`) unify status, chat, and streaming calls and expose `window.API`.
+- Assistant dock markup gained testing hooks (`data-testid="assistant-input|assistant-send|assistant-output"`) plus an sr-only mirror container for streamed text used by Playwright assertions.
  - Backend CORS handling: enhanced parsing for `ALLOWED_ORIGINS` (comma/space/newline separated) plus `CORS_ALLOW_ALL=1` emergency wildcard (credentials disabled when wildcard in effect).
  - Automatic CORS origin derivation from `DOMAIN` (adds https/http + www variants unless explicitly provided) stored with metadata.
  - Preflight logging middleware gated by `CORS_LOG_PREFLIGHT=1` prints Origin + Access-Control-Request-* headers for auditing.
@@ -171,6 +180,9 @@ FAIL_READY=1 EXPECT_READY_FALSE=1 pnpm smoke:strict-nginx:full
 - Playwright production E2E workflow (`e2e-prod.yml`) validating status pill and redirect.
 - Redirect verification test (`redirect.spec.ts`) ensuring GitHub Pages → unified host transition.
 - README status badge legend (color semantics) and OPERATIONS / DEVELOPMENT guidance additions.
+- Automatic primary model polling task (lifespan) promotes `llm.path` from `warming`→`primary` once target model detected (interval configurable via `PRIMARY_POLL_INTERVAL_S`, cap via `PRIMARY_POLL_MAX_S`).
+ - UI fallback badge: displays `fallback (no model)` until model presence confirmed; updates to `Agent — primary` (or path) post-promotion.
+ - Operational scripts: `scripts/start-prod.ps1` (health-gated bring-up) and `scripts/restart-docker.ps1` (Docker Desktop recovery) plus Windows/WSL stability guidance in `OPERATIONS.md`.
 
 ### Fixed (Unreleased – CI Triage)
 - Lint failure in `scripts/chat-probe.mjs` resolved by explicitly importing `URL` from `node:url` (ESLint no-undef under ESM).
@@ -194,9 +206,21 @@ FAIL_READY=1 EXPECT_READY_FALSE=1 pnpm smoke:strict-nginx:full
 - E2E spec `projects-json.spec.ts` ensures `projects.json` served with `application/json` and required project keys.
 - E2E spec `manifest-icons.spec.ts` validates each manifest icon URL returns 200 and correct `image/png` MIME.
 - E2E spec `projects-json-cache.spec.ts` validates short-lived Cache-Control for project data.
+- Automated favicon generation script `scripts/generate-favicons.mjs` (runs via `prebuild:prod`) producing non-zero PNGs (`leo-avatar-sm.png` 192x192, `leo-avatar-md.png` 512x512) to stabilize manifest install metadata and header/cache Playwright specs.
 
 ### Fixed (Unreleased – Manifest)
 - Updated `manifest.webmanifest` icon `src` paths from non-existent `assets/optimized/*` to existing `leo-avatar-sm.png` / `leo-avatar-md.png` in public root (eliminates icon 404s and broken install metadata).
+
+### Added (Unreleased – Chat API & Routing)
+- Playwright specs: `chat-api.spec.ts` (POST /api/chat) and `chat-stream.spec.ts` (POST /api/chat/stream SSE) with `BACKEND_REQUIRED` skip guard.
+- Negative chat method coverage (GET /api/chat) to ensure non-POST is rejected (405/404 acceptable based on upstream framework semantics).
+- Dev nginx parity: added exact-match `location = /api/chat` and `location = /api/chat/stream` shims to `deploy/nginx.dev.conf` mirroring production for consistent local behavior.
+- Documentation updates: `DEPLOY.md` Chat API routing section, `ARCHITECTURE.md` Route Mapping Overview diagram/text.
+ - Fallback guard spec `chat-no-fallback.spec.ts` asserting real model responses (fails on "served by fallback").
+ - Compose hardening: improved `ollama` healthcheck (tags endpoint, tighter interval/retries/start_period) and `backend` depends_on conditions (service_healthy + model init job).
+
+### Changed (Unreleased – Nginx)
+- Production & dev nginx configs now expose unified `/api/chat*` surface while backend retains `/chat*` native paths; simplifies frontend API base usage and centralizes SSE tuning (buffering off) in shim blocks.
 
 ### Changed (Unreleased – Caching Policy)
 - Added targeted 5-minute cache rule (`Cache-Control: public, max-age=300`) for `/projects.json` instead of 1-year immutable asset policy to allow frequent content updates without hard reloads.
@@ -206,6 +230,21 @@ FAIL_READY=1 EXPECT_READY_FALSE=1 pnpm smoke:strict-nginx:full
  - Automated CSP hash synchronization script (`scripts/csp-hash-sync-deploy.mjs`) now available; CI quick guard workflow can inject the built inline script hash into `$csp_policy` ensuring parity with `dist/index.html`.
 
 ### Added (Unreleased – Security Drift Tests)
+### Added (Unreleased – CSP Tightening & Asset Integrity)
+- Playwright spec `icons-favicon.spec.ts` asserting favicon availability, MIME, and immutable caching.
+- Extended `manifest-icons.spec.ts` to enumerate manifest icons dynamically from `<link rel="manifest">` and assert each icon returns 200 with `image/png` and long-lived cache headers.
+- New CSP baseline regeneration script `scripts/csp-baseline.mjs` (+ `npm run csp:baseline` / `make csp-baseline`) capturing normalized header to `scripts/expected-csp.txt`.
+- `tests/e2e/csp-baseline.spec.ts` fast equality check preventing accidental CSP drift (whitespace-normalized match).
+- SECURITY doc updated with current single-line CSP, directive rationale, and inline handler removal note.
+
+### Changed (Unreleased – CSP & Headers)
+- Tightened `deploy/nginx.conf` CSP: added `object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests;` and narrowed `connect-src` to `'self' https://assistant.ledger-mind.org`.
+- Replaced remaining inline stylesheet `onload` handler with JS listener in `main.js` (data attribute `data-media-onload`) eliminating last style-related inline event for stricter CSP.
+- Centralized hash-based `script-src` now limited to a single allowed inline (future removal planned to achieve fully externalized scripts).
+- Normalized icon & manifest paths to root (removed broken/duplicate asset paths) ensuring consistent caching & removal of 404 noise.
+
+### Fixed (Unreleased – Icon Path Normalization)
+- Eliminated 404s for manifest and favicon references by pointing all `index.html` and manifest icon `src` values at existing root image assets; tests confirm long-lived caching & MIME correctness.
 - **CI:** Added fast guard workflow (`e2e-quick-guard.yml`) executing focused Playwright groups (MIME, parity, cache, security headers, conditional caching) on PRs/pushes for rapid regression signal.
 - `tests/e2e/security-headers.spec.ts` ensuring presence of hardened `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`, `Permissions-Policy`, and CSP with at least one `sha256-` hash.
 - `tests/e2e/projects-json-conditional.spec.ts` validating 304 conditional GET behavior (ETag / Last-Modified) for `projects.json` alongside short-lived caching policy.

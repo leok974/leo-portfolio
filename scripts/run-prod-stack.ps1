@@ -36,22 +36,11 @@ function Write-Step($msg) { Write-Host "`n=== $msg ===" -ForegroundColor Cyan }
 if (-not $Env:BASE) { $Env:BASE = 'http://localhost:8080' }
 $Env:NGINX_STRICT = '1'
 
-Write-Step 'Building frontend (prod)'
-try {
-  pnpm build:prod | Write-Host
-} catch {
-  Write-Warning 'build:prod failed, attempting fallback build'
-  pnpm build | Write-Host
-}
+Write-Step 'Single-source build: deferring Vite build to Docker multi-stage image'
+Write-Host 'Skipping host vite build (no dist/ artifact creation). Docker build stage will produce final hashed assets.' -ForegroundColor Yellow
+Write-Host 'If you need a local dist/ (e.g. for static deploy), run: pnpm build:prod separately.' -ForegroundColor DarkGray
 
-Write-Step 'Syncing CSP hash into deploy/nginx.conf'
-try {
-  pnpm csp:sync:deploy | Write-Host
-} catch {
-  Write-Warning 'CSP sync script failed (continuing)'
-}
-
-Write-Step 'Starting prod stack (dist + conf overrides)'
+Write-Step 'Starting prod stack (image build only; no host dist bind)'
 $composeFiles = @(
   'deploy/docker-compose.prod.yml',
   'deploy/docker-compose.prod.bind.override.yml',

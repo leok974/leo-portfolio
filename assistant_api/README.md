@@ -11,6 +11,14 @@
   - Dev default: http://127.0.0.1:8001/api/rag/query
   - Prod example (Compose): http://backend:8000/api/rag/query
 
+- RAG_REPO_WEB / RAG_REPO_REF
+  When set, the backend will enrich grounded source items with a clickable URL like
+  `${RAG_REPO_WEB}/blob/${RAG_REPO_REF||main}/${path}`.
+  - Example:
+    - RAG_REPO_WEB=https://github.com/leok974/leo-portfolio
+    - RAG_REPO_REF=main
+  The frontend popover will render nice links for sources that include a url.
+
 ### Endpoints (behind edge)
 When the backend sits behind the edge nginx, prefix API routes with `/api`: `/api/status/summary`, `/api/ready`, `/api/llm/health`, `/api/rag/query`, while `/chat/stream` stays unprefixed for SSE.
 A convenience pass-through keeps `/status/summary` working without the prefix for dashboards and quick checks.
@@ -87,6 +95,9 @@ Expect:
 - /api/rag/query PASS (200 with matches)
 - /chat PASS (_served_by:"fallback")
 - /metrics shows providers: { "fallback": N } with tokens
+
+Telemetry: the backend prints one-line JSON for each reply/stream meta with
+`{"evt":"chat_reply|chat_stream_meta","grounded":bool,"sources_count":int,"served_by":str,"fell_back":bool}`
 
 Re-enable primary (optional)
 

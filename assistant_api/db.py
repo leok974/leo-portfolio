@@ -5,19 +5,38 @@ DB_PATH = os.environ.get("RAG_DB", "./data/rag.sqlite")
 Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
 
 def connect():
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute(
-        """CREATE TABLE IF NOT EXISTS docs(
-      id TEXT PRIMARY KEY, repo TEXT, path TEXT, sha TEXT,
-      title TEXT, text TEXT, meta TEXT
-    )"""
-    )
-    conn.execute(
-        """CREATE TABLE IF NOT EXISTS vecs(
-      id TEXT PRIMARY KEY, embedding BLOB
-    )"""
-    )
-    return conn
+        # Use a small timeout and WAL to reduce lock contention; allow cross-thread use from async contexts
+        conn = sqlite3.connect(DB_PATH, timeout=5.0, check_same_thread=False)
+        try:
+                conn.execute("PRAGMA journal_mode=WAL;")
+                conn.execute("PRAGMA busy_timeout=3000;")
+        except Exception:
+                pass
+        # Base tables: docs + vecs (Phase 1)
+        conn.execute(
+                """CREATE TABLE IF NOT EXISTS docs(
+            id TEXT PRIMARY KEY, repo TEXT, path TEXT, sha TEXT,
+            title TEXT, text TEXT, meta TEXT
+        )"""
+        )
+        conn.execute(
+                """CREATE TABLE IF NOT EXISTS vecs(
+            id TEXT PRIMARY KEY, embedding BLOB
+        )"""
+        )
+        # Hybrid retrieval helper table (Phase 2)
+        conn.execute(
+                """
+            CREATE TABLE IF NOT EXISTS chunks(
+                id INTEGER PRIMARY KEY,
+                content TEXT NOT NULL,
+                source_path TEXT,
+                title TEXT,
+                project_id TEXT
+            )
+        """
+        )
+        return conn
 
 def upsert_doc(conn, row):
     conn.execute(
@@ -35,6 +54,13 @@ def upsert_doc(conn, row):
 
 def upsert_vec(conn, id, emb: np.ndarray):
     conn.execute("REPLACE INTO vecs(id,embedding) VALUES(?,?)", (id, emb.astype(np.float32).tobytes()))
+
+def insert_chunk(conn, content: str, source_path: str | None, title: str | None, project_id: str | None) -> int:
+    cur = conn.execute(
+        "INSERT INTO chunks(content, source_path, title, project_id) VALUES(?,?,?,?)",
+        (content or "", source_path, title, project_id)
+    )
+    return int(cur.lastrowid)
 
 def search(conn, query_vec: np.ndarray, k=8):
     # brute-force cosine (fast enough <50k chunks). Swap later for FAISS index table.
