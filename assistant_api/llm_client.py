@@ -1,6 +1,6 @@
 import os, time, httpx, traceback, asyncio
 from typing import Optional, Tuple, List, Iterable, AsyncGenerator
-from .metrics import record, providers, primary_fail_reason
+from .metrics import record, providers, primary_fail_reason, stage_record_ms
 from dataclasses import dataclass
 
 @dataclass
@@ -141,20 +141,52 @@ def _debug_log(msg: str):
             pass
 
 async def primary_list_models() -> List[str]:
+    # Short-circuit when primary probing is disabled
+    if DISABLE_PRIMARY:
+        mark_primary_models([])
+        return []
+    base = get_primary_base_url()
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            r = await client.get(f"{PRIMARY_BASE}/models")
+            r = await client.get(f"{base}/models")
             r.raise_for_status()
-            j = r.json()
+            try:
+                j = r.json() or {}
+            except Exception:
+                j = {}
+            data = j.get("data") or []
             ids: List[str] = []
-            for it in j.get("data", []):
-                if isinstance(it, dict) and "id" in it:
-                    ids.append(it["id"])
+            if isinstance(data, list):
+                for it in data:
+                    if isinstance(it, dict) and isinstance(it.get("id"), str):
+                        ids.append(it["id"])
             mark_primary_models(ids)
             return ids
     except Exception as e:
         _debug_log(f"list_models error: {e}")
         mark_primary_models(None)
+        return []
+
+async def list_models() -> List[str]:
+    """Return available primary model IDs, or an empty list if not ready.
+
+    Never raises; safe to call during startup/lifespan without aborting the server.
+    Respects DISABLE_PRIMARY to avoid unnecessary probing when primary is disabled.
+    """
+    try:
+        if DISABLE_PRIMARY:
+            return []
+        ids = await primary_list_models()
+        # Normalize to strings; filter out unexpected shapes defensively
+        return [str(m) for m in ids if isinstance(m, (str,))]
+    except Exception as e:  # pragma: no cover - defensive
+        try:
+            import logging
+            logging.getLogger("assistant_api.llm_client").warning(
+                "list_models(): suppressed error during startup: %s", e
+            )
+        except Exception:
+            pass
         return []
 
 async def primary_chat(messages: list[dict], max_tokens: int = 64) -> Tuple[Optional[dict], Optional[str], Optional[int]]:
@@ -190,7 +222,9 @@ async def primary_chat(messages: list[dict], max_tokens: int = 64) -> Tuple[Opti
                 _debug_log(f"primary fail status={r.status_code} reason={reason} body={(r.text or '')[:200]}")
                 return None, reason, r.status_code
             j = r.json()
-            record(r.status_code, (time.perf_counter()-t0)*1000, provider="primary")
+            dt = (time.perf_counter()-t0)*1000
+            record(r.status_code, dt, provider="primary")
+            stage_record_ms("gen", "local", dt)
             providers["primary"] += 1
             # Reset error/status indicators on successful completion
             LAST_PRIMARY_ERROR = None
@@ -231,9 +265,11 @@ async def fallback_chat(messages: list[dict], max_tokens: int = 64) -> dict:
             in_toks, out_toks = int(u.get("prompt_tokens",0)), int(u.get("completion_tokens",0))
         except Exception:
             pass
-        record(r.status_code, (time.perf_counter()-t0)*1000, provider="fallback", in_toks=in_toks, out_toks=out_toks)
-        providers["fallback"] += 1
-        return r.json()
+    dt = (time.perf_counter()-t0)*1000
+    record(r.status_code, dt, provider="fallback", in_toks=in_toks, out_toks=out_toks)
+    stage_record_ms("gen", "openai", dt)
+    providers["fallback"] += 1
+    return r.json()
 
 async def chat(messages, stream=False):
     if stream:

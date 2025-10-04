@@ -1,0 +1,54 @@
+name: csp-drift
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build (prod) for header emission
+        run: |
+          if [ -f package.json ]; then
+            corepack enable || true
+            if command -v pnpm >/dev/null 2>&1; then pnpm install --frozen-lockfile || pnpm install; fi
+            if command -v pnpm >/dev/null 2>&1; then pnpm build:prod || pnpm build || true; fi
+          fi
+
+      - name: Compose up minimal prod edge
+        run: |
+          docker compose -f deploy/docker-compose.prod.yml \
+            -f deploy/docker-compose.prod.bind.override.yml \
+            -f deploy/docker-compose.prod.conf.override.yml up -d --build
+          chmod +x scripts/wait-for-http.sh || true
+          if [ -f scripts/wait-for-http.sh ]; then scripts/wait-for-http.sh http://localhost:8080 60; else echo "(no wait-for-http script)"; fi
+
+      - name: Capture live CSP header
+        run: |
+          curl -sI http://localhost:8080/ | grep -i Content-Security-Policy > csp-current.txt || true
+          echo '--- live header ---'; cat csp-current.txt || true
+
+      - name: Show expected baseline
+        run: |
+          echo '--- expected baseline ---'; cat scripts/expected-csp.txt
+
+      - name: Diff baseline vs current
+        run: |
+          set -e
+          if ! diff -u scripts/expected-csp.txt csp-current.txt; then
+            echo "::error ::CSP drift detected. Update scripts/expected-csp.txt if intentional.";
+            exit 1
+          fi
+
+      - name: Tear down
+        if: always()
+        run: |
+          docker compose -f deploy/docker-compose.prod.yml \
+            -f deploy/docker-compose.prod.bind.override.yml \
+            -f deploy/docker-compose.prod.conf.override.yml down -v || true

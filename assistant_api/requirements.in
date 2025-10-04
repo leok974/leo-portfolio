@@ -8,6 +8,7 @@ numpy
 scikit-learn
 faiss-cpu
 sentence-transformers
+hf_xet==1.1.10
 python-dotenv
 pytest
 pytest-asyncio

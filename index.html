@@ -31,13 +31,13 @@
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#0f172a" />
-    <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="manifest" href="/manifest.webmanifest" />
     <link
       rel="icon"
-      href="assets/optimized/leo-avatar-xs.png"
+      href="/leo-avatar-sm.png"
       type="image/png"
     />
-    <link rel="apple-touch-icon" href="assets/optimized/leo-avatar-sm.png" />
+    <link rel="apple-touch-icon" href="/leo-avatar-sm.png" />
     <link
       rel="preload"
       href="fonts/Inter-roman.var.woff2"
@@ -50,7 +50,7 @@
     <link
       rel="stylesheet"
       href="assets/site.css"
-      integrity="sha384-gGHK0MKLrP/Jxix7PnyZRvUHOJjSZiZfrbkKIjj6SdEtAg5sjIliZ3IeUFaa1THy"
+      integrity="sha384-9QTEGkVUJcyDgHV824dRGVE3tzOTc0qzIwudjMCzqMayuragxcYwL17qSjt7Pnt0"
       crossorigin="anonymous"
     />
 
@@ -65,7 +65,7 @@
       rel="stylesheet"
       href="styles.74e2bb05ef.css"
       media="print"
-      onload="this.media='all'"
+      data-media-onload="all"
       integrity="sha384-Bp86n13LRPxqyh7RngavGBlcQnHZXldK0VhgAq8t3ja88ppT161c8PHnYqzE3ioF"
       crossorigin="anonymous"
     />
@@ -119,7 +119,7 @@
     <script
       type="module"
       src="main.js"
-      integrity="sha384-k1h+V7WXFWVtfAoJU2d18sAwx+dxZ5FTwK/RN6F9mA/rf2HsGW4XNkyqkEcBjJix"
+      integrity="sha384-B5nSeyCzHs8Tof1a+x7Jbr7/nmhmNzRSshGWO2a0KwKknCy8h6H+dfE4Ap4OLo0o"
       integrity=""
       crossorigin="anonymous"
     ></script>
@@ -634,14 +634,22 @@
         aria-atomic="false"
       ></ol>
 
+      <div
+        class="assistant-output sr-only"
+        data-testid="assistant-output"
+        aria-live="polite"
+        aria-atomic="false"
+      ></div>
+
       <form id="chatForm" class="chat-composer">
         <input
           id="chatInput"
           name="q"
           placeholder="Ask about my projects….."
           autocomplete="off"
+          data-testid="assistant-input"
         />
-        <button id="chatSend" type="submit">Send</button>
+        <button id="chatSend" type="submit" data-testid="assistant-send">Send</button>
       </form>
     </div>
 

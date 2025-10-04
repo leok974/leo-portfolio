@@ -12,7 +12,8 @@ RUN test -f package.json
 RUN npm ci
 COPY ${FRONTEND_DIR}/ ./
 ENV VITE_BUILD_SHA=${VITE_BUILD_SHA}
-RUN npm run build
+# Generate favicons (prebuild) and perform production build (will include SRI postbuild)
+RUN npm run build:prod
 
 # ===========================
 # Static copy stage (no build)
@@ -30,7 +31,14 @@ RUN mkdir -p /out && cp -r . /out
 FROM nginx:1.27-alpine AS frontend-vite-final
 ARG NGINX_CONF=deploy/nginx.conf
 COPY ${NGINX_CONF} /etc/nginx/conf.d/default.conf
-COPY --chmod=0644 --from=vite-build /app/dist/ /usr/share/nginx/html/
+# Copy built SPA
+COPY --from=vite-build /app/dist/ /usr/share/nginx/html/
+# Ensure root-level favicons (generated into public/) are present even if not emitted to dist
+COPY --from=vite-build /app/public/leo-avatar-sm.png /usr/share/nginx/html/leo-avatar-sm.png
+COPY --from=vite-build /app/public/leo-avatar-md.png /usr/share/nginx/html/leo-avatar-md.png
+# Normalize permissions so directories remain traversable and files stay read-only
+RUN find /usr/share/nginx/html -type d -exec chmod 755 {} + && \
+	find /usr/share/nginx/html -type f -exec chmod 644 {} +
 
 # ===========================
 # Final (Static copy)
@@ -38,5 +46,7 @@ COPY --chmod=0644 --from=vite-build /app/dist/ /usr/share/nginx/html/
 FROM nginx:1.27-alpine AS frontend-static-final
 ARG NGINX_CONF=deploy/nginx.conf
 COPY ${NGINX_CONF} /etc/nginx/conf.d/default.conf
-COPY --chmod=0644 --from=static-copy /out/ /usr/share/nginx/html/
+COPY --from=static-copy /out/ /usr/share/nginx/html/
+RUN find /usr/share/nginx/html -type d -exec chmod 755 {} + && \
+	find /usr/share/nginx/html -type f -exec chmod 644 {} +
 

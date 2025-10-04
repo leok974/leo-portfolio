@@ -10,7 +10,13 @@ const REFRESH_MS = 30_000;
 
 function el(){ return document.getElementById('agent-status'); }
 
-function dot(color: string){ const d=document.createElement('span'); d.className='agent-dot'; d.style.background=color; return d; }
+function dot(color: string){
+  const d=document.createElement('span');
+  d.className='agent-dot';
+  // Use data attribute; CSS will map data-color to background via attribute selector.
+  d.setAttribute('data-color', color);
+  return d;
+}
 
 function classify(s: InternalStatus){
   if (s.llm?.path !== 'down' && s.rag?.ok && s.openai_configured) return 'ok';
@@ -61,7 +67,8 @@ function updateServed(served: string){
 function start(){
   const node = el();
   if (!node) return;
-  node.style.cursor = 'pointer';
+  // Use a class instead of inline cursor style
+  node.classList.add('cursor-pointer');
   node.addEventListener('click', () => { tick(); });
   tick();
   setInterval(tick, REFRESH_MS);

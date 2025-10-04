@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+const EXPECT_EDGE = process.env.EXPECT_EDGE === '1' || process.env.NGINX_STRICT === '1';
+test.skip(!EXPECT_EDGE, 'Edge headers not expected in static mode');
 import { BASE } from './helpers/env';
 
 test.describe('@content cache-control projects.json', () => {

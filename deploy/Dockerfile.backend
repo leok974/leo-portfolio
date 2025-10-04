@@ -18,7 +18,7 @@ ARG GIT_SHA=local
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     APP_PORT=8000 BACKEND_BUILD_SHA=${GIT_SHA} HEALTH_URL=http://127.0.0.1:8000/ready
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git \
   && rm -rf /var/lib/apt/lists/*
 COPY --from=wheels /wheels/dist /tmp/wheels
 COPY assistant_api/requirements.txt ./requirements.txt

@@ -2,6 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/leok974/leo-portfolio)](https://github.com/leok974/leo-portfolio/releases)
 [![CI (Node 18/20)](https://img.shields.io/github/actions/workflow/status/leok974/leo-portfolio/matrix-ci.yml?branch=main)](https://github.com/leok974/leo-portfolio/actions/workflows/matrix-ci.yml)
+[![Frontend Fast Tests](https://github.com/leok974/leo-portfolio/actions/workflows/frontend-fast.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/frontend-fast.yml)
 [![Assistant Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/status-badge/status.json)](docs/OPERATIONS.md#status-badge)
 [![Publish Backend](https://github.com/leok974/leo-portfolio/actions/workflows/publish-backend.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/publish-backend.yml)
 [![Smoke](https://github.com/leok974/leo-portfolio/actions/workflows/smoke.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/smoke.yml)
@@ -34,6 +35,7 @@ A fast, modern, **framework-free** portfolio for **Leo Klemet — AI Engineer ·
 - ✅ Contact form ready for Netlify Forms
 - ✅ Accessible: semantic HTML5, labels, alt, caption tracks
 - ✅ Performance: lazy-load, captions support, WebP/AVIF friendly
+- ✅ Assistant chat automatically retries via JSON when a stream emits zero tokens
 
 > Built with **plain HTML, CSS (Grid/Flex), and vanilla JS**. Easy to extend into React/Vite/CMS later.
 
@@ -92,6 +94,35 @@ Core helper scripts:
 
 Pick one for your workflow (daily check → all-green; CI streaming sanity → chat-probe; Windows-native streaming → chat-stream).
 
+Quick backend start (local):
+- VS Code Tasks: Run "Run FastAPI (assistant_api)" to start at 127.0.0.1:8001, or "Run FastAPI (assistant_api, fallback)" to force OpenAI fallback.
+- Manual: `python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001`
+- Docs: see `docs/API.md` for endpoints and `assistant_api/README.md` for dev switches.
+
+Environment toggles for resilient local boots:
+- `SAFE_LIFESPAN=1` — skip model probing entirely during startup (avoids early exits on Windows/CI).
+- `DISABLE_PRIMARY=1` — start in fallback mode without touching the primary provider.
+- `DEV_ALLOW_NO_LLM=1` — synthesize minimal replies in `/chat` so tests can run without API keys.
+
+> 🆕 Assistant dock now hard-codes requests through the `/api/chat/stream` edge shim and prints `[assistant] chat POST …` plus `[assistant] stream non-200 …` when a response fails. Use DevTools console to confirm the chat submission fires and whether it’s hitting the shim or the direct backend.
+
+Tailwind note (if you add it later): this repo doesn’t ship Tailwind at runtime. If you introduce Tailwind with purge enabled, safelist any arbitrary utility values used by the assistant popover such as `min-w-[280px]` and `max-w-[360px]` to prevent them from being removed.
+
+Grounding UX:
+- When the backend applies RAG, the stream `meta` event includes `grounded: true` and optional `sources` (when `include_sources: true` is sent). The UI renders a small "grounded (n)" badge next to the served-by marker.
+- If a query can’t be grounded, the assistant avoids fabricated specifics and offers a case study or a short demo instead.
+
+Backend quick test (RAG):
+```powershell
+# Runs a backend-only pytest that ingests a small FS slice and asserts grounded chat
+D:/leo-portfolio/.venv/Scripts/python.exe -m pytest -q tests/test_chat_rag_grounded.py
+```
+
+Lightweight readiness probe (RAG chunks present):
+```powershell
+Invoke-RestMethod 'http://127.0.0.1:8010/api/ready' | ConvertTo-Json -Depth 5
+```
+
 ### Frontend Dev: Assets 404 / CSP Inline Styles
 If you see 404s for `/assets/*.css` or fonts and an unstyled page:
 1. Ensure the Vite build produced `dist/` (run `npm run build`).
@@ -100,6 +131,23 @@ If you see 404s for `/assets/*.css` or fonts and an unstyled page:
 4. `site.webmanifest` served with proper MIME via added `types` block (avoid text/html warning).
 
 Production: revert to strict CSP (no `unsafe-inline`) after moving inline `<style>` into bundled CSS.
+
+Accessibility tip: the sources popover uses `role="dialog"` and is labelled via `aria-labelledby`. Focus returns to the badge on close. For a complete focus trap, switch to `aria-modal="true"` and add a Tab key loop inside the dialog card.
+
+> 🆕 `deploy/Dockerfile.frontend` now runs a post-copy `find ... chmod` sweep so every directory under `/usr/share/nginx/html` keeps its execute bit. Without it, BuildKit 0.17+ would honor `COPY --chmod=0644` recursively and hashed bundles like `/assets/index-*.js` would 404 even though they existed on disk. If you customize the Dockerfile, keep (or regenerate) that normalization step.
+> 🆕 Added `entrypoint.d/10-csp-render.sh` to compute inline `<script>` hashes at container start and sync them into nginx’s CSP header. Provide a placeholder (e.g. `__CSP_INLINE_HASHES__`) or let it append after `script-src 'self'` automatically.
+
+### Edge Header-Sensitive Tests (EXPECT_EDGE)
+Some Playwright specs (CSP baseline, favicon cache, projects.json cache) only run when one of the environment flags below is set so local ad‑hoc static serving doesn’t produce noisy failures:
+
+```
+EXPECT_EDGE=1   # Explicitly assert we are hitting the hardened nginx/edge
+NGINX_STRICT=1  # Implicitly set by helper scripts / strict workflows
+```
+
+If neither is set, those specs `test.skip()` automatically. See `docs/DEVELOPMENT.md` (Edge Header Gating & Favicon Generation) for details.
+
+Favicon / PWA icons (`leo-avatar-sm.png` 192px, `leo-avatar-md.png` 512px) are auto-generated from the SVG source at build time via `scripts/generate-favicons.mjs` (hooked through `prebuild:prod`). This guarantees non‑zero `Content-Length` and stable manifest install metadata.
 
 ### Workflows Summary JSON
 An automated workflow (`workflows-summary.yml`) publishes `.github/badges/workflows.json` to the `status-badge` branch every 30 minutes (and on demand). It aggregates latest run metadata for key pipelines: unit-ci, prod-assistant-probe, e2e-prod, publish-backend. Field `overall` is `ok|degraded|empty` based on conclusions. Consume it in dashboards or Shields via a dynamic endpoint.
@@ -130,6 +178,10 @@ E2E tests are environment‑sensitive to avoid noisy failures during local itera
 | Dev (default soft) | `npm run test:dev` | Skips CSS immutability + status pill finalization if assets or backend not fully ready. |
 | Strict (CI / prod) | `npm run test:strict` | Requires built CSS (200 + immutable), status pill transitions out of "Checking…", and streaming emits `_served_by`. |
 | Smoke (assistant only) | `npm run test:smoke` | Minimal single test (assistant.smoke) in soft mode. |
+| Assistant UI (mock) | `npm run test:assistant:ui` | Backend-free Playwright harness that mocks `/api/chat/stream`; serve `dist/` via `npm run serve:dist` or set `BASE_URL` to an existing edge host. |
+| Assistant fallback guard | `npm run test:assistant:fallback` | Forces `/api/chat/stream` to finish without tokens and asserts the dock falls back to `/api/chat` JSON completions. |
+| Fast UI sweep | `npm run test:fast` | Chromium-only slice (`@frontend` + routing smoke) that aborts on first failure; helper `installFastUI(page)` blocks heavy assets and disables animations for deterministic runs. |
+| Changed specs | `npm run test:changed` | Chromium-only incremental run leveraging Playwright `--only-changed`; ideal while iterating on frontend specs. |
 
 Environment flags:
 
@@ -151,6 +203,35 @@ Troubleshooting:
 - Missing `_served_by`: verify streaming backend injects marker; fallback providers may differ.
 
 CI workflows should prefer `test:strict` nightly and `test:dev` for PR gating to minimize flaky failures.
+
+### Fast Playwright (local)
+
+Assumptions (override via env):
+- BASE_URL (default http://127.0.0.1:8080; use 5173 if running Vite dev)
+- PW_SKIP_WS=1 skips Playwright-managed webServer when you prestart your server(s)
+- Default workers: 24 (override with PW_WORKERS)
+
+Commands:
+
+```
+pnpm run pw:install
+pnpm run pw:fast
+```
+
+PowerShell helper:
+
+```
+./scripts/run-playwright.ps1 -BaseUrl http://127.0.0.1:8080
+# or Vite dev
+./scripts/run-playwright.ps1 -BaseUrl http://127.0.0.1:5173
+```
+
+Sharding examples:
+
+```
+./scripts/run-playwright.ps1 -Shard1
+./scripts/run-playwright.ps1 -Shard2
+```
 
 ---
 

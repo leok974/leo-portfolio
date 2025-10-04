@@ -1,0 +1,48 @@
+{
+  "base": "http://127.0.0.1:8080",
+  "generated": "2025-10-03T18:45:00.000Z",
+  "assets": [
+    {
+      "path": "/assets/Inter-roman.var-Dx4kXJAl.woff2",
+      "sha256": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62",
+      "contentType": "font/woff2",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "path": "/assets/styles.74e2bb05ef-BBOL8RVa.css",
+      "sha256": "282f2d21f73059b5aacb6f8f02d7db98a29c08f38a2962bf4c18e7fbb100925c",
+      "contentType": "text/css",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "path": "/assets/index-D8hh0nEa.js",
+      "sha256": "3fc7e77119e911e5973d1d6ca235107e2bacb7ccaccadddee42bd8b83ece0eb8",
+      "contentType": "application/javascript",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "path": "/assets/index-BeH8MGbI.css",
+      "sha256": "6828119899224ca6ab5a135b00b50971167ef653ad16c8af306eba1211fc28a3",
+      "contentType": "text/css",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "path": "/assets/datapipe-ai-cover-ZCr5nOdV.webp",
+      "sha256": "8db0afa53af6b339f80b8028e0859dfe6dde2190221e3951646eaaead9389222",
+      "contentType": "image/webp",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "path": "/assets/clarity-companion-DHeFhsoM.webp",
+      "sha256": "9363997597dced7a6c80b3d01f6ffb98eeb5148c2d895af0d3f9927430cc8f81",
+      "contentType": "image/webp",
+      "cacheControl": "public, max-age=31536000, immutable"
+    },
+    {
+      "path": "/assets/leo-avatar-sm-CMt0ZYX3.jpg",
+      "sha256": "c94c381abb2673bf26b654d2b06d5b6a68bffd3ca137dfbbd2caecc4931bd07b",
+      "contentType": "image/jpeg",
+      "cacheControl": "public, max-age=31536000, immutable"
+    }
+  ]
+}

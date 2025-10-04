@@ -1,0 +1,107 @@
+import { test, expect } from '@playwright/test';
+import { readFileSync, readdirSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { installFastUI } from './lib/fast-ui';
+import { mockReady } from './lib/mock-ready';
+
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const distAssetsDir = resolve(currentDir, '../../dist/assets');
+const bundledScript = readdirSync(distAssetsDir).find(
+  (file) => file.startsWith('index-') && file.endsWith('.js')
+);
+
+if (!bundledScript) {
+  throw new Error(`Assistant bundle not found under ${distAssetsDir}. Run \`npm run build\` before executing this spec.`);
+}
+
+const bundledScriptBody = readFileSync(join(distAssetsDir, bundledScript), 'utf-8');
+
+test.describe('@frontend assistant UI fallback', () => {
+  test.beforeEach(async ({ page }) => {
+    await installFastUI(page);
+    await mockReady(page, 'primary');
+
+    await page.route('**/assets/index-*.js', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/javascript',
+        headers: {
+          'cache-control': 'no-store'
+        },
+        body: bundledScriptBody
+      });
+    });
+  });
+
+  test('falls back to JSON when stream has no tokens', async ({ page }) => {
+    page.on('console', (msg) => {
+      console.log('[console]', msg.type(), msg.text());
+    });
+    const streamRequests: string[] = [];
+    await page.route('**/api/chat/stream', async (route) => {
+      streamRequests.push(route.request().url());
+      const body = [
+        'event: meta',
+        'data: {"_served_by":"primary"}',
+        '',
+        'event: done',
+        'data: [DONE]',
+        ''
+      ].join('\n');
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body
+      });
+    });
+
+    const fallbackResponse = {
+      choices: [
+        {
+          message: {
+            role: 'assistant',
+            content: 'Hello from fallback!'
+          }
+        }
+      ]
+    };
+
+    await page.route('**/api/chat', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(fallbackResponse)
+      });
+    });
+
+    await page.goto('/root_playwright.html', { waitUntil: 'domcontentloaded' });
+
+    await page.locator('#assistantChip').click();
+
+    const input = page.locator('[data-testid="assistant-input"], #chatInput').first();
+    const send = page.locator('[data-testid="assistant-send"], #chatSend').first();
+
+    await expect(input).toBeVisible();
+    await expect(send).toBeVisible();
+    await expect(send).toBeEnabled();
+
+    await input.fill('hi');
+
+    const chatPromise = page.waitForRequest('**/api/chat', { timeout: 35000 });
+    await send.click();
+
+    await chatPromise;
+
+    await expect.poll(() => streamRequests.length).toBeGreaterThan(0);
+
+    // Expect the fallback text to appear exactly once in the visible bubble (no duplication)
+    const bubble = page.locator('.chat-log .msg.from-ai .bubble').last();
+    await expect(bubble).toContainText('Hello from fallback!');
+
+    // Verify no duplicate messages in chat log
+    const allMessages = page.locator('.chat-log .msg.from-ai');
+    await expect(allMessages).toHaveCount(1);
+  });
+});

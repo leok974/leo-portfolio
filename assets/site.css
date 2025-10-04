@@ -7,6 +7,10 @@
 :root{--font-sans:"Inter var","Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;--bg:#0b1020;--bg-elev:#0f172a;--text:#e5e7eb;--muted:#94a3b8;--border:#1f2937}
 html{font-family:var(--font-sans)}
 :root{ --lk-bg:#0b1220; --lk-surface:#0f1a2d; --lk-surface-2:#111b30; --lk-border:rgba(255,255,255,.06); --lk-border-strong:rgba(255,255,255,.12); --lk-text:#e8eef8; --lk-muted:#b4c0cf; --lk-accent:#2d6cdf; --lk-accent-contrast:#ffffff; --lk-shadow:0 10px 35px rgba(0,0,0,.45); --lk-radius:16px; --lk-radius-pill:999px; }
+/* Style policy: no inline style or inline event handler usage.
+	Dynamic presentation must use classes (.is-hidden, .text-muted, .cursor-pointer, .served-by-line, .agent-status.*) or data-* attributes.
+	Background & color fallbacks handled via utility classes.
+*/
 [data-theme="light"], .theme-light{ --lk-bg:#f6f8fc; --lk-surface:#ffffff; --lk-surface-2:#f1f5fb; --lk-border:rgba(0,0,0,.08); --lk-border-strong:rgba(0,0,0,.12); --lk-text:#0f172a; --lk-muted:#52627a; --lk-accent:#2d6cdf; --lk-accent-contrast:#ffffff; --lk-shadow:0 10px 24px rgba(0,0,0,.12); }
 
 /* Critical layout originally inline */
@@ -43,6 +47,17 @@ body.assistant-open{padding-bottom:0!important}
 .status-pill{margin-left:.75rem}
 .mt-3{margin-top:.75rem}
 .mt-4{margin-top:1rem}
+.img-fallback-gradient{ background:linear-gradient(180deg,#141b2d,#0b1223); }
+.cursor-pointer{ cursor:pointer; }
+.text-muted{ color: var(--lk-muted, #52627a); }
+.is-hidden{ display:none !important; }
+.agent-status .agent-dot[data-color]{ background: attr(data-color color, #e74c3c); }
+/* Fallback for browsers without attr(color) support: override via status classes */
+.agent-status.ok .agent-dot{ background:#2ecc71; }
+.agent-status.warn .agent-dot{ background:#f1c40f; }
+.agent-status.err .agent-dot{ background:#e74c3c; }
+.served-by-line{ opacity:.75; font-size:12px; margin-bottom:.25rem; }
+.served-by-line[data-accent]{ color: var(--lk-accent, #2d6cdf); }
 .text-right{text-align:right}
 .footer-build{grid-column:1 / -1;margin-top:.5rem}
 .detail-title{margin:0}

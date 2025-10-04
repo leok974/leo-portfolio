@@ -1,27 +1,38 @@
 // Partial typing remediation (keep JS, add JSDoc for stricter checkJs)
 // -----------------------------
-// UTIL: THEME TOGGLE + STORAGE
-// -----------------------------
-/**
- * Initialize theme toggle reflecting saved preference or OS scheme.
- */
-(function themeInit(){
-  const saved = localStorage.getItem('theme');
-  const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-  const initial = saved || (prefersLight ? 'light' : 'dark');
-  document.documentElement.setAttribute('data-theme', initial);
-  const toggleBtn = /** @type {HTMLButtonElement | null} */ (document.getElementById('themeToggle'));
-  if (toggleBtn) {
-  toggleBtn.setAttribute('aria-pressed', String(initial === 'light'));
-    toggleBtn.addEventListener('click', () => {
-      const current = document.documentElement.getAttribute('data-theme') || 'dark';
-      const next = current === 'light' ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-theme', next);
-  toggleBtn.setAttribute('aria-pressed', String(next === 'light'));
-      localStorage.setItem('theme', next);
-    });
-  }
-})();
+// UTIL modules (theme + status)
+import { initThemeToggle } from './src/theme';
+import { startStatusPoll } from './src/status-poll';
+
+document.addEventListener('DOMContentLoaded', () => {
+  const themeBtn = document.querySelector('#theme-toggle');
+  if (themeBtn instanceof HTMLElement) initThemeToggle(themeBtn);
+  // Status poll drives warming banner + agent indicator
+  const banner = document.querySelector('#warming-banner');
+  const agentDot = document.querySelector('#agent-dot');
+  const agentBadge = document.querySelector('#agent-badge');
+  startStatusPoll((s) => {
+    const modelPresent = !!s?._ui?.modelPresent;
+    const provider = s?._ui?.provider || 'unknown';
+    const ready = !!(modelPresent && s?.ready);
+    if (banner instanceof HTMLElement) banner.classList.toggle('hidden', ready || provider === 'primary');
+    if (agentDot instanceof HTMLElement) {
+      agentDot.classList.toggle('bg-green-500', ready);
+      agentDot.classList.toggle('bg-amber-500', !ready && provider === 'warming');
+      agentDot.classList.toggle('bg-red-500', !ready && !modelPresent && provider !== 'warming');
+    }
+    if (agentBadge instanceof HTMLElement) {
+      const txt = modelPresent ? `Agent — ${provider}` : 'fallback (no model)';
+      agentBadge.textContent = txt;
+      agentBadge.setAttribute('data-provider', provider);
+      agentBadge.setAttribute('data-model-present', String(modelPresent));
+      // Accessibility enhancements: announce provider changes
+      agentBadge.setAttribute('role', 'status');
+      agentBadge.setAttribute('aria-live', 'polite');
+      agentBadge.setAttribute('aria-label', `Chat provider status: ${txt}`);
+    }
+  });
+});
 
 // ---------------------------------
 // STATUS PILL (TypeScript module)
@@ -36,6 +47,20 @@ import './src/status/status-ui.ts';
 // FOOTER YEAR
 // -----------------------------
 const yearEl = /** @type {HTMLElement | null} */ (document.getElementById('year'));
+  // Promote print-media stylesheet once loaded (replaces inline onload handler removed for CSP compliance)
+document.addEventListener('DOMContentLoaded', () => {
+  try { initAgentStatus(); } catch(e){ console.warn('initAgentStatus failed', e); }
+  try { wireChatForm(); } catch(e){ console.warn('wireChatForm failed', e); }
+  try { performCleanup(); } catch(e){ console.warn('performCleanup failed', e); }
+  // Promote print-media stylesheet once loaded (replaces former inline onload handler for CSP compliance)
+  document.querySelectorAll('link[rel="stylesheet"][data-media-onload]').forEach(el => {
+    const link = /** @type {HTMLLinkElement} */ (el);
+    link.addEventListener('load', () => {
+      const target = link.getAttribute('data-media-onload');
+      if (target) link.media = target;
+    }, { once: true });
+  });
+});
 if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
 // -----------------------------

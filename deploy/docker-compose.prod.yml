@@ -1,34 +1,62 @@
-version: "3.9"
-
-# Production-focused compose (immutable image, no source bind mounts).
 services:
   ollama:
     image: ollama/ollama:latest
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     environment:
-      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_KEEP_ALIVE=5m  # shorter keep-alive; model evicted from RAM sooner when idle
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     volumes:
-      - ollama:/root/.ollama
+      - ollama-data:/root/.ollama
     restart: unless-stopped
+    # Health == API up (model presence handled by ollama-init); simple CLI probe
     healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 30s
+      test: ["CMD-SHELL", "/usr/bin/ollama list >/dev/null 2>&1"]
+      interval: 10s
       timeout: 3s
-      retries: 5
+      retries: 60
+      start_period: 10s
 
+  # Pull PRIMARY_MODEL once; skip if already present. Retries with backoff.
   ollama-init:
     image: curlimages/curl:8.7.1
     depends_on:
-      - ollama
+      ollama:
+        condition: service_healthy
     environment:
+      # Provide concrete defaults (avoid host compose interpolation warnings)
       PRIMARY_MODEL: ${PRIMARY_MODEL:-gpt-oss:20b}
-    entrypoint: ["/bin/sh", "-lc"]
-    command: >-
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+    entrypoint: ["/bin/sh","-lc"]
+    command: >
       set -e;
-      echo "[ollama-init] waiting for ollama...";
-      until curl -sSf http://ollama:11434/api/tags >/dev/null; do sleep 2; done;
-      echo "[ollama-init] pulling ${PRIMARY_MODEL}...";
-      curl -sSf -X POST http://ollama:11434/api/pull -H 'Content-Type: application/json' -d "{\"name\":\"${PRIMARY_MODEL}\"}";
-      echo "[ollama-init] done."
+      primary="$$PRIMARY_MODEL"; [ -z "$$PRIMARY_MODEL" ] && primary="gpt-oss:20b";
+      url="$$OLLAMA_URL"; [ -z "$$OLLAMA_URL" ] && url="http://ollama:11434";
+      echo "[ollama-init] waiting for API at $$url ...";
+      for i in $$(seq 1 120); do
+        if curl -sf "$$url/api/version" >/dev/null; then echo "[ollama-init] api up"; break; fi;
+        sleep 1;
+      done;
+      echo "[ollama-init] checking model: $$primary";
+      if curl -sf -X POST "$$url/api/show" -H "Content-Type: application/json" -d "{\"name\":\"$$primary\"}" >/dev/null; then
+        echo "[ollama-init] model already present"; exit 0;
+      fi;
+      backoff=2; max=5;
+      for attempt in $$(seq 1 $$max); do
+        echo "[ollama-init] pulling $$primary (attempt $$attempt/$$max)";
+        if curl -sf -X POST "$$url/api/pull" -H "Content-Type: application/json" -d "{\"name\":\"$$primary\"}" --no-buffer | sed 's/\\n/\n/g'; then
+          echo "[ollama-init] pull complete"; exit 0;
+        fi;
+        echo "[ollama-init] pull failed, retrying in $${backoff}s";
+        sleep $$backoff; backoff=$$((backoff*2)); [ $$backoff -gt 30 ] && backoff=30;
+      done;
+      echo "[ollama-init] pull failed after retries"; exit 1;
     restart: "no"
 
   backend:
@@ -43,6 +71,7 @@ services:
       - OPENAI_BASE_URL=http://ollama:11434/v1
       - OPENAI_MODEL=gpt-oss:20b
       - PRIMARY_MODEL=${PRIMARY_MODEL:-gpt-oss:20b}
+      - RAG_URL=http://localhost:8000/api/rag/query
       - FALLBACK_API_KEY_FILE=/run/secrets/openai_api_key
       - OPENAI_API_KEY_FILE=/run/secrets/openai_api_key
       - ALLOWED_ORIGINS=https://leok974.github.io,http://localhost:8080,https://assistant.ledger-mind.org
@@ -50,8 +79,10 @@ services:
       # (Optional) For bounded model warm wait you can set MODEL_WAIT_MAX_SECONDS=<seconds>
       # - MODEL_WAIT_MAX_SECONDS=180
     depends_on:
-      - ollama
-      - ollama-init
+      ollama:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
     volumes:
       - ../data:/app/data
     expose:
@@ -59,13 +90,14 @@ services:
     restart: unless-stopped
     # Healthcheck: poll internal ready alias (fast) so nginx can gate startup
     healthcheck:
-      # Use the canonical /ready endpoint (app-level); alias /api/ready is optional
-      test: ["CMD-SHELL","python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/ready', timeout=3).getcode()==200 else 1)\""]
-      interval: 5s
-      timeout: 4s
-      retries: 60
-      # Allow ample time for initial model pull / warm loop before marking unhealthy
-      start_period: 200s
+      # Chat-ready: require a tiny successful generation (no external deps)
+      test: ["CMD-SHELL",
+        "python - <<'PY'\nimport json,sys,urllib.request\n# Payload for tiny chat\nbody=json.dumps({'messages':[{'role':'user','content':'hi'}]}).encode()\nheaders={'Content-Type':'application/json'}\n# Quick readiness check first (fast fail if server not up)\ntry:\n  urllib.request.urlopen('http://localhost:8000/ready', timeout=5)\nexcept Exception:\n  sys.exit(1)\n# Attempt chat (allow longer for first token)\nreq=urllib.request.Request('http://localhost:8000/chat', data=body, headers=headers, method='POST')\ntry:\n  with urllib.request.urlopen(req, timeout=25) as resp:\n    sys.exit(0 if resp.status==200 else 1)\nexcept Exception:\n  sys.exit(1)\nPY"
+      ]
+      interval: 30s
+      timeout: 30s
+      retries: 20
+      start_period: 300s
     secrets:
       - openai_api_key
 
@@ -86,9 +118,33 @@ services:
       - "8443:443"
     restart: unless-stopped
 
+  warmup:
+    image: curlimages/curl:8.7.1
+    depends_on:
+      backend:
+        condition: service_healthy
+    entrypoint: ["/bin/sh","-lc"]
+    command: >
+      set -e;
+      echo "[warmup] prime JSON chat";
+      curl -m 8 -sf -X POST http://backend:8000/chat \
+        -H 'Content-Type: application/json' \
+        -d '{"messages":[{"role":"user","content":"hi"}]}' >/dev/null || true;
+      echo "[warmup] prime SSE (first 2 lines then close)";
+      curl -m 8 -Ns -X POST http://backend:8000/chat/stream \
+        -H 'Content-Type: application/json' \
+        -d '{"messages":[{"role":"user","content":"hi"}]}' \
+        | sed -n '1,2p;q' || true;
+      echo "[warmup] done";
+    restart: "no"
+
 volumes:
-  ollama:
+  ollama-data:
 
 secrets:
   openai_api_key:
     file: ../secrets/openai_api_key
+
+networks:
+  shared-ollama:
+    external: true

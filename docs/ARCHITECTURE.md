@@ -4,7 +4,7 @@
 
 ## Overview
 A hybrid AI assistant platform consisting of:
-- Frontend: static site (now baked into the edge nginx image via multi-target Dockerfile) or optionally hosted on GitHub Pages.
+- Frontend: static site (now baked into the edge nginx image via multi-target Dockerfile) or optionally hosted on GitHub Pages. Playwright fast loops rely on `installFastUI` to block heavy assets and disable animations when exercising mocked assistant flows.
 - Edge Proxy: nginx serving SPA assets + reverse proxy for API + SSE streaming.
 - Backend: FastAPI service exposing chat, RAG query, health/metrics, and LLM diagnostics.
 - Model Host: Ollama container (primary) with automatic fallback to OpenAI-compatible API.
@@ -70,11 +70,32 @@ User Browser -> (Edge nginx) -> Backend FastAPI -> (Primary: Ollama / Fallback: 
                                  +--> RAG (SQLite embeddings)
 ```
 
+### Route Mapping Overview
+
+Uniform frontend calls vs backend native paths:
+
+```
+frontend (browser) --> edge nginx
+/api/status/*   -> backend /status/*
+/api/chat       -> backend /chat
+/api/chat/stream -> backend /chat/stream (SSE; buffering off)
+```
+
+Why:
+* Keeps frontend code consistently under `/api/*` (simpler fetch wrappers / interceptors).
+* Allows backend to treat chat endpoints separately from its `/api/status/*` health & RAG routes.
+* SSE tuning (connection caps, `proxy_buffering off`) isolated to the specific stream location.
+* Future versioning: add `/api/v1/chat` shim without touching existing backend route shapes.
+
+
 ### Chat (Streaming)
 1. Browser POST /chat/stream (SSE)
 2. Edge proxies to backend `/chat/stream` (proxy_buffering off)
 3. Backend chooses provider: primary (Ollama) unless disabled/unhealthy, else fallback
 4. Tokens streamed as `data:` events; a final `meta` event includes provider stats
+5. Assistant dock hard-pins the browser target to `/api/chat/stream` and logs each request so debugging stays on the edge shim even if backend summaries advertise direct URLs.
+6. If a stream completes without emitting assistant tokens, the dock now falls back to `/api/chat` JSON completions to guarantee a response (guarded by Playwright specs under `@frontend assistant UI fallback` and backend stream emit checks).
+7. `src/lib/sse.ts` hosts a shared `readSSE()` helper that decodes `event:`/`data:` frames and hands meta/token callbacks to the dock UI without relying on bespoke parsers.
 
 ### RAG Query
 1. Browser (or backend internal) POST `/api/rag/query` with `{question,k}`
@@ -97,6 +118,7 @@ User Browser -> (Edge nginx) -> Backend FastAPI -> (Primary: Ollama / Fallback: 
 
 ## Key Resilience Mechanisms
 - Automatic fallback if primary model errors / unreachable
+- UI-level fallback when `/api/chat/stream` returns meta/done without tokens (retries via JSON API)
 - Rolling latency probe endpoint `/llm/primary/latency`
 - Explicit deprecation notice on legacy `chat-latency` endpoint
 - Health classification used for readiness gating
@@ -108,6 +130,8 @@ User Browser -> (Edge nginx) -> Backend FastAPI -> (Primary: Ollama / Fallback: 
 - Secrets injected via Docker secrets (`openai_api_key`) or env
 - CORS restricted to configured allowlist
 - SSE route disables buffering to avoid head-of-line blocking
+- Frontend nginx layer normalizes `/usr/share/nginx/html` permissions (dirs 0755 / files 0644) after copying build artifacts so immutable bundles stay reachable without relaxing read-only policy.
+- Entry-point hook `entrypoint.d/10-csp-render.sh` recomputes inline `<script>` hashes on boot and injects them into the CSP header so the edge proxy always advertises the correct `script-src` allowlist.
 
 ## Future Enhancements (TODO)
 ### RAG Ingestion (mini sequence)

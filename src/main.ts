@@ -352,7 +352,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const fallback = 'assets/optimized/hero-placeholder-sm.webp';
     if (target.src.endsWith(fallback)) return;
     target.src = fallback;
-    target.style.background = 'linear-gradient(180deg,#141b2d,#0b1223)';
+  // Instead of inline style, add a CSS class for fallback background
+  target.classList.add('img-fallback-gradient');
   }, true);
 });
 

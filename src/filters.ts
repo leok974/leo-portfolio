@@ -8,7 +8,7 @@ export function computeVisibility(categoriesAttr: string | undefined, filter: st
 export function applyProjectFilter(cards: HTMLElement[], filter: string) {
   cards.forEach(card => {
     const show = computeVisibility(card.dataset.cats, filter);
-    card.style.display = show ? '' : 'none';
+    if (show) card.classList.remove('is-hidden'); else card.classList.add('is-hidden');
   });
 }
 

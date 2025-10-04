@@ -132,3 +132,43 @@ def recent_latency_stats_by_provider() -> dict:
         if prov != "-":
             out[prov] = _dist(arr)
     return out
+
+# ---------------- Stage metrics (embeddings/rerank/gen) -----------------------
+# Lightweight counters and last-latency per stage with backend label
+from contextlib import contextmanager
+
+_STAGE_METRICS = {
+    "embeddings": {"count": 0, "last_ms": None, "last_backend": None},
+    "rerank":     {"count": 0, "last_ms": None, "last_backend": None},
+    "gen":        {"count": 0, "last_ms": None, "last_backend": None},
+}
+
+def stage_snapshot():
+    return {k: dict(v) for k, v in _STAGE_METRICS.items()}
+
+def _stage_record(stage: str, backend: str, ms: float):
+    m = _STAGE_METRICS.setdefault(stage, {"count": 0, "last_ms": None, "last_backend": None})
+    m["count"] += 1
+    m["last_ms"] = round(float(ms), 1)
+    m["last_backend"] = str(backend)
+
+def stage_record_ms(stage: str, backend: str, ms: float) -> None:
+    """Public helper to stamp a stage metric with a measured duration (ms).
+    Safe to call from request handlers after a successful operation.
+    """
+    try:
+        _stage_record(stage, backend, ms)
+    except Exception:
+        pass
+
+@contextmanager
+def timer(stage: str, backend: str):
+    t0 = time.perf_counter()
+    try:
+        yield
+    finally:
+        dt = (time.perf_counter() - t0) * 1000.0
+        try:
+            _stage_record(stage, backend, dt)
+        except Exception:
+            pass

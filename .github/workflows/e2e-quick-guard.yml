@@ -46,10 +46,11 @@ jobs:
       - name: Focused Playwright guard
         env:
           BASE: http://localhost:8080
+          EXPECT_EDGE: "1"
           NGINX_STRICT: "1"
         run: >
           pnpm exec playwright test
-          -g "security headers drift|projects.json conditional|projects json cache|mime smoke|bundle wiring|dist bind-mount parity|root html mime"
+          -g "security headers drift|projects.json conditional|projects json cache|mime smoke|bundle wiring|dist bind-mount parity|root html mime|html-no-inline|dom-no-inline-styles|dom-no-inline-handlers"
           --reporter=line
 
       - name: Upload traces on failure

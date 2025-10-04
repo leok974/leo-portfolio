@@ -1,3 +1,5 @@
+| `PRIMARY_POLL_MAX_S` | Max seconds to keep polling for primary model presence before giving up. |
+| `ALLOW_FALLBACK` | (Tests) When `1`, skips Playwright no-fallback guard specs so CI can proceed while primary model unavailable. |
 # Deploy Guide
 
 > Draft. Consolidates deployment notes from `deploy/README.md` and adds full-stack + edge proxy guidance.
@@ -24,6 +26,12 @@ FALLBACK_BASE_URL=https://api.openai.com/v1
 FALLBACK_MODEL=gpt-4o-mini
 ALLOWED_ORIGINS=https://leok974.github.io,http://localhost:8080
 DOMAIN=assistant.ledger-mind.org
+```
+
+Frontend env (Vite) hints:
+```
+VITE_SSE_GRACE_MS=1800          # base grace for initial SSE token; UI extends on heartbeats
+VITE_PRIMARY_MODEL=gpt-oss:20b  # optional hint to add a small grace bump for heavy local models
 ```
 
 ## Compose Files
@@ -75,8 +83,82 @@ Access:
 curl -s http://127.0.0.1:8080/healthz
 curl -s http://127.0.0.1:8080/api/ready
 curl -s http://127.0.0.1:8080/api/metrics
-curl -N -X POST http://127.0.0.1:8080/chat/stream -H 'Content-Type: application/json' -d '{"messages":[{"role":"user","content":"Ping"}]}'
+curl -N -X POST http://127.0.0.1:8080/api/chat/stream -H 'Content-Type: application/json' -d '{"messages":[{"role":"user","content":"Ping"}]}'
+curl -s http://127.0.0.1:8080/api/status/summary | jq .ok
+curl -s http://127.0.0.1:8080/status/cors | jq '{allow_all,allowed_origins,domain_env,request_origin,is_allowed}'
+
+### Frontend shim smoke (optional)
+
+```powershell
+# Serve dist/ then run backend-free UI harness
+$env:BASE_URL = 'http://127.0.0.1:5178'
+npx start-server-and-test "npm run serve:dist" http://127.0.0.1:5178 "npm run test:assistant:ui"
+$env:BASE_URL = $null
+
+# Ensure zero-token fallback keeps working even when the stream returns only meta/done
+npm run test:assistant:fallback
 ```
+
+For ultra-fast local validation without spinning up the backend, run `npm run test:fast` (filters to `@frontend` + routing smoke) or `npm run test:changed` after editing Playwright specs; both leverage the `installFastUI` helper to skip heavy asset downloads during iteration.
+```
+
+## GPU Support
+
+### Prerequisites
+- NVIDIA GPU with CUDA support
+- NVIDIA Container Toolkit installed on host
+- Docker Compose with GPU support enabled
+
+### Configuration
+The production Docker Compose configuration includes GPU support for Ollama by default using modern device reservations:
+
+```yaml
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+```
+
+### Verification Workflow
+
+1. **Recreate Ollama with GPU support:**
+   ```powershell
+   docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate ollama
+   ```
+
+2. **Verify GPU access inside container:**
+   ```powershell
+   docker compose -f deploy/docker-compose.prod.yml exec ollama nvidia-smi
+   ```
+   You should see the same GPU table as from a CUDA test image.
+
+3. **Check Ollama logs for GPU detection:**
+   ```powershell
+   docker logs --tail=200 deploy-ollama-1
+   ```
+   Look for GPU detection messages and absence of "entering low vram mode".
+
+4. **Test full stack with GPU acceleration:**
+   ```powershell
+   docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate ollama-init backend nginx warmup
+   npm run probe:stack
+   npx cross-env BASE_URL=http://127.0.0.1:8080 STREAM_LATENCY_LOG=1 npx playwright test -g "@backend chat stream first-chunk" --reporter=line
+   npm run report:latency
+   ```
+   Expect significantly faster first-token times and improved p50/p95 latency metrics.
+
+### Troubleshooting
+- If `nvidia-smi` fails inside the container, verify NVIDIA Container Toolkit is properly installed on the host
+- If Ollama logs show "entering low vram mode", the GPU may not be accessible or have insufficient memory
+- For older Docker Compose versions, you may need to use the legacy `runtime: nvidia` approach instead
 
 ## Integrated Edge / Frontend
 The `nginx` service now builds from `deploy/Dockerfile.frontend` embedding the static site directly into the proxy layer. Two targets:
@@ -93,11 +175,50 @@ Nginx config (`deploy/nginx.conf`) provides:
 - SPA fallback (`try_files $uri /index.html`)
 - `/api/`, `/chat/stream`, `/llm/`, `/status/` proxy pass-through
 - SSE buffering disabled on streaming path
+- Assistant dock fetches now coerce the browser to hit `/api/chat/stream` regardless of backend summary hints and emit `[assistant] chat POST …` / `[assistant] stream non-200 …` console logs so you can confirm edge routing before debugging backend health.
 
 ### Static Asset Handling & Troubleshooting
 
+The frontend image now finishes with:
+
+```
+RUN find /usr/share/nginx/html -type d -exec chmod 755 {} + \
+  && find /usr/share/nginx/html -type f -exec chmod 644 {} +
+```
+
+This prevents BuildKit’s recursive `--chmod=0644` behavior from stripping the execute bit on directories when copying `dist/`. Without that fix, nginx would return 404 for existing fingerprinted files because it couldn’t traverse the asset folders. If you fork the Dockerfile or swap build targets, keep that normalization step (or rerun a similar sweep) before publishing.
+
+Startup hook: `entrypoint.d/10-csp-render.sh` now runs inside the nginx image. It scans `/usr/share/nginx/html/index.html` for inline scripts, computes SHA-256 hashes via `openssl`, and injects them into `/etc/nginx/nginx.conf` (either replacing `__CSP_INLINE_HASHES__`/`__INLINE_CSP_HASH__` placeholders or appending after `script-src 'self'`). This keeps the CSP header in sync even when inline bootstrap snippets change between builds.
+
 The production Nginx config now has *explicit directory guards* for ` /assets/` and `/fonts/` plus a generic hashed file rule:
 ```
+
+### Build Determinism (Single-Source Frontend Build)
+
+To avoid confusing hash drift, the deployment now uses a **single-source build pattern**:
+
+Pattern A (adopted): The Docker multi-stage build (target `frontend-vite-final`) runs `npm run build:prod` inside the build container and copies the resulting `dist/` into the final nginx image layer. The local PowerShell helper `scripts/run-prod-stack.ps1` no longer performs a host-side Vite build first.
+
+Why:
+- Prevents double building (host then container) which can yield two different fingerprinted bundle names (timestamps, embed variations) and lead to manual 404s when probing the wrong hash.
+- Ensures CI + local builds produce identical image content given the same source and lockfiles.
+- Eliminates accidental dependence on stale host `dist/` artifacts (bind mounts or COPY).
+
+Alternative Pattern B (not used currently): Perform a host `npm run build:prod` once, then have the Dockerfile simply COPY the host `dist/` (skipping the Node build stage). Useful for extremely fast rebuild cycles, but you must consciously rebuild locally before image builds; CI must replicate the same build step.
+
+Operational Guidance:
+1. Treat `dist/` as ephemeral; rely on the image for authoritative artifacts.
+2. If you need to inspect the built files locally: run `npm run build:prod` manually (outside the prod stack script) or extract from the built image (`docker cp <nginx-container>:/usr/share/nginx/html ./dist-extracted`).
+3. When comparing asset hashes between runs, verify you are looking at the container-served HTML (curl the root) rather than a leftover local `dist/index.html`.
+4. The asset immutability tests (`assets-immutable` Playwright spec and `scripts/verify-static-cache.mjs`) fetch the live served HTML to derive authoritative asset lists—this guarantees alignment with what end users receive.
+
+Drift Symptom Example:
+```
+404 /assets/index-OLDHASH.js
+```
+Cause: Probing a hash produced by a different (host) build than the one copied into the final container. Resolution: Re-fetch `/` to obtain current bundle names or remove the redundant build source.
+
+CI Recommendation: Keep only Pattern A unless a measurable build-time regression forces reconsideration; consistency > marginal speed.
 location ^~ /assets/ { add_header Cache-Control "public, max-age=31536000, immutable"; try_files $uri =404; }
 location ^~ /fonts/  { add_header Cache-Control "public, max-age=31536000, immutable"; try_files $uri =404; }
 location ~* \.(?:js|css|woff2|png|jpe?g|webp|gif|svg|ico)$ { add_header Cache-Control "public, max-age=31536000, immutable"; try_files $uri =404; }
@@ -131,6 +252,47 @@ docker compose \
 (Re-run your local `npm run build` whenever frontend assets change; the bind mount serves them instantly without rebuilding the image.)
 
 Cache Busting:
+## Ollama Persistence & Health (Primary Model Readiness)
+
+The production compose now:
+- Mounts a named volume `ollama:/root/.ollama` for model reuse across restarts.
+- Adds a healthcheck hitting `http://localhost:11434/api/tags` every 10s (10 retries; 10s start period) so dependent services only start when the API is responsive.
+- Introduces an init job `ollama-init` that pulls the primary model (`PRIMARY_MODEL`, default `gpt-oss:20b`) once Ollama is up, then exits successfully. The backend `depends_on` conditions require:
+  - `ollama` is `service_healthy`.
+  - `ollama-init` completed successfully (ensures model pull kicked off).
+
+### Adjusting the Primary Model
+Set at deploy time (shell or `deploy/.env`):
+```bash
+export PRIMARY_MODEL=qwen2.5:7b-instruct-q4_K_M
+docker compose -f deploy/docker-compose.prod.yml up -d --build
+```
+
+### Verifying Model Presence
+```bash
+curl -s http://127.0.0.1:8080/api/status/summary | jq '.llm.path, .llm.primary_model_present'
+curl -s 'http://127.0.0.1:8080/llm/models?refresh=true' | jq '.model_present'
+```
+Expected transition: `"warming"` → `"primary"`; `true` for `model_present`.
+
+### Fallback Detection Test (Playwright)
+Spec: `tests/e2e/chat-no-fallback.spec.ts` fails if chat response JSON contains `served by fallback` when `BACKEND_REQUIRED=1`.
+
+Run backend tests only:
+```bash
+BACKEND_REQUIRED=1 npx playwright test -g '@backend'
+```
+
+If model is missing the fallback guard test will fail fast—pull or fix connectivity, then re-run.
+
+### Background Promotion Poll
+`lifespan.py` polls the primary model list every `PRIMARY_POLL_INTERVAL_S` (default 5s) until presence is confirmed or `PRIMARY_POLL_MAX_S` reached (600s default). Override as needed:
+```bash
+PRIMARY_POLL_INTERVAL_S=3 PRIMARY_POLL_MAX_S=900 docker compose -f deploy/docker-compose.prod.yml up -d --build
+```
+
+### Fast Recovery (Windows Docker Desktop)
+Use `scripts/restart-docker.ps1` (or embedded function in `OPERATIONS.md`) to recover from named pipe loss, then run `scripts/start-prod.ps1` for health‑gated bring-up.
 - Fingerprinted bundle names + `immutable` caching mean you must reference the updated file names after each build (handled automatically by templated HTML or manifest injection in a full Vite setup). Plain static references (like `styles.<hash>.css`) must be updated if hashes change.
 
 Diagnostics Quick Commands:
@@ -146,6 +308,34 @@ Service Worker / Offline Note:
 Security Hardening TODOs:
 - Remove `'unsafe-inline'` from style-src once all inline `<style>` tags are eliminated.
 - Consider adding `Permissions-Policy` and `Strict-Transport-Security` (when TLS termination is in place).
+
+### Chat API routing
+
+The backend exposes chat endpoints at unprefixed paths: `/chat` and `/chat/stream` (SSE). To keep the frontend API surface consistent under `/api/*`, nginx provides compatibility shims:
+
+| Frontend request | Upstream backend target | Notes |
+|------------------|-------------------------|-------|
+| `/api/chat` | `/chat` | POST JSON chat completion |
+| `/api/chat/stream` | `/chat/stream` | POST SSE stream (buffering disabled) |
+
+Benefits:
+* UI always calls `/api/...` (no special-case code for chat vs health).
+* Backend retains simple separation of chat vs REST health/summary endpoints.
+* SSE tuning (buffering off, connection limits) isolated to the shim block.
+
+Prod & dev configs now both include the exact-match `location = /api/chat` and `location = /api/chat/stream` directives. If you introduce a versioned API later (`/api/v1/chat`), add a parallel mapping (or adjust the code to call the canonical path directly).
+
+Verification after deploy:
+```bash
+curl -s -X POST http://127.0.0.1:8080/api/chat -H 'Content-Type: application/json' -d '{"messages":[{"role":"user","content":"hi"}]}' | jq '.id,.choices[0].message.role'
+curl -i -N -X POST http://127.0.0.1:8080/api/chat/stream -H 'Content-Type: application/json' -d '{"messages":[{"role":"user","content":"hi"}]}' | head -n 5
+```
+
+SSE behavior overview:
+- Backend emits an immediate heartbeat (`:` comment frame) and `event: ping` every ~0.9s until the first assistant token, allowing the client to defer fallback without noisy warnings.
+- Empty delta chunks are filtered server-side; a `event: meta` frame with `{"_served_by":"<provider>"}` is sent before the first `data:` assistant token.
+- If the stream completes without assistant tokens, the UI automatically retries via `/api/chat` JSON and logs at `info` level.
+
 
 ### CSP Inline Script Hash Workflow
 

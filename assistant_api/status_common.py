@@ -12,6 +12,7 @@ from .llm_client import (
     LAST_PRIMARY_ERROR,
     LAST_PRIMARY_STATUS,
 )
+from . import llm_client as _llm_client
 from .metrics import providers, primary_fail_reason
 from .keys import is_openai_configured
 
@@ -42,6 +43,19 @@ async def build_status(base: str) -> dict:
                     primary_model = health_json.get('primary_model', OPENAI_MODEL)
         except Exception:
             llm_status = {}
+
+        # Fallback: if HTTP health unavailable, use local shim (enables pytest monkeypatching)
+        if not llm_status:
+            try:
+                _shim = _llm_client.llm_health()
+                if _shim:
+                    llm_status = {
+                        'ollama': getattr(_shim, 'ollama', None),
+                        'primary_model_present': bool(getattr(_shim, 'primary_model_present', False)),
+                        'openai': getattr(_shim, 'openai', None),
+                    }
+            except Exception:
+                llm_status = {}
 
         # --- RAG health (prefer direct) ---
         rag_ok = False
@@ -126,6 +140,7 @@ async def build_status(base: str) -> dict:
     }
 
     return {
+        'ok': bool(ready),
         'llm': llm_info,
         'openai_configured': openai_flag,
         'rag': rag_info,

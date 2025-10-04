@@ -1,0 +1,39 @@
+{
+  "id": "chatcmpl-CMiHy46i7V8JfNITAAcrdOss2IabB",
+  "object": "chat.completion",
+  "created": 1759529498,
+  "model": "gpt-4o-mini-2024-07-18",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "I can share a precise overview of LedgerMind once I have the case study or a few specifics (areas you’re interested in like stack or results). Would you like the case study or a 60‑sec demo?",
+        "refusal": null,
+        "annotations": []
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 139,
+    "completion_tokens": 87,
+    "total_tokens": 226,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default",
+  "system_fingerprint": "fp_51db84afab",
+  "grounded": false,
+  "sources": [],
+  "_served_by": "fallback"
+}

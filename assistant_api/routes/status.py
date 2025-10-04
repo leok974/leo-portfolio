@@ -5,6 +5,7 @@ from ..status_common import build_status
 from ..metrics import recent_latency_stats, recent_latency_stats_by_provider
 from ..state import LAST_SERVED_BY, SSE_CONNECTIONS
 import urllib.parse
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -46,6 +47,7 @@ def _derive_allowed_origins() -> list[str]:
 
 
 class Status(BaseModel):
+    ok: bool
     llm: dict
     openai_configured: bool
     rag: dict
@@ -77,12 +79,40 @@ async def status_summary_api_alias():
 
 @router.get('/status/cors')
 async def status_cors(request: Request):
-    req_origin = request.headers.get('origin') or ''
+    req_origin = request.headers.get('origin') or request.headers.get('Origin') or ''
+    # Raw env inputs
+    raw_allowed = os.getenv("ALLOWED_ORIGINS", "")
+    domain_env = os.getenv("DOMAIN", "")
+    allow_all = os.getenv("CORS_ALLOW_ALL", "0") in ("1", "true", "True")
+
+    # Normalize allowed origins (explicit)
     allowed = _derive_allowed_origins()
+
+    # Domain-derived set (explicitly list primary variants)
+    derived_from_domain: list[str] = []
+    if domain_env:
+        base = domain_env.strip().rstrip('/')
+        # include both https and http and basic www variants
+        candidates = [f"https://{base}", f"http://{base}"]
+        if not base.startswith("www."):
+            candidates.extend([f"https://www.{base}", f"http://www.{base}"])
+        derived_from_domain = candidates
+
+    is_allowed = bool(allow_all or (req_origin in allowed) or (req_origin in derived_from_domain))
+
     return {
-        'request_origin': req_origin,
-        'allowed_origins': allowed,
-        'is_allowed': req_origin in allowed,
+        "raw_env": {
+            "ALLOWED_ORIGINS": raw_allowed,
+            "DOMAIN": domain_env,
+            "CORS_ALLOW_ALL": os.getenv("CORS_ALLOW_ALL", ""),
+        },
+        "allow_all": allow_all,
+        "allowed_origins": allowed,
+        "derived_from_domain": derived_from_domain,
+        "domain_env": domain_env,
+        "request_origin": req_origin,
+        "is_allowed": is_allowed,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
