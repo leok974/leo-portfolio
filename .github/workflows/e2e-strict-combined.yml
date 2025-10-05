@@ -1,22 +1,102 @@
-name: E2E Strict (combined)
+name: e2e-strict-combined
 on:
-  schedule:
-    - cron: "40 03 * * *"
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  combined:
+  evals-and-guardrails:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Combine badges
-        run: node scripts/badge-combine.mjs
-      - name: Commit combined badge
-        uses: EndBug/add-and-commit@v9
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          add: .github/badges/e2e-strict-combined.json
-          message: "ci(badge): update E2E strict (combined)"
-          default_author: github_actions
+          python-version: '3.11'
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements*.txt') }}
+          restore-keys: |
+            pip-${{ runner.os }}-
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            pw-${{ runner.os }}-
+
+      - name: Install deps
+        run: |
+          npm ci
+          npx playwright install --with-deps
+          python -m pip install --upgrade pip
+          python -m pip install fastapi uvicorn httpx pydantic
+
+      - name: Build UI
+        run: npm run -s build
+
+      - name: Start backend (safe local mode)
+        env:
+          SAFE_LIFESPAN: "1"
+          DISABLE_PRIMARY: "1"
+          DEV_ALLOW_NO_LLM: "1"
+          CORS_ALLOW_ALL: "1"
+        run: |
+          nohup python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 --log-level warning > backend.log 2>&1 &
+          npx wait-on http://127.0.0.1:8001/api/ready
+
+      - name: Run evals (baseline + plan + regression) and write history
+        env:
+          EVAL_BASE: "http://127.0.0.1:8001"
+        run: |
+          npm run -s eval:full
+
+      - name: Serve dist with proxy → backend
+        run: |
+          nohup npx http-server dist -p 5178 -P http://127.0.0.1:8001 > web.log 2>&1 &
+          npx wait-on http://127.0.0.1:5178
+
+      - name: Run guardrails e2e
+        env:
+          PLAYWRIGHT_GLOBAL_SETUP_SKIP: "1"
+          BASE: "http://127.0.0.1:5178"
+          API_BASE: "http://127.0.0.1:5178"
+        run: npx playwright test tests/e2e/guardrails-injection.spec.ts --project=chromium --reporter=line
+
+      - name: Upload eval history
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-history
+          retention-days: 14
+          path: |
+            data/eval_history.jsonl
+            backend.log
+            web.log
+            playwright-report
+            test-results

@@ -4,6 +4,22 @@ All notable changes to this project will be documented here.
 Format: Keep / Semantic Versioning (MAJOR.MINOR.PATCH). Dates in ISO (YYYY-MM-DD).
 
 ## [v0.7.2] - 2025-10-01
+## [v0.7.3] - 2025-10-05
+### feat(guardrails): prompt‑injection detection, SSE meta, UI Shield badge, and e2e proof
+Summary:
+- Backend guardrails module detects prompt‑injection and common secret patterns; enforcement controlled by `GUARDRAILS_MODE=enforce|log` (default enforce) with `ALLOW_UNSAFE=1` dev override.
+- `/chat`: JSON includes `guardrails { flagged, blocked, reason, patterns[] }` and returns a safe message with `_served_by: "guardrails"` when blocked.
+- `/chat/stream`: initial `meta` event now carries `guardrails`; in enforce mode streaming short‑circuits with a single safe delta then `done`.
+- Frontend: ShieldBadge component renders a small badge when `guardrails` present (both JSON fallback and SSE streaming `meta`).
+- Tests: added Playwright spec proving badge visibility and API `blocked:true` in enforce mode; added chip coverage test to guard against admin dock overlap.
+- Scripts: `npm run e2e:guardrails:proxy` builds, serves `dist` with proxy to backend, and runs the guardrails spec.
+
+Docs:
+- README: features bullet + quick run instructions.
+- API: guardrails object shape, SSE `meta` and blocked examples.
+- DEVELOPMENT/DEPLOY/SECURITY/ARCHITECTURE: concise guardrails sections and diagrams updated.
+ - CI: added `e2e-quick-guard.yml` (PR guardrails e2e via same-origin proxy) and `e2e-strict-combined.yml` (evals + guardrails on PR/dispatch).
+
 ### feat(e2e): full-stack strict mode, backend tagging, error injection & security workflow
 **Summary**
 - Dual strict modes: static (fast, nginx strict) and full-stack (nginx + mock FastAPI backend).

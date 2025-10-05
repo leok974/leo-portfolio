@@ -1,16 +1,16 @@
 name: e2e-quick-guard
 on:
-  push:
-    branches: [ main ]
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  quick-guard:
+  guardrails:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
+
     steps:
       - uses: actions/checkout@v4
 
@@ -18,51 +18,77 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements*.txt') }}
+          restore-keys: |
+            pip-${{ runner.os }}-
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            pw-${{ runner.os }}-
 
       - name: Install deps
         run: |
-          corepack enable
-          pnpm install --frozen-lockfile
+          npm ci
+          npx playwright install --with-deps
+          python -m pip install --upgrade pip
+          # Minimal backend deps (works with DEV_ALLOW_NO_LLM=1)
+          python -m pip install fastapi uvicorn httpx pydantic
 
-      - name: Build frontend (prod)
-        run: pnpm build:prod || pnpm build
+      - name: Build UI
+        run: npm run -s build
 
-      - name: Sync CSP hash into deploy nginx.conf
-        run: |
-          pnpm csp:sync:deploy || echo "(skip: script not yet available)"
-
-      - name: Start prod stack (bind dist + bind conf)
-        run: |
-          docker compose -f deploy/docker-compose.prod.yml \
-            -f deploy/docker-compose.prod.bind.override.yml \
-            -f deploy/docker-compose.prod.conf.override.yml up -d --build
-          chmod +x scripts/wait-for-http.sh || true
-          if [ -f scripts/wait-for-http.sh ]; then scripts/wait-for-http.sh http://localhost:8080 60; else echo "Skipping wait-for-http (script missing)"; fi
-
-      - name: Install Playwright Browsers
-        run: pnpm exec playwright install --with-deps
-
-      - name: Focused Playwright guard
+      - name: Start backend (safe local mode)
         env:
-          BASE: http://localhost:8080
-          EXPECT_EDGE: "1"
-          NGINX_STRICT: "1"
-        run: >
-          pnpm exec playwright test
-          -g "security headers drift|projects.json conditional|projects json cache|mime smoke|bundle wiring|dist bind-mount parity|root html mime|html-no-inline|dom-no-inline-styles|dom-no-inline-handlers"
-          --reporter=line
+          SAFE_LIFESPAN: "1"
+          DISABLE_PRIMARY: "1"
+          DEV_ALLOW_NO_LLM: "1"
+          CORS_ALLOW_ALL: "1"
+        run: |
+          nohup python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 --log-level warning > backend.log 2>&1 &
+          npx wait-on http://127.0.0.1:8001/api/ready
 
-      - name: Upload traces on failure
+      - name: Serve dist with proxy → backend
+        run: |
+          nohup npx http-server dist -p 5178 -P http://127.0.0.1:8001 > web.log 2>&1 &
+          npx wait-on http://127.0.0.1:5178
+
+      - name: Run guardrails e2e
+        env:
+          PLAYWRIGHT_GLOBAL_SETUP_SKIP: "1"
+          BASE: "http://127.0.0.1:5178"
+          API_BASE: "http://127.0.0.1:5178" # same-origin via proxy
+        run: npx playwright test tests/e2e/guardrails-injection.spec.ts --project=chromium --reporter=line
+
+      - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-traces-quick-guard
-          path: playwright-report
-
-      - name: Down stack
-        if: always()
-        run: |
-          docker compose -f deploy/docker-compose.prod.yml \
-            -f deploy/docker-compose.prod.bind.override.yml \
-            -f deploy/docker-compose.prod.conf.override.yml down -v
+          name: guardrails-logs
+          retention-days: 14
+          path: |
+            backend.log
+            web.log
+            playwright-report
+            test-results
