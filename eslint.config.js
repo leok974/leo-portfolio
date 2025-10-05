@@ -287,8 +287,10 @@ export default [
   // Optional: code block overrides (JS/TS) inside Markdown
   {
     files: ['**/*.md/*.js', '**/*.md/*.ts', '**/*.md/*.tsx'],
-    // Keep minimal; could extend base JS/TS rules
-    rules: {}
+    rules: {
+      'no-undef': 'off',  // Allow undefined vars in docs examples
+      'no-console': 'off'  // Allow console in docs
+    }
   },
   // YAML linting
   {
