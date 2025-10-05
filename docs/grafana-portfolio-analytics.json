@@ -1,0 +1,666 @@
+{
+  "title": "Leo Portfolio Analytics",
+  "templating": {
+    "list": [
+      {
+        "type": "custom",
+        "name": "win",
+        "label": "Window",
+        "query": "1h,6h,12h,24h,7d,30d",
+        "current": { "selected": true, "text": "24h", "value": "24h" },
+        "options": [
+          { "text": "1h", "value": "1h", "selected": false },
+          { "text": "6h", "value": "6h", "selected": false },
+          { "text": "12h", "value": "12h", "selected": false },
+          { "text": "24h", "value": "24h", "selected": true },
+          { "text": "7d", "value": "7d", "selected": false },
+          { "text": "30d", "value": "30d", "selected": false }
+        ],
+        "includeAll": false,
+        "hide": 0
+      },
+      {
+        "type": "custom",
+        "name": "rw",
+        "label": "Rate window",
+        "query": "1m,2m,5m,10m",
+        "current": { "selected": true, "text": "5m", "value": "5m" },
+        "options": [
+          { "text": "1m", "value": "1m", "selected": false },
+          { "text": "2m", "value": "2m", "selected": false },
+          { "text": "5m", "value": "5m", "selected": true },
+          { "text": "10m", "value": "10m", "selected": false }
+        ],
+        "includeAll": false,
+        "hide": 0
+      },
+      {
+        "type": "custom",
+        "name": "topk",
+        "label": "Top K",
+        "query": "5,10,15,20",
+        "current": { "selected": true, "text": "10", "value": "10" },
+        "options": [
+          { "text": "5", "value": "5", "selected": false },
+          { "text": "10", "value": "10", "selected": true },
+          { "text": "15", "value": "15", "selected": false },
+          { "text": "20", "value": "20", "selected": false }
+        ],
+        "includeAll": false,
+        "hide": 0
+      }
+    ]
+  },
+  "time": { "from": "now-30d", "to": "now" },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Help",
+      "id": 8999,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": true,
+      "panels": [
+        {
+          "type": "text",
+          "title": "Dashboard variables",
+          "id": 9000,
+          "gridPos": { "h": 4, "w": 24, "x": 0, "y": 1 },
+          "options": {
+            "mode": "markdown",
+            "content": "**Window ($win)** controls lookback for increase() queries (e.g., 1h/6h/12h/24h/7d/30d).\\n**Rate window ($rw)** controls rate() smoothing (e.g., 1m/2m/5m/10m).\\nThe Grafana time picker (default Last 30 days) remains independent; adjust either without breaking the other."
+          }
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Sessions (24h)",
+      "targets": [{ "expr": "increase(session_start_total[$win])" }]
+    },
+    {
+      "type": "graph",
+      "title": "Top Pages (${topk})",
+      "targets": [
+        {
+          "expr": "topk(${topk}, sum(increase(page_view_total[$win])) by (path))"
+        }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Dwell p95 (5m)",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(dwell_time_seconds_bucket[$rw])) by (le))"
+        }
+      ]
+    },
+    {
+      "type": "bar",
+      "title": "Project Clicks (7d)",
+      "targets": [
+        { "expr": "sum(increase(project_click_total[$win])) by (project_id)" }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Agent Latency p90 (5m)",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.9, sum by (le,intent) (rate(agent_latency_seconds_bucket[$rw])))"
+        }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Frontend Errors (24h)",
+      "targets": [
+        { "expr": "sum(increase(frontend_error_total[$win])) by (source)" }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Web Vitals LCP p90",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.9, sum by (le,path) (rate(web_vitals_lcp_seconds_bucket[$rw])))"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Resume downloads (30d)",
+      "id": 9101,
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 20 },
+      "options": {
+        "reduceOptions": { "calcs": ["last"], "fields": "", "values": false },
+        "orientation": "horizontal",
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        { "expr": "increase(resume_download_total[$win])", "refId": "A" }
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "Outbound link clicks by kind (7d)",
+      "id": 9102,
+      "gridPos": { "h": 8, "w": 9, "x": 6, "y": 20 },
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "/.*/",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(link_click_total[$win])) by (kind)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "Top outbound domains (${topk})",
+      "id": 9103,
+      "gridPos": { "h": 8, "w": 9, "x": 15, "y": 20 },
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "/.*/",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "expr": "topk(${topk}, sum(increase(link_click_total[$win])) by (href_domain))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "Visitors by day of week (last 30d) — 0=Mon…6=Sun",
+      "id": 9201,
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 36 },
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "/.*/",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (dow) (increase(page_view_by_dow_hour_total[$win]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "Visitors by hour of day (last 30d)",
+      "id": 9202,
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 36 },
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "/.*/",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (hour) (increase(page_view_by_dow_hour_total[$win]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Hourly visitors stacked by DOW (0=Mon…6=Sun)",
+      "id": 9203,
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 36 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "stacking": { "mode": "normal", "group": "A" } }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "showLegend": true, "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (dow) (increase(page_view_by_dow_hour_total[$win]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Link clicks (hourly, stacked by kind)",
+      "id": 9104,
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 28 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "stacking": { "mode": "normal", "group": "A" } }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "showLegend": true, "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (kind) (increase(link_click_total[$win]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "piechart",
+      "title": "Sessions by device (24h)",
+      "id": 9301,
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 44 },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right" },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "/.*/",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(page_view_total{ua_is_bot=\"0\"}[$win])) by (device)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "Sessions (24h) by device",
+      "id": 9302,
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 52 },
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "/.*/",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (device) (increase(page_view_total{ua_is_bot=\"0\"}[$win]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "Visitors by path group (last 30d)",
+      "id": 9404,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 70 },
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "/.*/",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (path_group) (increase(page_view_by_dow_hour_path_total[$win]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Hourly visitors stacked by path group",
+      "id": 9405,
+      "gridPos": { "h": 10, "w": 24, "x": 12, "y": 70 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "stacking": { "mode": "normal", "group": "A" } }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "showLegend": true, "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (path_group) (increase(page_view_by_dow_hour_path_total[$win]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "heatmap",
+      "title": "Visitors heatmap — Day of week (rows) × Hour (cols)",
+      "id": 9501,
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 84 },
+      "options": {
+        "legend": { "show": true },
+        "tooltip": { "show": true },
+        "calculate": false,
+        "cellGap": 1,
+        "cellRadius": 0,
+        "showValue": "auto",
+        "color": {
+          "mode": "palette-classic"
+        },
+        "yAxis": { "reverse": false },
+        "xAxis": { "reverse": false }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (dow, hour) (increase(page_view_by_dow_hour_total[$win]))",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "keepLabels": ["dow", "hour"],
+            "valueLabel": "value"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {},
+            "renameByName": {
+              "dow": "DOW (0=Mon…6=Sun)",
+              "hour": "Hour (00–23)",
+              "Value": "Visitors"
+            }
+          }
+        },
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "targetField": "DOW (0=Mon…6=Sun)",
+                "destinationType": "string"
+              },
+              { "targetField": "Hour (00–23)", "destinationType": "string" }
+            ],
+            "fields": {}
+          }
+        },
+        {
+          "id": "prepareTimeSeries",
+          "options": {
+            "format": "stat",
+            "timeField": null
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "heatmap",
+            "lineInterpolation": "stepAfter"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              { "color": "rgba(0,0,0,0)", "value": null },
+              { "color": "green", "value": 5 },
+              { "color": "yellow", "value": 25 },
+              { "color": "red", "value": 60 }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "heatmap",
+      "title": "Visitors heatmap — Path group (rows) × Hour (cols)",
+      "id": 9601,
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 100 },
+      "options": {
+        "legend": { "show": true },
+        "tooltip": { "show": true },
+        "calculate": false,
+        "cellGap": 1,
+        "cellRadius": 0,
+        "showValue": "auto",
+        "color": { "mode": "palette-classic" },
+        "yAxis": { "reverse": false },
+        "xAxis": { "reverse": false }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (path_group, hour) (increase(page_view_by_dow_hour_path_total[$win]))",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "keepLabels": ["path_group", "hour"],
+            "valueLabel": "value"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {},
+            "renameByName": {
+              "path_group": "Path group",
+              "hour": "Hour (00–23)",
+              "Value": "Visitors"
+            }
+          }
+        },
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              { "targetField": "Path group", "destinationType": "string" },
+              { "targetField": "Hour (00–23)", "destinationType": "string" }
+            ],
+            "fields": {}
+          }
+        },
+        {
+          "id": "prepareTimeSeries",
+          "options": { "format": "stat", "timeField": null }
+        },
+        { "id": "merge", "options": {} }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "heatmap",
+            "lineInterpolation": "stepAfter"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              { "color": "rgba(0,0,0,0)", "value": null },
+              { "color": "green", "value": 5 },
+              { "color": "yellow", "value": 25 },
+              { "color": "red", "value": 60 }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Device activity rate (per-min, last 1h)",
+      "id": 9303,
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 116 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": { "mode": "normal", "group": "device" }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "showLegend": true, "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (device) (rate(page_view_total{ua_is_bot=\"0\"}[$rw])) * 60",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Device activity (rate, last 1h)",
+      "id": 9304,
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 126 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "showLegend": true, "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (device) (rate(page_view_total{ua_is_bot=\"0\"}[$rw])) * 60",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Top paths by device (30d)",
+      "id": 9401,
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 132 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": { "mode": "normal", "group": "paths" }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "showLegend": true, "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (path_group, device) (increase(page_view_by_dow_hour_path_device_total[$win]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "heatmap",
+      "title": "Path × Device density (30d)",
+      "id": 9402,
+      "gridPos": { "h": 10, "w": 8, "x": 0, "y": 142 },
+      "color": { "mode": "palette-classic" },
+      "dataFormat": "tsbuckets",
+      "targets": [
+        {
+          "expr": "sum by (path_group, device) (increase(page_view_by_dow_hour_path_device_total[$win]))",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "showLegend": false },
+        "tooltip": { "mode": "single" },
+        "yAxis": { "decimals": 0 }
+      }
+    },
+    {
+      "type": "table",
+      "title": "Path/device totals (30d)",
+      "id": 9403,
+      "gridPos": { "h": 10, "w": 8, "x": 8, "y": 142 },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "expr": "sum by (path_group, device) (increase(page_view_by_dow_hour_path_device_total[$win]))",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Top paths (table, ${topk})",
+      "id": 9406,
+      "gridPos": { "h": 10, "w": 8, "x": 16, "y": 142 },
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "expr": "topk(${topk}, sum(increase(page_view_by_dow_hour_path_device_total[$win])) by (path_group))",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        }
+      ]
+    }
+  ]
+}
