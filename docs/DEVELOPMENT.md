@@ -76,6 +76,14 @@ Next Hardening Steps (planned):
 - Shared SSE parsing lives in `src/lib/sse.ts` (`readSSE()` wrapper). Import it wherever you need to consume SSE streams; it normalizes `event:`/`data:` frames and surfaces safe callbacks.
 - Assistant dock exposes a sr-only `<div data-testid="assistant-output">` that mirrors streamed text for Playwright assertions without changing the visible layout.
 
+#### Guardrails (prompt‑injection) dev notes
+- Backend detects prompt‑injection and common secret patterns; mode controlled by `GUARDRAILS_MODE=enforce|log` (default enforce). Set `ALLOW_UNSAFE=1` to disable blocking locally.
+- SSE meta includes `guardrails` so the UI can render a Shield badge during streaming. JSON fallback responses also carry `guardrails`.
+- Quick spec: `npm run e2e:guardrails:proxy` builds `dist/`, serves it with a proxy to `:8001`, and runs a Playwright spec that:
+  - Confirms the Shield badge appears during stream
+  - Confirms `/chat` JSON returns `guardrails.flagged=true` and `blocked=true` in enforce mode
+- Related UI resiliency: `tests/e2e/ui-assistant-chip.spec.ts` ensures the assistant chip is not covered by the admin dock and remains clickable (z-index + pointer-events hardening).
+
 ## Dependency Management
 - Source constraints: `assistant_api/requirements.in`
 - Locked/pinned: `assistant_api/requirements.txt`
@@ -109,6 +117,65 @@ Fast Playwright loops:
 npm run test:fast      # chromium, @frontend + routing smoke, aborts on first failure
 npm run test:changed   # chromium only, reruns specs touching modified files
 ```
+
+### Eval harness (chat + planner)
+Lightweight evals are defined under `evals/` and executed by `scripts/eval_run.py`.
+
+One-offs (local backend at 127.0.0.1:8023 by default):
+```powershell
+npm run eval:chat   # baseline chat cases
+npm run eval:plan   # planning/tooling cases
+npm run eval:all    # both files
+npm run eval:regress # regression-only set (keep baseline lean)
+npm run eval:full    # baseline + planning + regression
+```
+
+Pytest smokes:
+```powershell
+npm run test:eval
+```
+
+Admin UI: the floating dock includes an Eval card with a tiny trend chart (pass ratio) backed by `/api/eval/history` and a Run button invoking `/api/eval/run`.
+
+#### Local E2E for Eval run-sets (proxy recommended)
+If you see 404s from `/api/*` during the Eval e2e, it usually means the page origin (5178) is calling `/api/...` but your backend is on a different origin/port. Serve the built UI with a proxy so `/api/...` forwards to the backend.
+
+PowerShell (Windows):
+```powershell
+# 1) Start backend (safe/dev mode)
+$env:CORS_ALLOW_ALL='1'
+$env:SAFE_LIFESPAN='1'
+$env:DISABLE_PRIMARY='1'
+$env:DEV_ALLOW_NO_LLM='1'
+Remove-Item Env:RAG_URL -ErrorAction SilentlyContinue
+python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 --log-level warning
+```
+
+```powershell
+# 2) In another terminal: build and serve dist with proxy to :8001
+npm run -s build
+npm run -s serve:dist:proxy   # http://127.0.0.1:5178 → proxies /api → http://127.0.0.1:8001
+```
+
+```powershell
+# 3) Run the Eval e2e (points BASE to UI origin; API calls go through the proxy)
+$env:PLAYWRIGHT_GLOBAL_SETUP_SKIP='1'
+$env:BASE='http://127.0.0.1:5178'
+npx playwright test tests/e2e/eval-run-sets.spec.ts --project=chromium --reporter=line --timeout=120000
+```
+
+Alternatively, use the helper script:
+```powershell
+# Serve with proxy and run the spec (expects backend at :8001)
+npm run e2e:eval:proxy
+```
+
+Radix Select testing notes:
+- The Eval card now uses a shadcn/Radix Select for the run-set dropdown. In Playwright, click the trigger (data-testid="admin-eval-select") then choose an option by role:
+  - `page.getByTestId('admin-eval-select').click()`
+  - `page.getByRole('option', { name: 'Regression' }).click()`
+- The options render in a portal; role-based queries remain stable across portals.
+- For e2e stability, prefer polling `/api/eval/history` to assert a run completed rather than waiting for the POST response.
 
 **CI Workflow:** `.github/workflows/frontend-fast.yml` runs `test:fast` on push/PR. Badge: [![Frontend Fast Tests](https://github.com/leok974/leo-portfolio/actions/workflows/frontend-fast.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/frontend-fast.yml)
 
@@ -349,6 +416,14 @@ You should see:
 ...
 [lifespan] shutdown: done
 ```
+
+### SQLite ingest hardening
+- Windows note: FAISS is optional at runtime. If `faiss` is not installed, the backend will still start; dense vector search returns an empty list and RAG falls back to BM25 + brute-force. To build/use the FAISS index on Windows, install a compatible FAISS wheel or use WSL.
+- Env gate: set `RAG_DENSE_DISABLE=1` to force-disable dense/FAISS even if the module is present. This is handy for CI and local dev when you only need BM25/FTS behavior.
+
+- `rag.sqlite` now runs in WAL mode with a 10s busy timeout.
+- `connect()` and `commit()` are wrapped in a 5× exponential backoff so overlapping warmup jobs and `/api/rag/ingest` no longer surface `sqlite3.OperationalError: database is locked`.
+- Helper scripts (`scripts/rag-build-index.ps1`, `/api/rag/ingest`) can be retried immediately—no manual DB resets required.
 
 ## Hot Reload Notes
 `--reload` watches files; large asset churn can slow reloads. Consider excluding heavy dirs via `--reload-dir` pointing only to `assistant_api`.

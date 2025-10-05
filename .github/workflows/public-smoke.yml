@@ -1,0 +1,37 @@
+name: public-smoke
+on:
+  schedule:
+    - cron: "*/30 * * * *" # every 30 minutes
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "tests/e2e/public-smoke.spec.ts"
+      - ".github/workflows/public-smoke.yml"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+
+      - name: Run public smoke
+        env:
+          PUBLIC_URL: https://assistant.ledger-mind.org
+        run: npx playwright test -g "@public-smoke"
+
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traces-public-smoke
+          path: test-results/**/trace.zip

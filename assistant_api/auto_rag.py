@@ -23,6 +23,7 @@ async def fetch_context(question: str, k=6):
             return (r.json() or {}).get("matches", [])[:k]
     except Exception:
         pass
+    conn = None
     try:
         conn = connect()
         dim = index_dim(conn)
@@ -41,6 +42,12 @@ async def fetch_context(question: str, k=6):
         return out
     except Exception:
         return []
+    finally:
+        try:
+            if conn is not None:
+                conn.close()
+        except Exception:
+            pass
 
 def build_context_message(matches):
     cites = [f"- {m['repo']}/{m['path']}" for m in matches]

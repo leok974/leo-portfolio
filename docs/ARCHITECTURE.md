@@ -124,6 +124,7 @@ Why:
 - Health classification used for readiness gating
 - Direct (in‑process) RAG health probe (bypasses HTTP) prevents edge routing issues from surfacing as false-negative `rag.ok=false`.
 - Bounded model warmup (`MODEL_WAIT_MAX_SECONDS`) + optional `DISABLE_PRIMARY=1` fast path for CI / rapid dev.
+- SQLite RAG store opens in WAL mode and wraps connect/commit in exponential backoff so overlapping ingest jobs stop tripping `database is locked` errors during startup races.
 
 ## Security & Isolation
 - Backend runs as non-root `appuser` UID 1001
@@ -180,7 +181,12 @@ sequenceDiagram
         P-->>B: Token deltas
         B-->>U: SSE data: token (primary)
     end
-    B-->>U: SSE data: {"event":"meta", provider, usage, latency}
+    B-->>U: SSE data: {"event":"meta", provider, usage, latency, guardrails}
+    alt Input flagged & enforce
+        B-->>U: SSE data: {"event":"meta", guardrails:{flagged:true,blocked:true}}
+        B-->>U: SSE data: token (safe message)
+        B-->>U: SSE data: done
+    end
 ```
 - Add rate limiting at edge layer (limit_req)
 - Expand RAG ingestion pipeline & incremental update path

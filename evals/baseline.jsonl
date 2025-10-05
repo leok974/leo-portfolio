@@ -1,0 +1,3 @@
+{"id":"ledger-what","question":"What is LedgerMind?","expect_contains":["LedgerMind"],"min_sources":1}
+{"id":"ledger-brief","question":"Give me a brief about LedgerMind with sources","expect_contains":["LedgerMind"],"min_sources":1}
+{"id":"a11y-policy","question":"Summarize our accessibility/a11y guidance","expect_contains":["accessibility","a11y"],"min_sources":1}

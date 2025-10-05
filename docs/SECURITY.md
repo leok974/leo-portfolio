@@ -141,6 +141,16 @@ pip-audit -r assistant_api/requirements.txt
 - No user PII persisted; chat context ephemeral
 - Consider adding request IDs & provider choice for forensic tracing
 
+## Data Store Hardening
+- RAG `rag.sqlite` is forced into WAL mode with `busy_timeout=10000` so readers and writers can coexist without blocking the main event loop.
+- Connection open/commit paths use a 5× exponential backoff before failing, eliminating crash loops previously triggered by `sqlite3.OperationalError: database is locked` during concurrent warmup + ingest.
+
+## Tools Execution Controls
+- Dangerous tools are disabled by default. The exec endpoint (`POST /api/tools/exec`) refuses tools marked as dangerous unless `ALLOW_TOOLS=1`.
+- For script execution, `run_script` additionally requires `ALLOW_SCRIPTS` to include the relative script path (comma/semicolon separated). Requests outside the allowlist return `script not in allowlist`.
+- All tool file operations resolve against `REPO_ROOT` (default repository root) using a safe-join to prevent path traversal. An audit log is appended to `data/tools_audit.log` for each run (tool name, arguments, timing, exit code or error).
+ - Optional pre-flight checks (default-on for dangerous tools): before running, the API queries `git_status`. If the repo is dirty (modified/added/deleted/renamed/untracked) or behind its base (default `origin/main`), execution is blocked with an explicit error. Override with `ALLOW_DIRTY_TOOLS=1` and/or `ALLOW_BEHIND_TOOLS=1` when you intend to proceed.
+
 ## Incident Response TODO
 - Add runbook: fallback failure vs both-provider outage
 - Automate model warm pull at deploy time
@@ -163,5 +173,20 @@ Rotation guidance:
 
 Historical Hashes:
 * 2025-10-02: `sha256-agVi37OvPe9UtrYEB/KMHK3iJVAl08ok4xzbm7ry2JE=`
+
+
+
+## Guardrails (prompt injection + secret redaction)
+
+- Modes: set `GUARDRAILS_MODE=enforce|log` (default: `enforce`). In enforce mode, suspected prompt-injection inputs are blocked with a safe message and `_served_by="guardrails"`.
+- Dev override: set `ALLOW_UNSAFE=1` to disable enforcement locally while keeping flagging/logging.
+- RAG snippet sanitization: snippets returned from retrieval are sanitized to redact common secret shapes (JWTs, API keys, PEM blocks) server‑side.
+- API responses include a `guardrails` object:
+	- `{ flagged: boolean, blocked: boolean, reason: string | null, patterns: string[] }`
+- UI shows a small shield badge when a reply was flagged/blocked.
+
+Streaming specifics:
+- SSE path includes `guardrails` inside the initial `meta` event so the UI can render the badge immediately during streaming.
+- In `enforce` mode the streaming handler short‑circuits with a single safe delta and `done` after emitting the `meta` with `blocked: true`.
 
 

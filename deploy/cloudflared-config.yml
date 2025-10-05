@@ -1,0 +1,7 @@
+tunnel: db56892d-4879-4263-99bf-202d46b6aff9
+credentials-file: /etc/cloudflared/token
+
+ingress:
+  - hostname: assistant.ledger-mind.org
+    service: http://localhost:80
+  - service: http_status:404

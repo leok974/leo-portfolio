@@ -1,0 +1,29 @@
+# Override to use local backend running on host instead of Docker backend
+services:
+  nginx:
+    depends_on: []  # Remove backend dependency
+    extra_hosts:
+      - "backend:host-gateway"  # Maps 'backend' hostname to host machine IP
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: portfolio-tunnel
+    restart: unless-stopped
+    network_mode: "service:nginx"  # Share nginx network namespace
+    volumes:
+      - ./cloudflared-config.yml:/etc/cloudflared/config.yml:ro
+    environment:
+      - TUNNEL_TOKEN=eyJhIjoiNDMzYzBhZWJkNTczNDMwMjc0NGZmYTk4MjgyMTk1NmUiLCJ0IjoiZGI1Njg5MmQtNDg3OS00MjYzLTk5YmYtMjAyZDQ2YjZhZmY5IiwicyI6Ik5qUXpNR1ExWXpjdFpqYzNZUzAwWlRWakxUa3lNR1l0TkRjeU9UazFOVFU1WldRNSJ9
+    command: tunnel --config /etc/cloudflared/config.yml run
+
+  backend:
+    profiles:
+      - disabled  # Disable Docker backend service
+
+  warmup:
+    profiles:
+      - disabled  # Disable warmup since backend is external
+
+  warm-primary:
+    profiles:
+      - disabled  # Disable warmup since backend is external

@@ -1,31 +1,50 @@
 from pathlib import Path
-import sqlite3, numpy as np, json, os
+import sqlite3, numpy as np, json, os, time
 
+# Legacy constant kept for backward compatibility, but connect() now resolves RAG_DB dynamically
 DB_PATH = os.environ.get("RAG_DB", "./data/rag.sqlite")
-Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
 
-def connect():
-        # Use a small timeout and WAL to reduce lock contention; allow cross-thread use from async contexts
-        conn = sqlite3.connect(DB_PATH, timeout=5.0, check_same_thread=False)
+_LOCK_MSG = "database is locked"
+
+
+def _configure_connection(conn: sqlite3.Connection) -> sqlite3.Connection:
+    """Apply pragmas that reduce lock contention and keep WAL on."""
+    try:
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA synchronous=NORMAL;")
+        conn.execute("PRAGMA busy_timeout=10000;")
+    except Exception:
+        pass
+    return conn
+
+
+def connect(retries: int = 5, base_sleep: float = 0.2) -> sqlite3.Connection:
+    """Connect to the SQLite DB with retry/backoff when the file is locked."""
+    attempt = 0
+    while True:
         try:
-                conn.execute("PRAGMA journal_mode=WAL;")
-                conn.execute("PRAGMA busy_timeout=3000;")
-        except Exception:
+            # Resolve DB path at call time to honor late env overrides in tests/tools
+            db_path = os.environ.get("RAG_DB", DB_PATH)
+            try:
+                Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+            except Exception:
                 pass
-        # Base tables: docs + vecs (Phase 1)
-        conn.execute(
+            conn = sqlite3.connect(db_path, timeout=30.0, check_same_thread=False)
+            conn = _configure_connection(conn)
+            # Base tables: docs + vecs (Phase 1)
+            conn.execute(
                 """CREATE TABLE IF NOT EXISTS docs(
             id TEXT PRIMARY KEY, repo TEXT, path TEXT, sha TEXT,
             title TEXT, text TEXT, meta TEXT
         )"""
-        )
-        conn.execute(
+            )
+            conn.execute(
                 """CREATE TABLE IF NOT EXISTS vecs(
             id TEXT PRIMARY KEY, embedding BLOB
         )"""
-        )
-        # Hybrid retrieval helper table (Phase 2)
-        conn.execute(
+            )
+            # Hybrid retrieval helper table (Phase 2)
+            conn.execute(
                 """
             CREATE TABLE IF NOT EXISTS chunks(
                 id INTEGER PRIMARY KEY,
@@ -35,8 +54,99 @@ def connect():
                 project_id TEXT
             )
         """
-        )
-        return conn
+            )
+            # Extend chunks schema for direct ingest if columns are missing (safe ALTERs)
+            try:
+                cols = {r[1] for r in conn.execute("PRAGMA table_info('chunks')").fetchall()}
+                to_add = []
+                if 'doc_id' not in cols:
+                    to_add.append("ALTER TABLE chunks ADD COLUMN doc_id TEXT")
+                if 'ordinal' not in cols:
+                    to_add.append("ALTER TABLE chunks ADD COLUMN ordinal INTEGER")
+                if 'text' not in cols:
+                    to_add.append("ALTER TABLE chunks ADD COLUMN text TEXT")
+                if 'meta' not in cols:
+                    to_add.append("ALTER TABLE chunks ADD COLUMN meta TEXT")
+                if 'created_at' not in cols:
+                    to_add.append("ALTER TABLE chunks ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP")
+                for stmt in to_add:
+                    try:
+                        conn.execute(stmt)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+            # Helpful indexes
+            try:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_chunks_project ON chunks(project_id)")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_chunks_doc ON chunks(doc_id)")
+            except Exception:
+                pass
+            # Lightweight FTS5 virtual table over chunks.text for offsets() highlighting
+            try:
+                conn.execute(
+                    """
+                CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts
+                USING fts5(text, content='chunks', content_rowid='id')
+                """
+                )
+                # Triggers to keep in sync
+                conn.execute(
+                    """
+                CREATE TRIGGER IF NOT EXISTS chunks_ai AFTER INSERT ON chunks BEGIN
+                  INSERT INTO chunks_fts(rowid, text) VALUES (new.id, COALESCE(new.text, new.content));
+                END;
+                """
+                )
+                conn.execute(
+                    """
+                CREATE TRIGGER IF NOT EXISTS chunks_ad AFTER DELETE ON chunks BEGIN
+                  INSERT INTO chunks_fts(chunks_fts, rowid, text) VALUES('delete', old.id, COALESCE(old.text, old.content));
+                END;
+                """
+                )
+                conn.execute(
+                    """
+                CREATE TRIGGER IF NOT EXISTS chunks_au AFTER UPDATE ON chunks BEGIN
+                  INSERT INTO chunks_fts(chunks_fts, rowid, text) VALUES('delete', old.id, COALESCE(old.text, old.content));
+                  INSERT INTO chunks_fts(rowid, text) VALUES (new.id, COALESCE(new.text, new.content));
+                END;
+                """
+                )
+            except Exception:
+                pass
+            # Answers cache table for fused queries
+            try:
+                conn.execute(
+                    """
+                CREATE TABLE IF NOT EXISTS answers_cache(
+                  project_id TEXT,
+                  query_hash TEXT PRIMARY KEY,
+                  answer TEXT,
+                  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+                )
+            except Exception:
+                pass
+            return conn
+        except sqlite3.OperationalError as exc:
+            if _LOCK_MSG not in str(exc) or attempt >= retries:
+                raise
+            time.sleep(base_sleep * (2 ** attempt))
+            attempt += 1
+
+
+def commit_with_retry(conn: sqlite3.Connection, retries: int = 5, base_sleep: float = 0.2) -> None:
+    """Attempt to commit with exponential backoff when the DB is locked."""
+    for attempt in range(retries):
+        try:
+            conn.commit()
+            return
+        except sqlite3.OperationalError as exc:
+            if _LOCK_MSG not in str(exc) or attempt == retries - 1:
+                raise
+            time.sleep(base_sleep * (2 ** attempt))
 
 def upsert_doc(conn, row):
     conn.execute(
@@ -108,3 +218,14 @@ def index_dim(conn) -> int | None:
         return int(row[0] // 4)
     except Exception:
         return None
+
+
+# Alias used by ingest helpers
+def get_conn() -> sqlite3.Connection:
+    return connect()
+
+
+def rebuild_fts(conn: sqlite3.Connection) -> None:
+    with conn:
+        conn.execute("DELETE FROM chunks_fts;")
+        conn.execute("INSERT INTO chunks_fts(rowid, text) SELECT id, COALESCE(text, content) FROM chunks;")

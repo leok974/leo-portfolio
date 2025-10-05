@@ -1,0 +1,74 @@
+name: e2e-ui-polish
+
+on:
+  pull_request:
+    paths:
+      - "tests/e2e/**"
+      - "src/styles/**"
+      - "tailwind.config.*"
+      - "package.json"
+      - ".github/workflows/e2e-ui-polish.yml"
+  schedule:
+    - cron: "0 9 * * 1" # Mondays 09:00 UTC (drift check)
+
+concurrency:
+  group: e2e-ui-polish-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ui-polish:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PLAYWRIGHT_GLOBAL_SETUP_SKIP: "1"
+      BASE_URL: "http://127.0.0.1:5173"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build site
+        run: npm run build --if-present || true
+
+      - name: Install Playwright (cached)
+        uses: microsoft/playwright-github-action@v1
+        with:
+          version: 1.x
+          browsers: chromium
+
+      - name: Verify tw-animate-css import present
+        run: grep -R "tw-animate-css" -n src/styles || (echo "Missing tw-animate-css import" && exit 1)
+
+      # --- UI polish suite ---
+      - name: Run UI polish tests
+        run: npx playwright test -g "@ui-polish" --project=chromium --reporter=line,junit
+
+      - name: Rename JUnit (ui-polish)
+        run: if [ -f junit.xml ]; then mv junit.xml junit-ui-polish.xml; fi
+
+      # --- Analytics beacons suite ---
+      - name: Run analytics beacons suite
+        run: npx playwright test -g "@analytics-beacons" --project=chromium --reporter=line,junit
+
+      - name: Rename JUnit (analytics)
+        run: if [ -f junit.xml ]; then mv junit.xml junit-analytics-beacons.xml; fi
+
+      # Artifacts on failure for fast repro
+      - name: Upload Playwright results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: |
+            test-results/**
+            playwright-report/**
+            junit-*.xml

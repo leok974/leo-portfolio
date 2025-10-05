@@ -13,3 +13,4 @@ python-dotenv
 pytest
 pytest-asyncio
 hypercorn>=0.16.0
+prometheus-client

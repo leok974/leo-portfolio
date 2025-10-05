@@ -71,11 +71,15 @@ services:
       - OPENAI_BASE_URL=http://ollama:11434/v1
       - OPENAI_MODEL=gpt-oss:20b
       - PRIMARY_MODEL=${PRIMARY_MODEL:-gpt-oss:20b}
+      - PRIMARY_TIMEOUT_S=25
       - RAG_URL=http://localhost:8000/api/rag/query
       - FALLBACK_API_KEY_FILE=/run/secrets/openai_api_key
       - OPENAI_API_KEY_FILE=/run/secrets/openai_api_key
       - ALLOWED_ORIGINS=https://leok974.github.io,http://localhost:8080,https://assistant.ledger-mind.org
       - BASE_URL_PUBLIC=${BASE_URL_PUBLIC:-http://localhost:8000}
+      # Tools gating: disable dangerous tools by default; allowlist scripts when explicitly enabled
+      - ALLOW_TOOLS=${ALLOW_TOOLS:-0}
+      - ALLOW_SCRIPTS=${ALLOW_SCRIPTS:-}
       # (Optional) For bounded model warm wait you can set MODEL_WAIT_MAX_SECONDS=<seconds>
       # - MODEL_WAIT_MAX_SECONDS=180
     depends_on:
@@ -136,6 +140,18 @@ services:
         -d '{"messages":[{"role":"user","content":"hi"}]}' \
         | sed -n '1,2p;q' || true;
       echo "[warmup] done";
+    restart: "no"
+
+  warm-primary:
+    image: mcr.microsoft.com/powershell:7.4-nanoserver-ltsc2022
+    depends_on:
+      backend:
+        condition: service_healthy
+    working_dir: /repo
+    entrypoint: ["pwsh","-File","scripts/warm-primary.ps1"]
+    command: ["-Base","http://backend:8000","-Model","gpt-oss:20b"]
+    volumes:
+      - ..:/repo:ro
     restart: "no"
 
 volumes:

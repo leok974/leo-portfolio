@@ -65,6 +65,7 @@ async def build_status(base: str) -> dict:
         force_http = os.getenv('STATUS_RAG_VIA_HTTP', '0') == '1'
 
         def _direct_rag() -> tuple[bool, str | None]:
+            conn = None
             try:
                 conn = connect()
                 dim = index_dim(conn)
@@ -80,6 +81,12 @@ async def build_status(base: str) -> dict:
                 return True, mode
             except Exception:
                 return False, None
+            finally:
+                try:
+                    if conn is not None:
+                        conn.close()
+                except Exception:
+                    pass
 
         direct_ok, direct_mode = _direct_rag()
         rag_ok = direct_ok

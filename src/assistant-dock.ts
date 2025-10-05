@@ -1,6 +1,11 @@
 // assistant-dock.ts - stream-capable assistant UI (TypeScript)
 import { API } from './api';
 import { readSSE } from './lib/sse';
+import { renderRouteBadge } from './components/render-badge';
+import * as React from 'react';
+import { createRoot } from 'react-dom/client';
+import { ShieldBadge } from '@/components/badges/ShieldBadge';
+import { mountAdminRebuildFloating } from '@/components/render-admin';
 
 declare global { interface Window { __assistantDockMounted?: boolean; __creatingSourcesPopover?: boolean; __sourcesListenersBound?: boolean; __sourcesObserverBound?: boolean; AgentStatus?: any } }
 
@@ -19,6 +24,7 @@ if (window.__assistantDockMounted) {
   const log = root?.querySelector('.chat-log') as HTMLElement | null;
   const form = root?.querySelector('.chat-composer') as HTMLFormElement | null;
   const input = root?.querySelector('input[name="q"], #chatInput') as HTMLInputElement | null;
+  try { input?.setAttribute('data-testid','assistant-input'); } catch {}
   const servedBySpan = root?.querySelector('.served-by, #servedBy') as HTMLElement | null;
   const assistantOutput = root?.querySelector('[data-testid="assistant-output"]') as HTMLElement | null;
 
@@ -27,8 +33,8 @@ if (window.__assistantDockMounted) {
       servedBySpan.classList.add('text-muted');
     }
   } catch {}
-  const CHAT_STREAM_URL = '/api/chat/stream';
-  const CHAT_URL = '/api/chat';
+  const CHAT_STREAM_URL = '/chat/stream';
+  const CHAT_URL = '/chat';
 
   const STREAM_MAX_RETRIES = 2;
   const STREAM_RETRY_BASE_MS = 500;
@@ -38,6 +44,17 @@ if (window.__assistantDockMounted) {
 
   function openDock(){ if (!root) return; root.hidden = false; chipBtn?.classList.add('is-hidden'); chipBtn?.setAttribute('aria-expanded','true'); requestAnimationFrame(()=> input?.focus()); }
   function closeDock(){ if (!root) return; root.hidden = true; chipBtn?.classList.remove('is-hidden'); chipBtn?.setAttribute('aria-expanded','false'); lastTriggerEl?.focus?.(); }
+  try {
+    const chip = document.getElementById('assistantChip') as HTMLElement | null;
+    if (chip) {
+      chip.classList.add('fixed');
+      chip.style.position = 'fixed';
+      chip.style.right = chip.style.right || '16px';
+      chip.style.bottom = chip.style.bottom || '16px';
+      chip.style.zIndex = '10000'; // above admin dock (9998)
+      chip.style.pointerEvents = 'auto';
+    }
+  } catch {}
   const onChipClick = (e: Event)=>{ e.preventDefault(); lastTriggerEl = e.currentTarget; openDock(); };
   chipBtn?.addEventListener('click', onChipClick);
   const onCloseClick = (e: Event)=>{ e.preventDefault(); closeDock(); };
@@ -58,6 +75,16 @@ if (window.__assistantDockMounted) {
     if (!root?.hidden && root && !root.contains(e.target as Node) && e.target !== chipBtn) closeDock();
   };
   document.addEventListener('click', onDocClick);
+
+  try {
+    // Mount admin tools if enabled via Vite flag and not explicitly hidden (e2e may hide to avoid intercepting clicks)
+    const ENABLE = (import.meta as any).env?.VITE_ENABLE_AGUI || '1';
+    const HIDE = (window as any).__HIDE_ADMIN_DOCK__ ? '1' : '0';
+    if (String(ENABLE) === '1' && HIDE !== '1') {
+      // Pass through backend base derived in render-admin.tsx
+      mountAdminRebuildFloating("");
+    }
+  } catch {}
 
   function mdSafe(text: string){ return String(text ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function mdToHtml(md: string){
@@ -156,7 +183,96 @@ if (window.__assistantDockMounted) {
     return { id, el: li, bubble };
   }
   function streamAppend(id: string, chunk: string){ if (!log) return; const li = log.querySelector(`[data-id="${id}"]`); if (!li) return; const b = li.querySelector('.bubble') as HTMLElement; const state = getStreamState(id); state.raw += chunk; renderStream(id, b, true); if (assistantOutput) assistantOutput.textContent = (assistantOutput.textContent || '') + chunk; log.scrollTop = log.scrollHeight; }
-  function streamDone(id: string){ if (!log) return; const li = log.querySelector(`[data-id="${id}"]`); if (!li) return; const b = li.querySelector('.bubble') as HTMLElement; renderStream(id, b, false); const cursor = b.querySelector('.cursor'); cursor?.remove(); streamState.delete(id); }
+  function streamDone(id: string){
+    if (!log) return;
+    const li = log.querySelector(`[data-id="${id}"]`);
+    if (!li) return;
+    const b = li.querySelector('.bubble') as HTMLElement;
+    // Capture state before clearing
+    const state = streamState.get(id);
+    renderStream(id, b, false);
+    const cursor = b.querySelector('.cursor');
+    cursor?.remove();
+    try {
+      // Ensure a route badge footer exists even if no meta was seen (defaults to chitchat)
+      let footer = b.querySelector('.assistant-meta') as HTMLElement | null;
+      if (!footer) {
+        footer = document.createElement('div');
+        footer.className = 'assistant-meta';
+        footer.style.display = 'flex';
+        footer.style.alignItems = 'center';
+        footer.style.gap = '8px';
+        footer.style.marginTop = '6px';
+        b.appendChild(footer);
+      }
+      const scope = (window as any).lastScope || undefined;
+      renderRouteBadge(footer, {
+        grounded: !!(state?.grounded ?? __lastGroundingMeta?.grounded),
+        sourcesCount: typeof state?.sourcesCount === 'number' ? state?.sourcesCount : (typeof __lastGroundingMeta?.sources_count === 'number' ? __lastGroundingMeta?.sources_count : undefined)
+      });
+      // Append thumbs feedback bar once per assistant message
+      try {
+        const exists = b.querySelector('[data-testid="assistant-feedback-bar"]');
+        if (!exists) {
+          const bar = document.createElement('div');
+          bar.setAttribute('data-testid', 'assistant-feedback-bar');
+          bar.className = 'mt-2 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300';
+          bar.innerHTML = `
+            <span class="mr-1">Feedback:</span>
+            <button type="button" data-testid="thumbs-up" aria-label="Thumbs up" class="rounded border px-2 py-0.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/30">👍</button>
+            <button type="button" data-testid="thumbs-down" aria-label="Needs work" class="rounded border px-2 py-0.5 hover:bg-rose-50 dark:hover:bg-rose-900/30">👎 Needs work</button>
+            <span class="ml-2 text-xs" data-testid="feedback-msg" aria-live="polite"></span>
+          `;
+          b.appendChild(bar);
+          const up = bar.querySelector('[data-testid="thumbs-up"]') as HTMLButtonElement | null;
+          const down = bar.querySelector('[data-testid="thumbs-down"]') as HTMLButtonElement | null;
+          const msg = bar.querySelector('[data-testid="feedback-msg"]') as HTMLElement | null;
+          const getText = () => {
+            try { return (b.textContent || '').trim(); } catch { return ''; }
+          };
+          const getLastUser = () => {
+            try {
+              const prev = b.closest('li')?.previousElementSibling as HTMLElement | null;
+              const isUser = prev?.classList.contains('from-user');
+              const txt = isUser ? (prev?.querySelector('.bubble')?.textContent || '') : '';
+              return (txt || '').trim();
+            } catch { return ''; }
+          };
+          const servedBy = () => {
+            try { return (__lastGroundingMeta?._served_by || 'unknown'); } catch { return 'unknown'; }
+          };
+          const post = async (score: number, note?: string) => {
+            if (msg) msg.textContent = 'Saving…';
+            try {
+              const body = {
+                question: getLastUser(),
+                answer: getText(),
+                score,
+                served_by: servedBy(),
+                grounded: !!__lastGroundingMeta?.grounded,
+                sources_count: typeof __lastGroundingMeta?.sources_count === 'number' ? __lastGroundingMeta?.sources_count : ((__lastGroundingMeta?.sources || []).length || 0),
+                scope: (window as any).lastScope || undefined,
+                route: ((window as any).lastScope && (window as any).lastScope.route) ?? null,
+                note: typeof note === 'string' ? note : undefined,
+              };
+              const baseRoot = (typeof (window as any).__API_BASE__ === 'string' ? (window as any).__API_BASE__ : (location.origin || '')).replace(/\/$/, '').replace(/\/api$/, '');
+              const resp = await fetch(`${baseRoot}/api/feedback`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+              const ok = resp.ok;
+              if (ok) { if (msg) msg.textContent = score > 0 ? 'Thanks!' : 'Noted.'; }
+              else { if (msg) msg.textContent = 'Could not save'; }
+            } catch { if (msg) msg.textContent = 'Error'; }
+          };
+          up?.addEventListener('click', () => post(1));
+          down?.addEventListener('click', () => {
+            let note: string | undefined = undefined;
+            try { note = window.prompt('Optional note for this reply?', '') || undefined; } catch {}
+            post(-1, note);
+          });
+        }
+      } catch {}
+    } catch {}
+    streamState.delete(id);
+  }
 
   function cleanupSourcesPopovers(){
     try {
@@ -269,6 +385,7 @@ if (window.__assistantDockMounted) {
         n.setAttribute('data-open','false');
         n.setAttribute('aria-hidden', 'true');
         (n as any).hidden = true;
+        (n as HTMLElement).style.display = 'none';
       });
       const node = (document.getElementById('assistant-sources-popover') as HTMLElement | null) || __sourcesPopover;
       if (node) {
@@ -276,6 +393,7 @@ if (window.__assistantDockMounted) {
         node.setAttribute('data-open', 'true');
         node.removeAttribute('aria-hidden');
         (node as any).hidden = false;
+        (node as HTMLElement).style.display = 'block';
         __sourcesPopover = node;
       }
       cleanupSourcesPopovers();
@@ -301,6 +419,7 @@ if (window.__assistantDockMounted) {
         __sourcesPopover.setAttribute('data-open', 'false');
         __sourcesPopover.setAttribute('aria-hidden', 'true');
         (__sourcesPopover as any).hidden = true;
+        (__sourcesPopover as HTMLElement).style.display = 'none';
         try { window.dispatchEvent(new CustomEvent('assistant:sources:closed')); } catch {}
       });
       // Staggered retries to reinforce focus after close
@@ -584,7 +703,7 @@ if (window.__assistantDockMounted) {
           return;
         }
 
-        const data = await response.json().catch(() => ({} as any));
+  const data = await response.json().catch(() => ({} as any));
   // Prefer stream-derived meta if present; merge with JSON response
   const prior: { raw: string; servedBy?: string; grounded?: boolean; sourcesCount?: number } | undefined = streamState.get(ai.id);
   const servedBy = data?._served_by || prior?.servedBy || 'unknown';
@@ -619,6 +738,29 @@ if (window.__assistantDockMounted) {
           };
           attachBadgeInteractions(ai.bubble);
 
+          // Guardrails badge (JSON fallback path) — render via React component
+          try {
+            const gr: any = (data && typeof data === 'object') ? (data.guardrails || null) : null;
+            if (gr && (gr.flagged || gr.blocked)) {
+              let footer = ai.bubble.querySelector('.assistant-meta') as HTMLElement | null;
+              if (!footer) {
+                footer = document.createElement('div');
+                footer.className = 'assistant-meta';
+                footer.style.display = 'flex';
+                footer.style.alignItems = 'center';
+                footer.style.gap = '8px';
+                footer.style.marginTop = '6px';
+                ai.bubble.appendChild(footer);
+              }
+              const holder = document.createElement('div');
+              footer.appendChild(holder);
+              const root = createRoot(holder);
+              root.render(
+                React.createElement(ShieldBadge as any, { flagged: !!gr.flagged, blocked: !!gr.blocked })
+              );
+            }
+          } catch {}
+
           if (message) {
             if (assistantOutput) assistantOutput.textContent = message;
             ai.bubble.insertAdjacentHTML('beforeend', mdToHtml(message));
@@ -630,6 +772,29 @@ if (window.__assistantDockMounted) {
             if (assistantOutput) assistantOutput.textContent = 'Model returned an empty reply.';
             ai.bubble.insertAdjacentHTML('beforeend', '<p><em>Model returned an empty reply.</em></p>');
           }
+
+          // Append/reactively update route badge using backend metadata
+          try {
+            const scope = (data && typeof data === 'object') ? (data.scope || undefined) : undefined;
+            try { (window as any).lastScope = scope; } catch {}
+            const backends = (data && typeof data === 'object') ? (data.backends || undefined) : undefined;
+            let footer = ai.bubble.querySelector('.assistant-meta') as HTMLElement | null;
+            if (!footer) {
+              footer = document.createElement('div');
+              footer.className = 'assistant-meta';
+              footer.style.display = 'flex';
+              footer.style.alignItems = 'center';
+              footer.style.gap = '8px';
+              footer.style.marginTop = '6px';
+              ai.bubble.appendChild(footer);
+            }
+            renderRouteBadge(footer, {
+              scope,
+              grounded: !!grounded,
+              sourcesCount: typeof sourcesCount === 'number' ? sourcesCount : undefined,
+              backends,
+            });
+          } catch {}
 
           // Update cached stream state for consistency, then finalize
           const st = getStreamState(ai.id);
@@ -682,6 +847,38 @@ if (window.__assistantDockMounted) {
             ensureSourcesPopover();
           }
           attachBadgeInteractions(ai.bubble);
+          // Show badge during streaming based on meta (route may default to chitchat)
+          try {
+            let footer = ai.bubble.querySelector('.assistant-meta') as HTMLElement | null;
+            if (!footer) {
+              footer = document.createElement('div');
+              footer.className = 'assistant-meta';
+              footer.style.display = 'flex';
+              footer.style.alignItems = 'center';
+              footer.style.gap = '8px';
+              footer.style.marginTop = '6px';
+              ai.bubble.appendChild(footer);
+            }
+            // Guardrails badge if meta contains guardrails
+            try {
+              const gr: any = (meta && typeof meta === 'object') ? (meta.guardrails || null) : null;
+              if (gr && (gr.flagged || gr.blocked)) {
+                const existing = footer.querySelector('[data-testid="guardrails-badge"]');
+                if (!existing) {
+                  const holder = document.createElement('div');
+                  footer.appendChild(holder);
+                  const root = createRoot(holder);
+                  root.render(React.createElement(ShieldBadge as any, { flagged: !!gr.flagged, blocked: !!gr.blocked }));
+                }
+              }
+            } catch {}
+            renderRouteBadge(footer, {
+              scope: (meta && typeof meta === 'object' ? (meta.scope || undefined) : undefined),
+              grounded: !!meta?.grounded,
+              sourcesCount: Array.isArray(meta?.sources) ? meta.sources.length : undefined,
+              backends: (meta && typeof meta === 'object' ? (meta.backends || undefined) : undefined),
+            });
+          } catch {}
         },
         onChunk(chunk: string){
           if (firstTokenAt === null) {
@@ -690,7 +887,31 @@ if (window.__assistantDockMounted) {
           receivedTokens += chunk.length > 0 ? 1 : 0;
           streamAppend(ai.id, chunk);
         },
-        onDone(){ streamDone(ai.id); ensureFocus(); }
+        onDone(){
+          try {
+            // If we received a meta object earlier, try to render a final badge with last known scope/backends
+            let footer = ai.bubble?.querySelector?.('.assistant-meta') as HTMLElement | null;
+            if (!footer && ai.bubble) {
+              footer = document.createElement('div');
+              footer.className = 'assistant-meta';
+              footer.style.display = 'flex';
+              footer.style.alignItems = 'center';
+              footer.style.gap = '8px';
+              footer.style.marginTop = '6px';
+              ai.bubble.appendChild(footer);
+            }
+            const meta = __lastGroundingMeta as any;
+            if (footer) {
+              renderRouteBadge(footer, {
+                scope: meta?.scope,
+                grounded: !!meta?.grounded,
+                sourcesCount: typeof meta?.sources_count === 'number' ? meta.sources_count : (Array.isArray(meta?.sources) ? meta.sources.length : undefined),
+                backends: meta?.backends,
+              });
+            }
+          } catch {}
+          streamDone(ai.id); ensureFocus();
+        }
       }
     );
 

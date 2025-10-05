@@ -2,12 +2,50 @@
 // Provides theme toggle, filtering, project modal, gallery, service worker logic,
 // build info injection, and status pill import.
 
+import './styles/tailwind.css';
 import './status/status-ui';
 import './api';
 import './agent-status';
 import './assistant-dock';
 import { applyProjectFilter, announcementText } from './filters';
 import { computeGalleryIndex } from './gallery-nav';
+import { startLenis } from './lib/lenis';
+import { createRoot } from 'react-dom/client';
+import * as React from 'react';
+import Toasts from './components/Toasts';
+import { enhanceCTAs } from './lib/enhance-ctas';
+
+// -----------------------------
+// SMOOTH SCROLLING (LENIS)
+// -----------------------------
+(() => {
+  // Only enable smooth scrolling if user hasn't requested reduced motion
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!prefersReducedMotion && typeof window !== 'undefined') {
+    startLenis();
+  }
+})();
+
+// -----------------------------
+// TOASTS (SONNER)
+// -----------------------------
+(() => {
+  // Create toast container if it doesn't exist
+  let toastContainer = document.getElementById('toast-container');
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.id = 'toast-container';
+    document.body.appendChild(toastContainer);
+    createRoot(toastContainer).render(React.createElement(Toasts));
+  }
+})();
+
+// -----------------------------
+// ENHANCE CTAs WITH LUCIDE ICONS
+// -----------------------------
+(() => {
+  enhanceCTAs();
+})();
 
 // -----------------------------
 // UTIL: THEME TOGGLE + STORAGE

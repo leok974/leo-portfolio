@@ -3,6 +3,7 @@ from pydantic import BaseModel
 import os
 from ..status_common import build_status
 from ..metrics import recent_latency_stats, recent_latency_stats_by_provider
+from ..metrics import stage_snapshot
 from ..state import LAST_SERVED_BY, SSE_CONNECTIONS
 import urllib.parse
 from datetime import datetime, timezone
@@ -142,3 +143,28 @@ async def status_uptime():
 @router.get('/api/status/uptime', include_in_schema=False)
 async def status_uptime_api_alias():
     return await status_uptime()
+
+
+# ---- Lightweight stage metrics (aliases) -------------------------------------
+
+@router.get('/api/metrics', include_in_schema=False)
+async def api_metrics_json():
+    """JSON stage metrics for embeddings/rerank/gen (counts, last latency, last backend).
+
+    Alias to ensure availability under /api/ prefix regardless of app wiring order.
+    """
+    return {"ok": True, "metrics": stage_snapshot()}
+
+
+@router.get('/api/metrics.csv', include_in_schema=False)
+async def api_metrics_csv():
+    snap = stage_snapshot()
+    lines = ["stage,count,last_ms,last_backend"]
+    for stage, m in snap.items():
+        count = m.get("count", 0)
+        last_ms = "" if m.get("last_ms") is None else m.get("last_ms")
+        last_backend = m.get("last_backend") or ""
+        lines.append(f"{stage},{count},{last_ms},{last_backend}")
+    csv = "\n".join(lines) + "\n"
+    from fastapi import Response
+    return Response(content=csv, media_type="text/csv; charset=utf-8", headers={"Cache-Control": "no-store"})

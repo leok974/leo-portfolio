@@ -77,6 +77,16 @@ async def lifespan(app) -> AsyncIterator[None]:  # type: ignore[override]
     stopper = asyncio.Event()
     hold_task = asyncio.create_task(_hold_open(stopper))
     poll_task: asyncio.Task | None = None
+    # Optional: create analytics SQL views if persistence enabled
+    try:
+        from .settings import ANALYTICS_PERSIST
+        if ANALYTICS_PERSIST:
+            from .db import get_conn
+            from .sql_views import ensure_views
+            con = get_conn()
+            ensure_views(con)
+    except Exception:
+        pass
     # SAFE_LIFESPAN: skip model probing entirely on startup (CI/dev safety)
     safe = os.getenv("SAFE_LIFESPAN", "0") in ("1", "true", "True")
     if safe:

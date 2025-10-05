@@ -10,6 +10,9 @@
 - Tests added: `tests/test_guardrails.py`.
 
 ### Added
+ - **Analytics**: Added device-split DOW/HOUR path metric (`page_view_by_dow_hour_path_device_total`) with labels `[dow, hour, path_group, device]`; collector wired with device normalization (mobile/tablet/desktop/unknown); timezone handling now robust for Windows (graceful fallback when tzdata missing).
+ - **Grafana**: Dashboard enhanced with 6+ new panels (path group × hour heatmap, device activity rate stacked + sparkline, path × device timeseries/heatmap/table); template variables added (`win`, `rw`, `topk`) with dynamic query updates; collapsed Help row documents variable usage.
+ - **Testing**: Playwright e2e tests for analytics beacons (`tests/e2e/analytics-beacons.spec.ts`) with route interception to validate `page_view`, `scroll_depth`, `link_click`, and `dwell` beacons without backend; beacon capture utility (`tests/e2e/utils/beacons.ts`); metrics smoke test (`tests/e2e/metrics.smoke.spec.ts`); new npm scripts `test:analytics` and `test:analytics-beacons` (requires static server on 5173).
  - Backend test `tests/test_chat_rag_grounded.py` asserts grounded chat behavior after FS ingest using an isolated SQLite DB and no-LLM mode.
  - Heartbeat-aware SSE client: `onHeartbeat` support, dynamic grace window via `VITE_SSE_GRACE_MS`, model-aware bump.
  - New UI spec `tests/e2e/assistant-ui-first-chunk.spec.ts` ensures no console warnings when first token arrives timely.

@@ -112,6 +112,76 @@
         ]
       }
     </script>
+    <script>
+      (function(){
+        try{
+          if (navigator.doNotTrack == "1" || window.doNotTrack == "1") return;
+          const path = location.pathname + location.search;
+          const ref_host = (document.referrer ? new URL(document.referrer).hostname : "direct");
+          const device = (innerWidth < 640) ? "mobile" : (innerWidth < 1024) ? "tablet" : "desktop";
+          const theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          function send(type, extra){
+            const payload = JSON.stringify(Object.assign({ type, ts: Date.now()/1000, path, ref_host, device, theme }, extra||{}));
+            try { navigator.sendBeacon("/analytics/collect", payload); } catch {}
+          }
+          if (!localStorage.getItem("anon_session")){
+            localStorage.setItem("anon_session", (crypto.randomUUID ? crypto.randomUUID(): String(Date.now())));
+            send("session_start");
+          }
+          send("page_view");
+          let start = performance.now();
+          function flushDwell(){ const seconds=(performance.now()-start)/1000; send("dwell", { seconds: Math.round(seconds*10)/10 }); }
+          addEventListener("pagehide", flushDwell);
+          document.addEventListener("visibilitychange", ()=>{ if (document.visibilityState==="hidden") flushDwell(); });
+          let maxDepth=0; addEventListener("scroll", ()=>{ const pct=Math.round((scrollY+innerHeight)/document.body.scrollHeight*100); const bin=pct>=100?100:pct>=75?75:pct>=50?50:pct>=25?25:0; if(bin && bin>maxDepth){ maxDepth=bin; send("scroll_depth", { percent: bin }); } });
+          window.trackAgent=(intent,project_id)=> send("agent_request", { intent, project_id });
+          window.trackAgentFeedback=(sentiment,intent,project_id)=> send("agent_feedback", { sentiment, intent, project_id });
+          // Outbound link clicks (GitHub / ArtStation / Resume) — robust patterns
+          function inferLinkKind(a){
+            const kindAttr = a.getAttribute("data-link-kind");
+            if (kindAttr) return kindAttr.toLowerCase();
+            const href = a.getAttribute("href") || "";
+            let host = "";
+            try { host = new URL(href, location.href).hostname.toLowerCase(); } catch {}
+            if (host.includes("github.com")) return "github";
+            if (host.includes("artstation.com")) return "artstation";
+            if (/resume|cv|curriculum/i.test(href)) return "resume";
+            return null;
+          }
+          function beaconLinkClick(a){
+            const kind = inferLinkKind(a);
+            if (!kind) return;
+            const href = a.getAttribute("href") || "";
+            send("link_click", { kind, href });
+          }
+          // Left-clicks (existing)
+          document.addEventListener("click", (e)=>{
+            const a = e.target && (e.target.closest ? e.target.closest("a[href]") : null);
+            if (a) beaconLinkClick(a);
+          }, { capture: true });
+          // Middle-clicks
+          document.addEventListener("auxclick", (e)=>{
+            if (e.button !== 1) return;
+            const a = e.target && (e.target.closest ? e.target.closest("a[href]") : null);
+            if (a) beaconLinkClick(a);
+          }, { capture: true });
+          // Keyboard Enter on focused anchors
+          document.addEventListener("keydown", (e)=>{
+            if (e.key !== "Enter") return;
+            const el = document.activeElement;
+            const a = el && (el.closest ? el.closest("a[href]") : null);
+            if (a) beaconLinkClick(a);
+          }, { capture: true });
+          // Context menu (best-effort)
+          document.addEventListener("contextmenu", (e)=>{
+            const a = e.target && (e.target.closest ? e.target.closest("a[href]") : null);
+            if (a) beaconLinkClick(a);
+          }, { capture: true });
+          addEventListener("error", e=> send("frontend_error", { message: String(e.message||""), source: String(e.filename||"") }));
+          (async()=>{ try{ const { onLCP } = await import('https://unpkg.com/web-vitals@4/dist/web-vitals.iife.js'); onLCP(m=> send("web_vitals", { name:"LCP", value: m.value })); }catch{}})();
+        }catch{}
+      })();
+    </script>
   </head>
   <body>
     <!-- Inline cleanup script removed (logic moved to main.js for strict CSP) -->
@@ -159,7 +229,7 @@
     <!-- HERO / LANDING -->
     <section class="hero container" id="home">
       <div>
-        <h1 class="headline">
+        <h1 class="headline text-shadow-lg">
           Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative
           Technologist
         </h1>
@@ -170,10 +240,11 @@
           Building agents, analytics, and cinematic creative pipelines.
         </p>
         <div class="cta-group">
-          <a class="cta" href="#projects">⟶ See My Work</a>
+          <a class="cta hover-glow pressable" href="#projects">⟶ See My Work</a>
           <a
-            class="cta secondary"
-            href="assets/Leo-Klemet-Resume.pdf"
+            class="cta secondary pressable"
+            href="/dl/resume"
+            data-link-kind="resume"
             download
             title="Download Resume PDF"
             >📄 Download Resume</a
@@ -219,7 +290,7 @@
     <section id="projects">
       <div class="container">
         <div class="section-head">
-          <h2 class="section-title">Projects</h2>
+          <h2 class="section-title text-shadow-sm">Projects</h2>
           <div class="filters" role="toolbar" aria-label="Project filters">
             <button class="chip" data-filter="all" aria-pressed="true">
               All
@@ -234,7 +305,7 @@
         <div class="grid" id="projectGrid" aria-live="polite">
           <!-- CARD: LedgerMind -->
           <article
-            class="card card-click"
+            class="card card-click hover-glow shadow-soft"
             data-slug="ledgermind"
             data-cats="agents ml devops"
             role="link"
@@ -281,7 +352,7 @@
 
           <!-- CARD: DataPipe AI -->
           <article
-            class="card card-click"
+            class="card card-click hover-glow shadow-soft"
             data-slug="datapipe-ai"
             data-cats="agents ml devops"
             role="link"
@@ -321,7 +392,7 @@
 
           <!-- CARD: Clarity Companion (Chrome Ext) -->
           <article
-            class="card card-click"
+            class="card card-click hover-glow shadow-soft"
             data-slug="clarity"
             data-cats="agents devops"
             role="link"
@@ -434,7 +505,8 @@
               <!-- Resume (download) -->
               <a
                 class="icon-btn"
-                href="assets/Leo-Klemet-Resume.pdf"
+                href="/dl/resume"
+                data-link-kind="resume"
                 download
                 aria-label="Download resume (PDF)"
                 title="Download Resume (PDF)"
@@ -490,7 +562,7 @@
                 <h4>Resume</h4>
                 <ul>
                   <li>
-                    <a class="btn" href="assets/Leo-Klemet-Resume.pdf" download
+                    <a class="btn" href="/dl/resume" data-link-kind="resume" download
                       >Download PDF</a
                     >
                   </li>
@@ -521,6 +593,7 @@
               autocomplete="name"
               required
               aria-describedby="name-error"
+              class="form-input rounded-2xl border-neutral-300 dark:border-neutral-700 focus:ring-2 focus:ring-indigo-500"
             />
             <div id="name-error" class="error-message" aria-live="polite"></div>
           </div>
@@ -533,6 +606,7 @@
               autocomplete="email"
               required
               aria-describedby="email-error"
+              class="form-input rounded-2xl border-neutral-300 dark:border-neutral-700 focus:ring-2 focus:ring-indigo-500"
             />
             <div
               id="email-error"
@@ -548,6 +622,7 @@
               placeholder="What would you like to build together?"
               required
               aria-describedby="message-error"
+              class="form-input rounded-2xl border-neutral-300 dark:border-neutral-700 focus:ring-2 focus:ring-indigo-500"
             ></textarea>
             <div
               id="message-error"
@@ -555,7 +630,7 @@
               aria-live="polite"
             ></div>
           </div>
-          <button class="btn submit" type="submit">Send Message</button>
+          <button class="btn submit hover-glow focus-ring" type="submit">Send Message</button>
         </form>
         <p class="muted mt-4">
           Find me on
@@ -585,6 +660,9 @@
         </div>
         <div class="muted footer-build">
           <small id="build-info" data-build-info>build: resolving…</small>
+        </div>
+        <div class="muted" style="grid-column: 1 / -1;">
+          <small>Analytics is privacy‑respectful: no cookies, anonymized usage only, honors Do Not Track.</small>
         </div>
       </div>
     </footer>

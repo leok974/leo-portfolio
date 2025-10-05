@@ -26,6 +26,9 @@ FALLBACK_BASE_URL=https://api.openai.com/v1
 FALLBACK_MODEL=gpt-4o-mini
 ALLOWED_ORIGINS=https://leok974.github.io,http://localhost:8080
 DOMAIN=assistant.ledger-mind.org
+# Dangerous tool gating (default off). Enable only when you need Admin Rebuild UI.
+ALLOW_TOOLS=0
+ALLOW_SCRIPTS=scripts/rag-build-index.ps1
 ```
 
 Frontend env (Vite) hints:
@@ -41,6 +44,8 @@ VITE_PRIMARY_MODEL=gpt-oss:20b  # optional hint to add a small grace bump for he
 | `deploy/docker-compose.full.yml` | (Legacy) previously added separate frontend + edge; now unified build in prod compose |
 | `deploy/Dockerfile.frontend` | Multi-target (static or Vite) edge + SPA build + API proxy |
 | `assistant_api/Dockerfile` | FastAPI backend multi-stage (wheels + slim runtime) |
+
+> SQLite ingestion hardening: the backend now forces WAL mode, increases the busy timeout, and wraps connections/commits in a 5× exponential backoff. This prevents `sqlite3.OperationalError: database is locked` when warmup jobs and `/api/rag/ingest` overlap during boot.
 
 ### Environment Variable Sources (Important)
 Docker Compose resolves variable references like `${PRIMARY_MODEL}` at *parse time* from:
@@ -177,6 +182,25 @@ Nginx config (`deploy/nginx.conf`) provides:
 - SSE buffering disabled on streaming path
 - Assistant dock fetches now coerce the browser to hit `/api/chat/stream` regardless of backend summary hints and emit `[assistant] chat POST …` / `[assistant] stream non-200 …` console logs so you can confirm edge routing before debugging backend health.
 
+### Admin: Rebuild RAG Index
+
+A small floating Admin card triggers an index rebuild via a controlled tool exec endpoint.
+
+To enable in prod:
+- Set `ALLOW_TOOLS=1` in backend environment.
+- Set `ALLOW_SCRIPTS=scripts/rag-build-index.ps1` (semicolon/comma separated list if multiple).
+ - Optional pre-flight: block dangerous tools when the repo is dirty or behind unless you explicitly override.
+   - `ALLOW_DIRTY_TOOLS=1` and/or `ALLOW_BEHIND_TOOLS=1` to override; default is blocked.
+   - Compare base remote via `GIT_BASE` (default `origin/main`).
+
+Endpoint: `POST /api/tools/exec` with `{ name: "run_script", args: { script, args[], timeout_s } }`.
+
+Script entrypoint: `scripts/rag-build-index.ps1` (expects optional `-DbPath <path>`). The frontend auto-detects DB from `/api/ready`.
+
+Safety:
+- Even with `ALLOW_TOOLS=1`, only allowlisted scripts run. Execution occurs inside the repo root sandbox. Output is truncated to last ~4KB per stream.
+- Disable by reverting `ALLOW_TOOLS=0` or clearing `ALLOW_SCRIPTS`.
+
 ### Static Asset Handling & Troubleshooting
 
 The frontend image now finishes with:
@@ -250,6 +274,15 @@ docker compose \
   up -d --build
 ```
 (Re-run your local `npm run build` whenever frontend assets change; the bind mount serves them instantly without rebuilding the image.)
+
+### Guardrails configuration
+
+Backend environment toggles:
+- `GUARDRAILS_MODE=enforce|log` — default `enforce` blocks suspected prompt‑injection attempts with a safe message and `_served_by: guardrails`.
+- `ALLOW_UNSAFE=1` — disables blocking (keeps flagging/logging) for local dev.
+
+Edge proxy notes:
+- Frontend calls go through `/api/chat/stream` (SSE shim) with buffering off; guardrails status is included in the initial `meta` event so the UI can surface the Shield badge without waiting for the first token.
 
 Cache Busting:
 ## Ollama Persistence & Health (Primary Model Readiness)

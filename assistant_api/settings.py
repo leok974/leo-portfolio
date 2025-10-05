@@ -78,3 +78,8 @@ class SettingsProxy:
 
 
 settings = SettingsProxy()
+
+# Analytics flags (feature toggles)
+ANALYTICS_ENABLED: bool = os.getenv("ANALYTICS_ENABLED", "1") == "1"
+ANALYTICS_PERSIST: bool = os.getenv("ANALYTICS_PERSIST", "0") == "1"
+ANALYTICS_RESPECT_DNT: bool = os.getenv("ANALYTICS_RESPECT_DNT", "1") == "1"

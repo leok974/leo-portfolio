@@ -1,0 +1,42 @@
+name: test-fast
+on: [push, pull_request]
+jobs:
+  fast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install backend deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r assistant_api/requirements.txt
+      - name: Run fast tests
+        run: |
+          python -m pytest -q tests/test_cache_roundtrip.py
+          python -m pytest -q tests/test_perf_projects_p95.py
+      - name: Analytics tests
+        run: |
+          python -m pytest -q tests/test_analytics_collect.py
+          python -m pytest -q tests/test_analytics_links.py
+          python -m pytest -q tests/test_resume_download_metric.py
+      - name: E2E analytics (Playwright)
+        run: |
+          set -euo pipefail
+          npm ci || npm i -D @playwright/test
+          npx playwright install --with-deps
+          # Start FastAPI backend on 8023 and wait for /metrics
+          nohup python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8023 > uvicorn_ci.log 2>&1 & echo $! > uvicorn.pid
+          echo "Waiting for backend to be ready..."
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:8023/metrics > /dev/null; then echo "Backend ready"; break; fi
+            sleep 0.5
+          done
+          # Run Playwright test
+          npx playwright test tests/e2e/analytics.spec.ts --project=chromium
+          # Teardown
+          kill "$(cat uvicorn.pid)" || true
+        env:
+          E2E_SITE: http://127.0.0.1:8023
+          E2E_BASE: http://127.0.0.1:8023

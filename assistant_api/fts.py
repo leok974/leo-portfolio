@@ -75,9 +75,122 @@ def bm25_search(query: str, topk: int = 50) -> List[int]:
     con = _db()
     try:
         q = _sanitize_match_query(query)
-        # Embed sanitized query directly; keep LIMIT as a bound parameter
-        sql = f"SELECT chunk_id FROM fts_chunks WHERE fts_chunks MATCH '{q}' ORDER BY rank LIMIT ?"
-        rows = list(con.execute(sql, (topk,)))
-        return [r[0] for r in rows]
+        # Prefer legacy fts_chunks when present; else use chunks_fts (rowid maps to chunks.id)
+        def _exists(name: str) -> bool:
+            try:
+                return con.execute("SELECT 1 FROM sqlite_master WHERE type IN ('table','view') AND name=?", (name,)).fetchone() is not None
+            except Exception:
+                return False
+        if _exists("fts_chunks"):
+            sql = f"SELECT chunk_id FROM fts_chunks WHERE fts_chunks MATCH '{q}' ORDER BY rank LIMIT ?"
+            rows = list(con.execute(sql, (topk,)))
+            return [r[0] for r in rows]
+        elif _exists("chunks_fts"):
+            sql = f"SELECT rowid FROM chunks_fts WHERE chunks_fts MATCH '{q}' ORDER BY bm25(chunks_fts) LIMIT ?"
+            rows = list(con.execute(sql, (topk,)))
+            return [r[0] for r in rows]
+        else:
+            return []
     finally:
         con.close()
+
+
+def bm25_search_scored(query: str, topk: int = 50) -> list[dict]:
+    """Return a scored BM25 list with project_id included when available.
+
+    Shape: [{"id": int, "project_id": str|None, "score": float}, ...]
+    """
+    con = _db()
+    try:
+        q = _sanitize_match_query(query)
+        # Support both legacy fts_chunks and new chunks_fts
+        def _exists(name: str) -> bool:
+            try:
+                return con.execute("SELECT 1 FROM sqlite_master WHERE type IN ('table','view') AND name=?", (name,)).fetchone() is not None
+            except Exception:
+                return False
+        out: list[dict] = []
+        if _exists("fts_chunks"):
+            sql = (
+                f"SELECT chunk_id, project_id, bm25(fts_chunks) AS score "
+                f"FROM fts_chunks WHERE fts_chunks MATCH '{q}' ORDER BY score LIMIT ?"
+            )
+            rows = list(con.execute(sql, (topk,)))
+            for r in rows:
+                cid = r[0]
+                proj = r[1]
+                try:
+                    sc = float(r[2])
+                except Exception:
+                    sc = 0.0
+                out.append({"id": cid, "project_id": proj, "score": sc})
+        elif _exists("chunks_fts"):
+            sql = (
+                f"SELECT rowid, bm25(chunks_fts) AS score "
+                f"FROM chunks_fts WHERE chunks_fts MATCH '{q}' ORDER BY score LIMIT ?"
+            )
+            rows = list(con.execute(sql, (topk,)))
+            for r in rows:
+                cid = r[0]
+                try:
+                    sc = float(r[1])
+                except Exception:
+                    sc = 0.0
+                out.append({"id": cid, "project_id": None, "score": sc})
+        return out
+    finally:
+        con.close()
+
+
+# --- schema helpers -------------------------------------------------------
+def ensure_chunk_indexes(conn=None):
+    """
+    Ensure useful indexes on chunks. Safe to call repeatedly.
+    """
+    try:
+        from .db import connect  # type: ignore
+    except Exception:  # pragma: no cover - fallback import path
+        from assistant_api.db import connect  # type: ignore
+
+    con = conn or connect()
+    try:
+        con.execute("CREATE INDEX IF NOT EXISTS idx_chunks_project ON chunks(project_id)")
+        con.commit()
+    finally:
+        if conn is None:
+            try:
+                con.close()
+            except Exception:
+                pass
+    return {"ok": True, "indexes": ["idx_chunks_project"]}
+
+
+# --- FTS highlighting utilities -------------------------------------------
+def fts_offsets_to_hits(offsets_str: str) -> list[tuple[int, int]]:
+    """Convert FTS5 offsets() string to a list of (start, length) tuples.
+    Format: "col term pos off len col term pos off len ...". We only have one
+    column in chunks_fts, but multiple hits.
+    """
+    if not offsets_str:
+        return []
+    try:
+        toks = [int(x) for x in offsets_str.split()]
+        return [(toks[i + 3], toks[i + 4]) for i in range(0, len(toks), 5)]
+    except Exception:
+        return []
+
+
+def highlight_snippet(text: str, hits: list[tuple[int, int]], max_marks: int = 6) -> str:
+    markers: list[tuple[int, str]] = []
+    for start, length in hits[:max_marks]:
+        markers.append((start, "<mark>"))
+        markers.append((start + length, "</mark>"))
+    markers.sort(key=lambda x: x[0])
+    out: list[str] = []
+    i = 0
+    for pos, tag in markers:
+        out.append((text or "")[i:pos])
+        out.append(tag)
+        i = pos
+    out.append((text or "")[i:])
+    return "".join(out)

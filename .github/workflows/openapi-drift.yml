@@ -1,0 +1,61 @@
+name: OpenAPI Drift Guard
+
+on:
+  push:
+    branches: [ main, chore/**, feature/** ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: openapi-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-openapi-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Restore pip cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('assistant_api/requirements.txt') }}
+          restore-keys: |
+            pip-${{ runner.os }}-
+
+      - name: Install backend deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r assistant_api/requirements.txt
+
+      - name: Generate live OpenAPI to temp file
+        run: |
+          python - << 'PY'
+          import json
+          from assistant_api.main import app
+          schema = app.openapi()
+          with open('openapi.live.json','w', encoding='utf-8') as f:
+              json.dump(schema, f, indent=2)
+          print('[openapi] Wrote openapi.live.json with', len(json.dumps(schema)), 'bytes')
+          PY
+
+      - name: Diff against committed snapshot
+        run: |
+          if ! diff -u docs/openapi.json openapi.live.json ; then
+            echo 'OpenAPI drift detected. Run: python -m assistant_api.export_openapi and commit docs/openapi.json' >&2
+            exit 1
+          fi
+
+      - name: Upload live schema artifact (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-live-${{ github.run_id }}
+          path: openapi.live.json

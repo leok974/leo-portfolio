@@ -1,5 +1,15 @@
 # Assistant API – Dev switches and quick run
 
+### RAG quickstart
+
+```powershell
+$env:RAG_DB="D:/leo-portfolio/data/rag_8023.sqlite"
+python -m assistant_api.cli ingest --batch .\docs --project demo
+python -m assistant_api.cli rebuild-index
+Invoke-RestMethod -Method POST "http://127.0.0.1:8023/api/rag/query?project_id=demo&limit=10&offset=0" `
+  -ContentType application/json -Body '{"question":"ledger reconciliation"}' | ConvertTo-Json -Depth 4
+```
+
 ## Dev switches
 
 - DISABLE_PRIMARY=1

@@ -10,6 +10,8 @@
 [![E2E strict (nginx)](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/main/.github/badges/e2e-strict-nginx.json)](./.github/workflows/e2e-strict-nginx.yml)
 [![E2E strict (combined)](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/main/.github/badges/e2e-strict-combined.json)](./.github/workflows/e2e-strict-combined.yml)
 [![E2E full-stack](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/main/.github/badges/e2e-fullstack.json)](./.github/workflows/e2e-strict-fullstack-nightly.yml)
+[![OpenAPI Drift](https://github.com/leok974/leo-portfolio/actions/workflows/openapi-drift.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/openapi-drift.yml)
+[![UI Polish E2E](https://github.com/leok974/leo-portfolio/actions/workflows/e2e-ui-polish.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/e2e-ui-polish.yml)
 
 ![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/status-badge/.github/badges/coverage.json)
 ![Lines](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/status-badge/.github/badges/lines.json)
@@ -36,6 +38,9 @@ A fast, modern, **framework-free** portfolio for **Leo Klemet — AI Engineer ·
 - ✅ Accessible: semantic HTML5, labels, alt, caption tracks
 - ✅ Performance: lazy-load, captions support, WebP/AVIF friendly
 - ✅ Assistant chat automatically retries via JSON when a stream emits zero tokens
+ - ✅ Route badge shows the chosen path (rag | faq | chitchat) under replies
+ - ✅ Quick thumbs feedback on replies (👍/👎), with Admin Feedback card and CSV export
+ - ✅ Guardrails: prompt‑injection detection + secret redaction, with a Shield badge in UI and API `guardrails{}` payload
 
 > Built with **plain HTML, CSS (Grid/Flex), and vanilla JS**. Easy to extend into React/Vite/CMS later.
 
@@ -66,6 +71,14 @@ Visit: <http://localhost:5173>
 
 ### Option C — Vercel
 
+## Monitoring
+
+### Analytics & Metrics
+- `/analytics/collect`: lightweight event beacon (no cookies)
+- `/metrics`: Prometheus scrape endpoint
+- Optional: run Prometheus + Grafana overlay (`deploy/docker-compose.analytics.yml`)
+- Dashboards in `docs/analytics.md` (sample Grafana JSON: `docs/grafana-portfolio-analytics.json`)
+
 ## Copilot Setup (Instructions + Prompts)
 
 > _“Copilot, split `index.html` into `styles.css` and `main.js`. Move inline `<style>` and `<script>` into those files and update references. Keep behavior identical.”_
@@ -84,15 +97,27 @@ Visit: <http://localhost:5173>
 
 
 ## Backend Diagnostics
+### RAG quickstart
+
+```powershell
+$env:RAG_DB="D:/leo-portfolio/data/rag_8023.sqlite"
+python -m assistant_api.cli ingest --batch .\docs --project demo
+python -m assistant_api.cli rebuild-index
+# Query paginated
+Invoke-RestMethod -Method POST "http://127.0.0.1:8023/api/rag/query?project_id=demo&limit=10&offset=0" `
+   -ContentType application/json -Body '{"question":"ledger reconciliation"}' | ConvertTo-Json -Depth 4
+```
+
 
 Core helper scripts:
 
 - `./scripts/smoke.ps1` – legacy smoke (readiness, metrics, RAG checks).
+- `./scripts/smoke-public.ps1` – **public smoke** (tests live site at https://assistant.ledger-mind.org).
 - `./scripts/all-green.ps1` – condensed readiness + summary + latency + non-stream + stream (curl) in one pass.
 - `./scripts/chat-probe.mjs` – Node SSE probe (streams first ~2KB then truncates).
 - `./scripts/chat-stream.ps1` – Pure PowerShell SSE reader (no curl/node dependency).
 
-Pick one for your workflow (daily check → all-green; CI streaming sanity → chat-probe; Windows-native streaming → chat-stream).
+Pick one for your workflow (daily check → all-green; CI streaming sanity → chat-probe; Windows-native streaming → chat-stream; **production monitoring → smoke-public**).
 
 Quick backend start (local):
 - VS Code Tasks: Run "Run FastAPI (assistant_api)" to start at 127.0.0.1:8001, or "Run FastAPI (assistant_api, fallback)" to force OpenAI fallback.
@@ -103,6 +128,12 @@ Environment toggles for resilient local boots:
 - `SAFE_LIFESPAN=1` — skip model probing entirely during startup (avoids early exits on Windows/CI).
 - `DISABLE_PRIMARY=1` — start in fallback mode without touching the primary provider.
 - `DEV_ALLOW_NO_LLM=1` — synthesize minimal replies in `/chat` so tests can run without API keys.
+- `GUARDRAILS_MODE=enforce|log` — prompt‑injection guardrails mode (default `enforce`). In `log` mode inputs are flagged but not blocked.
+- `ALLOW_UNSAFE=1` — disable guardrails enforcement in dev even if `GUARDRAILS_MODE=enforce`.
+- RAG ingestion now opens SQLite in WAL mode, bumps the busy timeout, and retries commits/opens (5× exponential backoff) so concurrent startups no longer crash on `database is locked`.
+ - Router v1: lightweight query router chooses between `faq`, `rag`, and `chitchat`.
+    * Env: `ROUTER_RAG_MIN` (bm25 score gate, default 7.0), `ROUTER_FAQ_MIN` (cosine threshold, default 0.72), `FAQ_PATH` (default `data/faq.json`).
+    * Responses now include `scope` and `memory_preview` (last 2 user/assistant turns) for debugging and UI hints.
 
 > 🆕 Assistant dock now hard-codes requests through the `/api/chat/stream` edge shim and prints `[assistant] chat POST …` plus `[assistant] stream non-200 …` when a response fails. Use DevTools console to confirm the chat submission fires and whether it’s hitting the shim or the direct backend.
 
@@ -112,15 +143,64 @@ Grounding UX:
 - When the backend applies RAG, the stream `meta` event includes `grounded: true` and optional `sources` (when `include_sources: true` is sent). The UI renders a small "grounded (n)" badge next to the served-by marker.
 - If a query can’t be grounded, the assistant avoids fabricated specifics and offers a case study or a short demo instead.
 
+Routing UX:
+- A small route badge pill appears under the assistant bubble indicating which path handled the query: rag, faq, or chitchat. It updates during streaming when routing metadata arrives and is available in both streaming and JSON fallback flows. Tests target `[data-testid="route-badge"]`.
+
 Backend quick test (RAG):
 ```powershell
 # Runs a backend-only pytest that ingests a small FS slice and asserts grounded chat
 D:/leo-portfolio/.venv/Scripts/python.exe -m pytest -q tests/test_chat_rag_grounded.py
 ```
 
+### Guardrails (prompt‑injection) quick run
+
+Goal: prove UI badge visibility during streaming and API blocking in enforce mode.
+
+PowerShell (Windows) — one‑time steps in two terminals:
+1) Start backend (safe/dev):
+```powershell
+$env:SAFE_LIFESPAN='1'
+$env:DISABLE_PRIMARY='1'
+$env:DEV_ALLOW_NO_LLM='1'
+Remove-Item Env:RAG_URL -ErrorAction SilentlyContinue
+# enforce mode is default; set $env:ALLOW_UNSAFE='1' to see flagged but not blocked
+python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 --log-level warning
+```
+2) In another terminal: build + serve dist with proxy and run the guardrails spec
+```powershell
+npm run -s build
+npm run -s e2e:guardrails:proxy
+```
+What it asserts:
+- UI shows a shield badge during stream when `meta.guardrails` is present.
+- Direct POST to `/chat` returns `guardrails.flagged=true` and, in enforce mode, `blocked=true` with a safe message.
+
 Lightweight readiness probe (RAG chunks present):
 ```powershell
 Invoke-RestMethod 'http://127.0.0.1:8010/api/ready' | ConvertTo-Json -Depth 5
+
+### Feedback capture (local)
+
+Thumbs bar appears under assistant replies. Saved to `data/feedback.jsonl`.
+
+Quick probes:
+
+```powershell
+# Post a sample item
+Invoke-RestMethod 'http://127.0.0.1:8001/api/feedback' -Method Post -ContentType 'application/json' -Body '{"question":"What is LedgerMind?","answer":"..","score":-1,"served_by":"fallback","grounded":true,"sources_count":2}' | ConvertTo-Json
+
+# Recent summary (JSON)
+Invoke-RestMethod 'http://127.0.0.1:8001/api/feedback/recent?limit=10' | ConvertTo-Json -Depth 4
+
+# CSV export
+Invoke-WebRequest 'http://127.0.0.1:8001/api/feedback/export.csv' -OutFile feedback.csv
+```
+
+Turn 👎 into regression evals:
+
+```powershell
+D:/leo-portfolio/.venv/Scripts/python.exe scripts/feedback_to_regress.py
+```
 ```
 
 ### Frontend Dev: Assets 404 / CSP Inline Styles
@@ -178,10 +258,12 @@ E2E tests are environment‑sensitive to avoid noisy failures during local itera
 | Dev (default soft) | `npm run test:dev` | Skips CSS immutability + status pill finalization if assets or backend not fully ready. |
 | Strict (CI / prod) | `npm run test:strict` | Requires built CSS (200 + immutable), status pill transitions out of "Checking…", and streaming emits `_served_by`. |
 | Smoke (assistant only) | `npm run test:smoke` | Minimal single test (assistant.smoke) in soft mode. |
+| **Public smoke** | `npm run smoke:public` | **Tests live production site** (https://assistant.ledger-mind.org) - no local backend needed. See [docs/PUBLIC_SMOKE_TESTS.md](docs/PUBLIC_SMOKE_TESTS.md). |
 | Assistant UI (mock) | `npm run test:assistant:ui` | Backend-free Playwright harness that mocks `/api/chat/stream`; serve `dist/` via `npm run serve:dist` or set `BASE_URL` to an existing edge host. |
 | Assistant fallback guard | `npm run test:assistant:fallback` | Forces `/api/chat/stream` to finish without tokens and asserts the dock falls back to `/api/chat` JSON completions. |
 | Fast UI sweep | `npm run test:fast` | Chromium-only slice (`@frontend` + routing smoke) that aborts on first failure; helper `installFastUI(page)` blocks heavy assets and disables animations for deterministic runs. |
 | Changed specs | `npm run test:changed` | Chromium-only incremental run leveraging Playwright `--only-changed`; ideal while iterating on frontend specs. |
+| Analytics beacons | `npm run test:analytics` | Validates client-side analytics beacons (`page_view`, `scroll_depth`, `link_click`, `dwell`) via route interception; requires static server on port 5173 (`npm run serve` in separate terminal). |
 
 Environment flags:
 

@@ -10,10 +10,23 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": [],
+  "types": [],
+  "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
     "typeRoots": ["./types", "./node_modules/@types"],
     "noEmit": true
   },
-  "include": ["**/*.js", "types/**/*.d.ts", "vite.config.ts"],
+  "include": [
+    "**/*.js",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "types/**/*.d.ts",
+    "vite.config.ts"
+  ],
   "exclude": ["node_modules", "dist", "coverage/lcov-report"]
 }

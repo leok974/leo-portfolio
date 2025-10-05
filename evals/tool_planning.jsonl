@@ -1,0 +1,2 @@
+{"id":"plan-rebuild","type":"plan","question":"rebuild the rag index","expect_tool":"run_script","expect_first_tool":"run_script","expect_args_contains":["rag-build-index.ps1"]}
+{"id":"plan-rebuild-db","type":"plan","question":"rebuild the rag index for DB at D:/leo-portfolio/data/rag_8023.sqlite","expect_tool":"run_script","expect_first_tool":"run_script","expect_args_contains":["rag_8023.sqlite"]}

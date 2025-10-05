@@ -1,0 +1,6 @@
+{"id":"ledger-brief-followup","type":"chat","question":"Summarize LedgerMind in one sentence and end with a follow-up question.","expect_contains":["LedgerMind","?"],"min_sources":1}
+{"id":"a11y-policy-specific","type":"chat","question":"What are your accessibility (a11y) practices?","expect_contains":["accessibility","a11y"],"min_sources":1}
+{"id":"tools-plan-guard","type":"plan","question":"rebuild index","expect_tool":"run_script"}
+
+{"id":"reg-hello","type":"chat","question":"Say hello briefly.","expect_contains":["hello"],"min_sources":0}
+{"id":"reg-ledgermind-brief","type":"chat","question":"Give me a one-sentence overview of LedgerMind.","expect_contains":["LedgerMind"],"min_sources":0}

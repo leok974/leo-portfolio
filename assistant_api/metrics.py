@@ -8,11 +8,18 @@ _events: Deque[Tuple[float, int, float, str, int, int]] = deque(maxlen=5000)  # 
 _recent_lat: Deque[float] = deque(maxlen=200)
 _recent_lat_by_provider: dict[str, Deque[float]] = defaultdict(lambda: deque(maxlen=200))
 _totals = defaultdict(int)
+router_route_total = Counter()
 
 # New high-level counters (simple) -------------------------------------------------
 # NB: We retain legacy snapshot aggregation so external API stays stable.
 providers = Counter()  # overall provider request counts (primary, fallback, etc.)
 primary_fail_reason = Counter()  # classification for primary failures
+# Pre-create a guardrails bucket in providers-style counters for easy bumps
+try:
+    providers["guardrails-flagged"] += 0
+    providers["guardrails-blocked"] += 0
+except Exception:
+    pass
 
 class RollingP95:
     """Lightweight rolling P95 window for optional per-route latencies."""
@@ -49,6 +56,7 @@ def record(status: int, ms: float, provider: str | None = None, in_toks: int = 0
         if route:
             try:
                 route_p95[route].observe(ms)
+                router_route_total[route] += 1
             except Exception:
                 pass
 
@@ -76,6 +84,7 @@ def snapshot():
             "p95_ms": round(p95, 1),
             "providers": merged_providers,
             "primary_fail_reason": top_fail,
+            "router": dict(router_route_total),
         }
 
 def recent_latency_stats() -> dict:
