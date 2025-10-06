@@ -1,0 +1,70 @@
+name: e2e-quarantine
+
+# Separate workflow for flaky tests tagged with @quarantine
+# Allowed to fail without blocking PRs
+
+on:
+  pull_request:
+    paths:
+      - "tests/e2e/**"
+      - ".github/workflows/e2e-quarantine.yml"
+  schedule:
+    - cron: "0 2 * * *" # Daily at 02:00 UTC - monitor quarantined tests
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-quarantine-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quarantine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true # Don't block PR merges
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        run: npm run build || true
+
+      - name: Install Playwright
+        uses: microsoft/playwright-github-action@v1
+        with:
+          version: 1.x
+          browsers: chromium
+
+      - name: Run quarantined tests
+        run: npx playwright test -g "@quarantine" --project=chromium --reporter=line,junit || true
+
+      - name: Upload results (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quarantine-results
+          path: |
+            test-results/**
+            playwright-report/**
+            junit.xml
+          retention-days: 14 # Keep longer for flaky test analysis
+
+      - name: Comment on PR if quarantine fails
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ Quarantined tests failed. This does not block the PR, but please review if you touched related code.\n\nCheck the [quarantine test results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).'
+            })

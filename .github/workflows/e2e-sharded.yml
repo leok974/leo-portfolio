@@ -1,0 +1,80 @@
+name: e2e-sharded
+
+# Parallel sharded execution for maximum speed
+# Useful for large test suites (100+ tests)
+
+on:
+  workflow_dispatch:
+    inputs:
+      shards:
+        description: 'Number of shards'
+        required: false
+        default: '4'
+
+jobs:
+  shard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        run: npm run build
+
+      - name: Install Playwright
+        uses: microsoft/playwright-github-action@v1
+        with:
+          version: 1.x
+          browsers: chromium
+
+      - name: Run tests (shard ${{ matrix.shard }}/4)
+        run: npx playwright test --shard=${{ matrix.shard }}/4 --project=chromium --reporter=line,junit
+
+      - name: Upload shard results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-shard-${{ matrix.shard }}
+          path: |
+            test-results/**
+            junit.xml
+          retention-days: 7
+
+  # Merge results from all shards
+  report:
+    needs: shard
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all shard results
+        uses: actions/download-artifact@v4
+        with:
+          path: all-results
+
+      - name: Merge HTML reports
+        run: |
+          npx playwright merge-reports --reporter html all-results/test-results-shard-*
+
+      - name: Upload merged report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-merged
+          path: playwright-report/**
+          retention-days: 14

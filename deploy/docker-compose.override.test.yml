@@ -1,0 +1,19 @@
+# docker-compose.override.test.yml
+#
+# Hermetic test mode: removes port publishing from Postgres to avoid conflicts.
+# The database remains accessible internally via Docker network.
+#
+# Usage:
+#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.override.test.yml up -d
+#
+version: '3.9'
+
+services:
+  postgres:
+    ports: []  # No host port exposed - prevents port 5432 conflicts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-app} -d $${POSTGRES_DB:-app_e2e}"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+      start_period: 5s

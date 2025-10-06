@@ -2,21 +2,33 @@
 @import "tw-animate-css";
 
 /* Tailwind v3 compatibility layers */
+/* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind base;
+/* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind components;
+/* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind utilities;
 
 /* Polish utilities */
 @layer utilities {
   .shimmer {
-    background: linear-gradient(90deg, rgba(255,255,255,.04) 0%, rgba(255,255,255,.12) 50%, rgba(255,255,255,.04) 100%);
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      rgba(255, 255, 255, 0.12) 50%,
+      rgba(255, 255, 255, 0.04) 100%
+    );
     background-size: 200% 100%;
     animation: shimmer 1.2s infinite;
   }
 
   @keyframes shimmer {
-    from { background-position-x: 200%; }
-    to { background-position-x: -200%; }
+    from {
+      background-position-x: 200%;
+    }
+    to {
+      background-position-x: -200%;
+    }
   }
 
   .hover-glow {
@@ -82,8 +94,11 @@
   }
 
   .focus-ring:focus-visible {
+    /* stylelint-disable-next-line property-no-unknown */
     ring: 2px;
+    /* stylelint-disable-next-line property-no-unknown */
     ring-color: rgba(99, 102, 241, 0.7);
+    /* stylelint-disable-next-line property-no-unknown */
     ring-offset: 2px;
     outline: 2px solid rgba(79, 70, 229, 0.4);
     outline-offset: 2px;
@@ -91,9 +106,21 @@
 
   .bg-aurora {
     background:
-      radial-gradient(60% 50% at 20% 10%, rgba(99,102,241,.25) 0%, transparent 60%),
-      radial-gradient(60% 50% at 80% 0%, rgba(168,85,247,.18) 0%, transparent 60%),
-      radial-gradient(70% 60% at 50% 80%, rgba(59,130,246,.18) 0%, transparent 60%);
+      radial-gradient(
+        60% 50% at 20% 10%,
+        rgba(99, 102, 241, 0.25) 0%,
+        transparent 60%
+      ),
+      radial-gradient(
+        60% 50% at 80% 0%,
+        rgba(168, 85, 247, 0.18) 0%,
+        transparent 60%
+      ),
+      radial-gradient(
+        70% 60% at 50% 80%,
+        rgba(59, 130, 246, 0.18) 0%,
+        transparent 60%
+      );
   }
 
   .noise {

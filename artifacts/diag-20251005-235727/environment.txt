@@ -1,0 +1,16 @@
+Timestamp: 2025-10-05 23:57:27
+PowerShell: 7.5.3
+OS: Microsoft Windows NT 10.0.26100.0
+Docker Context: desktop-linux
+Node Version: v22.18.0
+npm Version: 11.6.0
+pnpm Version: 10.15.1
+Python Version: Python 3.13.7
+
+Environment Variables:
+  APP_ENV=
+  BASE_URL=
+  BACKEND_MODE=
+  OLLAMA_HOST=
+  DATABASE_URL=
+  PLAYWRIGHT_GLOBAL_SETUP_SKIP=

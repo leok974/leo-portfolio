@@ -1,0 +1,733 @@
+Status: 200
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>
+      Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative
+      Technologist
+    </title>
+    <meta
+      name="description"
+      content="Leo Klemet — AI Engineer & SWE. Building agents, analytics, and cinematic creative pipelines: LedgerMind, DataPipe AI, Clarity Companion."
+    />
+    <link rel="canonical" href="https://leok974.github.io/leo-portfolio/" />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist"
+    />
+    <meta
+      property="og:description"
+      content="Projects in AI Agents, ML/Analytics, 3D/Generative Art, DevOps."
+    />
+    <meta
+      property="og:image"
+      content="https://leok974.github.io/leo-portfolio/assets/optimized/og-cover.jpg"
+    />
+    <meta
+      property="og:url"
+      content="https://leok974.github.io/leo-portfolio/"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#0f172a" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+    <link
+      rel="icon"
+      href="/leo-avatar-sm.png"
+      type="image/png"
+    />
+    <link rel="apple-touch-icon" href="/leo-avatar-sm.png" />
+    <link
+      rel="preload"
+      href="/assets/Inter-roman.var-Dx4kXJAl.woff2"
+      integrity="sha384-l0ql7Q1zqvX5klAVRwYjcMVCkCxg5dMTdghsIlC3pYkX6wwEHerh2bP/4yAao3Im"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      crossorigin="anonymous"
+    />
+
+    <link
+      rel="stylesheet"
+      href="/assets/styles.74e2bb05ef-BBOL8RVa.css"
+      media="print"
+      data-media-onload="all"
+      integrity="sha384-Bp86n13LRPxqyh7RngavGBlcQnHZXldK0VhgAq8t3ja88ppT161c8PHnYqzE3ioF"
+      crossorigin="anonymous"
+    />
+    <noscript
+      ></noscript>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Person",
+            "@id": "https://leok974.github.io/leo-portfolio/#person",
+            "name": "Leo Klemet",
+            "description": "AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist",
+            "url": "https://leok974.github.io/leo-portfolio/",
+            "jobTitle": "AI Engineer",
+            "sameAs": ["https://github.com/leok974"]
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://leok974.github.io/leo-portfolio/#org",
+            "name": "Leo Klemet Studio",
+            "url": "https://leok974.github.io/leo-portfolio/",
+            "member": {
+              "@id": "https://leok974.github.io/leo-portfolio/#person"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://leok974.github.io/leo-portfolio/#website",
+            "url": "https://leok974.github.io/leo-portfolio/",
+            "name": "Leo Klemet Portfolio",
+            "inLanguage": "en",
+            "author": {
+              "@id": "https://leok974.github.io/leo-portfolio/#person"
+            }
+          }
+        ]
+      }
+    </script>
+    <script>
+      (function(){
+        try{
+          if (navigator.doNotTrack == "1" || window.doNotTrack == "1") return;
+          const path = location.pathname + location.search;
+          const ref_host = (document.referrer ? new URL(document.referrer).hostname : "direct");
+          const device = (innerWidth < 640) ? "mobile" : (innerWidth < 1024) ? "tablet" : "desktop";
+          const theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          function send(type, extra){
+            const payload = JSON.stringify(Object.assign({ type, ts: Date.now()/1000, path, ref_host, device, theme }, extra||{}));
+            try { navigator.sendBeacon("/analytics/collect", payload); } catch {}
+          }
+          if (!localStorage.getItem("anon_session")){
+            localStorage.setItem("anon_session", (crypto.randomUUID ? crypto.randomUUID(): String(Date.now())));
+            send("session_start");
+          }
+          send("page_view");
+          let start = performance.now();
+          function flushDwell(){ const seconds=(performance.now()-start)/1000; send("dwell", { seconds: Math.round(seconds*10)/10 }); }
+          addEventListener("pagehide", flushDwell);
+          document.addEventListener("visibilitychange", ()=>{ if (document.visibilityState==="hidden") flushDwell(); });
+          let maxDepth=0; addEventListener("scroll", ()=>{ const pct=Math.round((scrollY+innerHeight)/document.body.scrollHeight*100); const bin=pct>=100?100:pct>=75?75:pct>=50?50:pct>=25?25:0; if(bin && bin>maxDepth){ maxDepth=bin; send("scroll_depth", { percent: bin }); } });
+          window.trackAgent=(intent,project_id)=> send("agent_request", { intent, project_id });
+          window.trackAgentFeedback=(sentiment,intent,project_id)=> send("agent_feedback", { sentiment, intent, project_id });
+          // Outbound link clicks (GitHub / ArtStation / Resume) — robust patterns
+          function inferLinkKind(a){
+            const kindAttr = a.getAttribute("data-link-kind");
+            if (kindAttr) return kindAttr.toLowerCase();
+            const href = a.getAttribute("href") || "";
+            let host = "";
+            try { host = new URL(href, location.href).hostname.toLowerCase(); } catch {}
+            if (host.includes("github.com")) return "github";
+            if (host.includes("artstation.com")) return "artstation";
+            if (/resume|cv|curriculum/i.test(href)) return "resume";
+            return null;
+          }
+          function beaconLinkClick(a){
+            const kind = inferLinkKind(a);
+            if (!kind) return;
+            const href = a.getAttribute("href") || "";
+            send("link_click", { kind, href });
+          }
+          // Left-clicks (existing)
+          document.addEventListener("click", (e)=>{
+            const a = e.target && (e.target.closest ? e.target.closest("a[href]") : null);
+            if (a) beaconLinkClick(a);
+          }, { capture: true });
+          // Middle-clicks
+          document.addEventListener("auxclick", (e)=>{
+            if (e.button !== 1) return;
+            const a = e.target && (e.target.closest ? e.target.closest("a[href]") : null);
+            if (a) beaconLinkClick(a);
+          }, { capture: true });
+          // Keyboard Enter on focused anchors
+          document.addEventListener("keydown", (e)=>{
+            if (e.key !== "Enter") return;
+            const el = document.activeElement;
+            const a = el && (el.closest ? el.closest("a[href]") : null);
+            if (a) beaconLinkClick(a);
+          }, { capture: true });
+          // Context menu (best-effort)
+          document.addEventListener("contextmenu", (e)=>{
+            const a = e.target && (e.target.closest ? e.target.closest("a[href]") : null);
+            if (a) beaconLinkClick(a);
+          }, { capture: true });
+          addEventListener("error", e=> send("frontend_error", { message: String(e.message||""), source: String(e.filename||"") }));
+          (async()=>{ try{ const { onLCP } = await import('https://unpkg.com/web-vitals@4/dist/web-vitals.iife.js'); onLCP(m=> send("web_vitals", { name:"LCP", value: m.value })); }catch{}})();
+        }catch{}
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-3roXKCvI.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BUHcsrhD.css">
+  </head>
+  <body>
+    <!-- Inline cleanup script removed (logic moved to main.js for strict CSP) -->
+    <!-- Add JS module with integrity (ensure SRI manifest picks it up) -->
+
+    <!-- Main site content -->
+    <a class="sr-only skip-link" href="#projects">Skip to content</a>
+    <header>
+      <div class="container nav" role="navigation" aria-label="Primary">
+        <div class="brand">Leo Klemet</div>
+        <nav>
+          <ul>
+            <li><a href="#projects">Projects</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+        </nav>
+        <button
+          class="theme-toggle"
+          id="themeToggle"
+          aria-pressed="false"
+          aria-label="Toggle dark/light mode"
+        >
+          <span aria-hidden="true">🌙</span>
+          <input id="themeSwitch" type="checkbox" aria-hidden="true" />
+          <span aria-hidden="true">☀️</span>
+        </button>
+        <span
+          data-status-pill
+          role="status"
+          aria-live="polite"
+          class="badge badge-neutral status-pill"
+          >Checking…</span
+        >
+      </div>
+    </header>
+
+    <!-- HERO / LANDING -->
+    <section class="hero container" id="home">
+      <div>
+        <h1 class="headline text-shadow-lg">
+          Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative
+          Technologist
+        </h1>
+        <span class="availability-badge" role="note"
+          >Open to roles in AI Engineering, SWE, or Creative Tech</span
+        >
+        <p class="subline">
+          Building agents, analytics, and cinematic creative pipelines.
+        </p>
+        <div class="cta-group">
+          <a class="cta hover-glow pressable" href="#projects">⟶ See My Work</a>
+          <a
+            class="cta secondary pressable"
+            href="/dl/resume"
+            data-link-kind="resume"
+            download
+            title="Download Resume PDF"
+            >📄 Download Resume</a
+          >
+        </div>
+        <p class="muted mt-3">
+          Tip: Use the category filters to explore AI Agents, ML/Analytics, 3D &
+          Generative Art, and DevOps/Security projects.
+        </p>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <picture>
+          <source
+            type="image/avif"
+            srcset="data:image/avif;base64,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 1200w, data:image/avif;base64,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 900w, data:image/avif;base64,AAAAHGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZgAAAYRtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAAA5waXRtAAAAAAABAAAANGlsb2MAAAAAREAAAgACAAAAAAGoAAEAAAAAAAAARAABAAAAAAHsAAEAAAAAAAACYAAAADhpaW5mAAAAAAACAAAAFWluZmUCAAAAAAEAAGF2MDEAAAAAFWluZmUCAAAAAAIAAGF2MDEAAAAAw2lwcnAAAACdaXBjbwAAABNjb2xybmNseAABAA0ABoAAAAAMYXYxQ4EAHAAAAAAUaXNwZQAAAAAAAAFAAAAA1QAAAA5waXhpAAAAAAEIAAAAOGF1eEMAAAAAdXJuOm1wZWc6bXBlZ0I6Y2ljcDpzeXN0ZW1zOmF1eGlsaWFyeTphbHBoYQAAAAAMYXYxQ4EgAgAAAAAQcGl4aQAAAAADCAgIAAAAHmlwbWEAAAAAAAAAAgABBAGGAwcAAgSCAwSFAAAAGmlyZWYAAAAAAAAADmF1eGwAAgABAAEAAAKsbWRhdBIACgYYIef6jKoyOBGQAABfAMiXsh0IE42fwx5sIJCMPcRHUZE0K1zk0zKvGXTrS1BKkfTiAtcesw1TMMn8gzOO+a5EEgAKCTgh5/qMoCGg0jLQBERkAAAEZwDzk0+v9F++MM7wkHfb2Y0IwUQ44VKDR4hOLw/g/pCpJaTx+9Qit6EhmOz317NU4EnRrXELhWm3KkBFr+N3lNlQAdp1Cg0Xg0eapKdUKSlI4XhkHMNnl2wwE9ClkZC+0BslPTBy3bxV4kNVny4bACpwVxUgJqPjL4ayBvhG+ClUstj590gyTUJqRBVr2ndDhQ607feUF3+VJ3E1HsKP4dN7FdF2PHfWkuzN9HRkCU6/sB8BM6cVdlonXp1VlyFWmlCmWbvgZ3sqjD4zjeC3pv9s/LYY3jaJId49/6g1/WOTdI2dVcpTIG06ldTvMP0QUYGfy7vuIBKMhiCZSqAt6VAna7gFTScIVJEGAxs3wDwTuifVOdc0X5+2eB9FDR1j1eEWW3fNHLRa9ODOCNurbxSgsOJus2lCoNSl0iEZ/f3USIGbQrXhhe7oLtDqnkqkCqMlJ91S3cGLqDZHcWFOOaCsz3Yy6LlbUbCsXz9iuTs8VmSQeGmDzrTgjdgem2YKnovBr3tgmm3l9XkzM+IM9jvdoDZZX+OHbwy+SsZPL4gZD/IGvBkfKMQJ6hl0Oj80ntEOdZQ7e5TWugKZkicz3sxq9cxordrdZxHhxxqC+f8koAHkcqfySBKYwOZATcU4KV/RNGolY0Z+U+F6svnlYsxTAA01s1MXxr+INO1gUF3RxN0M9UPqtU9URSbHY4GOeaZ/mc9VwpJRokTfrTfyMa8x/SbZ8YHVKeHCk5x+EFFUyjAKSgrZsF1AdTNIV4osW2DlScb4asJywgg= 600w, data:image/avif;base64,AAAAHGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZgAAAYRtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAAA5waXRtAAAAAAABAAAANGlsb2MAAAAAREAAAgACAAAAAAGoAAEAAAAAAAAALwABAAAAAAHXAAEAAAAAAAAApgAAADhpaW5mAAAAAAACAAAAFWluZmUCAAAAAAEAAGF2MDEAAAAAFWluZmUCAAAAAAIAAGF2MDEAAAAAw2lwcnAAAACdaXBjbwAAABNjb2xybmNseAABAA0ABoAAAAAMYXYxQ4EAHAAAAAAUaXNwZQAAAAAAAACgAAAAawAAAA5waXhpAAAAAAEIAAAAOGF1eEMAAAAAdXJuOm1wZWc6bXBlZ0I6Y2ljcDpzeXN0ZW1zOmF1eGlsaWFyeTphbHBoYQAAAAAMYXYxQ4EgAgAAAAAQcGl4aQAAAAADCAgIAAAAHmlwbWEAAAAAAAAAAgABBAGGAwcAAgSCAwSFAAAAGmlyZWYAAAAAAAAADmF1eGwAAgABAAEAAADdbWRhdBIACgYYHaf1MqgyI0RkAAARANzAx16hLbD+2IF8d/zHsfYMgBgfrQLsfMljcEq4EgAKCTgdp/UygIaDSDKWAURkAGAEEEBAuPxB1srDbEU8P466viQko5zKhy2V6LOYoE4gmmBt/SMS1aWLudDpnAY+aZNMlK2bQfKvJ/lfnq8MP5qIh5ojinFwok3KKWcVxy4xkRODRuX50jUbjxcTsYihS5oQmrX8V0e7rOOu2Ace88agGcYKdFCVQamljqr8CdI8gTRjq7Yhk8nkZv7ZjwsSBZ4JKg== 400w"
+            sizes="(max-width: 900px) 92vw, 40vw"
+          />
+          <source
+            type="image/webp"
+            srcset="/assets/hero-placeholder-lg-DaktU8-h.webp 1200w, /assets/hero-placeholder-md-hx6EdEwK.webp 900w, data:image/webp;base64,UklGRuYEAABXRUJQVlA4WAoAAAAQAAAAPwEA1AAAQUxQSCcAAAABH/Dh/4iIhqJGUhiKMaQhDYH1txH9nwCXZmM9+T6F//Af/sN/MwAAVlA4IJgEAACQHwCdASpAAdUAPlEok0cjoqGhIHVYKHAKCWlL/3luoOk9z+z/q3KoSIDn/4a2Z//9Te/tYNf+T43v2Wj/+H/gHW3++pnODdm7I9NAAR86dOnTp06dSP/nZoMae801nTp3yGCufM9WpjEAWASebs2DKOkHzpavU7SHB3g1dSkWmXKdOEY72R6YB7zTWdOnTp06dOnCkZprOnTp06dOnTp06cB4oc04PaazghSCP9OHBWdOnVyOlKQrZDn0Ooqe2K0d/s2HEyRMHqV+pQklIiGso1h7sBybmQDhMxLfUXrqKr6YB29pINOCWXta0zhaZXpn+CNZ3fTAPeaazvOeBmIwbSh7S4AA/vT/3+KH7ev29XfvKfUxT0rIovEKy7Hi7yezV34KpC7/1d/0cr3S1XLNDZj0uRDyxLyKbo4NGN/VHyCUZli1lG/0Kw9nv9S7Tj0liZZ7VZ8SwvQkJcgtvg5pfvCEAoaICcfAfaowePWRxDdNMQtKfeJ5I6ZMbefefRqVEmKCuGqQC3XlKltd0jJY14G4rrbofk+7nSyWpX8LJ5hX7bp6+dNJaEcTj47NoPocjnNn8iDYodG7olHGfIEUbI54PM9Hn8y3X7RhxmydOBxcBny5pBcV+AkjfO259aacoz0K6FUoDb5BMR7ONCFww4uzTVjWqSrM5QFVsS9DJqeEMLFQL04MpQCqSFtP43PUImd84Zkp/yhyx6ziRqJP2WA4PrUGD2SSMpDKkyKPP26vNfPKzlEY8SfrG7SwIBYq5iw/W4gN8IpU1QBBC8FfbzfmTQUc7cLwzEjt76eUXs7SS60fjpivKZAgrQfuAU9GoqwKcjtqRiyVmRqrAWi7Gutt6qwiyyAK60ikTz1nUe8hGjE/QqKjxTRcwQow8oSK9Ki8++CW9Hvv1UYJ9zr3RZZcOO7K966hNPCz9CTvHShMWkePZbidCLrifp2TWpSQOwzQriG15QiNzhUZm1q35dWqqzlY3OBwmuo0vQxkaatcRfLj8WJwC+m549P0E1hL4X+bV0gk4vjpne8/QtBQ2LVKxNRsAjIAwagB7FtRhU8hSGvG0QrbrLsFODVP5zDg2aIewThhIiBOXe25zxbeqCXgB89qhm1XIED/P7++ijZALrUjhYrM5QX9SITIHuZUaMXidC8rneIz8Cej+A/6GVz+eIH/7NK+8D6ra0iCUXlnMp9xKyXqmBPptA1kdW3F1dywt9C8ef4/5xk9bhF/Hxqy3/W1JEtXZZ60mR0h5KjQx5SqLlV319MYmUSnhVKhFXkZz/Haj0zxX0afiDRld0VbifZu93PkvIBNxi7sA7T9+ScFmc0H3e8ErcUQQBIZcwp22zJYcAknfmKrWEQDuDdxU5oPo3aQ9VDg1t/xmXHiEw8WPLZUx84Jx6KTn+naVdNn9kKJvhR1w6fyGhlWo16vBt06OUX6ZtP4bPwuAfBOqh6Cwme87Fvu8iUoeQKuHw8O2ashnuOKkcMUYQTdp5F4O5WceJHHJVmwHxnt44pE8gXesABhBX01u1gJe+aJzeOTh4ickONog7LRK5k5f3pzB4AAAAA= 600w, data:image/webp;base64,UklGRpwBAABXRUJQVlA4WAoAAAAQAAAAnwAAagAAQUxQSBwAAAABUBIwEdQ/INRB4u5Ri4jUOK7Bf/zHf/x/kcYDVlA4IFoBAACQCgCdASqgAGsAPlEokUajoqGhIXVYWHAKCWkItjl5PtH2fnRUAHi7U0+Cb6thykEpG2WYLCi/ZNfg9m+rHm1gVY9/2Gl7lmeakg0YVUt11mAKZ3hhOqDg+dlT4kAA/uzLX7be/DzWBIDzpclnhVBiPbXSOX1Bve7nei/cFxEaUZTdq+cPrtRAQq0NDKLNxDI5U224W0eBzcV/j0HZtIwjTyPiqMy1PloXTY6jj/hkcqHtLzoFMFV90TG/GECYvT3a4bENTLM2tWA3l5RKMTppe6WcJQTi7TlPBRepqgyz2xMsAC+TtHrYu5cH2+xNFpEidYfHpw4xWAxP4PPezgOKp3Hf80UMdtpdJPG+1g7q7uKnILE7cHEiAZeNynPbQ8YTxXl/vvtdfo/wM8UQb9JKGCM8pwj0WIHe4qDA0Rxlyvud5PdC0LJnoEPpEdDzMdQ41e5MNQlQAAAA 400w"
+            sizes="(max-width: 900px) 92vw, 40vw"
+          />
+          <img
+            src="data:image/jpeg;base64,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"
+            alt="Abstract hero background"
+            loading="lazy"
+          />
+        </picture>
+      </div>
+    </section>
+
+    <!-- PROJECTS -->
+    <section id="projects">
+      <div class="container">
+        <div class="section-head">
+          <h2 class="section-title text-shadow-sm">Projects</h2>
+          <div class="filters" role="toolbar" aria-label="Project filters">
+            <button class="chip" data-filter="all" aria-pressed="true">
+              All
+            </button>
+            <button class="chip" data-filter="agents">AI Agents & Apps</button>
+            <button class="chip" data-filter="ml">ML / Analytics</button>
+            <button class="chip" data-filter="art">3D & Generative Art</button>
+            <button class="chip" data-filter="devops">DevOps & Security</button>
+          </div>
+        </div>
+
+        <div class="grid" id="projectGrid" aria-live="polite">
+          <!-- CARD: LedgerMind -->
+          <article
+            class="card card-click hover-glow shadow-soft"
+            data-slug="ledgermind"
+            data-cats="agents ml devops"
+            role="link"
+            tabindex="0"
+          >
+            <div class="thumb">
+              <img
+                loading="lazy"
+                src="data:image/webp;base64,UklGRuYEAABXRUJQVlA4WAoAAAAQAAAAPwEA1AAAQUxQSCcAAAABH/Dh/4iIhqJGUhiKMaQhDYH1txH9nwCXZmM9+T6F//Af/sN/MwAAVlA4IJgEAACQHwCdASpAAdUAPlEok0cjoqGhIHVYKHAKCWlL/3luoOk9z+z/q3KoSIDn/4a2Z//9Te/tYNf+T43v2Wj/+H/gHW3++pnODdm7I9NAAR86dOnTp06dSP/nZoMae801nTp3yGCufM9WpjEAWASebs2DKOkHzpavU7SHB3g1dSkWmXKdOEY72R6YB7zTWdOnTp06dOnCkZprOnTp06dOnTp06cB4oc04PaazghSCP9OHBWdOnVyOlKQrZDn0Ooqe2K0d/s2HEyRMHqV+pQklIiGso1h7sBybmQDhMxLfUXrqKr6YB29pINOCWXta0zhaZXpn+CNZ3fTAPeaazvOeBmIwbSh7S4AA/vT/3+KH7ev29XfvKfUxT0rIovEKy7Hi7yezV34KpC7/1d/0cr3S1XLNDZj0uRDyxLyKbo4NGN/VHyCUZli1lG/0Kw9nv9S7Tj0liZZ7VZ8SwvQkJcgtvg5pfvCEAoaICcfAfaowePWRxDdNMQtKfeJ5I6ZMbefefRqVEmKCuGqQC3XlKltd0jJY14G4rrbofk+7nSyWpX8LJ5hX7bp6+dNJaEcTj47NoPocjnNn8iDYodG7olHGfIEUbI54PM9Hn8y3X7RhxmydOBxcBny5pBcV+AkjfO259aacoz0K6FUoDb5BMR7ONCFww4uzTVjWqSrM5QFVsS9DJqeEMLFQL04MpQCqSFtP43PUImd84Zkp/yhyx6ziRqJP2WA4PrUGD2SSMpDKkyKPP26vNfPKzlEY8SfrG7SwIBYq5iw/W4gN8IpU1QBBC8FfbzfmTQUc7cLwzEjt76eUXs7SS60fjpivKZAgrQfuAU9GoqwKcjtqRiyVmRqrAWi7Gutt6qwiyyAK60ikTz1nUe8hGjE/QqKjxTRcwQow8oSK9Ki8++CW9Hvv1UYJ9zr3RZZcOO7K966hNPCz9CTvHShMWkePZbidCLrifp2TWpSQOwzQriG15QiNzhUZm1q35dWqqzlY3OBwmuo0vQxkaatcRfLj8WJwC+m549P0E1hL4X+bV0gk4vjpne8/QtBQ2LVKxNRsAjIAwagB7FtRhU8hSGvG0QrbrLsFODVP5zDg2aIewThhIiBOXe25zxbeqCXgB89qhm1XIED/P7++ijZALrUjhYrM5QX9SITIHuZUaMXidC8rneIz8Cej+A/6GVz+eIH/7NK+8D6ra0iCUXlnMp9xKyXqmBPptA1kdW3F1dywt9C8ef4/5xk9bhF/Hxqy3/W1JEtXZZ60mR0h5KjQx5SqLlV319MYmUSnhVKhFXkZz/Haj0zxX0afiDRld0VbifZu93PkvIBNxi7sA7T9+ScFmc0H3e8ErcUQQBIZcwp22zJYcAknfmKrWEQDuDdxU5oPo3aQ9VDg1t/xmXHiEw8WPLZUx84Jx6KTn+naVdNn9kKJvhR1w6fyGhlWo16vBt06OUX6ZtP4bPwuAfBOqh6Cwme87Fvu8iUoeQKuHw8O2ashnuOKkcMUYQTdp5F4O5WceJHHJVmwHxnt44pE8gXesABhBX01u1gJe+aJzeOTh4ickONog7LRK5k5f3pzB4AAAAA="
+                alt="LedgerMind dashboard with charts and AI assistant"
+              />
+            </div>
+            <div class="card-body">
+              <h3 class="card-title">LedgerMind</h3>
+              <p class="muted">
+                AI‑powered personal finance agent with grounded analytics,
+                budgets, and explainable suggestions. Local/Cloud deploy.
+              </p>
+              <div class="tags">
+                <span class="tag">FastAPI</span><span class="tag">React</span
+                ><span class="tag">Postgres</span
+                ><span class="tag">Ollama/OpenAI</span>
+              </div>
+              <div class="card-actions">
+                <a class="btn" href="projects/ledgermind.html">Case Study</a>
+                <a class="btn" href="#" data-detail="ledgermind">Quick View</a>
+                <a
+                  class="btn"
+                  href="https://github.com/leok974/ai-finance-agent-oss"
+                  target="_blank"
+                  rel="noopener"
+                  >GitHub</a
+                >
+                <a
+                  class="btn"
+                  href="https://app.ledger-mind.org"
+                  target="_blank"
+                  rel="noopener"
+                  >Live</a
+                >
+              </div>
+            </div>
+          </article>
+
+          <!-- CARD: DataPipe AI -->
+          <article
+            class="card card-click hover-glow shadow-soft"
+            data-slug="datapipe-ai"
+            data-cats="agents ml devops"
+            role="link"
+            tabindex="0"
+          >
+            <div class="thumb">
+              <img
+                loading="lazy"
+                src="/assets/datapipe-ai-cover-ZCr5nOdV.webp"
+                alt="DataPipe AI ops dashboard with GKE integration"
+              />
+            </div>
+            <div class="card-body">
+              <h3 class="card-title">DataPipe AI</h3>
+              <p class="muted">
+                AI-powered ops agent for GKE deployments with automated data
+                pipeline management and intelligent monitoring.
+              </p>
+              <div class="tags">
+                <span class="tag">GKE</span><span class="tag">Kubernetes</span
+                ><span class="tag">AI Ops</span
+                ><span class="tag">Data Pipeline</span>
+              </div>
+              <div class="card-actions">
+                <a class="btn" href="projects/datapipe-ai.html">Case Study</a>
+                <a class="btn" href="#" data-detail="datapipe-ai">Quick View</a>
+                <a
+                  class="btn"
+                  href="https://github.com/leok974/ai-ops-agent-gke"
+                  target="_blank"
+                  rel="noopener"
+                  >GitHub</a
+                >
+              </div>
+            </div>
+          </article>
+
+          <!-- CARD: Clarity Companion (Chrome Ext) -->
+          <article
+            class="card card-click hover-glow shadow-soft"
+            data-slug="clarity"
+            data-cats="agents devops"
+            role="link"
+            tabindex="0"
+          >
+            <div class="thumb">
+              <img
+                loading="lazy"
+                src="/assets/clarity-companion-DHeFhsoM.webp"
+                alt="Clarity Companion Chrome extension panel UI"
+              />
+            </div>
+            <div class="card-body">
+              <h3 class="card-title">Clarity Companion (Chrome Extension)</h3>
+              <p class="muted">
+                On‑device writing clarity assistant with localization, coverage
+                gates, and CI packaging.
+              </p>
+              <div class="tags">
+                <span class="tag">MV3</span><span class="tag">TypeScript</span
+                ><span class="tag">CI/CD</span>
+              </div>
+              <div class="card-actions">
+                <a class="btn" href="projects/clarity.html">Case Study</a>
+                <a class="btn" href="#" data-detail="clarity">Quick View</a>
+                <a
+                  class="btn"
+                  href="https://github.com/"
+                  target="_blank"
+                  rel="noopener"
+                  >GitHub</a
+                >
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section id="about">
+      <div class="container">
+        <div class="section-head">
+          <h2 class="section-title">About Me</h2>
+          <p class="muted">
+            AI Engineer · Software Engineer · Generative AI / 3D Artist &
+            Creative Technologist
+          </p>
+        </div>
+        <div class="about">
+          <div>
+            <img
+              class="avatar"
+              src="/assets/leo-avatar-sm-CMt0ZYX3.jpg"
+              alt="Portrait of Leo Klemet"
+            />
+          </div>
+          <div>
+            <p>
+              Hey, I’m Leo — I build agentic apps, grounded analytics, and
+              cinematic creative pipelines. I love shipping fast, clean systems
+              that balance reliable infra with playful, art‑driven UX.
+            </p>
+            <div class="icon-links">
+              <!-- GitHub -->
+              <a
+                class="icon-btn"
+                href="https://github.com/leok974"
+                target="_blank"
+                rel="noopener"
+                aria-label="GitHub"
+                title="GitHub"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M12 .5C5.73.5.98 5.24.98 11.52c0 4.85 3.15 8.96 7.52 10.41.55.1.75-.24.75-.53 0-.26-.01-1.13-.02-2.05-3.06.66-3.71-1.3-3.71-1.3-.5-1.27-1.22-1.61-1.22-1.61-.99-.67.08-.66.08-.66 1.1.08 1.68 1.13 1.68 1.13.98 1.68 2.57 1.2 3.2.92.1-.71.38-1.2.69-1.48-2.44-.28-5.01-1.22-5.01-5.43 0-1.2.43-2.18 1.13-2.95-.11-.28-.49-1.4.1-2.92 0 0 .93-.3 3.06 1.13a10.6 10.6 0 0 1 2.79-.38c.95 0 1.91.13 2.79.38 2.13-1.43 3.06-1.13 3.06-1.13.59 1.52.21 2.64.1 2.92.7.77 1.13 1.75 1.13 2.95 0 4.22-2.58 5.15-5.03 5.42.39.34.73 1.02.73 2.06 0 1.49-.01 2.69-.01 3.06 0 .29.2.63.75.52A10.53 10.53 0 0 0 23.02 11.5C23.02 5.24 18.27.5 12 .5Z"
+                  />
+                </svg>
+              </a>
+              <!-- LinkedIn -->
+              <a
+                class="icon-btn"
+                href="https://www.linkedin.com/in/leo-klemet-1241662a6/"
+                target="_blank"
+                rel="noopener"
+                aria-label="LinkedIn"
+                title="LinkedIn"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M4.98 3.5a2.5 2.5 0 1 1 0 5.001 2.5 2.5 0 0 1 0-5.001ZM3 9h4v12H3V9Zm7 0h3.83v1.64h.05c.53-.95 1.84-1.95 3.79-1.95 4.06 0 4.81 2.67 4.81 6.13V21h-4v-5.33c0-1.27-.03-2.9-1.77-2.9-1.77 0-2.04 1.38-2.04 2.81V21h-4V9Z"
+                  />
+                </svg>
+              </a>
+              <!-- ArtStation (placeholder URL) -->
+              <a
+                class="icon-btn"
+                href="#"
+                target="_blank"
+                rel="noopener"
+                aria-label="ArtStation"
+                title="ArtStation — add your profile URL"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M21.6 16.82c.41.7.07 1.68-.76 1.68H10.9l2.21-3.85h6.06c.31 0 .59.16.73.43M8.26 19.49H3.16c-.83 0-1.33-.91-.92-1.61L9.21 4.51C9.61 3.82 10.53 3.82 10.94 4.5l2.52 4.37-5.2 9.06m11.6-7.71H13.7L11.5 7.93h7.44c.83 0 1.34.91.93 1.6l-1.01 1.74Z"
+                  />
+                </svg>
+              </a>
+              <!-- Resume (download) -->
+              <a
+                class="icon-btn"
+                href="/dl/resume"
+                data-link-kind="resume"
+                download
+                aria-label="Download resume (PDF)"
+                title="Download Resume (PDF)"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M12 3a1 1 0 0 1 1 1v8.586l2.293-2.293a1 1 0 1 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4A1 1 0 1 1 8.707 10.293L11 12.586V4a1 1 0 0 1 1-1ZM5 18a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z"
+                  />
+                </svg>
+              </a>
+            </div>
+            <div class="skills" aria-label="Skills by domain">
+              <div class="skill-box">
+                <h4>AI / ML</h4>
+                <ul>
+                  <li>PyTorch, TensorFlow, embeddings, RAG</li>
+                  <li>Ollama, OpenAI API, evals</li>
+                  <li>Classifiers, forecasting, explainability</li>
+                </ul>
+              </div>
+              <div class="skill-box">
+                <h4>Backend</h4>
+                <ul>
+                  <li>FastAPI, Postgres, Alembic</li>
+                  <li>OAuth/Authlib, JWT cookies + CSRF</li>
+                  <li>Report exports (PDF/XLSX)</li>
+                </ul>
+              </div>
+              <div class="skill-box">
+                <h4>Frontend</h4>
+                <ul>
+                  <li>React, Vite, TypeScript, Tailwind</li>
+                  <li>shadcn, Recharts, accessibility</li>
+                </ul>
+              </div>
+              <div class="skill-box">
+                <h4>MLOps / Infra</h4>
+                <ul>
+                  <li>Docker, GitHub Actions, CI/CD</li>
+                  <li>Cloudflare Tunnel, GCP KMS, Nginx</li>
+                  <li>Secrets, observability, security</li>
+                </ul>
+              </div>
+              <div class="skill-box">
+                <h4>3D / Creative</h4>
+                <ul>
+                  <li>Blender, Substance Painter</li>
+                  <li>ComfyUI, LoRA/SDXL, Runway</li>
+                  <li>Storyboards, editing, sound</li>
+                </ul>
+              </div>
+              <div class="skill-box">
+                <h4>Resume</h4>
+                <ul>
+                  <li>
+                    <a class="btn" href="/dl/resume" data-link-kind="resume" download
+                      >Download PDF</a
+                    >
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact">
+      <div class="container">
+        <div class="section-head">
+          <h2 class="section-title">Contact</h2>
+          <p class="muted">
+            Let’s collaborate or chat about roles, freelance, and experiments.
+          </p>
+        </div>
+        <form name="contact" method="POST" data-netlify="true" novalidate>
+          <input type="hidden" name="form-name" value="contact" />
+          <div>
+            <label for="name">Name *</label>
+            <input
+              id="name"
+              name="name"
+              autocomplete="name"
+              required
+              aria-describedby="name-error"
+              class="form-input rounded-2xl border-neutral-300 dark:border-neutral-700 focus:ring-2 focus:ring-indigo-500"
+            />
+            <div id="name-error" class="error-message" aria-live="polite"></div>
+          </div>
+          <div>
+            <label for="email">Email *</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              required
+              aria-describedby="email-error"
+              class="form-input rounded-2xl border-neutral-300 dark:border-neutral-700 focus:ring-2 focus:ring-indigo-500"
+            />
+            <div
+              id="email-error"
+              class="error-message"
+              aria-live="polite"
+            ></div>
+          </div>
+          <div>
+            <label for="message">Message *</label>
+            <textarea
+              id="message"
+              name="message"
+              placeholder="What would you like to build together?"
+              required
+              aria-describedby="message-error"
+              class="form-input rounded-2xl border-neutral-300 dark:border-neutral-700 focus:ring-2 focus:ring-indigo-500"
+            ></textarea>
+            <div
+              id="message-error"
+              class="error-message"
+              aria-live="polite"
+            ></div>
+          </div>
+          <button class="btn submit hover-glow focus-ring" type="submit">Send Message</button>
+        </form>
+        <p class="muted mt-4">
+          Find me on
+          <a
+            href="https://www.linkedin.com/in/leo-klemet-1241662a6/"
+            target="_blank"
+            rel="noopener"
+            >LinkedIn</a
+          >
+          ·
+          <a href="https://github.com/leok974" target="_blank" rel="noopener"
+            >GitHub</a
+          >
+        </p>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="container footer-grid">
+        <div>© <span id="year"></span> Leo Klemet</div>
+        <div class="muted">
+          AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist
+        </div>
+        <div class="text-right">
+          <a href="#home">Back to top ↑</a>
+        </div>
+        <div class="muted footer-build">
+          <small id="build-info" data-build-info>build: resolving…</small>
+        </div>
+        <div class="muted" style="grid-column: 1 / -1;">
+          <small>Analytics is privacy‑respectful: no cookies, anonymized usage only, honors Do Not Track.</small>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Chip (emoji robot style) -->
+    <button
+      id="assistantChip"
+      class="assistant-chip"
+      aria-controls="assistantDock"
+      aria-expanded="false"
+      title="Ask about my projects"
+    >
+      <span aria-hidden="true">🤖</span> Ask about my projects…
+    </button>
+
+    <!-- Assistant Dock Panel (hidden by default; opened by chip) -->
+    <div
+      id="assistantDock"
+      class="assistant-dock"
+      hidden
+      role="dialog"
+      aria-label="Portfolio Assistant"
+      aria-modal="false"
+    >
+      <div class="assistant-header">
+        <div class="assistant-title">
+          <strong>Portfolio Assistant</strong>
+        </div>
+        <button class="assistant-close" aria-label="Close">Close</button>
+      </div>
+      <div class="assistant-systembar" role="status" aria-live="polite">
+        <span
+          id="agent-status"
+          class="agent-status"
+          title="Model &amp; RAG status"
+          >Status</span
+        >
+        <span class="served-by" id="servedBy">—</span>
+      </div>
+
+      <ol
+        id="chatLog"
+        class="chat-log"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions text"
+        aria-atomic="false"
+      ></ol>
+
+      <div
+        class="assistant-output sr-only"
+        data-testid="assistant-output"
+        aria-live="polite"
+        aria-atomic="false"
+      ></div>
+
+      <form id="chatForm" class="chat-composer">
+        <input
+          id="chatInput"
+          name="q"
+          placeholder="Ask about my projects….."
+          autocomplete="off"
+          data-testid="assistant-input"
+        />
+        <button id="chatSend" type="submit" data-testid="assistant-send">Send</button>
+      </form>
+    </div>
+
+    <!-- PROJECT DETAIL DIALOG (reusable) -->
+    <dialog
+      class="project-detail"
+      id="detailDialog"
+      aria-labelledby="detailTitle"
+    >
+      <div class="detail-header">
+        <h3 id="detailTitle" class="detail-title">Project</h3>
+        <button class="btn" id="detailClose" aria-label="Close project details">
+          ✕ Close
+        </button>
+      </div>
+      <div class="detail-body">
+        <div id="detailContent" class="detail-grid">
+          <!-- Filled dynamically by JS (see PROJECT_DETAILS map) -->
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Expose a small streaming API for the chip -->
+
+    <!-- Status pill & assistant dock logic now bundled via Vite (src/agent-status.ts, src/assistant-dock.ts) -->
+
+    <!-- Inline assistant scripts removed (modularized under src/assistant/* for CSP) -->
+
+    <!-- Central API helpers now bundled (src/api.ts) -->
+    <!-- Main site JS (now TypeScript entry compiled by Vite) -->
+
+    <!-- Removed legacy assistant-dock.js reference (now bundled via Vite) -->
+  </body>
+</html>
+

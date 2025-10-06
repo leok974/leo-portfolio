@@ -249,6 +249,191 @@ Aggregates strict + fallback results (color matrix in `aggregate-streaming.mjs`)
 
 For production / day-2 operational procedures (status headers, legacy cutover, integrity drift, CI health workflow), see `OPERATIONS.md` (root) and the extended guide in `docs/OPERATIONS.md`.
 
+---
+
+## Run All Tests (Hermetic)
+
+**Complete end-to-end test suite** that automatically:
+- Starts shared infrastructure (D:\infra with Ollama, PostgreSQL, Cloudflare Tunnel)
+- Ensures required models are loaded
+- Installs dependencies and runs typecheck/lint
+- Executes full Playwright test suite with proper environment
+
+### Windows (PowerShell)
+
+```powershell
+$env:DOCKER_CONTEXT="desktop-linux"
+
+# Full hermetic run (all stacks)
+pwsh .\scripts\test-all.ps1
+
+# Frontend-only mode (CSS/UX + analytics) — fastest loop
+pwsh .\scripts\test-all.ps1 -FrontendOnly -Grep "@ui-polish|@analytics-beacons"
+
+# Skip infra startup (if your stack is already up in another terminal)
+pwsh .\scripts\test-all.ps1 -SkipInfra -Grep "@backend"
+
+# Update snapshots for a subset
+pwsh .\scripts\test-all.ps1 -Grep "@ui-polish" -Baseline
+
+# Filter Playwright by title
+pwsh .\scripts\test-all.ps1 -Grep "tooltip visual baseline"
+```
+
+### macOS/Linux
+
+```bash
+# Full hermetic run
+./scripts/test-all.sh
+
+# With baseline update
+BASELINE=1 ./scripts/test-all.sh
+
+# Filtered tests
+./scripts/test-all.sh "@a11y"
+```
+
+### Script Options
+
+- **`-Baseline`**: Update Playwright snapshots (`--update-snapshots`)
+- **`-Grep <pattern>`**: Filter tests by title pattern (`-g` in Playwright)
+- **`-FrontendOnly`**: Skip backend/infra, only run frontend CSS/UX tests (uses Vite dev server at `localhost:5173`)
+- **`-SkipInfra`**: Skip infrastructure startup (assumes services already running)
+
+### What it does
+
+1. **Auto-detects package manager** (pnpm or npm) and uses appropriate commands
+2. **Starts shared infra** (`D:\infra`) if present and not skipped
+3. **Brings up E2E Postgres** from `docker-compose.e2e.yml` if available
+4. **Verifies Ollama models** via `scripts/ensure-models.ps1`
+5. **Installs backend dependencies** (skipped in `-FrontendOnly` mode)
+6. **Probes backend health** and detects warm/fallback mode
+7. **Runs web typecheck and lint**
+8. **Installs Playwright browsers** with system dependencies
+9. **Executes Playwright tests** from repo root with proper environment
+
+### Environment variables (auto-configured)
+
+- `APP_ENV=dev`
+- `ALLOW_DEV_ROUTES=1`
+- `DEV_E2E_EMAIL=leoklemet.pa@gmail.com`
+- `DEV_E2E_PASSWORD=Superleo3`
+- `DEV_SUPERUSER_PIN=946281`
+- `E2E_DB_HOST=127.0.0.1`
+- `OLLAMA_HOST=http://127.0.0.1:11434`
+- `BACKEND_MODE=warm|fallback|unavailable` (detected via health probe)
+
+### npm Wrappers
+
+Convenient shortcuts for common test scenarios:
+
+```bash
+# Full hermetic test suite
+npm run test:all
+
+# Frontend-only (CSS/UX + analytics) - fastest
+npm run test:all:frontend
+
+# Skip infrastructure (assumes running)
+npm run test:all:skip-infra
+
+# Update snapshots
+npm run test:all:baseline
+
+# Collect diagnostics manually
+npm run diag:collect
+
+# Run tests for changed files only
+npm run test:changed
+
+# Quarantine: flaky tests (allowed to fail)
+npm run test:quarantine
+
+# Non-quarantine: stable tests only
+npm run test:non-quarantine
+
+# Parallel sharding (2 shards)
+npm run test:shard:1  # Terminal 1
+npm run test:shard:2  # Terminal 2
+```
+
+#### CI Polish Features
+
+New CI improvements for faster feedback and better debugging:
+
+- **Fail-fast**: Stop on first failure (`--max-failures=1`)
+- **Retries in CI**: 2 automatic retries for flaky network/timing issues
+- **Rich artifacts**: HTML reports + traces + videos on failure
+- **PR annotations**: Test failures shown inline in PRs
+- **Quarantine support**: Tag flaky tests with `@quarantine` to prevent blocking
+- **Parallel shards**: 4x speed with matrix strategy
+
+See `scripts/CI_POLISH.md` for complete guide.
+
+Quick production health check:
+```bash
+pwsh ./scripts/tunnel-probe.ps1
+# Output: ✅ OK: 142 bytes
+```
+
+
+### Local Configuration Overrides (.env.test)
+
+Create `.env.test` in the repository root for personal overrides (never committed):
+
+```bash
+cp .env.test.example .env.test
+# Edit with your preferences
+```
+
+Example `.env.test`:
+```bash
+BASE_URL=http://localhost:8080
+PLAYWRIGHT_GLOBAL_SETUP_SKIP=1
+OLLAMA_HOST=http://192.168.1.100:11434
+```
+
+The test script automatically loads these overrides before running.
+
+### Diagnostics Collection
+
+On test failures, collect comprehensive diagnostics:
+
+```powershell
+# Manual collection
+pwsh .\scripts\collect-diag.ps1
+
+# Or via npm
+npm run diag:collect
+```
+
+Creates timestamped bundle with:
+- Container logs
+- Health endpoints
+- Metrics snapshots
+- Playwright test results
+- Environment information
+
+**In CI/CD**: Diagnostics are automatically collected and uploaded as artifacts when tests fail.
+- `DEV_SUPERUSER_PIN=946281`
+- `E2E_DB_HOST=127.0.0.1`
+- `OLLAMA_HOST=http://127.0.0.1:11434`
+- `BACKEND_MODE=warm|fallback|unavailable` (detected via health probe)
+
+### CI/CD Integration
+
+Use environment variables to configure the script in GitHub Actions:
+
+```yaml
+env:
+  PLAYWRIGHT_GLOBAL_SETUP_SKIP: "1"
+  BASE_URL: "http://127.0.0.1:5173"
+```
+- `DEV_SUPERUSER_PIN=946281`
+- `E2E_DB_HOST=127.0.0.1` (override with `$env:E2E_DB_HOST` or `export E2E_DB_HOST`)
+
+---
+
 ### Playwright Test Modes (Dev vs Strict)
 
 E2E tests are environment‑sensitive to avoid noisy failures during local iteration:

@@ -1,0 +1,27 @@
+# docker-compose.shared-ollama.yml
+# Override to use shared Ollama instance instead of project-specific one
+# Usage: docker compose -f docker-compose.yml -f docker-compose.shared-ollama.yml up -d
+
+services:
+  # Disable local Ollama - we'll use the shared one
+  ollama:
+    deploy:
+      replicas: 0
+
+  backend:
+    environment:
+      # Point to shared Ollama container
+      - OPENAI_BASE_URL=http://ai-finance-agent-oss-clean-ollama-1:11434/v1
+      - OLLAMA_HOST=ai-finance-agent-oss-clean-ollama-1
+    networks:
+      - default
+      - ai-shared
+
+  nginx:
+    networks:
+      - default
+
+networks:
+  ai-shared:
+    external: true
+    name: ai-shared

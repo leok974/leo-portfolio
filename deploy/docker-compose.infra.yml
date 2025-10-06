@@ -1,0 +1,28 @@
+# docker-compose.infra.yml
+# Override to use shared infrastructure services
+# Usage: docker compose -f docker-compose.yml -f docker-compose.infra.yml up -d
+
+services:
+  # Disable local Ollama - we'll use the shared one
+  ollama:
+    deploy:
+      replicas: 0
+
+  backend:
+    environment:
+      # Point to shared Ollama container in infra network
+      - OPENAI_BASE_URL=http://infra-ollama-1:11434/v1
+      - OLLAMA_HOST=infra-ollama-1
+    networks:
+      - default
+      - infra_net
+
+  nginx:
+    networks:
+      - default
+      - infra_net  # Allow cloudflared to reach nginx
+
+networks:
+  infra_net:
+    external: true
+    name: infra_net

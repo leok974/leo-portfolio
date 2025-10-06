@@ -651,9 +651,7 @@ Checklist:
 1. Frontend request path (Network tab) uses `/api/status/summary` (not bare `/status/summary`).
 2. Ensure `ALLOWED_ORIGINS` includes your Pages origin (e.g. `https://leok974.github.io`). Service worker & caches cleared on GitHub Pages:
 ```js
-// eslint-disable-next-line no-undef
 navigator.serviceWorker?.getRegistrations().then(r=>r.forEach(x=>x.unregister()));
-// eslint-disable-next-line no-undef
 caches?.keys().then(k=>k.forEach(c=>caches.delete(c)));
 ```
 3. Cloudflare Tunnel mapping: `assistant.ledger-mind.org` → named tunnel → service `http://nginx:80` (same stack as primary site).

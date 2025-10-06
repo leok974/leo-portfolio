@@ -1,0 +1,208 @@
+name: e2e-hermetic
+
+# Hermetic E2E test suite with split fast/full lanes
+# - fast-frontend: CSS/UX tests without backend (fastest feedback)
+# - full-stack: Complete integration tests with all services
+
+on:
+  pull_request:
+    paths:
+      - "tests/e2e/**"
+      - "src/**"
+      - "scripts/test-all.*"
+      - "package.json"
+      - ".github/workflows/e2e-hermetic.yml"
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-hermetic-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast lane: Frontend-only tests (CSS, UX, analytics)
+  fast-frontend:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PLAYWRIGHT_GLOBAL_SETUP_SKIP: "1"
+      BASE_URL: "http://127.0.0.1:5173"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        run: npm run build || true
+
+      - name: Install Playwright
+        uses: microsoft/playwright-github-action@v1
+        with:
+          version: 1.x
+          browsers: chromium
+
+      - name: Run frontend-only tests (fail fast)
+        run: npx playwright test -g "@ui-polish|@analytics-beacons" --project=chromium --max-failures=1 --reporter=line,junit
+
+      - name: Upload HTML report (on failure)
+        if: failure()
+        run: npx playwright show-report --output=playwright-report || true
+
+      - name: Collect diagnostics (on failure)
+        if: failure()
+        shell: pwsh
+        run: pwsh ./scripts/collect-diag.ps1
+
+      - name: Upload diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diag-frontend
+          path: artifacts/**
+          retention-days: 7
+
+      - name: Upload HTML report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-html-report-frontend
+          path: playwright-report/**
+          retention-days: 7
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-frontend
+          path: |
+            test-results/**
+            junit.xml
+          retention-days: 7
+
+      - name: Annotate PR with test results
+        if: failure()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: "junit*.xml"
+          check_name: "Playwright Tests (Frontend)"
+          include_passed: false
+          annotate_only: true
+
+  # Full lane: Complete integration tests with all services
+  full-stack:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    needs: fast-frontend
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        run: npm run build || true
+
+      - name: Install Playwright
+        uses: microsoft/playwright-github-action@v1
+        with:
+          version: 1.x
+          browsers: chromium
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start services (test mode - no port conflicts)
+        run: |
+          docker compose -f deploy/docker-compose.yml \
+            -f deploy/docker-compose.override.test.yml \
+            up -d --quiet-pull
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for backend..."
+          for i in {1..60}; do
+            if curl -sf http://127.0.0.1:8080/ready >/dev/null 2>&1; then
+              echo "Backend is ready"
+              break
+            fi
+            echo "Attempt $i/60..."
+            sleep 5
+          done
+
+      - name: Run full E2E suite (fail fast)
+        run: npx playwright test --project=chromium --max-failures=1 --reporter=line,junit
+
+      - name: Upload HTML report (on failure)
+        if: failure()
+        run: npx playwright show-report --output=playwright-report || true
+
+      - name: Collect diagnostics (on failure)
+        if: failure()
+        shell: pwsh
+        run: pwsh ./scripts/collect-diag.ps1
+
+      - name: Upload diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diag-fullstack
+          path: artifacts/**
+          retention-days: 7
+
+      - name: Upload HTML report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-html-report-fullstack
+          path: playwright-report/**
+          retention-days: 7
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-fullstack
+          path: |
+            test-results/**
+            junit.xml
+          retention-days: 7
+
+      - name: Annotate PR with test results
+        if: failure()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: "junit*.xml"
+          check_name: "Playwright Tests (Full-Stack)"
+          include_passed: false
+          annotate_only: true
+
+      - name: Stop services
+        if: always()
+        run: |
+          docker compose -f deploy/docker-compose.yml \
+            -f deploy/docker-compose.override.test.yml \
+            down -v

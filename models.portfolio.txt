@@ -1,0 +1,9 @@
+# Portfolio-specific Ollama models
+# One model per line, format: model:tag
+# These models will be ensured by scripts/ensure-models.ps1
+
+# Primary LLM for chat/RAG
+gpt-oss:20b
+
+# Embeddings for RAG/semantic search
+nomic-embed-text:latest

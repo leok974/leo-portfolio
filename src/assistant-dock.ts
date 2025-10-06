@@ -7,7 +7,7 @@ import { createRoot } from 'react-dom/client';
 import { ShieldBadge } from '@/components/badges/ShieldBadge';
 import { mountAdminRebuildFloating } from '@/components/render-admin';
 
-declare global { interface Window { __assistantDockMounted?: boolean; __creatingSourcesPopover?: boolean; __sourcesListenersBound?: boolean; __sourcesObserverBound?: boolean; AgentStatus?: any } }
+declare global { interface Window { __assistantDockMounted?: boolean; __creatingSourcesPopover?: boolean; __sourcesListenersBound?: boolean; __sourcesObserverBound?: boolean; AgentStatus?: { updateServed: (s: string) => void; } } }
 
 if (window.__assistantDockMounted) {
   document.querySelectorAll('.assistant-dock').forEach((el, i) => { if (i > 0) el.remove(); });

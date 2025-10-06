@@ -2,7 +2,9 @@
 set -eu
 
 MODEL="${PRIMARY_MODEL:-${OPENAI_MODEL:-gpt-oss:20b}}"
-TAGS_URL="http://ollama:11434/api/tags"
+OLLAMA_HOST_VAR="${OLLAMA_HOST:-ollama}"
+OLLAMA_PORT_VAR="${OLLAMA_PORT:-11434}"
+TAGS_URL="http://${OLLAMA_HOST_VAR}:${OLLAMA_PORT_VAR}/api/tags"
 RESPONSE=""
 MAX_WAIT="${MODEL_WAIT_MAX_SECONDS:-180}"
 START_TS=$(date +%s)

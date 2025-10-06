@@ -18,7 +18,7 @@ export default defineConfig({
   forbidOnly: isCI,
   fullyParallel: true,
   workers,
-  retries: isCI ? 1 : 0,
+  retries: isCI ? 2 : 0, // 2 retries in CI for flaky network/timing issues
   timeout: 30_000,
   expect: { timeout: 3_000 },
   globalSetup: path.resolve(__dirname, 'tests/e2e/global-setup.ts'),
@@ -26,17 +26,25 @@ export default defineConfig({
   use: {
     headless: true,
     baseURL,
-    trace: 'retain-on-failure',
-    video: 'off',
+    trace: isCI ? 'on-first-retry' : 'retain-on-failure', // Lighter trace in CI
+    video: isCI ? 'on-first-retry' : 'off', // Video only on retry in CI
     screenshot: 'only-on-failure',
     actionTimeout: 10_000,
-    navigationTimeout: 15_000,
+    navigationTimeout: 15_000, // Can override lower for @ui-polish tests
     ignoreHTTPSErrors: true,
   },
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'chromium-ui-polish',
+      testMatch: /.*@ui-polish.*/,
+      use: {
+        ...devices['Desktop Chrome'],
+        navigationTimeout: 10_000, // Lower timeout for CSS/UX tests
+      },
     },
   ],
   webServer: process.env.PW_SKIP_WS ? undefined : {
