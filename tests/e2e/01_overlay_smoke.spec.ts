@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { requireBackendOrSkip } from './_utils';
 
-test('maintenance overlay opens and lists actions', async ({ page }) => {
-  await page.goto('/');
+test('maintenance overlay opens and lists actions', async ({ page, request }) => {
+  await requireBackendOrSkip(request);
+  await page.goto('/?dev=1');
   await page.getByRole('button', { name: /maintenance \(dev\)/i }).click();
   // Quick plan
   await page.getByRole('button', { name: /run quick/i }).click();

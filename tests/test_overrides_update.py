@@ -130,14 +130,14 @@ def test_overrides_update_creates_file_if_missing(monkeypatch, tmp_path: Path):
     db_dir = tmp_path / "data"
     db_dir.mkdir(exist_ok=True)
     monkeypatch.setenv("RAG_DB", str(db_dir / "rag.sqlite"))
-    
+
     data_dir = tmp_path / "assets" / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
-    
+
     assert not (data_dir / "og-overrides.json").exists()
-    
+
     res = overrides_update("t-run", {"brand": "NEW BRAND"})
-    
+
     assert (data_dir / "og-overrides.json").exists()
     out = json.loads((data_dir / "og-overrides.json").read_text("utf-8"))
     assert out["brand"] == "NEW BRAND"
@@ -150,14 +150,14 @@ def test_overrides_update_logo_for_repo(monkeypatch, tmp_path: Path):
     db_dir = tmp_path / "data"
     db_dir.mkdir(exist_ok=True)
     monkeypatch.setenv("RAG_DB", str(db_dir / "rag.sqlite"))
-    
+
     data_dir = tmp_path / "assets" / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
-    
+
     res = overrides_update("t-run", {
         "logo": {"repo": "leok974/leo-portfolio", "path": "assets/logos/siteAgent.png"}
     })
-    
+
     out = json.loads((data_dir / "og-overrides.json").read_text("utf-8"))
     assert out["repo_logo"]["leok974/leo-portfolio"] == "assets/logos/siteAgent.png"
     assert res["changed"]["repo_logo"]["leok974/leo-portfolio"] == "assets/logos/siteAgent.png"
@@ -170,14 +170,14 @@ def test_overrides_update_logo_for_title(monkeypatch, tmp_path: Path):
     db_dir = tmp_path / "data"
     db_dir.mkdir(exist_ok=True)
     monkeypatch.setenv("RAG_DB", str(db_dir / "rag.sqlite"))
-    
+
     data_dir = tmp_path / "assets" / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
-    
+
     res = overrides_update("t-run", {
         "logo": {"title": "siteAgent", "path": "assets/logos/siteAgent.png"}
     })
-    
+
     out = json.loads((data_dir / "og-overrides.json").read_text("utf-8"))
     assert out["title_logo"]["siteAgent"] == "assets/logos/siteAgent.png"
     assert res["changed"]["title_logo"]["siteAgent"] == "assets/logos/siteAgent.png"

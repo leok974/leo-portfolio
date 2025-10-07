@@ -1244,8 +1244,11 @@
     <script>
       // Dev-only maintenance overlay (appears on localhost/127.0.0.1)
       (function () {
+        const forceDev =
+          /(?:^|[?&])dev=1(?:$|&)/.test(location.search) ||
+          localStorage.getItem("saDevOverlay") === "1";
         const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
-        if (!isLocal) return;
+        if (!(isLocal || forceDev)) return;
         const btn = document.createElement("button");
         btn.id = "sa-maint";
         btn.textContent = "🧰 Maintenance (dev)";

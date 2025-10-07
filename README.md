@@ -1,6 +1,35 @@
 # Leo Klemet — Portfolio (HTML/CSS/JS)
 
-[![Release](https://img.shields.io/github/v/release/leok974/leo-portfolio)](https://github.com/leok974/leo-portfolio/releases)
+[![Release](https://img.shields.io/github/v/release/leok974> _"Copilot, audit the site for WCAG 2.1: focus states, ARIA labels, color contrast, and generate a checklist in `docs/a11y.md`."_
+
+---
+
+## Dev Overlay (Maintenance Panel)
+
+Open your site with `?dev=1` to force the maintenance overlay, e.g.:
+```
+http://localhost:8080/?dev=1
+```
+Or persist it:
+```js
+localStorage.saDevOverlay = '1'
+```
+The overlay lets you run agent plans, see last actions, and download artifacts (link-apply.json/.diff).
+
+### Playwright E2E
+
+- **Local one-shot** (brings up Docker, waits, runs tests):
+  ```bash
+  npm run e2e:local
+  ```
+- **Plain run** (skips backend-dependent tests if the stack isn't up):
+  ```bash
+  npm run test:e2e
+  ```
+
+---
+
+## Backend Diagnostics-portfolio)](https://github.com/leok974/leo-portfolio/releases)
 [![CI (Node 18/20)](https://img.shields.io/github/actions/workflow/status/leok974/leo-portfolio/matrix-ci.yml?branch=main)](https://github.com/leok974/leo-portfolio/actions/workflows/matrix-ci.yml)
 [![Frontend Fast Tests](https://github.com/leok974/leo-portfolio/actions/workflows/frontend-fast.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/frontend-fast.yml)
 [![Assistant Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/leok974/leo-portfolio/status-badge/status.json)](docs/OPERATIONS.md#status-badge)

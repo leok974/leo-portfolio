@@ -3,10 +3,10 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 
   <url>
-    <loc>https://leok.dev/gallery.html</loc>
+    <loc>http://localhost:5173/gallery.html</loc>
     
       <image:image>
-        <image:loc>https://leok.dev/assets/gallery/blender-glass.jpg</image:loc>
+        <image:loc>http://localhost:5173/assets/gallery/blender-glass.jpg</image:loc>
         <image:caption>EEVEE refractive glass with light linking; compositing pass for glow.</image:caption>
       </image:image>
   </url>

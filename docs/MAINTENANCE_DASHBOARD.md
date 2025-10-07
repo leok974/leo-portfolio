@@ -248,7 +248,7 @@ http://localhost:4173  # or npm run preview
 # Expected: Stats displayed (Last run, Projects, Media, News, Links)
 
 # 5. Click "Run quick plan"
-# Expected: 
+# Expected:
 #   - Button disabled during run
 #   - Stats refresh after ~10-15 seconds
 #   - Console shows fetch requests to /agent/run and /agent/report

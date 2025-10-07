@@ -128,11 +128,11 @@ def test_logo_fetch_blocks_private_ip(monkeypatch, tmp_path):
         return [(_s.AF_INET, None, None, "", ("127.0.0.1", 0))]
     monkeypatch.setattr("socket.getaddrinfo", fake_getaddrinfo)
     monkeypatch.chdir(tmp_path)
-    
+
     from assistant_api.agent.tasks import logo_fetch
     import os
     os.makedirs("assets/data", exist_ok=True)
-    
+
     with pytest.raises(ValueError, match="blocked non-public IP"):
         logo_fetch("test-run", {
             "url": "https://internal.example/logo.png",
@@ -145,11 +145,11 @@ def test_remove_logo_mapping(monkeypatch, tmp_path):
     import json
     from unittest.mock import MagicMock
     monkeypatch.chdir(tmp_path)
-    
+
     # Mock emit to avoid database dependency
     mock_emit = MagicMock()
     monkeypatch.setattr("assistant_api.agent.tasks.emit", mock_emit)
-    
+
     # Seed overrides with existing logo mappings
     d = tmp_path / "assets" / "data"
     d.mkdir(parents=True, exist_ok=True)
@@ -160,16 +160,16 @@ def test_remove_logo_mapping(monkeypatch, tmp_path):
         }),
         "utf-8"
     )
-    
+
     # Call overrides.update with removal for repo
     from assistant_api.agent.tasks import overrides_update
     res = overrides_update("test-run", {"logo": {"repo": "owner/repo", "remove": True}})
-    
+
     # Verify repo_logo mapping removed
     ov = json.loads((d / "og-overrides.json").read_text("utf-8"))
     assert "owner/repo" not in ov["repo_logo"]
     assert "ProjectX" in ov["title_logo"]  # Title logo still there
-    
+
     # Now remove title logo
     res = overrides_update("test-run", {"logo": {"title": "ProjectX", "remove": True}})
     ov = json.loads((d / "og-overrides.json").read_text("utf-8"))

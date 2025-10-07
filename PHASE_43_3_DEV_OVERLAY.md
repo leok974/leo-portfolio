@@ -4,9 +4,9 @@
 
 Phase 43.3 adds comprehensive event filtering and run tracking to the maintenance dashboard's developer overlay. This enhancement provides professional debugging tools with intelligent filtering, run tracking, and auto-focus capabilities.
 
-**Status:** ✅ COMPLETE  
-**Commit:** 82bb817  
-**Branch:** auth  
+**Status:** ✅ COMPLETE
+**Commit:** 82bb817
+**Branch:** auth
 
 ---
 
@@ -115,24 +115,24 @@ def query_events(level: Optional[str] = None, run_id: Optional[str] = None, limi
     query = "SELECT run_id, ts, level, event, data FROM agent_events"
     conditions = []
     params = []
-    
+
     if level:
         conditions.append("level = ?")
         params.append(level)
-    
+
     if run_id:
         conditions.append("run_id = ?")
         params.append(run_id)
-    
+
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
-    
+
     query += " ORDER BY id DESC LIMIT ?"
     params.append(limit)
-    
+
     rows = con.execute(query, params).fetchall()
     con.close()
-    
+
     # Convert rows to dictionaries
     events = []
     for r in rows:
@@ -147,7 +147,7 @@ def query_events(level: Optional[str] = None, run_id: Optional[str] = None, limi
             "event": r[3],
             "data": data_dict
         })
-    
+
     return events
 ```
 
@@ -237,12 +237,12 @@ async function refreshEvents() {
       const tag = lvl === 'error' ? '🔴' : (lvl === 'warn' ? '🟠' : '🟢');
       const detail = ev.event || '';
       let data = '';
-      try { data = ev.data && Object.keys(ev.data).length ? 
-        `<code style='...'>${JSON.stringify(ev.data)}</code>` : ''; 
+      try { data = ev.data && Object.keys(ev.data).length ?
+        `<code style='...'>${JSON.stringify(ev.data)}</code>` : '';
       } catch {}
       const rid = ev.run_id || '';
-      const copyBtn = rid ? 
-        `<button data-rid="${rid}" class="sa-focus" title="Focus on this run" 
+      const copyBtn = rid ?
+        `<button data-rid="${rid}" class="sa-focus" title="Focus on this run"
                  style="margin-left:auto">🎯</button>` : '';
       return `<li style="...">
         <div style="display:flex;gap:8px;align-items:center">
@@ -320,31 +320,31 @@ document.getElementById('sa-evts-refresh').onclick = () => {
 ## Usage Examples
 
 ### 1. View All Recent Events
-**Action:** Open dev overlay (click "siteAgent" button)  
+**Action:** Open dev overlay (click "siteAgent" button)
 **Result:** Shows last 10 events from all runs, all levels
 
 ### 2. Filter by Level
-**Action:** Select "error" from Level dropdown  
+**Action:** Select "error" from Level dropdown
 **Result:** Shows only error-level events from all runs
 
 ### 3. Focus on Specific Run
-**Action:** Select run from "Run" dropdown  
+**Action:** Select run from "Run" dropdown
 **Result:** Shows all events from that specific run
 
 ### 4. Manual Run ID
-**Action:** Paste run_id into input field, click "Apply"  
+**Action:** Paste run_id into input field, click "Apply"
 **Result:** Shows all events from that specific run
 
 ### 5. Focus via Event Button
-**Action:** Click 🎯 button on any event  
+**Action:** Click 🎯 button on any event
 **Result:** Automatically filters to show only that event's run
 
 ### 6. Auto-Focus After Action
-**Action:** Click "Tell agent" or "Run quick"  
+**Action:** Click "Tell agent" or "Run quick"
 **Result:** Automatically filters to show only that action's events
 
 ### 7. Combined Filtering
-**Action:** Select "error" level + specific run_id  
+**Action:** Select "error" level + specific run_id
 **Result:** Shows only errors from that specific run
 
 ---
@@ -583,10 +583,10 @@ Events logged during testing are now easily filterable:
 
 ## Commit Details
 
-**Commit:** 82bb817  
-**Author:** GitHub Copilot  
-**Date:** January 20, 2025  
-**Branch:** auth  
+**Commit:** 82bb817
+**Author:** GitHub Copilot
+**Date:** January 20, 2025
+**Branch:** auth
 
 **Commit Message:**
 ```
@@ -620,13 +620,13 @@ Frontend:
 
 Phase 43.3 transforms the maintenance dashboard's dev overlay from a basic event list into a professional debugging tool. The enhancement provides:
 
-✅ **Intelligent Filtering:** By level (info/warn/error) and run_id  
-✅ **Run Tracking:** Dropdown with recent runs and success ratios  
-✅ **Auto-Focus:** Automatically filter events after actions  
-✅ **One-Click Focus:** 🎯 button on each event for instant filtering  
-✅ **Responsive UI:** Clean, professional layout that works everywhere  
-✅ **Backend Support:** New `/agent/events` endpoint with full filtering  
-✅ **Complete Integration:** Works seamlessly with all existing features  
+✅ **Intelligent Filtering:** By level (info/warn/error) and run_id
+✅ **Run Tracking:** Dropdown with recent runs and success ratios
+✅ **Auto-Focus:** Automatically filter events after actions
+✅ **One-Click Focus:** 🎯 button on each event for instant filtering
+✅ **Responsive UI:** Clean, professional layout that works everywhere
+✅ **Backend Support:** New `/agent/events` endpoint with full filtering
+✅ **Complete Integration:** Works seamlessly with all existing features
 
 **Result:** Professional, production-ready developer experience with enterprise-grade debugging tools.
 

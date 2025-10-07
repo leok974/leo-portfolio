@@ -133,9 +133,9 @@ if any(host.lower().endswith(suf) for suf in allow_hosts):
 
 <!-- After sanitization -->
 <svg xmlns="http://www.w3.org/2000/svg">
-  
+
   <rect  width="100" height="100"/>
-  
+
 </svg>
 ```
 
@@ -566,5 +566,5 @@ The hardened `logo.fetch` task provides defense-in-depth security:
 
 Combined with dual authentication (CF Access + HMAC) and natural language commands, this provides a secure, user-friendly logo management system.
 
-**Commit:** a7a8f75 (Security hardening)  
+**Commit:** a7a8f75 (Security hardening)
 **All 20 tests passing** (9 logo.fetch + 11 interpreter)

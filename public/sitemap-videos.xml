@@ -3,13 +3,13 @@
         xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
 
   <url>
-    <loc>https://leok.dev/gallery.html</loc>
+    <loc>http://localhost:5173/gallery.html</loc>
     
       <video:video>
-        <video:thumbnail_loc>https://leok.dev/assets/video/pixel-banana-idle.jpg</video:thumbnail_loc>
+        <video:thumbnail_loc>http://localhost:5173/assets/video/pixel-banana-idle.jpg</video:thumbnail_loc>
         <video:title>Pixel Banana · Idle Loop</video:title>
         <video:description>ComfyUI img2img + procedural sprite animator. Pixel-preserving edits; 96px cell.</video:description>
-        <video:content_loc>https://leok.dev/assets/video/pixel-banana-idle.mp4</video:content_loc>
+        <video:content_loc>http://localhost:5173/assets/video/pixel-banana-idle.mp4</video:content_loc>
       </video:video>
   </url>
 </urlset>

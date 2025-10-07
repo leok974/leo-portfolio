@@ -18,7 +18,7 @@ All security features are working correctly and protecting against known attack 
 
 ### 1. ✅ SSRF Protection (Private IP Blocking)
 
-**Status:** PASSING  
+**Status:** PASSING
 **Tests:** 5/5 passing
 
 **What was tested:**
@@ -44,7 +44,7 @@ All private, loopback, and link-local IP addresses are correctly rejected before
 
 ### 2. ✅ HTTPS Enforcement
 
-**Status:** PASSING  
+**Status:** PASSING
 **Tests:** 2/2 passing
 
 **What was tested:**
@@ -64,7 +64,7 @@ Plain HTTP URLs are rejected by default, requiring HTTPS for all logo downloads.
 
 ### 3. ✅ Host Allowlist
 
-**Status:** PASSING  
+**Status:** PASSING
 **Tests:** 3/3 passing
 
 **What was tested:**
@@ -91,7 +91,7 @@ Host allowlist correctly filters domains using suffix matching, allowing only tr
 
 ### 4. ✅ SVG Sanitization
 
-**Status:** PASSING  
+**Status:** PASSING
 **Tests:** 8/8 passing
 
 **What was tested:**
@@ -129,9 +129,9 @@ Host allowlist correctly filters domains using suffix matching, allowing only tr
 **After Sanitization:**
 ```xml
 <svg xmlns="http://www.w3.org/2000/svg">
-  
+
   <circle  r="50"/>
-  
+
   <rect  width="100"/>
 </svg>
 ```
@@ -143,7 +143,7 @@ All malicious elements, event handlers, and JavaScript code are stripped while p
 
 ### 5. ✅ Size Limits
 
-**Status:** PASSING  
+**Status:** PASSING
 **Tests:** 1/1 passing
 
 **What was tested:**
@@ -168,7 +168,7 @@ Files exceeding the configured size limit are rejected before or during download
 
 ### 6. ✅ Logo Removal
 
-**Status:** PASSING  
+**Status:** PASSING
 **Tests:** 3/3 passing
 
 **What was tested:**
@@ -197,7 +197,7 @@ Logo mappings are correctly removed from og-overrides.json without deleting actu
 
 ### 7. ✅ Environment Variables
 
-**Status:** PASSING  
+**Status:** PASSING
 **Tests:** 3/3 passing
 
 **What was tested:**
@@ -260,43 +260,43 @@ tests/test_interpret.py ...........                [100%]
 ## Attack Scenarios Prevented
 
 ### ✅ 1. AWS Metadata Theft
-**Attack:** `http://169.254.169.254/latest/meta-data/`  
-**Prevention:** SSRF guard blocks 169.254.169.254 (link-local)  
+**Attack:** `http://169.254.169.254/latest/meta-data/`
+**Prevention:** SSRF guard blocks 169.254.169.254 (link-local)
 **Status:** BLOCKED ✅
 
 ### ✅ 2. Internal Service Scan
-**Attack:** `http://10.0.0.1:8080/admin`  
-**Prevention:** SSRF guard blocks 10.0.0.1 (private)  
+**Attack:** `http://10.0.0.1:8080/admin`
+**Prevention:** SSRF guard blocks 10.0.0.1 (private)
 **Status:** BLOCKED ✅
 
 ### ✅ 3. Localhost Exploitation
-**Attack:** `http://127.0.0.1:5432/database`  
-**Prevention:** SSRF guard blocks 127.0.0.1 (loopback)  
+**Attack:** `http://127.0.0.1:5432/database`
+**Prevention:** SSRF guard blocks 127.0.0.1 (loopback)
 **Status:** BLOCKED ✅
 
 ### ✅ 4. XSS via SVG Script
-**Attack:** `<svg><script>alert('XSS')</script></svg>`  
-**Prevention:** SVG sanitizer strips `<script>` tags  
+**Attack:** `<svg><script>alert('XSS')</script></svg>`
+**Prevention:** SVG sanitizer strips `<script>` tags
 **Status:** SANITIZED ✅
 
 ### ✅ 5. XSS via Event Handlers
-**Attack:** `<circle onclick="evil()"/>`  
-**Prevention:** SVG sanitizer removes `onclick` attributes  
+**Attack:** `<circle onclick="evil()"/>`
+**Prevention:** SVG sanitizer removes `onclick` attributes
 **Status:** SANITIZED ✅
 
 ### ✅ 6. Disk Space Exhaustion
-**Attack:** Download 10GB file  
-**Prevention:** Size limit (default 3MB) aborts download  
+**Attack:** Download 10GB file
+**Prevention:** Size limit (default 3MB) aborts download
 **Status:** BLOCKED ✅
 
 ### ✅ 7. MITM Attack
-**Attack:** Intercept `http://example.com/logo.png`  
-**Prevention:** HTTPS enforcement (default)  
+**Attack:** Intercept `http://example.com/logo.png`
+**Prevention:** HTTPS enforcement (default)
 **Status:** BLOCKED ✅
 
 ### ✅ 8. Untrusted CDN (with allowlist)
-**Attack:** `https://evil-cdn.com/malware.svg`  
-**Prevention:** Host allowlist blocks non-trusted domains  
+**Attack:** `https://evil-cdn.com/malware.svg`
+**Prevention:** Host allowlist blocks non-trusted domains
 **Status:** BLOCKED ✅ (when SITEAGENT_LOGO_HOSTS is set)
 
 ---
@@ -353,7 +353,7 @@ SITEAGENT_LOGO_ALLOW_HTTP=0  # or omit (default)
 SITEAGENT_LOGO_HOSTS=githubusercontent.com,cdn.jsdelivr.net
 ```
 
-**Security level:** HIGH  
+**Security level:** HIGH
 **Use case:** Public production environment
 
 ### Staging (Balanced)
@@ -365,7 +365,7 @@ SITEAGENT_LOGO_MAX_MB=3
 # SITEAGENT_LOGO_HOSTS not set (allow all public hosts after IP check)
 ```
 
-**Security level:** MEDIUM  
+**Security level:** MEDIUM
 **Use case:** Pre-production testing
 
 ### Development (Permissive)
@@ -377,7 +377,7 @@ SITEAGENT_LOGO_ALLOW_HTTP=1
 # SITEAGENT_LOGO_HOSTS not set
 ```
 
-**Security level:** LOW (dev only)  
+**Security level:** LOW (dev only)
 **Use case:** Local development only
 
 ---
@@ -427,7 +427,7 @@ python -m pytest tests/ --cov=assistant_api.agent -v
 
 ---
 
-**Test Report Generated:** January 7, 2025  
-**Tested By:** GitHub Copilot  
-**Status:** ✅ ALL TESTS PASSING  
+**Test Report Generated:** January 7, 2025
+**Tested By:** GitHub Copilot
+**Status:** ✅ ALL TESTS PASSING
 **Security Level:** PRODUCTION READY

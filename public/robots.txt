@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://leok.dev/sitemap-index.xml
+Sitemap: http://localhost:5173/sitemap-index.xml

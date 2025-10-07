@@ -87,24 +87,24 @@ def query_events(level: Optional[str] = None, run_id: Optional[str] = None, limi
     query = "SELECT run_id, ts, level, event, data FROM agent_events"
     conditions = []
     params = []
-    
+
     if level:
         conditions.append("level = ?")
         params.append(level)
-    
+
     if run_id:
         conditions.append("run_id = ?")
         params.append(run_id)
-    
+
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
-    
+
     query += " ORDER BY id DESC LIMIT ?"
     params.append(limit)
-    
+
     rows = con.execute(query, params).fetchall()
     con.close()
-    
+
     # Convert rows to dictionaries
     events = []
     for r in rows:
@@ -119,5 +119,5 @@ def query_events(level: Optional[str] = None, run_id: Optional[str] = None, limi
             "event": r[3],
             "data": data_dict
         })
-    
+
     return events

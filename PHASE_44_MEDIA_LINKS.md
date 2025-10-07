@@ -4,9 +4,9 @@
 
 Phase 44 adds three new maintenance tasks for automated media management and link health: **media.scan**, **media.optimize**, and **links.suggest**. These tasks provide comprehensive media indexing, image optimization with responsive thumbnails, and intelligent broken link fix suggestions.
 
-**Status:** ✅ COMPLETE  
-**Commit:** 0dba5b2  
-**Branch:** auth  
+**Status:** ✅ COMPLETE
+**Commit:** 0dba5b2
+**Branch:** auth
 
 ---
 
@@ -227,21 +227,21 @@ panel.querySelector('#sa-media-scan').onclick = async () => {
 };
 ```
 
-**Action:** Scans all media and updates media-index.json  
+**Action:** Scans all media and updates media-index.json
 **Result:** Auto-focuses event log on this run's output
 
 ### 2. "Optimize images" Button
 ```javascript
 panel.querySelector('#sa-media-opt').onclick = async () => {
-  const body = JSON.stringify({ 
-    plan: ["media.scan","media.optimize","status.write"], 
-    params: {} 
+  const body = JSON.stringify({
+    plan: ["media.scan","media.optimize","status.write"],
+    params: {}
   });
   // ... fetch and auto-focus ...
 };
 ```
 
-**Action:** Scans media, then generates WebP + thumbnails  
+**Action:** Scans media, then generates WebP + thumbnails
 **Result:** Auto-focuses event log on optimization progress
 
 ### 3. "Suggest link fixes" Button
@@ -252,7 +252,7 @@ panel.querySelector('#sa-link-suggest').onclick = async () => {
 };
 ```
 
-**Action:** Analyzes broken links and generates fix suggestions  
+**Action:** Analyzes broken links and generates fix suggestions
 **Result:** Auto-focuses event log on suggestions
 
 **UI Layout:**
@@ -487,10 +487,10 @@ panel.querySelector("#sa-media-scan").onclick = async () => {
     const res = await fetch("/agent/run", { method: "POST", headers: {...}, body });
     const j = await res.json().catch(() => ({}));
     // Auto-focus on this run
-    if (j && j.run_id) { 
-      saFilter.run_id = j.run_id; 
-      document.getElementById("sa-run-id").value = j.run_id; 
-      document.getElementById("sa-run-sel").value = ""; 
+    if (j && j.run_id) {
+      saFilter.run_id = j.run_id;
+      document.getElementById("sa-run-id").value = j.run_id;
+      document.getElementById("sa-run-sel").value = "";
     }
     await refresh(); await loadRecentRuns(); await refreshEvents();
   } catch(e) { console.error(e); }
@@ -532,7 +532,7 @@ def test_links_suggest_creates_file(monkeypatch, tmp_path: Path):
     # Create a close match: hero-final.png for missing hero.png
     (tmp_path / "public" / "img" / "hero-final.png").write_bytes(b"x")
     (tmp_path / "assets" / "data" / "link-check.json").write_text(
-        json.dumps({"missing":[{"file":"public/index.html","url":"img/hero.png"}]}), 
+        json.dumps({"missing":[{"file":"public/index.html","url":"img/hero.png"}]}),
         "utf-8"
     )
     res = links_suggest("t", {})
@@ -746,7 +746,7 @@ POST /agent/run
 ## Performance Considerations
 
 ### media.scan
-**Time Complexity:** O(n) where n = number of image files  
+**Time Complexity:** O(n) where n = number of image files
 **Bottlenecks:**
 - File I/O (reading 64KB for hash)
 - Dimension detection (Pillow overhead)
@@ -762,7 +762,7 @@ POST /agent/run
 - 5000 images: ~1 minute
 
 ### media.optimize
-**Time Complexity:** O(n × m) where n = files, m = avg file size  
+**Time Complexity:** O(n × m) where n = files, m = avg file size
 **Bottlenecks:**
 - Image decoding/encoding (CPU-intensive)
 - Disk I/O (write 3 files per input)
@@ -780,7 +780,7 @@ POST /agent/run
 **Recommendation:** Don't include in nightly runs. Use manual triggers or limit to 50-100 files.
 
 ### links.suggest
-**Time Complexity:** O(n × m) where n = missing links, m = corpus size  
+**Time Complexity:** O(n × m) where n = missing links, m = corpus size
 **Bottlenecks:**
 - Directory walk (corpus building)
 - Fuzzy matching (difflib)
@@ -924,7 +924,7 @@ for miss, suggestions in suggestions.items():
         auto_fix(miss, suggestions[0])  # Update HTML file directly
 ```
 
-**Risk:** Could break valid relative paths  
+**Risk:** Could break valid relative paths
 **Mitigation:** Dry-run mode, manual approval
 
 ### Enhancement 3: Media CDN Integration
@@ -974,10 +974,10 @@ for img_tag in html.find_all('img'):
 
 ## Commit Details
 
-**Commit:** 0dba5b2  
-**Author:** GitHub Copilot  
-**Date:** January 20, 2025  
-**Branch:** auth  
+**Commit:** 0dba5b2
+**Author:** GitHub Copilot
+**Date:** January 20, 2025
+**Branch:** auth
 
 **Commit Message:**
 ```
@@ -1010,14 +1010,14 @@ Test Coverage: 18 tests passing (16 interpreter + 2 media/links)
 
 Phase 44 delivers comprehensive media management and link health tooling:
 
-✅ **media.scan** - Automated media indexing with metadata  
-✅ **media.optimize** - WebP conversion + responsive thumbnails  
-✅ **links.suggest** - Intelligent broken link fix suggestions  
-✅ **Natural language support** - Human-friendly commands  
-✅ **Dev overlay buttons** - One-click task execution  
-✅ **Nightly integration** - media.scan in default plan  
-✅ **Test coverage** - 18 tests passing (16 + 2 new)  
-✅ **Production ready** - Error handling, graceful fallbacks  
+✅ **media.scan** - Automated media indexing with metadata
+✅ **media.optimize** - WebP conversion + responsive thumbnails
+✅ **links.suggest** - Intelligent broken link fix suggestions
+✅ **Natural language support** - Human-friendly commands
+✅ **Dev overlay buttons** - One-click task execution
+✅ **Nightly integration** - media.scan in default plan
+✅ **Test coverage** - 18 tests passing (16 + 2 new)
+✅ **Production ready** - Error handling, graceful fallbacks
 
 **Result:** Complete media pipeline and link health automation, ready for production use.
 

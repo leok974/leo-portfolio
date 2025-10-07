@@ -179,8 +179,8 @@ if m:
 ## New Environment Variables
 
 ### SITEAGENT_LOGO_MAX_MB
-**Purpose:** Set maximum logo file size in megabytes.  
-**Default:** 3 (3MB)  
+**Purpose:** Set maximum logo file size in megabytes.
+**Default:** 3 (3MB)
 **Example:**
 ```bash
 # Stricter limit
@@ -191,8 +191,8 @@ SITEAGENT_LOGO_MAX_MB=10
 ```
 
 ### SITEAGENT_LOGO_ALLOW_HTTP
-**Purpose:** Allow plain HTTP downloads (not recommended).  
-**Default:** false (requires HTTPS)  
+**Purpose:** Allow plain HTTP downloads (not recommended).
+**Default:** false (requires HTTPS)
 **Example:**
 ```bash
 # Allow HTTP (less secure)
@@ -200,8 +200,8 @@ SITEAGENT_LOGO_ALLOW_HTTP=1
 ```
 
 ### SITEAGENT_LOGO_HOSTS
-**Purpose:** Comma-separated list of allowed host suffixes.  
-**Default:** None (allow all public hosts after IP validation)  
+**Purpose:** Comma-separated list of allowed host suffixes.
+**Default:** None (allow all public hosts after IP validation)
 **Example:**
 ```bash
 # Only allow GitHub and jsDelivr
@@ -396,7 +396,7 @@ All natural language commands work in dev overlay or via `/agent/act`:
 - `remove logo for repo X` ← **new feature**
 - `remove logo for Title` ← **new feature**
 
-**Status:** ✅ COMPLETE  
-**Commits:** a7a8f75 (implementation), 73eee90 (docs)  
-**Tests:** 20/20 passing  
+**Status:** ✅ COMPLETE
+**Commits:** a7a8f75 (implementation), 73eee90 (docs)
+**Tests:** 20/20 passing
 **Branch:** auth (ready for merge)
