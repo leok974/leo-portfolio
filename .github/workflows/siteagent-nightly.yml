@@ -1,0 +1,47 @@
+name: siteAgent Nightly Run
+
+on:
+  schedule:
+    - cron: "17 3 * * *"   # 03:17 UTC nightly (adjust as you like)
+  workflow_dispatch: {}
+
+jobs:
+  run-siteagent:
+    runs-on: ubuntu-latest
+    env:
+      ENDPOINT: ${{ secrets.SITEAGENT_ENDPOINT }}   # e.g. https://assistant.ledger-mind.org/agent/run
+      HMAC_SECRET: ${{ secrets.SITEAGENT_HMAC_SECRET }} # same as backend env SITEAGENT_HMAC_SECRET
+    steps:
+      - name: Prepare request body
+        id: prep
+        run: |
+          BODY='{"plan": null, "params": {}}'
+          echo "$BODY" > body.json
+          echo "body=$(cat body.json)" >> $GITHUB_OUTPUT
+
+      - name: Compute HMAC (sha256) header
+        id: hmac
+        shell: bash
+        run: |
+          if [ -n "$HMAC_SECRET" ]; then
+            SIG=$(openssl dgst -binary -sha256 -hmac "$HMAC_SECRET" body.json | xxd -p -c 256)
+            echo "sig=sha256=$SIG" >> $GITHUB_OUTPUT
+          else
+            echo "sig=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: POST /agent/run
+        shell: bash
+        run: |
+          set -euo pipefail
+          HDR_SIG=()
+          if [ -n "${{ steps.hmac.outputs.sig }}" ]; then
+            HDR_SIG=(-H "X-SiteAgent-Signature: ${{ steps.hmac.outputs.sig }}")
+          fi
+          curl -sS -X POST "$ENDPOINT" \
+               -H "Content-Type: application/json" \
+               "${HDR_SIG[@]}" \
+               --data-binary @body.json | jq .
+
+      - name: Done
+        run: echo "siteAgent run dispatched."
