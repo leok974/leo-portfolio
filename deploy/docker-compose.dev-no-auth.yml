@@ -1,0 +1,17 @@
+# Dev override: Disable CF Access for local testing
+version: "3.9"
+
+services:
+  backend:
+    environment:
+      # Set these to empty to effectively disable CF Access checks
+      - CF_ACCESS_TEAM_DOMAIN=
+      - CF_ACCESS_AUD=
+      - ACCESS_ALLOWED_EMAILS=
+      - ACCESS_ALLOWED_SERVICE_SUBS=
+    # Override health check to use localhost
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/ready"]
+      interval: 15s
+      timeout: 3s
+      retries: 3

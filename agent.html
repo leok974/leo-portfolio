@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>The Agent Behind This Site — Vision Manifesto</title>
+  <meta name="description" content="A portfolio that maintains itself. How my local-first, access-guarded Agent keeps this site current—securely and autonomously." />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0f172a" />
+
+  <!-- Hreflang -->
+  <link rel="alternate" hreflang="en" href="https://leok974.github.io/leo-portfolio/agent.html" />
+  <link rel="alternate" hreflang="x-default" href="https://leok974.github.io/leo-portfolio/agent.html" />
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://leok974.github.io/leo-portfolio/agent.html" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="The Agent Behind This Site — Vision Manifesto" />
+  <meta property="og:description" content="A portfolio that maintains itself. Local-first automation, guarded writes, observable changes." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://leok974.github.io/leo-portfolio/agent.html" />
+  <meta property="og:image" content="https://leok974.github.io/leo-portfolio/og/agent.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="The Agent Behind This Site — Vision Manifesto" />
+  <meta name="twitter:description" content="A portfolio that maintains itself. Local-first automation, guarded writes, observable changes." />
+  <meta name="twitter:image" content="https://leok974.github.io/leo-portfolio/og/agent.png" />
+
+  <style>
+    :root { --bg:#0b1020; --fg:#e6edf6; --muted:#a8b3cf; --brand:#7c9cff; --card:#0f172a; --pill:#1f2a44; --ok:#16a34a; --warn:#f59e0b; }
+    * { box-sizing: border-box; }
+    html,body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, Apple Color Emoji, Segoe UI Emoji; }
+    a { color: var(--brand); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 24px; }
+    header.hero { padding: 56px 24px 24px; text-align: center; }
+    .eyebrow { letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; font-size: 12px; }
+    h1 { font-size: clamp(28px, 4vw, 42px); margin: 12px 0 8px; line-height: 1.15; }
+    .lead { color: var(--muted); font-size: clamp(16px, 2.5vw, 18px); }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(12, minmax(0,1fr)); }
+    .card { background: var(--card); border:1px solid #1d2540; border-radius: 16px; padding: 20px; }
+    .col-6 { grid-column: span 6; } .col-12 { grid-column: span 12; }
+    @media (max-width: 900px){ .col-6{ grid-column: span 12; } }
+    h2 { margin: 6px 0 12px; font-size: 22px; }
+    h3 { margin: 10px 0 8px; font-size: 18px; }
+    ul { margin: 8px 0 0 18px; padding:0; }
+    .pill { display:inline-flex; gap:8px; align-items:center; background: var(--pill); color: var(--fg); border-radius: 999px; padding: 6px 12px; font-size: 12px; margin: 6px 6px 0 0; }
+    .stat { display:flex; flex-direction:column; background: var(--card); border:1px solid #1d2540; border-radius: 12px; padding:12px; }
+    .stat b { font-size: 22px; }
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background:#0b1226; border:1px solid #1c2a4a; border-radius:6px; padding:2px 6px; }
+    footer { color: var(--muted); text-align:center; padding: 48px 0 32px; }
+    .ok { color: var(--ok); font-weight: 600; }
+    .warn { color: var(--warn); font-weight: 600; }
+    .muted { color: var(--muted); }
+    .row { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+    .code { background:#0b1226; border:1px solid #1c2a4a; border-radius:10px; padding:12px; overflow:auto; font-size:14px; }
+    pre { margin:0; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  </style>
+</head>
+<body>
+  <header class="hero wrap">
+    <div class="eyebrow">Vision Manifesto</div>
+    <h1>A Portfolio That Maintains Itself</h1>
+    <p class="lead">
+      This site is a living system. A local-first Agent keeps it current—adding projects, generating media,
+      rebuilding sitemaps, and auditing quality—securely and with an audit trail.
+    </p>
+    <div class="row" style="justify-content:center;margin-top:14px;">
+      <span class="pill">🏠 Local-first LLM (Ollama)</span>
+      <span class="pill">☁️ Cloud fallback (opt-in)</span>
+      <span class="pill">🔒 Cloudflare Access guarded</span>
+      <span class="pill">📊 Observable &amp; reversible</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="grid" aria-labelledby="purpose">
+      <div class="card col-6">
+        <h2 id="purpose">Why build an Agent?</h2>
+        <p>
+          Updating creative work is slow. I designed a single Agent that <em>operates the site</em>:
+          it syncs repos, prepares assets, refreshes SEO, and keeps the whole system tidy—so I can focus on making things.
+        </p>
+        <ul>
+          <li><b>Autonomy:</b> routine tasks handled without manual edits.</li>
+          <li><b>Reliability:</b> guarded admin APIs with service token authentication.</li>
+          <li><b>Clarity:</b> every change is logged as a diff with timestamps.</li>
+        </ul>
+      </div>
+
+      <div class="card col-6">
+        <h2>How it works (at a glance)</h2>
+        <ul>
+          <li><b>Brain:</b> FastAPI backend + Ollama (gpt-oss:20b) with tool registry.</li>
+          <li><b>Security:</b> Cloudflare Access gates all write routes under <span class="kbd">/api/admin/*</span>.</li>
+          <li><b>Local first:</b> runs on Ollama; OpenAI fallback is off by default and toggled per task.</li>
+          <li><b>RAG:</b> SQLite vector store for project docs + portfolio content.</li>
+        </ul>
+        <div class="code" aria-label="Example admin endpoint">
+<pre><code>POST /api/admin/whoami
+Auth: Cloudflare Access JWT (email or service token)
+
+Response:
+{ "ok": true, "principal": "bcf632e...access" }</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid" aria-labelledby="automates">
+      <div class="card col-12">
+        <h2 id="automates">What the Agent automates today</h2>
+        <div class="grid" style="gap:12px;">
+          <div class="stat col-6">
+            <span class="muted">Gallery Uploads</span>
+            <b>Media + Metadata</b>
+            <p class="muted">Uploads images/videos, generates manifests, validates media types.</p>
+          </div>
+          <div class="stat col-6">
+            <span class="muted">RAG Indexing</span>
+            <b>Semantic Search</b>
+            <p class="muted">Indexes GitHub repos (leo-portfolio, ledger-mind) for context-aware responses.</p>
+          </div>
+          <div class="stat col-6">
+            <span class="muted">LLM Diagnostics</span>
+            <b>Health Monitoring</b>
+            <p class="muted">Tracks Ollama uptime, response latency, model availability.</p>
+          </div>
+          <div class="stat col-6">
+            <span class="muted">Feature Flags</span>
+            <b>Controlled Rollout</b>
+            <p class="muted">Admin panel, agent uploads, and experimental features behind flags.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid" aria-labelledby="endpoints">
+      <div class="card col-12">
+        <h2 id="endpoints">Current API Endpoints</h2>
+        <h3>Admin (Protected by Cloudflare Access)</h3>
+        <div class="code">
+<pre><code>GET  /api/admin/whoami        # Identity check (email or service token)
+
+# Gallery Management
+POST /api/admin/gallery/upload              # Upload media files
+GET  /api/admin/gallery/items               # List all gallery items
+GET  /api/admin/gallery/items/:id           # Get specific item
+PUT  /api/admin/gallery/items/:id           # Update item metadata
+DELETE /api/admin/gallery/items/:id         # Delete item
+
+# Feature Flags
+GET  /api/admin/features                    # List all feature flags
+PUT  /api/admin/features/:name              # Update feature flag</code></pre>
+        </div>
+
+        <h3>Public (No Auth)</h3>
+        <div class="code">
+<pre><code>GET  /ready                   # Health check
+GET  /status/summary          # System status (RAG, Ollama, OpenAI fallback)
+
+# Chat & RAG
+POST /chat                    # Streaming chat (SSE)
+POST /chat/stream             # Alternative streaming endpoint
+POST /api/rag/query           # RAG semantic search
+
+# LLM Diagnostics
+GET  /llm/diag                # LLM health + latency
+GET  /llm/models              # Available models
+GET  /llm/primary/ping        # Ollama connectivity check
+
+# Gallery (Read-only)
+GET  /api/gallery/items       # Public gallery listing
+GET  /api/gallery/manifest    # Media manifest</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid" aria-labelledby="safeguards">
+      <div class="card col-6">
+        <h2 id="safeguards">Safeguards</h2>
+        <ul>
+          <li><b>Access-guarded:</b> Service tokens + email allowlist via Cloudflare Access.</li>
+          <li><b>JWT validation:</b> Backend verifies Cloudflare's JWT signature against JWKS.</li>
+          <li><b>Dual auth:</b> Supports both user SSO (email) and service tokens (common_name).</li>
+          <li><b>Rate limiting:</b> Nginx + Cloudflare protect against abuse.</li>
+          <li><b>Non-root container:</b> Backend runs as <span class="kbd">appuser</span> (UID 1001).</li>
+        </ul>
+      </div>
+
+      <div class="card col-6">
+        <h2>Roadmap</h2>
+        <ul>
+          <li><b>Project sync:</b> Auto-sync GitHub repos, generate project cards.</li>
+          <li><b>Media optimization:</b> Generate thumbnails, video posters (Sharp/FFmpeg).</li>
+          <li><b>SEO automation:</b> AI-generated meta descriptions, title suggestions.</li>
+          <li><b>Sitemap rebuild:</b> Auto-update <span class="kbd">sitemap.xml</span> on content changes.</li>
+          <li><b>Voice demo:</b> Push-to-talk with browser TTS (opt-in).</li>
+          <li><b>Weekly self-check:</b> Cron audit for broken links, outdated content.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="grid" aria-labelledby="status">
+      <div class="card col-12">
+        <h2 id="status">Live Agent Status</h2>
+        <p class="muted">Real-time system health from <span class="kbd">/status/summary</span></p>
+        <div id="agent-status" class="code" role="status" aria-live="polite">Loading status…</div>
+        <script>
+          (async () => {
+            try {
+              const r = await fetch('https://assistant.ledger-mind.org/status/summary');
+              if (!r.ok) throw new Error('status unavailable');
+              const data = await r.json();
+              document.getElementById('agent-status').textContent =
+                JSON.stringify(data, null, 2);
+            } catch (err) {
+              document.getElementById('agent-status').textContent =
+                JSON.stringify({
+                  error: "Status endpoint unavailable",
+                  fallback_info: {
+                    backend: "FastAPI + Uvicorn",
+                    llm: "Ollama (gpt-oss:20b)",
+                    rag: "SQLite vector store",
+                    auth: "Cloudflare Access (JWT validation)",
+                    admin_routes: "/api/admin/* (service token + email allowlist)",
+                    last_check: new Date().toISOString()
+                  }
+                }, null, 2);
+            }
+          })();
+        </script>
+      </div>
+    </section>
+
+    <section class="grid" aria-labelledby="tech">
+      <div class="card col-12">
+        <h2 id="tech">Technology Stack</h2>
+        <div class="grid" style="gap:12px;">
+          <div class="stat col-6">
+            <span class="muted">Backend</span>
+            <b>FastAPI + Python 3.11</b>
+            <p class="muted">Async API with dependency injection, Pydantic validation.</p>
+          </div>
+          <div class="stat col-6">
+            <span class="muted">LLM</span>
+            <b>Ollama (gpt-oss:20b)</b>
+            <p class="muted">Local-first inference; OpenAI fallback for high-priority tasks.</p>
+          </div>
+          <div class="stat col-6">
+            <span class="muted">RAG</span>
+            <b>SQLite + embeddings</b>
+            <p class="muted">Vector search over GitHub repos (text-embedding-3-small).</p>
+          </div>
+          <div class="stat col-6">
+            <span class="muted">Auth</span>
+            <b>Cloudflare Access</b>
+            <p class="muted">JWT validation, service tokens, email allowlist.</p>
+          </div>
+          <div class="stat col-6">
+            <span class="muted">Infrastructure</span>
+            <b>Docker + Nginx</b>
+            <p class="muted">Containerized backend, reverse proxy, Cloudflare Tunnel.</p>
+          </div>
+          <div class="stat col-6">
+            <span class="muted">Database</span>
+            <b>PostgreSQL (pgvector)</b>
+            <p class="muted">Shared infra for RAG embeddings, app data.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid" aria-labelledby="faq">
+      <div class="card col-12">
+        <h2 id="faq">FAQ</h2>
+
+        <h3>Is this safe?</h3>
+        <p>Yes. All writes go through Cloudflare Access-guarded routes with JWT validation. Service tokens use client ID allowlist. Backend runs as non-root user in Docker.</p>
+
+        <h3>Local or cloud?</h3>
+        <p>Local first. Ollama runs on-premise with 20B parameter model. OpenAI is opt-in fallback (disabled by default, toggled via <span class="kbd">DISABLE_PRIMARY=1</span>).</p>
+
+        <h3>Why one Agent (not many)?</h3>
+        <p>Simplicity. One FastAPI backend with clear tool endpoints reduces failure modes and keeps the system legible. Single auth layer, single deployment.</p>
+
+        <h3>How does service token auth work?</h3>
+        <p>Cloudflare validates <span class="kbd">CF-Access-Client-Id</span> + <span class="kbd">CF-Access-Client-Secret</span> headers, generates JWT with <span class="kbd">common_name</span> claim (client ID), backend validates JWT signature and checks client ID against <span class="kbd">ACCESS_ALLOWED_SERVICE_SUBS</span>.</p>
+
+        <h3>Can I see the code?</h3>
+        <p>Yes! Backend is in <a href="https://github.com/leok974/leo-portfolio/tree/main/assistant_api" target="_blank" rel="noopener">leok974/leo-portfolio/assistant_api</a>. Frontend in <a href="https://github.com/leok974/leo-portfolio/tree/main/src" target="_blank" rel="noopener">src/</a>.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p>© <span id="y"></span> Leo Klemet — <a href="/">Home</a> · <a href="/projects.html">Projects</a> · <a href="/gallery.html">Gallery</a> · <a href="https://github.com/leok974/leo-portfolio" target="_blank" rel="noopener">GitHub</a></p>
+      <script>document.getElementById('y').textContent = new Date().getFullYear()</script>
+    </div>
+  </footer>
+</body>
+</html>

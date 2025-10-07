@@ -1,5 +1,126 @@
 # Changelog
 
+## [Unreleased] - 2025-10-07
+
+### SiteAgent Dual Authentication - CF Access OR HMAC (ENHANCED ✅)
+- **Flexible Authentication**: Public `/agent/*` endpoints now accept EITHER authentication method
+  - ✅ **Priority 1: CF Access** - Checked first (JWT from Cloudflare Edge)
+  - ✅ **Priority 2: HMAC** - Fallback if CF Access not present/invalid
+  - Same endpoint serves both admin users and CI/CD workflows
+- **Authentication Flow**:
+  1. Try CF Access verification (service token or user JWT)
+  2. If CF Access fails, try HMAC signature verification
+  3. If both fail, return 401 Unauthorized
+- **Use Cases**:
+  - **Admins**: Use CF Access credentials (same as `/api/admin/agent/*`)
+  - **CI/CD**: Use HMAC signature (GitHub Actions, automated scripts)
+  - **Both**: Can send both headers (CF Access takes priority)
+- **Endpoint Comparison**:
+  - `/api/admin/agent/*` - CF Access ONLY (admin-only)
+  - `/agent/*` - CF Access OR HMAC (flexible)
+- **HMAC Authentication**:
+  - Optional shared secret authentication (`SITEAGENT_HMAC_SECRET`)
+  - SHA256 signature with constant-time comparison
+  - Header: `X-SiteAgent-Signature: sha256=<hex>`
+  - No authentication if secret is not set (dev mode)
+- **GitHub Actions Workflow**:
+  - File: `.github/workflows/siteagent-nightly.yml`
+  - Schedule: 03:17 UTC nightly (configurable)
+  - Manual dispatch support
+  - Automatic HMAC signature generation
+  - Secrets: `SITEAGENT_ENDPOINT`, `SITEAGENT_HMAC_SECRET`
+- **Public Endpoints** (`/agent/*`):
+  - ✅ **GET** `/agent/tasks` - List available tasks
+  - ✅ **POST** `/agent/run` - Execute agent (CF Access OR HMAC)
+  - ✅ **GET** `/agent/status` - View run history
+- **Dev-Only Features**:
+  - Trigger button in bottom-right corner (localhost only)
+  - One-click agent execution for testing
+  - Visual feedback and console logging
+- **Security**:
+  - CF Access: Zero-trust JWT validation with Cloudflare
+  - HMAC: SHA256 signature with constant-time comparison
+  - Replay protection (each body produces unique signature)
+  - No credentials in requests (only signature or JWT)
+  - Optional HMAC enforcement (disabled if secret not set)
+- **Implementation**:
+  - File: `assistant_api/routers/agent_public.py`
+  - Function: `_authorized(req)` - Dual auth dependency
+  - Integration: Public router included in `main.py`
+  - Dev button: `index.html` (lines 977-1010)
+- **Testing**:
+  - `test-agent-dual-auth.ps1` - Comprehensive dual auth test suite
+  - Tests: CF Access, HMAC, priority logic, no auth rejection
+  - Coverage: Valid/invalid credentials, fallback behavior
+- **Documentation**:
+  - `SITEAGENT_HMAC_SETUP.md` - Updated with dual auth info (400+ lines)
+  - Includes: Backend setup, GitHub Actions, local testing, troubleshooting
+- **Backward Compatibility**:
+  - CF Access endpoints unchanged (`/api/admin/agent/*` still work)
+  - No breaking changes to existing functionality
+
+### SiteAgent MVP - Autonomous Portfolio Maintenance (COMPLETE ✅)
+- **Agent Infrastructure**: Complete task automation system for portfolio maintenance
+  - ✅ **Task Registry**: Decorator-based `@task(name)` pattern for extensibility
+  - ✅ **Database Tracking**: SQLite tables (`agent_jobs`, `agent_events`) for observability
+  - ✅ **Execution Engine**: Sequential runner with UUID-based runs and error handling
+  - ✅ **API Endpoints**: Protected by CF Access service token authentication
+- **Default Tasks Implemented**:
+  - `projects.sync` - Pull GitHub repo metadata → `projects.json`
+  - `sitemap.media.update` - Scan assets → `media-index.json`
+  - `og.generate` - Generate OG images (stub)
+  - `status.write` - Write heartbeat → `siteAgent.json` ✅ **TESTED**
+- **Agent Endpoints** (`/api/admin/agent/*`):
+  - ✅ **GET** `/api/admin/agent/tasks` - List available tasks and default plan
+  - ✅ **POST** `/api/admin/agent/run` - Execute agent with optional custom plan
+  - ✅ **GET** `/api/admin/agent/status` - View recent run history
+- **Production Testing**:
+  - Service token authentication verified ✅
+  - Task execution successful (run_id: `0714ffc9-439e-4d67-9de7-7be21aa6ce16`)
+  - Event logging operational
+  - Output files generated correctly (`siteAgent.json`)
+- **Architecture**:
+  - Files: `assistant_api/agent/{__init__,models,tasks,runner}.py`, `assistant_api/routers/agent.py`
+  - Integration: Agent router included in `main.py`
+  - Security: All endpoints require CF Access (service token or SSO)
+  - Storage: SQLite database at `RAG_DB` path
+- **Documentation**:
+  - `SITEAGENT_MVP_COMPLETE.md` - Complete implementation guide
+  - `agent.html` - Agent manifesto page with API documentation
+- **Next Steps**:
+  - Frontend widget to display agent status
+  - GitHub Actions CI/CD integration
+  - Enhanced tasks (full implementation of projects.sync, etc.)
+
+### Service Token Authentication - PRODUCTION READY (FIXED ✅)
+- **Issue Resolved**: Service token authentication now fully operational
+  - ✅ **AUD Mismatch Fixed**: Updated AUD to `931455ccf7b07230bdf7ed30be7f308abd842f28f954a118e75e062a316635d2`
+  - ✅ **Principal Extraction Fixed**: Backend now checks `common_name` claim for Client ID
+  - ✅ **Allowlist Updated**: Changed from token name to Client ID (`bcf632e4a22f6a8007d47039038904b7.access`)
+- **Root Cause Analysis**:
+  - **Problem 1**: JWT validation failing with "Audience doesn't match"
+  - **Solution 1**: Added debug logging, discovered actual AUD value, updated `.env.prod`
+  - **Problem 2**: JWT had `'sub': ''` (empty), but `'common_name'` contained Client ID
+  - **Solution 2**: Updated `cf_access.py` to extract principal from `common_name` claim
+- **Authentication Flow** (Verified Working):
+  ```
+  Client → Cloudflare (validates token) → Generates JWT with common_name →
+  Backend (validates JWT, checks common_name) → Returns 200 OK
+  ```
+- **Test Result**:
+  ```json
+  {"ok": true, "principal": "bcf632e4a22f6a8007d47039038904b7.access"}
+  ```
+- **Production Configuration**:
+  ```env
+  CF_ACCESS_AUD=931455ccf7b07230bdf7ed30be7f308abd842f28f954a118e75e062a316635d2
+  ACCESS_ALLOWED_SERVICE_SUBS=bcf632e4a22f6a8007d47039038904b7.access
+  ```
+- **Documentation**:
+  - `AUD_MISMATCH_FIX.md` - Root cause analysis
+  - `SERVICE_TOKEN_401_STATUS.md` - Debugging guide
+  - `SERVICE_TOKEN_REBUILD_STATUS.md` - Rebuild progress
+
 ## [Unreleased] - 2025-10-06
 
 ### Service Token Support (NON-INTERACTIVE AUTH)

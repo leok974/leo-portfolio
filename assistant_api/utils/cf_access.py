@@ -24,7 +24,10 @@ import time
 import json
 import urllib.request
 import jwt
+import logging
 from fastapi import Request, HTTPException
+
+logger = logging.getLogger(__name__)
 
 TEAM_DOMAIN = os.getenv("CF_ACCESS_TEAM_DOMAIN")  # e.g. yourteam.cloudflareaccess.com
 AUD = os.getenv("CF_ACCESS_AUD")                  # CF Access app AUD tag
@@ -85,6 +88,14 @@ def require_cf_access(request: Request) -> str:
         # but we still require the signed JWT for defense-in-depth.
         raise HTTPException(403, "Cloudflare Access required")
 
+    # DEBUG: Log JWT claims without verification to see what CF is sending
+    try:
+        unverified_claims = jwt.decode(token, options={"verify_signature": False})
+        logger.info(f"🔍 JWT Debug - sub: {unverified_claims.get('sub')}, email: {unverified_claims.get('email')}, aud: {unverified_claims.get('aud')}, iss: {unverified_claims.get('iss')}")
+        logger.info(f"🔍 Backend expects - AUD: {AUD}, ALLOWED_SERVICE_SUBS: {ALLOWED_SERVICE_SUBS}, ALLOWED_EMAILS: {ALLOWED_EMAILS}")
+    except Exception as e:
+        logger.warning(f"⚠️ Could not decode JWT for debugging: {e}")
+
     unverified = jwt.get_unverified_header(token)
     key = _get_key_for_kid(unverified.get("kid", ""))
 
@@ -98,20 +109,36 @@ def require_cf_access(request: Request) -> str:
             options=opts,
         )
     except jwt.PyJWTError as e:
+        logger.error(f"❌ JWT validation failed: {e}")
         raise HTTPException(401, f"Invalid Access token: {e}")
 
-    # Accept either end-user SSO (email) or service token (subject)
-    principal = (claims.get("email") or claims.get("identity") or claims.get("sub") or "").strip()
+    # Accept either end-user SSO (email) or service token (subject/common_name)
+    # For service tokens, CF Access puts the client ID in 'common_name', not token name in 'sub'
+    principal = (
+        claims.get("email") or
+        claims.get("identity") or
+        claims.get("sub") or
+        claims.get("common_name") or
+        ""
+    ).strip()
+
     if not principal:
+        logger.error(f"❌ JWT missing principal - claims: {claims}")
         raise HTTPException(403, "Access token missing subject")
 
     # If it looks like an email, enforce email allowlist; otherwise enforce service-token allowlist
     if "@" in principal:
         principal_lower = principal.lower()
         if ALLOWED_EMAILS and principal_lower not in ALLOWED_EMAILS:
+            logger.error(f"❌ Email not allowed: {principal_lower}, allowed: {ALLOWED_EMAILS}")
             raise HTTPException(403, "Not allowed (email)")
+        logger.info(f"✅ Email authenticated: {principal_lower}")
         return principal_lower
     else:
+        # For service tokens, principal will be the client ID (common_name)
+        # Check if it's in the allowed list (can be client ID or token name)
         if ALLOWED_SERVICE_SUBS and principal not in ALLOWED_SERVICE_SUBS:
+            logger.error(f"❌ Service token not allowed: {principal}, allowed: {ALLOWED_SERVICE_SUBS}")
             raise HTTPException(403, "Not allowed (service)")
+        logger.info(f"✅ Service token authenticated: {principal}")
         return principal

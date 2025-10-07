@@ -83,8 +83,12 @@ document.querySelectorAll('img[loading="lazy"], video[preload="metadata"]').forE
 // -----------------------------
 // PROJECT FILTERING
 // -----------------------------
-const chips = /** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('.chip'));
+const chips = /** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('.filters .chip'));
+const statusChips = /** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('.status-chip'));
 const cards = /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.card'));
+
+let currentStatusFilter = 'in-progress'; // Default to in-progress
+let currentCategoryFilter = 'all';
 
 // Announce filter changes to screen readers
 /** @param {string} filterName */
@@ -101,20 +105,80 @@ function announceFilterChange(filterName) {
   }, 1000);
 }
 
-chips.forEach(chip=>{
-  chip.addEventListener('click', ()=>{
-    chips.forEach(c=>c.setAttribute('aria-pressed','false'));
-  chip.setAttribute('aria-pressed','true');
-  const f = /** @type {string} */ (chip.dataset.filter);
+// Apply both status and category filters
+function applyFilters() {
+  cards.forEach(card => {
+    const slug = card.dataset.slug;
+    const cats = (card.dataset.cats || '').split(' ');
+
+    // Check category filter
+    const matchesCategory = (currentCategoryFilter === 'all') || cats.includes(currentCategoryFilter);
+
+    // Check status filter
+    let matchesStatus = true;
+    if (slug && PROJECT_DETAILS[slug]) {
+      const status = PROJECT_DETAILS[slug].status || 'in-progress';
+      if (currentStatusFilter !== 'all') {
+        matchesStatus = status === currentStatusFilter;
+      }
+    }
+
+    card.style.display = (matchesCategory && matchesStatus) ? '' : 'none';
+  });
+}
+
+// Update filter counts
+function updateFilterCounts() {
+  if (!PROJECT_DETAILS || Object.keys(PROJECT_DETAILS).length === 0) return;
+
+  const counts = { 'in-progress': 0, 'completed': 0, 'all': 0 };
+
+  cards.forEach(card => {
+    const slug = card.dataset.slug;
+    if (slug && PROJECT_DETAILS[slug]) {
+      const status = PROJECT_DETAILS[slug].status || 'in-progress';
+      counts[status]++;
+      counts['all']++;
+    }
+  });
+
+  statusChips.forEach(chip => {
+    const filter = /** @type {'in-progress' | 'completed' | 'all'} */ (chip.dataset.statusFilter);
+    const countSpan = chip.querySelector('.filter-count');
+    if (countSpan && filter) {
+      countSpan.textContent = `(${counts[filter]})`;
+    }
+  });
+}
+
+// Status filter buttons
+statusChips.forEach(chip => {
+  chip.addEventListener('click', () => {
+    statusChips.forEach(c => c.setAttribute('aria-pressed', 'false'));
+    chip.setAttribute('aria-pressed', 'true');
+    currentStatusFilter = /** @type {string} */ (chip.dataset.statusFilter);
+
+    // Save preference
+    try {
+      localStorage.setItem('projectStatusFilter', currentStatusFilter);
+    } catch (_e) {
+      // Ignore storage errors
+    }
+
+    applyFilters();
+    announceFilterChange(chip.querySelector('.filter-label')?.textContent || currentStatusFilter);
+  });
+});
+
+// Category filter buttons
+chips.forEach(chip => {
+  chip.addEventListener('click', () => {
+    chips.forEach(c => c.setAttribute('aria-pressed', 'false'));
+    chip.setAttribute('aria-pressed', 'true');
+    currentCategoryFilter = /** @type {string} */ (chip.dataset.filter);
     const filterName = chip.textContent.trim();
 
-    cards.forEach(card=>{
-  const cats = (card.dataset.cats || '').split(' ');
-      const show = (f === 'all') || cats.includes(f);
-      card.style.display = show ? '' : 'none';
-    });
-
-    // Announce the change
+    applyFilters();
     announceFilterChange(filterName);
   });
 });
@@ -165,6 +229,7 @@ document.addEventListener('keydown', (event) => {
 /** @typedef {{
  * title: string; images?: Array<{src:string; alt:string; caption?:string}>; videos?: Array<{poster?:string; captions?:string; sources: Array<{src:string; type:string}>}>;
  * goals?: string; stack?: string[]; outcomes?: string[]; downloads?: Array<{href:string; label:string}>; repo?: string; demo?: string;
+ * status?: 'in-progress' | 'completed'; date_completed?: string;
  * }} ProjectDetail
  */
 /** @type {Record<string, ProjectDetail>} */
@@ -177,12 +242,29 @@ async function loadProjectData() {
   // Keeping direct fetch here is fine; if moved behind edge under /api adjust accordingly.
   const response = await fetch('projects.json');
     PROJECT_DETAILS = await response.json();
+
+    // Update filter counts and restore saved filter
+    updateFilterCounts();
+
+    // Restore saved status filter preference
+    try {
+      const saved = localStorage.getItem('projectStatusFilter');
+      if (saved && ['in-progress', 'completed', 'all'].includes(saved)) {
+        currentStatusFilter = saved;
+        statusChips.forEach(chip => {
+          chip.setAttribute('aria-pressed', chip.dataset.statusFilter === saved ? 'true' : 'false');
+        });
+      }
+    } catch (_e) {
+      // Ignore storage errors
+    }
+
+    // Apply filters after loading data
+    applyFilters();
   } catch (error) {
     console.error('Failed to load project data:', error);
   }
-}
-
-// Generate project detail HTML from data
+}// Generate project detail HTML from data
 /** @param {ProjectDetail} project */
 function generateProjectHTML(project) {
   let html = '<div>';

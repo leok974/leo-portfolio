@@ -10,6 +10,7 @@ faiss-cpu
 sentence-transformers
 hf_xet==1.1.10
 python-dotenv
+pyjwt[crypto]>=2.9.0
 pytest
 pytest-asyncio
 hypercorn>=0.16.0

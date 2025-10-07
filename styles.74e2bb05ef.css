@@ -144,7 +144,7 @@ nav a:hover, nav a:focus { color: var(--text); background: color-mix(in oklab, v
   display: grid; grid-template-columns: 1.2fr .8fr; gap: 2rem; align-items: center;
 }
 @media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
-.headline { font-size: clamp(1.8rem, 2.3rem + 1.5vw, 3.2rem); line-height: 1.15; letter-spacing: .2px; margin: 0 0 1rem; }
+.headline { font-size: clamp(1.6rem, 2.8vw + 1rem, 2.3rem); line-height: 1.15; letter-spacing: .2px; margin: 0 0 1rem; }
 .subline { color: var(--muted); font-size: clamp(1rem, .8rem + .6vw, 1.25rem); margin-bottom: 1.5rem; }
 
 /* Availability badge */

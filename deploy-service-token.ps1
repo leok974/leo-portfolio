@@ -38,7 +38,7 @@ if (-not $status) {
 } else {
     Write-Host "`nChanges to commit:" -ForegroundColor Cyan
     git status --short
-    
+
     # Step 2: Stage files
     Write-Host "`n📝 Staging files..." -ForegroundColor Yellow
     git add assistant_api/.env.prod
@@ -52,7 +52,7 @@ if (-not $status) {
     git add assistant_api/routers/admin.py
     git add README.md
     git add CHANGELOG.md
-    
+
     # Step 3: Commit
     Write-Host "`n💾 Committing..." -ForegroundColor Yellow
     $commitMsg = @"
@@ -82,15 +82,15 @@ Related docs:
 - docs/CF_ACCESS_SERVICE_TOKENS.md
 - SERVICE_TOKEN_IMPLEMENTATION.md
 "@
-    
+
     git commit -m $commitMsg
-    
+
     Write-Host "✅ Changes committed" -ForegroundColor Green
-    
+
     # Step 4: Push
     Write-Host "`n📤 Pushing to GitHub..." -ForegroundColor Yellow
     git push origin polish
-    
+
     Write-Host "✅ Pushed to origin/polish" -ForegroundColor Green
 }
 
@@ -111,7 +111,7 @@ You just need to deploy the latest code to production.
 
 CURRENT STATUS:
   ✅ Service token created in Cloudflare
-  ✅ Service token added to CF Access policy  
+  ✅ Service token added to CF Access policy
   ✅ Service token authentication working (JWT injection confirmed)
   ✅ Backend code has admin router
   ✅ Production .env.prod configured
@@ -196,7 +196,7 @@ After deployment, run from your local machine:
   # Test service token authentication
   `$env:CF_ACCESS_CLIENT_ID = "bcf632e4a22f6a8007d47039038904b7.access"
   `$env:CF_ACCESS_CLIENT_SECRET = "ed3822142602d252acc657dc1922e2647224f394ecfd7dab683f31b72ffee35a"
-  
+
   .\test-service-token.ps1
 
 Expected output:

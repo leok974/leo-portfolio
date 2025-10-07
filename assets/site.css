@@ -22,7 +22,7 @@ header{position:sticky;top:0;z-index:50;background:#0f172acc;border-bottom:1px s
 .brand{flex:1 1 auto}
 .hero{padding:clamp(3rem,6vw + 1rem,7rem) 0;display:grid;grid-template-columns:1.2fr .8fr;gap:2rem;align-items:center}
 @media(max-width:900px){.hero{grid-template-columns:1fr}}
-.headline{font-size:clamp(1.8rem,2.3rem + 1.5vw,3.2rem);line-height:1.15;margin:0 0 1rem}
+.headline{font-size:clamp(1.6rem,2.8vw + 1rem,2.3rem);line-height:1.15;margin:0 0 1rem}
 .subline{color:var(--muted);margin:0 0 1.5rem}
 .hero-visual{aspect-ratio:4/3;border:1px solid var(--border);border-radius:1rem;overflow:hidden;background:#111827}
 .badge{display:inline-block;padding:.25rem .55rem;border-radius:999px;font-size:.7rem;line-height:1;font-weight:500;border:1px solid transparent;white-space:nowrap;letter-spacing:.5px}

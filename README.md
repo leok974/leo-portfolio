@@ -147,6 +147,168 @@ curl -H "CF-Access-Client-Id: $env:CF_ACCESS_CLIENT_ID" `
 
 **Security:** Single router-level guard prevents accidentally exposing privileged endpoints. CI test fails if any `/api/admin/*` route lacks CF Access protection.
 
+### SiteAgent — Autonomous Portfolio Maintenance 🤖
+
+**Status:** ✅ **Production Ready** | **Tests:** 8/8 Passed | **Deployment:** Live
+
+The SiteAgent MVP provides automated portfolio maintenance through a task-based execution system with dual authentication support.
+
+**Authentication Methods:**
+
+1. **Cloudflare Access** (`/api/admin/agent/*`) - Interactive admin access
+   - SSO authentication via browser
+   - Service tokens for admin scripts
+
+2. **HMAC Signature** (`/agent/*`) - CI/CD workflows
+   - Shared secret authentication
+   - GitHub Actions integration
+   - No Cloudflare Access required
+
+**Agent Endpoints:**
+
+| Endpoint | Auth | Description |
+|----------|------|-------------|
+| `/api/admin/agent/tasks` | CF Access | List tasks (admin) |
+| `/api/admin/agent/run` | CF Access | Execute agent (admin) |
+| `/api/admin/agent/status` | CF Access | View status (admin) |
+| `/agent/tasks` | HMAC (optional) | List tasks (public) |
+| `/agent/run` | HMAC (optional) | Execute agent (CI/CD) |
+| `/agent/status` | HMAC (optional) | View status (public) |
+
+**Available Tasks:**
+
+| Task | Description | Output |
+|------|-------------|--------|
+| `projects.sync` | Pull GitHub repo metadata | `assets/data/projects.json` |
+| `sitemap.media.update` | Scan media assets | `assets/data/media-index.json` |
+| `og.generate` | Generate OG images | `assets/og/*.png` |
+| `status.write` | Write heartbeat status | `assets/data/siteAgent.json` |
+
+**Quick Test (CF Access):**
+
+```powershell
+# Set service token credentials
+$env:CF_ACCESS_CLIENT_ID = "bcf632e4a22f6a8007d47039038904b7.access"
+$env:CF_ACCESS_CLIENT_SECRET = "<your-client-secret>"
+
+# List available tasks
+curl -H "CF-Access-Client-Id: $env:CF_ACCESS_CLIENT_ID" `
+     -H "CF-Access-Client-Secret: $env:CF_ACCESS_CLIENT_SECRET" `
+     https://assistant.ledger-mind.org/api/admin/agent/tasks
+
+# Run agent with default plan
+curl -X POST `
+     -H "CF-Access-Client-Id: $env:CF_ACCESS_CLIENT_ID" `
+     -H "CF-Access-Client-Secret: $env:CF_ACCESS_CLIENT_SECRET" `
+     -H "Content-Type: application/json" `
+     https://assistant.ledger-mind.org/api/admin/agent/run
+
+# Check agent status
+curl -H "CF-Access-Client-Id: $env:CF_ACCESS_CLIENT_ID" `
+     -H "CF-Access-Client-Secret: $env:CF_ACCESS_CLIENT_SECRET" `
+     https://assistant.ledger-mind.org/api/admin/agent/status
+```
+
+**Quick Test (HMAC):**
+
+```powershell
+# Set HMAC secret (same as backend)
+$env:SITEAGENT_HMAC_SECRET = "your-secret-here"
+
+# Compute signature
+$Body = '{"plan": null, "params": {}}'
+$BodyBytes = [System.Text.Encoding]::UTF8.GetBytes($Body)
+$SecretBytes = [System.Text.Encoding]::UTF8.GetBytes($env:SITEAGENT_HMAC_SECRET)
+$Hmac = New-Object System.Security.Cryptography.HMACSHA256
+$Hmac.Key = $SecretBytes
+$Hash = $Hmac.ComputeHash($BodyBytes)
+$Signature = "sha256=" + ($Hash | ForEach-Object { $_.ToString("x2") }) -join ""
+
+# Run agent with HMAC signature
+curl -X POST "https://assistant.ledger-mind.org/agent/run" `
+     -H "Content-Type: application/json" `
+     -H "X-SiteAgent-Signature: $Signature" `
+     -d $Body
+```
+
+**Comprehensive Testing:**
+
+```powershell
+# Run full smoke test suite (8 tests - CF Access)
+cd D:\leo-portfolio
+.\test-agent-smoke.ps1
+# Expected: 🎉 ALL TESTS PASSED! 🎉
+
+# Run HMAC authentication tests
+.\test-agent-hmac.ps1
+# Tests: Valid signature, invalid signature, missing signature, open access
+```
+
+**GitHub Actions Integration (HMAC):**
+
+File: `.github/workflows/siteagent-nightly.yml` (already created)
+
+```yaml
+name: siteAgent Nightly Run
+on:
+  schedule:
+    - cron: '17 3 * * *'  # 03:17 UTC nightly
+  workflow_dispatch:
+
+jobs:
+  run-siteagent:
+    runs-on: ubuntu-latest
+    env:
+      ENDPOINT: ${{ secrets.SITEAGENT_ENDPOINT }}
+      HMAC_SECRET: ${{ secrets.SITEAGENT_HMAC_SECRET }}
+    steps:
+      - name: Compute HMAC signature
+        run: |
+          BODY='{"plan": null, "params": {}}'
+          echo "$BODY" > body.json
+          SIG=$(openssl dgst -binary -sha256 -hmac "$HMAC_SECRET" body.json | xxd -p -c 256)
+          curl -sS -X POST "$ENDPOINT" \
+               -H "Content-Type: application/json" \
+               -H "X-SiteAgent-Signature: sha256=$SIG" \
+               --data-binary @body.json | jq .
+```
+
+**Required GitHub Secrets:**
+- `SITEAGENT_ENDPOINT`: `https://assistant.ledger-mind.org/agent/run`
+- `SITEAGENT_HMAC_SECRET`: Same as backend `SITEAGENT_HMAC_SECRET` env var
+
+**Dev-Only Trigger Button:**
+
+When accessing the site from `localhost` or `127.0.0.1`, a green button appears in the bottom-right corner for one-click agent execution (no authentication required in dev mode).
+
+```yaml
+name: Portfolio Update
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Agent
+        run: |
+          curl -X POST "https://assistant.ledger-mind.org/api/admin/agent/run" \
+            -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
+            -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+```
+
+**Documentation:**
+- **Complete Guide:** `SITEAGENT_MVP_COMPLETE.md` (500+ lines)
+- **Quick Reference:** `SITEAGENT_QUICKREF.md` (all commands)
+- **Success Summary:** `PHASE_35_SUCCESS.md` (deployment report)
+- **Agent Manifesto:** `agent.html` (public documentation)
+
+**Architecture:** Task registry pattern with SQLite tracking (`agent_jobs`, `agent_events` tables), sequential execution engine, and comprehensive error handling.
+
 ### RAG quickstart
 
 ```powershell

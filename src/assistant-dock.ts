@@ -957,5 +957,63 @@ if (window.__assistantDockMounted) {
   /* lint: end of module closure */
 }
 
+// -----------------------------
+// ATTACHMENT BUTTON INITIALIZATION
+// -----------------------------
+(async () => {
+  // Check if feature is enabled via environment variable
+  const featureEnabled = import.meta.env.VITE_FEATURE_AGENT_UPLOADS === '1';
+
+  // Set feature flag on window for attachment button to check
+  if (typeof window !== 'undefined') {
+    (window as any).__VITE_FEATURE_AGENT_UPLOADS__ = featureEnabled;
+
+    // Note: __DEV_UNLOCKED__ and __USER_ROLE__ should be set by auth system
+    // For now, we'll just initialize if feature is enabled
+  }
+
+  // Only load and initialize if feature is enabled (button will do its own check too)
+  if (!featureEnabled) {
+    console.log('[assistant] Upload feature disabled (VITE_FEATURE_AGENT_UPLOADS not set)');
+    return;
+  }
+
+  // Load attachment button script
+  if (typeof (window as any).AttachmentButton === 'undefined') {
+    const script = document.createElement('script');
+    script.src = '/assets/js/attachment-button.js';
+    script.async = true;
+    document.head.appendChild(script);
+
+    // Wait for script to load
+    await new Promise((resolve) => {
+      script.onload = resolve;
+      script.onerror = () => {
+        console.warn('[assistant] attachment-button.js failed to load');
+        resolve(null);
+      };
+    });
+  }
+
+  // Initialize attachment button (it will do its own feature check)
+  if (typeof (window as any).AttachmentButton?.init === 'function') {
+    try {
+      (window as any).AttachmentButton.init('#chatForm', {
+        makeCard: true,
+        onAdded: (result: any) => {
+          console.log('[assistant] File uploaded:', result);
+          // Optional: could add uploaded file info to chat context
+        },
+        onError: (error: any) => {
+          console.error('[assistant] Upload error:', error);
+        }
+      });
+      console.log('[assistant] Attachment button initialized');
+    } catch (err) {
+      console.error('[assistant] Failed to init attachment button:', err);
+    }
+  }
+})();
+
 // Provide a harmless exported const to ensure module context without stray expression
 export const __assistantDockModule = true;

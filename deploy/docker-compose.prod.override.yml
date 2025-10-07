@@ -10,6 +10,13 @@ services:
     environment:
       - PRIMARY_DEBUG=1
       - MODEL_WAIT_MAX_SECONDS=15
+      # Cloudflare Access JWT verification
+      - CF_ACCESS_TEAM_DOMAIN=${CF_ACCESS_TEAM_DOMAIN:-}
+      - CF_ACCESS_AUD=${CF_ACCESS_AUD:-}
+      - ACCESS_ALLOWED_EMAILS=${ACCESS_ALLOWED_EMAILS:-}
+      # Upload size limits
+      - MAX_IMAGE_MB=${MAX_IMAGE_MB:-30}
+      - MAX_VIDEO_MB=${MAX_VIDEO_MB:-200}
     ports:
       - "8001:8000"
     command: uvicorn assistant_api.main:app --host 0.0.0.0 --port 8000 --workers 1 --reload

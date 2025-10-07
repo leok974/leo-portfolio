@@ -1,0 +1,178 @@
+name: CI
+
+on:
+  push:
+    branches: [main, polish]
+  pull_request:
+    branches: [main, polish]
+
+jobs:
+  playwright-tests:
+    name: Run E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Copy book.html to dist
+        run: cp book.html dist/book.html
+
+      - name: Copy calendly.js to dist
+        run: |
+          mkdir -p dist/assets/js
+          cp public/assets/js/calendly.js dist/assets/js/calendly.js
+
+      - name: Run Typography Tests
+        run: npx playwright test tests/e2e/typography.spec.ts --project=chromium
+
+      - name: Run Calendly Tests (Basic)
+        run: npx playwright test tests/e2e/calendly.spec.ts --project=chromium
+
+      - name: Run Calendly Tests (Enhanced Features)
+        run: npx playwright test tests/e2e/calendly.nice.spec.ts --project=chromium
+
+      - name: Run Calendly Tests (Analytics & Theme)
+        run: npx playwright test tests/e2e/calendly.analytics-theme.spec.ts --project=chromium
+
+      - name: Run Calendly Tests (Privacy & Consent)
+        run: npx playwright test tests/e2e/calendly.privacy.spec.ts --project=chromium
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload test traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
+
+  backend-tests:
+    name: Run Backend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run pytest with coverage
+        run: pytest --cov=assistant_api --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          flags: backend
+          name: backend-coverage
+
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Python dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Run Python linting (ruff)
+        run: ruff check assistant_api/
+
+      - name: Run Python formatting check (black)
+        run: black --check assistant_api/
+
+      - name: Run Python type check (mypy)
+        run: mypy assistant_api/ --ignore-missing-imports
+
+  build:
+    name: Build & Verify
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          ls -lh dist/
+          test -f dist/index.html
+          test -f dist/book.html
+          test -f dist/assets/js/calendly.js
+
+      - name: Check SRI manifest
+        run: test -f dist/sri-manifest.json
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7

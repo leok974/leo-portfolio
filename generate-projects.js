@@ -17,6 +17,8 @@ import { isEntrypoint } from './scripts/_esm-utils.mjs';
  *  images?: { src?: string; alt?: string; caption?: string }[];
  *  videos?: { poster?: string; sources?: { src?: string }[] }[];
  *  repo?: string;
+ *  status?: 'in-progress' | 'completed';
+ *  date_completed?: string;
  * }} Project
  * @typedef {Record<string, Project>} ProjectMap
  */
@@ -70,6 +72,8 @@ function hashProject(project){
     stack: project.stack,
     outcomes: project.outcomes,
     tags: project.tags,
+    status: project.status,
+    date_completed: project.date_completed,
     images: images.map((img) => ({ src: img?.src, alt: img?.alt, caption: img?.caption })),
     videos: videos.map((/** @type {{poster?:string; sources?: {src?:string}[]}} */ video) => ({
       poster: video?.poster,
@@ -279,10 +283,13 @@ function generateProjectPage(project, slug) {
         ${project.repo ? `<p><a class="btn" href="${project.repo}" target="_blank" rel="noopener">GitHub Repo ↗</a></p>` : ''}
         <div class="tags">
           ${tags.map((tag) => `<span class="tag">${tag}</span>`).join('')}
+          ${project.status === 'completed' ? '<span class="tag" style="background: color-mix(in oklab, var(--success, #10b981) 15%, transparent); color: var(--success, #10b981); border-color: var(--success, #10b981);">✓ Completed</span>' : ''}
+          ${project.status === 'in-progress' ? '<span class="tag" style="background: color-mix(in oklab, var(--info, #3b82f6) 15%, transparent); color: var(--info, #3b82f6); border-color: var(--info, #3b82f6);">🚧 In Progress</span>' : ''}
         </div>
         <div class="meta-dates" aria-label="Publication and last update dates">
           <div><span class="label">Published:</span> <time datetime="${meta.datePublished}">${formatDisplayDate(meta.datePublished || meta.lastmod)}</time></div>
           <div><span class="label">Updated:</span> <time datetime="${meta.lastmod}">${formatDisplayDate(meta.lastmod)}</time></div>
+          ${project.date_completed ? `<div><span class="label">Completed:</span> <time datetime="${project.date_completed}">${formatDisplayDate(project.date_completed)}</time></div>` : ''}
         </div>
       </div>
     </section>

@@ -1,0 +1,105 @@
+/* attachment-button.css
+ * Styles for file upload button in chat interface
+ */
+
+.attachment-btn {
+  background: transparent;
+  border: 1px solid var(--lk-border, #ccc);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-right: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.attachment-btn:hover:not(:disabled) {
+  background: var(--lk-hover-bg, rgba(0, 0, 0, 0.05));
+  border-color: var(--lk-accent, #3b82f6);
+  transform: translateY(-1px);
+}
+
+.attachment-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.attachment-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.attachment-btn:focus-visible {
+  outline: 2px solid var(--lk-accent, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* Dark mode support */
+html.dark .attachment-btn {
+  border-color: var(--lk-border-dark, #444);
+}
+
+html.dark .attachment-btn:hover:not(:disabled) {
+  background: var(--lk-hover-bg-dark, rgba(255, 255, 255, 0.1));
+}
+
+/* Chat message status styles */
+.chat-message {
+  padding: 8px 12px;
+  margin: 8px 0;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  animation: slideIn 0.3s ease;
+}
+
+.chat-message-success {
+  background: color-mix(in srgb, var(--lk-accent, #3b82f6) 10%, transparent);
+  border-left: 3px solid var(--lk-accent, #3b82f6);
+  color: var(--lk-text, #333);
+}
+
+.chat-message-error {
+  background: color-mix(in srgb, #ef4444 10%, transparent);
+  border-left: 3px solid #ef4444;
+  color: var(--lk-text, #333);
+}
+
+.chat-message-info {
+  background: color-mix(in srgb, #6b7280 10%, transparent);
+  border-left: 3px solid #6b7280;
+  color: var(--lk-text, #333);
+}
+
+html.dark .chat-message-success,
+html.dark .chat-message-error,
+html.dark .chat-message-info {
+  color: var(--lk-text-dark, #f3f4f6);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Ensure chat composer has flex layout */
+.chat-composer {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.chat-composer input {
+  flex: 1;
+}

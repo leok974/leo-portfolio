@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+
+  <url>
+    <loc>https://leok.dev/gallery.html</loc>
+    
+      <video:video>
+        <video:thumbnail_loc>https://leok.dev/assets/video/pixel-banana-idle.jpg</video:thumbnail_loc>
+        <video:title>Pixel Banana · Idle Loop</video:title>
+        <video:description>ComfyUI img2img + procedural sprite animator. Pixel-preserving edits; 96px cell.</video:description>
+        <video:content_loc>https://leok.dev/assets/video/pixel-banana-idle.mp4</video:content_loc>
+      </video:video>
+  </url>
+</urlset>

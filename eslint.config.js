@@ -19,7 +19,9 @@ export default [
       'coverage/**',
       '.husky/**',
       '.venv/**',
-      'assistant_api/**'
+      'assistant_api/**',
+      'tests/e2e/**/*.md',  // Exclude test documentation markdown files
+      'docs/**/*.md'  // Exclude project documentation markdown files
     ],
   },
 
@@ -289,7 +291,9 @@ export default [
     files: ['**/*.md/*.js', '**/*.md/*.ts', '**/*.md/*.tsx'],
     rules: {
       'no-undef': 'off',  // Allow undefined vars in docs examples
-      'no-console': 'off'  // Allow console in docs
+      'no-console': 'off',  // Allow console in docs
+      '@typescript-eslint/no-unused-vars': 'off',  // Allow unused vars in examples
+      'prefer-const': 'off'  // Allow var declarations in examples
     }
   },
   // YAML linting

@@ -3,6 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Security headers (meta fallback; prefer server headers in prod) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://assets.calendly.com; style-src 'self' 'unsafe-inline' https://assets.calendly.com; img-src 'self' data: https://*.calendly.com; frame-src https://calendly.com https://*.calendly.com; connect-src 'self' https://calendly.com https://*.calendly.com;">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+    <!-- Tip: set HSTS at the server: Strict-Transport-Security: max-age=31536000; includeSubDomains; preload -->
     <title>
       Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative
       Technologist
@@ -32,12 +38,14 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#0f172a" />
   <link rel="manifest" href="/manifest.webmanifest" />
-    <link
-      rel="icon"
-      href="/leo-avatar-sm.png"
-      type="image/png"
-    />
-    <link rel="apple-touch-icon" href="/leo-avatar-sm.png" />
+
+    <!-- Favicon (brand logo) -->
+    <link rel="icon" type="image/png" href="/assets/brand/lk-logo.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/assets/brand/lk-logo.png" sizes="192x192">
+    <link rel="apple-touch-icon" href="/assets/brand/lk-logo.png">
+
+    <!-- Open Graph / Twitter preview with brand logo -->
+    <meta property="twitter:image" content="https://leok974.github.io/leo-portfolio/assets/brand/lk-logo.png">
     <link
       rel="preload"
       href="fonts/Inter-roman.var.woff2"
@@ -50,7 +58,7 @@
     <link
       rel="stylesheet"
       href="assets/site.css"
-      integrity="sha384-9QTEGkVUJcyDgHV824dRGVE3tzOTc0qzIwudjMCzqMayuragxcYwL17qSjt7Pnt0"
+      integrity="sha384-ZXTnsKOww421BOfZbWFM6q/FieG/M8Gm5EEM03LUvKJkuBAKtYWDrlA/7Tron5IA"
       crossorigin="anonymous"
     />
 
@@ -58,7 +66,7 @@
       rel="preload"
       as="style"
       href="styles.74e2bb05ef.css"
-      integrity="sha384-Bp86n13LRPxqyh7RngavGBlcQnHZXldK0VhgAq8t3ja88ppT161c8PHnYqzE3ioF"
+      integrity="sha384-H3vM4O7LxaXF2yfpL1fDxYDfmtdWWJ8uVWO9ZlY7FRt7fqGD/Ee+8uHZBUL0yntB"
       crossorigin="anonymous"
     />
     <link
@@ -66,16 +74,174 @@
       href="styles.74e2bb05ef.css"
       media="print"
       data-media-onload="all"
-      integrity="sha384-Bp86n13LRPxqyh7RngavGBlcQnHZXldK0VhgAq8t3ja88ppT161c8PHnYqzE3ioF"
+      integrity="sha384-H3vM4O7LxaXF2yfpL1fDxYDfmtdWWJ8uVWO9ZlY7FRt7fqGD/Ee+8uHZBUL0yntB"
       crossorigin="anonymous"
     />
     <noscript
       ><link
         rel="stylesheet"
         href="styles.74e2bb05ef.css"
-        integrity="sha384-Bp86n13LRPxqyh7RngavGBlcQnHZXldK0VhgAq8t3ja88ppT161c8PHnYqzE3ioF"
+        integrity="sha384-H3vM4O7LxaXF2yfpL1fDxYDfmtdWWJ8uVWO9ZlY7FRt7fqGD/Ee+8uHZBUL0yntB"
         crossorigin="anonymous"
     /></noscript>
+
+    <!-- About Section Styles -->
+    <style>
+      .about {
+        --maxw: 68ch;
+        margin: 4rem auto;
+        max-width: var(--maxw);
+        padding: 0 1rem;
+        font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        line-height: 1.65;
+      }
+      .about h1 {
+        font-family: "Space Grotesk", "Inter", system-ui, sans-serif;
+        font-weight: 700;
+        letter-spacing: .2px;
+        font-size: clamp(1.6rem, 2.8vw + 1rem, 2.3rem);
+        margin: 0 0 .75rem;
+      }
+      .about p { margin: 0; font-size: clamp(1rem, .6vw + .9rem, 1.125rem); }
+      .about em { font-style: italic; }
+      .about strong { font-weight: 700; }
+    </style>
+
+    <!-- Brand Header Styles -->
+    <style>
+      .site-header {
+        position: sticky; top: 0; z-index: 50;
+        backdrop-filter: blur(6px);
+        background: color-mix(in oklab, #0b0b0f 85%, transparent);
+        border-bottom: 1px solid color-mix(in oklab, #ffffff 12%, transparent);
+      }
+
+      .site-nav {
+        display: flex; align-items: center; justify-content: space-between;
+        max-width: 1200px; margin: 0 auto; padding: .75rem 1rem;
+      }
+
+      .brand {
+        display: inline-flex; align-items: center; gap: .65rem;
+        text-decoration: none;
+      }
+
+      .brand img {
+        height: 36px; width: 36px; object-fit: contain;
+        filter: drop-shadow(0 0 8px rgba(0, 216, 255, .2));
+        transition: transform .15s ease;
+      }
+
+      .brand:hover img { transform: translateY(-1px) scale(1.02); }
+
+      .brand-text {
+        font-family: "Space Grotesk", "Inter", system-ui, sans-serif;
+        font-weight: 600; letter-spacing: .2px;
+        font-size: 1.05rem; color: #e8eef7;
+      }
+
+      .nav-right {
+        display: flex; align-items: center; gap: 1rem;
+      }
+
+      .btn-book-call {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: #2d6cdf;
+        color: #fff;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: background 0.2s, transform 0.15s;
+        border: none;
+        cursor: pointer;
+      }
+
+      .btn-book-call:hover {
+        background: #2558b8;
+        transform: translateY(-1px);
+      }
+
+      /* Screen reader only (for live announcements) */
+      .sr-only {
+        position: absolute;
+        left: -10000px;
+        top: auto;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+      }
+
+      /* compact on mobile */
+      @media (max-width: 640px) {
+        .brand-text { display: none; }
+        .brand img { height: 32px; width: 32px; }
+      }
+    </style>
+
+    <!-- Global Typography System -->
+    <style>
+      /* --- Font vars --- */
+      :root {
+        --font-sans: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+        --text: #e8eef7;
+        --muted: #a7b1c2;
+      }
+
+      /* --- Base --- */
+      html { font-size: 16px; }
+      body {
+        font-family: var(--font-sans);
+        color: var(--text);
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        font-feature-settings: "liga","kern";
+        font-variation-settings: normal;
+      }
+
+      /* --- Headings use Space Grotesk --- */
+      h1, h2, h3, h4, h5, h6 {
+        font-family: var(--font-display);
+        font-weight: 700;
+        letter-spacing: .2px;
+        line-height: 1.2;
+        margin: 0 0 .5em;
+      }
+
+      /* Fluid sizes (clean, responsive) */
+      h1 { font-size: clamp(1.6rem, 2.8vw + 1rem, 2.3rem); }  /* ~25.6–36.8px */
+      h2 { font-size: clamp(1.35rem, 1.6vw + 1rem, 2rem); }
+      h3 { font-size: clamp(1.15rem, .8vw + 1rem, 1.5rem); }
+      p, li, dd { font-size: clamp(1rem, .35vw + .95rem, 1.125rem); }
+
+      small, .text-sm { font-size: .925rem; color: var(--muted); }
+
+      /* --- Links/buttons read well on dark --- */
+      a { color: #8ad8ff; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+
+      button, .btn, [role="button"] {
+        font-family: var(--font-sans);
+        font-weight: 600;
+        letter-spacing: .1px;
+      }
+
+      /* --- UI bits that should use display font --- */
+      .site-title, .brand-text, .section-title, .chip-label {
+        font-family: var(--font-display);
+        font-weight: 600;
+      }
+
+      /* --- Code blocks --- */
+      code, pre, kbd, samp {
+        font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+        font-size: .95em;
+      }
+    </style>
 
     <script type="application/ld+json">
       {
@@ -182,6 +348,20 @@
         }catch{}
       })();
     </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Calendly (popup + inline helpers) -->
+    <link rel="preconnect" href="https://assets.calendly.com" crossorigin>
+    <link rel="stylesheet" href="https://assets.calendly.com/assets/external/widget.css">
+    <!-- Attachment button CSS -->
+    <link rel="stylesheet" href="/assets/css/attachment-button.css">
+    <!-- Consent banner (site-wide) -->
+    <script defer src="/assets/js/consent.js"></script>
+    <script defer src="/assets/js/calendly.js"></script>
   </head>
   <body>
     <!-- Inline cleanup script removed (logic moved to main.js for strict CSP) -->
@@ -189,41 +369,60 @@
     <script
       type="module"
       src="main.js"
-      integrity="sha384-B5nSeyCzHs8Tof1a+x7Jbr7/nmhmNzRSshGWO2a0KwKknCy8h6H+dfE4Ap4OLo0o"
+      integrity="sha384-2GW+fYDypNVY1XlwrDDq2YKFSXnoBXngcLsxII0+2/ZRJlhf8tcykjKZY+TTCGGQ"
       integrity=""
       crossorigin="anonymous"
     ></script>
 
     <!-- Main site content -->
     <a class="sr-only skip-link" href="#projects">Skip to content</a>
-    <header>
-      <div class="container nav" role="navigation" aria-label="Primary">
-        <div class="brand">Leo Klemet</div>
-        <nav>
-          <ul>
-            <li><a href="#projects">Projects</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#contact">Contact</a></li>
-          </ul>
-        </nav>
-        <button
-          class="theme-toggle"
-          id="themeToggle"
-          aria-pressed="false"
-          aria-label="Toggle dark/light mode"
-        >
-          <span aria-hidden="true">🌙</span>
-          <input id="themeSwitch" type="checkbox" aria-hidden="true" />
-          <span aria-hidden="true">☀️</span>
-        </button>
-        <span
-          data-status-pill
-          role="status"
-          aria-live="polite"
-          class="badge badge-neutral status-pill"
-          >Checking…</span
-        >
-      </div>
+
+    <!-- Brand Header -->
+    <header class="site-header" role="banner">
+      <nav class="site-nav" aria-label="Main">
+        <a class="brand" href="/" aria-label="Leo Klemet — Home">
+          <img
+            src="/assets/brand/lk-logo.png"
+            alt="LK — Leo Klemet logo"
+            width="40" height="40"
+            decoding="async" loading="eager" fetchpriority="high"
+          />
+          <span class="brand-text">Leo Klemet</span>
+        </a>
+
+        <div class="nav-right">
+          <a id="book-call"
+             class="btn-book-call"
+             href="#book"
+             data-testid="book-call"
+             data-calendly-url="https://calendly.com/leok974/intro-15"
+             data-calendly-utm-source="portfolio"
+             data-calendly-utm-campaign="book-call"
+             data-calendly-locale="en"
+             data-calendly-prefill="1"
+             aria-describedby="calendly-live">
+            Book a call
+          </a>
+          <span id="calendly-live" class="sr-only" aria-live="polite"></span>
+          <button
+            class="theme-toggle"
+            id="themeToggle"
+            aria-pressed="false"
+            aria-label="Toggle dark/light mode"
+          >
+            <span aria-hidden="true">🌙</span>
+            <input id="themeSwitch" type="checkbox" aria-hidden="true" />
+            <span aria-hidden="true">☀️</span>
+          </button>
+          <span
+            data-status-pill
+            role="status"
+            aria-live="polite"
+            class="badge badge-neutral status-pill"
+            >Checking…</span
+          >
+        </div>
+      </nav>
     </header>
 
     <!-- HERO / LANDING -->
@@ -284,6 +483,17 @@
           />
         </picture>
       </div>
+    </section>
+
+    <!-- ABOUT ME -->
+    <section class="about" id="about">
+      <h1>About me</h1>
+      <p>
+        I started as a 3D game designer because I loved building worlds. When AI surged, I was skeptical—honestly, a little afraid it would flatten creativity.
+        Instead of resisting, I learned to use it as a tool. That shift put me on a path to <strong>ML/AI engineering</strong> where my 3D instincts—composition, motion, feel—guide how I design systems.
+        Today I build human-centered AI for creative work—assistants, pipelines, multimedia tools—and I'm focused on pushing the edge where <strong>models meet art</strong>: interactive graphics, audio, and video.
+        I'm here to turn ideas into things you can touch.
+      </p>
     </section>
 
     <!-- PROJECTS -->
@@ -761,5 +971,40 @@
     <script type="module" src="/src/main.ts"></script>
 
     <!-- Removed legacy assistant-dock.js reference (now bundled via Vite) -->
+
+    <!-- Dev-only siteAgent trigger button (localhost only) -->
+    <script>
+      (function () {
+        const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
+        if (!isLocal) return;
+        const btn = document.createElement("button");
+        btn.id = "run-siteagent";
+        btn.textContent = "▶ Run siteAgent (dev)";
+        btn.style.cssText = "position:fixed;right:12px;bottom:12px;padding:8px 10px;border-radius:10px;z-index:9999;background:#4CAF50;color:white;border:none;cursor:pointer;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,0.3)";
+        btn.onclick = async () => {
+          btn.disabled = true;
+          btn.textContent = "Running…";
+          try {
+            const res = await fetch("/agent/run", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ plan: null, params: {} })
+            });
+            const j = await res.json().catch(() => ({}));
+            console.log("siteAgent run:", j);
+            btn.textContent = "✓ Done";
+            setTimeout(() => (btn.textContent = "▶ Run siteAgent (dev)"), 1200);
+          } catch (e) {
+            console.error(e);
+            btn.textContent = "✗ Error (see console)";
+            setTimeout(() => (btn.textContent = "▶ Run siteAgent (dev)"), 2000);
+          } finally {
+            btn.disabled = false;
+          }
+        };
+        document.body.appendChild(btn);
+      })();
+    </script>
   </body>
 </html>
+

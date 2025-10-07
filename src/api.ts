@@ -72,8 +72,89 @@ export async function statusWithFallback(options: { attempts?: number; baseOverr
 export const chat = (messages: ChatMessage[]) => http('/chat', { method:'POST', body: { messages } });
 export const streamChat = (messages: ChatMessage[], opts: { signal?: AbortSignal } = {}) => http<Response>('/chat/stream', { method:'POST', body:{ messages, stream:true }, stream:true, signal: opts.signal });
 
+// Upload API helpers
+export interface UploadResponse {
+  ok: boolean;
+  url: string;
+  kind: 'image' | 'video';
+  item?: any;
+  lint_ok?: boolean;
+}
+
+export interface GalleryAddRequest {
+  title: string;
+  description?: string;
+  type: 'image' | 'video-local' | 'youtube' | 'vimeo';
+  src: string;
+  poster?: string;
+  mime?: string;
+  tools?: string[];
+  workflow?: string[];
+  tags?: string[];
+}
+
+export interface GalleryAddResponse {
+  ok: boolean;
+  item: any;
+  lint_ok: boolean;
+}
+
+function getCsrfToken(): string {
+  // Try localStorage first (set by backend or previous auth)
+  const stored = localStorage.getItem('csrf_token');
+  if (stored) return stored;
+
+  // Try meta tag (if backend injected it)
+  const meta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement;
+  if (meta?.content) return meta.content;
+
+  return '';
+}
+
+export async function uploadFile(formData: FormData): Promise<UploadResponse> {
+  const csrfToken = getCsrfToken();
+  const headers: Record<string, string> = {};
+  if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+  const resp = await fetch(BASE + '/uploads', {
+    method: 'POST',
+    credentials: 'include',
+    headers,
+    body: formData
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`Upload failed: ${resp.status} ${text}`);
+  }
+
+  return resp.json();
+}
+
+export async function galleryAdd(payload: GalleryAddRequest): Promise<GalleryAddResponse> {
+  const csrfToken = getCsrfToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+  if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+  const resp = await fetch(BASE + '/gallery/add', {
+    method: 'POST',
+    credentials: 'include',
+    headers,
+    body: JSON.stringify(payload)
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`Gallery add failed: ${resp.status} ${text}`);
+  }
+
+  return resp.json();
+}
+
 // Expose for legacy inline usage if needed
-(window as any).API = { base: BASE, http, status, statusWithFallback, chat, streamChat };
+(window as any).API = { base: BASE, http, status, statusWithFallback, chat, streamChat, uploadFile, galleryAdd };
 
 export const API = (window as any).API as {
   base: string;
@@ -82,4 +163,6 @@ export const API = (window as any).API as {
   statusWithFallback: typeof statusWithFallback;
   chat: typeof chat;
   streamChat: typeof streamChat;
+  uploadFile: typeof uploadFile;
+  galleryAdd: typeof galleryAdd;
 };

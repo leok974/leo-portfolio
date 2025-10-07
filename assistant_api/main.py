@@ -8,6 +8,7 @@ import os
 import os.path as _ospath
 from pathlib import Path
 from .rag_query import router as rag_router
+from .routers import rag_projects
 from .rag_ingest import ingest
 from .llm_client import (
     chat as llm_chat,
@@ -105,9 +106,22 @@ else:
 
 # RAG API routes
 app.include_router(rag_router, prefix="/api")
+app.include_router(rag_projects.router)
 app.include_router(llm_health_router)
 app.include_router(ready_router)
 app.include_router(analytics_router)
+
+# Gallery and uploads routes (now consolidated under /api/admin)
+from assistant_api.routers import admin
+app.include_router(admin.router)
+
+# SiteAgent automation routes (protected by CF Access)
+from assistant_api.routers import agent
+app.include_router(agent.router)
+
+# SiteAgent public routes (HMAC authentication for CI/CD)
+from assistant_api.routers import agent_public
+app.include_router(agent_public.router)
 
 # Ultra-fast ping for UI hydration fallback (/api/ping)
 _ping_router = APIRouter()

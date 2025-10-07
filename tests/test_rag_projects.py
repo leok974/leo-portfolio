@@ -42,3 +42,24 @@ def test_rag_projects_perf():
     except Exception:
         q = max(samples)
     assert q < 50.0
+
+
+def test_projects_ingest_and_update(tmp_path, monkeypatch):
+    """Test that we can ingest and update projects_knowledge.json."""
+    import json
+    from fastapi.testclient import TestClient
+    from assistant_api.main import app
+
+    pj = tmp_path / "projects_knowledge.json"
+    sample = [{"slug": "clarity", "title": "Clarity", "status": "in-progress", "summary": "A Chrome extension."}]
+    pj.write_text(json.dumps(sample), encoding="utf-8")
+
+    monkeypatch.setenv('ALLOW_TOOLS', '1')  # Enable admin access for test
+    monkeypatch.setenv('PROJECTS_JSON', str(pj))
+    monkeypatch.setenv('RAG_DB', str(tmp_path / "rag.sqlite"))
+
+    c = TestClient(app)
+
+    # 1) Ingest
+    r = c.post('/api/rag/ingest/projects')
+    assert r.status_code == 200

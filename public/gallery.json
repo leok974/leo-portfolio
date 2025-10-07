@@ -1,0 +1,52 @@
+{
+  "items": [
+    {
+      "id": "bnz_idle",
+      "title": "Pixel Banana · Idle Loop",
+      "description": "ComfyUI img2img + procedural sprite animator. Pixel-preserving edits; 96px cell.",
+      "date": "2025-10-02",
+      "type": "video-local",
+      "src": "/assets/video/pixel-banana-idle.mp4",
+      "poster": "/assets/video/pixel-banana-idle.jpg",
+      "mime": "video/mp4",
+      "tools": ["ComfyUI", "Python", "Vite"],
+      "workflow": [
+        "Generate base sprite sheet via Nano Banana edit",
+        "Animate via animators.py (idle, 8f @ 12fps)",
+        "Assemble sheet & preview GIF; export atlas.json"
+      ],
+      "tags": ["sprites", "pixel-art"]
+    },
+    {
+      "id": "bln_glass",
+      "title": "Blender Glass Shader Study",
+      "description": "EEVEE refractive glass with light linking; compositing pass for glow.",
+      "date": "2025-09-18",
+      "type": "image",
+      "src": "/assets/gallery/blender-glass.jpg",
+      "alt": "Refractive glass render",
+      "tools": ["Blender"],
+      "workflow": [
+        "Start from Suzanne + HDRI",
+        "Refractive shader; clamp caustics",
+        "Bloom + glare in compositor"
+      ],
+      "tags": ["shader", "eevee"]
+    },
+    {
+      "id": "yt_walk",
+      "title": "ComfyUI Walk Cycle (YouTube)",
+      "description": "16→24f walk cycle upscale; denoise schedule tweak.",
+      "date": "2025-10-01",
+      "type": "youtube",
+      "src": "https://www.youtube.com/embed/XXXXXXXXX",
+      "tools": ["ComfyUI"],
+      "workflow": [
+        "Base 16f loop",
+        "Interp to 24fps",
+        "Color grade & crop"
+      ],
+      "tags": ["animation"]
+    }
+  ]
+}

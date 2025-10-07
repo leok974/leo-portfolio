@@ -9,6 +9,69 @@
 /* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind utilities;
 
+/* Global Typography System */
+@layer base {
+  /* --- Font vars --- */
+  :root {
+    --font-sans: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+    --text: #e8eef7;
+    --muted: #a7b1c2;
+  }
+
+  /* --- Base --- */
+  html { font-size: 16px; }
+  body {
+    font-family: var(--font-sans);
+    color: var(--text);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "liga","kern";
+    font-variation-settings: normal;
+  }
+
+  /* --- Headings use Space Grotesk --- */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: .2px;
+    line-height: 1.2;
+    margin: 0 0 .5em;
+  }
+
+  /* Fluid sizes (clean, responsive) */
+  h1 { font-size: clamp(1.6rem, 2.8vw + 1rem, 2.3rem); }  /* ~25.6–36.8px */
+  h2 { font-size: clamp(1.35rem, 1.6vw + 1rem, 2rem); }
+  h3 { font-size: clamp(1.15rem, .8vw + 1rem, 1.5rem); }
+  p, li, dd { font-size: clamp(1rem, .35vw + .95rem, 1.125rem); }
+
+  small, .text-sm { font-size: .925rem; color: var(--muted); }
+
+  /* --- Links/buttons read well on dark --- */
+  a { color: #8ad8ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  button, .btn, [role="button"] {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: .1px;
+  }
+
+  /* --- UI bits that should use display font --- */
+  .site-title, .brand-text, .section-title, .chip-label {
+    font-family: var(--font-display);
+    font-weight: 600;
+  }
+
+  /* --- Code blocks --- */
+  code, pre, kbd, samp {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: .95em;
+  }
+}
+
 /* Polish utilities */
 @layer utilities {
   .shimmer {
