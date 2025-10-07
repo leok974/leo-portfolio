@@ -2,6 +2,51 @@
 
 ## [Unreleased] - 2025-01-20
 
+### Media Management & Link Suggestion Tasks (Phase 44 📸)
+- **media.scan Task**: Automated media indexing
+  - Scans all images under `public/` and `assets/` directories
+  - Supports: PNG, JPG, JPEG, WEBP, GIF, SVG, BMP, TIFF
+  - Records metadata: path, size (bytes), dimensions (width×height), format, SHA1 hash, mtime
+  - Dimension detection: SVG regex parsing + Pillow for raster images
+  - Output: `assets/data/media-index.json` sorted by size (largest first)
+  - Natural language: `scan media`
+- **media.optimize Task**: WebP conversion + responsive thumbnails
+  - Creates WebP versions + thumbnails (480w, 960w) to `assets/derived/`
+  - Converts raster images with configurable quality (default 82)
+  - Generates responsive thumbnails with LANCZOS resampling
+  - Skips: SVG, GIF (animated), existing files (unless `overwrite=true`)
+  - Params: `quality` (1-100), `limit` (max files), `overwrite` (bool)
+  - Requires: Pillow (graceful skip if missing)
+  - Natural language: `optimize images` / `optimise pictures`
+- **links.suggest Task**: Intelligent broken link fix suggestions
+  - Reads broken links from `link-check.json`
+  - Fuzzy filename matching using `difflib` (similarity ≥ 60%)
+  - Extension-aware filtering for better matches
+  - Generates top 5 suggestions per missing link
+  - Output: `assets/data/link-suggest.json`
+  - Natural language: `suggest link fixes` / `recommend link fix`
+- **Dev Overlay Integration**: 3 new quick-access buttons
+  - "Scan media" button: Run media.scan + auto-focus
+  - "Optimize images" button: Run media.scan + media.optimize + auto-focus
+  - "Suggest link fixes" button: Run links.suggest + auto-focus
+  - All buttons use responsive flex-wrap layout
+- **Default Plan Update**: Added media.scan to nightly runs
+  - Order: projects.sync → **media.scan** → sitemap.media.update → og.generate → news.sync → links.validate → status.write
+  - Keeps media index fresh for sitemap and other tasks
+- **Natural Language Support**: 3 new command patterns
+  - `scan media` → ["media.scan", "status.write"]
+  - `optimize/optimise images/pictures/media` → ["media.scan", "media.optimize", "status.write"]
+  - `suggest/recommend link fix(es)` → ["links.suggest", "status.write"]
+- **Test Coverage**: 7 new tests (18 total passing)
+  - test_media_scan_writes_index: Verifies media-index.json creation
+  - test_links_suggest_creates_file: Verifies fuzzy matching + suggestions
+  - test_parse_scan_media: Natural language parsing
+  - test_parse_optimize_images: Natural language parsing (optimize)
+  - test_parse_optimize_pictures: Natural language parsing (optimise, British)
+  - test_parse_suggest_link_fixes: Natural language parsing (suggest)
+  - test_parse_recommend_link_fix: Natural language parsing (recommend)
+- **Documentation**: PHASE_44_MEDIA_LINKS.md (complete specification)
+
 ### Enhanced Dev Overlay with Event Filtering (Phase 43.3 🎯)
 - **Event Filtering**: Filter events by level (info/warn/error)
   - Level dropdown with real-time filtering
