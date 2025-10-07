@@ -33,6 +33,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test --reporter=line",
     "test:e2e:ui": "playwright test --ui",
+    "test:e2e:docker": "pwsh -File scripts/check-docker-and-test.ps1",
     "e2e:install": "npx playwright install --with-deps",
     "e2e": "playwright test",
     "pw:install": "playwright install chromium",
