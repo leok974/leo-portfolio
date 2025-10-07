@@ -1,5 +1,5 @@
 from typing import Dict, Callable, Any, List, Tuple
-import os, json, subprocess, shutil, re
+import os, json, subprocess, shutil, re, io, urllib.request, urllib.error
 from .models import emit
 
 TaskFn = Callable[[str, Dict[str, Any]], Dict[str, Any]]
@@ -225,6 +225,126 @@ def overrides_update(run_id, params):
         json.dump(cur, f, indent=2)
     emit(run_id, "info", "overrides.update.ok", {"changed": changed})
     return {"file": dst, "changed": changed, "brand": cur.get("brand")}
+
+
+@task("logo.fetch")
+def logo_fetch(run_id, params):
+    """
+    Download a logo image from a URL and register it for a repo or title.
+    Params:
+      - url: http(s) URL (required)
+      - repo: owner/name (optional)
+      - title: project title (optional)
+      - name: preferred file base name (optional)
+      - max_bytes: cap download size (default 3 MiB)
+    Saves to ./assets/logos/<slug>.(png|svg|webp|jpg|gif). If Pillow is available,
+    converts raster formats to PNG.
+    """
+    url = (params.get("url") or "").strip()
+    if not url or not re.match(r"^https?://", url, re.I):
+        raise ValueError("logo.fetch: 'url' must be http(s)")
+    repo = (params.get("repo") or "").strip()
+    title = (params.get("title") or "").strip()
+    name = (params.get("name") or title or (repo.split("/")[-1] if repo else "")) or "logo"
+    max_bytes = int(params.get("max_bytes") or (3 * 1024 * 1024))
+
+    def slug(s: str) -> str:
+        return re.sub(r"-{2,}", "-", re.sub(r"[^a-z0-9-]+", "-", s.lower())).strip("-") or "logo"
+
+    # Fetch
+    req = urllib.request.Request(url, headers={"User-Agent": "siteAgent/1.0 (+logo.fetch)"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            ctype = (resp.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+            clen = resp.headers.get("Content-Length")
+            if clen and int(clen) > max_bytes:
+                raise ValueError(f"logo.fetch: remote file too large ({clen} bytes)")
+            buf = io.BytesIO()
+            chunk = resp.read(65536)
+            total = 0
+            while chunk:
+                total += len(chunk)
+                if total > max_bytes:
+                    raise ValueError(f"logo.fetch: download exceeded {max_bytes} bytes")
+                buf.write(chunk)
+                chunk = resp.read(65536)
+            data = buf.getvalue()
+    except urllib.error.URLError as e:
+        raise ValueError(f"logo.fetch: download failed: {e}") from e
+
+    # Decide extension
+    ext_map = {
+        "image/png": "png",
+        "image/jpeg": "jpg",
+        "image/jpg": "jpg",
+        "image/webp": "webp",
+        "image/svg+xml": "svg",
+        "image/gif": "gif",
+    }
+    ext = ext_map.get(ctype)
+    if not ext:
+        # Fall back to URL suffix
+        m = re.search(r"\.([a-z0-9]{3,4})(?:\?|#|$)", url, re.I)
+        ext = (m.group(1).lower() if m else "png")
+        if ext not in {"png", "jpg", "jpeg", "webp", "svg", "gif"}:
+            ext = "png"
+
+    logos_dir = "./assets/logos"
+    os.makedirs(logos_dir, exist_ok=True)
+    base = slug(name)
+    out_path = os.path.join(logos_dir, f"{base}.{ext}")
+
+    # Optional: convert raster → PNG if Pillow available and ext != svg/png
+    final_path = out_path
+    try:
+        if ext in {"jpg", "jpeg", "webp", "gif"}:
+            try:
+                from PIL import Image  # type: ignore
+                img = Image.open(io.BytesIO(data)).convert("RGBA")
+                final_path = os.path.join(logos_dir, f"{base}.png")
+                img.save(final_path, format="PNG")
+            except Exception:
+                # If Pillow not present or conversion fails, just write original
+                with open(out_path, "wb") as f:
+                    f.write(data)
+                final_path = out_path
+        else:
+            # png or svg or other allowed → write as-is
+            with open(out_path, "wb") as f:
+                f.write(data)
+            final_path = out_path
+    except Exception as e:
+        emit(run_id, "warn", "logo.fetch.write_failed", {"err": str(e)})
+        raise
+
+    # Update overrides
+    ov_path = "./assets/data/og-overrides.json"
+    ov = {}
+    if os.path.exists(ov_path):
+        try:
+            with open(ov_path, "r", encoding="utf-8") as f:
+                ov = json.load(f) or {}
+        except Exception:
+            ov = {}
+    ov.setdefault("title_logo", {})
+    ov.setdefault("repo_logo", {})
+    rel = final_path.replace("\\", "/")
+    changed = {}
+    if repo:
+        ov["repo_logo"][repo] = rel
+        changed.setdefault("repo_logo", {})[repo] = rel
+    if title:
+        ov["title_logo"][title] = rel
+        changed.setdefault("title_logo", {})[title] = rel
+    if not (repo or title):
+        # still save file; not mapped
+        emit(run_id, "warn", "logo.fetch.no_mapping", {"file": rel})
+    os.makedirs(os.path.dirname(ov_path), exist_ok=True)
+    with open(ov_path, "w", encoding="utf-8") as f:
+        json.dump(ov, f, indent=2)
+
+    emit(run_id, "info", "logo.fetch.ok", {"file": rel, "ctype": ctype or "unknown"})
+    return {"file": rel, "ctype": ctype or "unknown", "mapped": changed}
 
 
 @task("news.sync")

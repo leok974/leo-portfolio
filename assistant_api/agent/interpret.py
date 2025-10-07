@@ -39,17 +39,27 @@ def parse_command(cmd: str) -> Tuple[List[str], Dict[str, Any]]:
         plan = ["overrides.update", "status.write"]
         params = {"brand": m.group(1).strip()}
         return plan, params
-    # set logo for repo
-    m = re.search(r"set\s+logo\s+for\s+repo\s+([\w.-]+/[\w.-]+)\s+to\s+(.+)$", c, re.I)
+    # (fetch|set) logo for repo
+    m = re.search(r"(?:fetch|set)\s+logo\s+for\s+repo\s+([\w.-]+/[\w.-]+)\s+(?:from|to)\s+(.+)$", c, re.I)
     if m:
-        plan = ["overrides.update", "og.generate", "status.write"]
-        params = {"logo": {"repo": m.group(1), "path": m.group(2).strip()}}
+        target = m.group(2).strip()
+        if re.match(r"^https?://", target, re.I):
+            plan = ["logo.fetch", "og.generate", "status.write"]
+            params = {"url": target, "repo": m.group(1)}
+        else:
+            plan = ["overrides.update", "og.generate", "status.write"]
+            params = {"logo": {"repo": m.group(1), "path": target}}
         return plan, params
-    # set logo for title
-    m = re.search(r"set\s+logo\s+for\s+(.+?)\s+to\s+(.+)$", c, re.I)
+    # (fetch|set) logo for title
+    m = re.search(r"(?:fetch|set)\s+logo\s+for\s+(.+?)\s+(?:from|to)\s+(.+)$", c, re.I)
     if m:
-        plan = ["overrides.update", "og.generate", "status.write"]
-        params = {"logo": {"title": m.group(1).strip(), "path": m.group(2).strip()}}
+        target = m.group(2).strip()
+        if re.match(r"^https?://", target, re.I):
+            plan = ["logo.fetch", "og.generate", "status.write"]
+            params = {"url": target, "title": m.group(1).strip()}
+        else:
+            plan = ["overrides.update", "og.generate", "status.write"]
+            params = {"logo": {"title": m.group(1).strip(), "path": target}}
         return plan, params
     # regenerate og
     if re.search(r"\b(re)?generate\b.*\bog\b", c, re.I):
