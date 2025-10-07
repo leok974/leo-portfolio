@@ -11,11 +11,16 @@ jobs:
     env:
       ENDPOINT: ${{ secrets.SITEAGENT_ENDPOINT }}   # e.g. https://assistant.ledger-mind.org/agent/run
       HMAC_SECRET: ${{ secrets.SITEAGENT_HMAC_SECRET }} # same as backend env SITEAGENT_HMAC_SECRET
+      SITEAGENT_PLAN: ${{ secrets.SITEAGENT_PLAN }}     # optional: JSON string for body
     steps:
       - name: Prepare request body
         id: prep
         run: |
-          BODY='{"plan": null, "params": {}}'
+          if [ -n "${SITEAGENT_PLAN}" ]; then
+            BODY="${SITEAGENT_PLAN}"
+          else
+            BODY='{"plan": null, "params": {}}'
+          fi
           echo "$BODY" > body.json
           echo "body=$(cat body.json)" >> $GITHUB_OUTPUT
 

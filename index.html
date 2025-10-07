@@ -4,10 +4,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Security headers (meta fallback; prefer server headers in prod) -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://assets.calendly.com; style-src 'self' 'unsafe-inline' https://assets.calendly.com; img-src 'self' data: https://*.calendly.com; frame-src https://calendly.com https://*.calendly.com; connect-src 'self' https://calendly.com https://*.calendly.com;">
-    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://assets.calendly.com; style-src 'self' 'unsafe-inline' https://assets.calendly.com; img-src 'self' data: https://*.calendly.com; frame-src https://calendly.com https://*.calendly.com; connect-src 'self' https://calendly.com https://*.calendly.com;"
+    />
+    <meta
+      http-equiv="Referrer-Policy"
+      content="strict-origin-when-cross-origin"
+    />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
     <!-- Tip: set HSTS at the server: Strict-Transport-Security: max-age=31536000; includeSubDomains; preload -->
     <title>
       Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative
@@ -37,15 +43,28 @@
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#0f172a" />
-  <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="manifest" href="/manifest.webmanifest" />
 
     <!-- Favicon (brand logo) -->
-    <link rel="icon" type="image/png" href="/assets/brand/lk-logo.png" sizes="32x32">
-    <link rel="icon" type="image/png" href="/assets/brand/lk-logo.png" sizes="192x192">
-    <link rel="apple-touch-icon" href="/assets/brand/lk-logo.png">
+    <link
+      rel="icon"
+      type="image/png"
+      href="/assets/brand/lk-logo.png"
+      sizes="32x32"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      href="/assets/brand/lk-logo.png"
+      sizes="192x192"
+    />
+    <link rel="apple-touch-icon" href="/assets/brand/lk-logo.png" />
 
     <!-- Open Graph / Twitter preview with brand logo -->
-    <meta property="twitter:image" content="https://leok974.github.io/leo-portfolio/assets/brand/lk-logo.png">
+    <meta
+      property="twitter:image"
+      content="https://leok974.github.io/leo-portfolio/assets/brand/lk-logo.png"
+    />
     <link
       rel="preload"
       href="fonts/Inter-roman.var.woff2"
@@ -92,60 +111,92 @@
         margin: 4rem auto;
         max-width: var(--maxw);
         padding: 0 1rem;
-        font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        font-family:
+          "Inter",
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Arial,
+          sans-serif;
         line-height: 1.65;
       }
       .about h1 {
         font-family: "Space Grotesk", "Inter", system-ui, sans-serif;
         font-weight: 700;
-        letter-spacing: .2px;
+        letter-spacing: 0.2px;
         font-size: clamp(1.6rem, 2.8vw + 1rem, 2.3rem);
-        margin: 0 0 .75rem;
+        margin: 0 0 0.75rem;
       }
-      .about p { margin: 0; font-size: clamp(1rem, .6vw + .9rem, 1.125rem); }
-      .about em { font-style: italic; }
-      .about strong { font-weight: 700; }
+      .about p {
+        margin: 0;
+        font-size: clamp(1rem, 0.6vw + 0.9rem, 1.125rem);
+      }
+      .about em {
+        font-style: italic;
+      }
+      .about strong {
+        font-weight: 700;
+      }
     </style>
 
     <!-- Brand Header Styles -->
     <style>
       .site-header {
-        position: sticky; top: 0; z-index: 50;
+        position: sticky;
+        top: 0;
+        z-index: 50;
         backdrop-filter: blur(6px);
         background: color-mix(in oklab, #0b0b0f 85%, transparent);
         border-bottom: 1px solid color-mix(in oklab, #ffffff 12%, transparent);
       }
 
       .site-nav {
-        display: flex; align-items: center; justify-content: space-between;
-        max-width: 1200px; margin: 0 auto; padding: .75rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0.75rem 1rem;
       }
 
       .brand {
-        display: inline-flex; align-items: center; gap: .65rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.65rem;
         text-decoration: none;
       }
 
       .brand img {
-        height: 36px; width: 36px; object-fit: contain;
-        filter: drop-shadow(0 0 8px rgba(0, 216, 255, .2));
-        transition: transform .15s ease;
+        height: 36px;
+        width: 36px;
+        object-fit: contain;
+        filter: drop-shadow(0 0 8px rgba(0, 216, 255, 0.2));
+        transition: transform 0.15s ease;
       }
 
-      .brand:hover img { transform: translateY(-1px) scale(1.02); }
+      .brand:hover img {
+        transform: translateY(-1px) scale(1.02);
+      }
 
       .brand-text {
         font-family: "Space Grotesk", "Inter", system-ui, sans-serif;
-        font-weight: 600; letter-spacing: .2px;
-        font-size: 1.05rem; color: #e8eef7;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+        font-size: 1.05rem;
+        color: #e8eef7;
       }
 
       .nav-right {
-        display: flex; align-items: center; gap: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
       }
 
       .btn-book-call {
-        display: inline-flex; align-items: center; gap: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
         padding: 0.5rem 1rem;
         background: #2d6cdf;
         color: #fff;
@@ -153,7 +204,9 @@
         font-weight: 600;
         font-size: 0.9rem;
         text-decoration: none;
-        transition: background 0.2s, transform 0.15s;
+        transition:
+          background 0.2s,
+          transform 0.15s;
         border: none;
         cursor: pointer;
       }
@@ -175,8 +228,13 @@
 
       /* compact on mobile */
       @media (max-width: 640px) {
-        .brand-text { display: none; }
-        .brand img { height: 32px; width: 32px; }
+        .brand-text {
+          display: none;
+        }
+        .brand img {
+          height: 32px;
+          width: 32px;
+        }
       }
     </style>
 
@@ -184,14 +242,17 @@
     <style>
       /* --- Font vars --- */
       :root {
-        --font-sans: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        --font-sans:
+          "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
         --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
         --text: #e8eef7;
         --muted: #a7b1c2;
       }
 
       /* --- Base --- */
-      html { font-size: 16px; }
+      html {
+        font-size: 16px;
+      }
       body {
         font-family: var(--font-sans);
         color: var(--text);
@@ -199,47 +260,79 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
-        font-feature-settings: "liga","kern";
+        font-feature-settings: "liga", "kern";
         font-variation-settings: normal;
       }
 
       /* --- Headings use Space Grotesk --- */
-      h1, h2, h3, h4, h5, h6 {
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
         font-family: var(--font-display);
         font-weight: 700;
-        letter-spacing: .2px;
+        letter-spacing: 0.2px;
         line-height: 1.2;
-        margin: 0 0 .5em;
+        margin: 0 0 0.5em;
       }
 
       /* Fluid sizes (clean, responsive) */
-      h1 { font-size: clamp(1.6rem, 2.8vw + 1rem, 2.3rem); }  /* ~25.6–36.8px */
-      h2 { font-size: clamp(1.35rem, 1.6vw + 1rem, 2rem); }
-      h3 { font-size: clamp(1.15rem, .8vw + 1rem, 1.5rem); }
-      p, li, dd { font-size: clamp(1rem, .35vw + .95rem, 1.125rem); }
+      h1 {
+        font-size: clamp(1.6rem, 2.8vw + 1rem, 2.3rem);
+      } /* ~25.6–36.8px */
+      h2 {
+        font-size: clamp(1.35rem, 1.6vw + 1rem, 2rem);
+      }
+      h3 {
+        font-size: clamp(1.15rem, 0.8vw + 1rem, 1.5rem);
+      }
+      p,
+      li,
+      dd {
+        font-size: clamp(1rem, 0.35vw + 0.95rem, 1.125rem);
+      }
 
-      small, .text-sm { font-size: .925rem; color: var(--muted); }
+      small,
+      .text-sm {
+        font-size: 0.925rem;
+        color: var(--muted);
+      }
 
       /* --- Links/buttons read well on dark --- */
-      a { color: #8ad8ff; text-decoration: none; }
-      a:hover { text-decoration: underline; }
+      a {
+        color: #8ad8ff;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
 
-      button, .btn, [role="button"] {
+      button,
+      .btn,
+      [role="button"] {
         font-family: var(--font-sans);
         font-weight: 600;
-        letter-spacing: .1px;
+        letter-spacing: 0.1px;
       }
 
       /* --- UI bits that should use display font --- */
-      .site-title, .brand-text, .section-title, .chip-label {
+      .site-title,
+      .brand-text,
+      .section-title,
+      .chip-label {
         font-family: var(--font-display);
         font-weight: 600;
       }
 
       /* --- Code blocks --- */
-      code, pre, kbd, samp {
+      code,
+      pre,
+      kbd,
+      samp {
         font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-        font-size: .95em;
+        font-size: 0.95em;
       }
     </style>
 
@@ -279,86 +372,173 @@
       }
     </script>
     <script>
-      (function(){
-        try{
+      (function () {
+        try {
           if (navigator.doNotTrack == "1" || window.doNotTrack == "1") return;
           const path = location.pathname + location.search;
-          const ref_host = (document.referrer ? new URL(document.referrer).hostname : "direct");
-          const device = (innerWidth < 640) ? "mobile" : (innerWidth < 1024) ? "tablet" : "desktop";
-          const theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-          function send(type, extra){
-            const payload = JSON.stringify(Object.assign({ type, ts: Date.now()/1000, path, ref_host, device, theme }, extra||{}));
-            try { navigator.sendBeacon("/analytics/collect", payload); } catch {}
+          const ref_host = document.referrer
+            ? new URL(document.referrer).hostname
+            : "direct";
+          const device =
+            innerWidth < 640
+              ? "mobile"
+              : innerWidth < 1024
+                ? "tablet"
+                : "desktop";
+          const theme = matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+          function send(type, extra) {
+            const payload = JSON.stringify(
+              Object.assign(
+                { type, ts: Date.now() / 1000, path, ref_host, device, theme },
+                extra || {},
+              ),
+            );
+            try {
+              navigator.sendBeacon("/analytics/collect", payload);
+            } catch {}
           }
-          if (!localStorage.getItem("anon_session")){
-            localStorage.setItem("anon_session", (crypto.randomUUID ? crypto.randomUUID(): String(Date.now())));
+          if (!localStorage.getItem("anon_session")) {
+            localStorage.setItem(
+              "anon_session",
+              crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+            );
             send("session_start");
           }
           send("page_view");
           let start = performance.now();
-          function flushDwell(){ const seconds=(performance.now()-start)/1000; send("dwell", { seconds: Math.round(seconds*10)/10 }); }
+          function flushDwell() {
+            const seconds = (performance.now() - start) / 1000;
+            send("dwell", { seconds: Math.round(seconds * 10) / 10 });
+          }
           addEventListener("pagehide", flushDwell);
-          document.addEventListener("visibilitychange", ()=>{ if (document.visibilityState==="hidden") flushDwell(); });
-          let maxDepth=0; addEventListener("scroll", ()=>{ const pct=Math.round((scrollY+innerHeight)/document.body.scrollHeight*100); const bin=pct>=100?100:pct>=75?75:pct>=50?50:pct>=25?25:0; if(bin && bin>maxDepth){ maxDepth=bin; send("scroll_depth", { percent: bin }); } });
-          window.trackAgent=(intent,project_id)=> send("agent_request", { intent, project_id });
-          window.trackAgentFeedback=(sentiment,intent,project_id)=> send("agent_feedback", { sentiment, intent, project_id });
+          document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") flushDwell();
+          });
+          let maxDepth = 0;
+          addEventListener("scroll", () => {
+            const pct = Math.round(
+              ((scrollY + innerHeight) / document.body.scrollHeight) * 100,
+            );
+            const bin =
+              pct >= 100
+                ? 100
+                : pct >= 75
+                  ? 75
+                  : pct >= 50
+                    ? 50
+                    : pct >= 25
+                      ? 25
+                      : 0;
+            if (bin && bin > maxDepth) {
+              maxDepth = bin;
+              send("scroll_depth", { percent: bin });
+            }
+          });
+          window.trackAgent = (intent, project_id) =>
+            send("agent_request", { intent, project_id });
+          window.trackAgentFeedback = (sentiment, intent, project_id) =>
+            send("agent_feedback", { sentiment, intent, project_id });
           // Outbound link clicks (GitHub / ArtStation / Resume) — robust patterns
-          function inferLinkKind(a){
+          function inferLinkKind(a) {
             const kindAttr = a.getAttribute("data-link-kind");
             if (kindAttr) return kindAttr.toLowerCase();
             const href = a.getAttribute("href") || "";
             let host = "";
-            try { host = new URL(href, location.href).hostname.toLowerCase(); } catch {}
+            try {
+              host = new URL(href, location.href).hostname.toLowerCase();
+            } catch {}
             if (host.includes("github.com")) return "github";
             if (host.includes("artstation.com")) return "artstation";
             if (/resume|cv|curriculum/i.test(href)) return "resume";
             return null;
           }
-          function beaconLinkClick(a){
+          function beaconLinkClick(a) {
             const kind = inferLinkKind(a);
             if (!kind) return;
             const href = a.getAttribute("href") || "";
             send("link_click", { kind, href });
           }
           // Left-clicks (existing)
-          document.addEventListener("click", (e)=>{
-            const a = e.target && (e.target.closest ? e.target.closest("a[href]") : null);
-            if (a) beaconLinkClick(a);
-          }, { capture: true });
+          document.addEventListener(
+            "click",
+            (e) => {
+              const a =
+                e.target &&
+                (e.target.closest ? e.target.closest("a[href]") : null);
+              if (a) beaconLinkClick(a);
+            },
+            { capture: true },
+          );
           // Middle-clicks
-          document.addEventListener("auxclick", (e)=>{
-            if (e.button !== 1) return;
-            const a = e.target && (e.target.closest ? e.target.closest("a[href]") : null);
-            if (a) beaconLinkClick(a);
-          }, { capture: true });
+          document.addEventListener(
+            "auxclick",
+            (e) => {
+              if (e.button !== 1) return;
+              const a =
+                e.target &&
+                (e.target.closest ? e.target.closest("a[href]") : null);
+              if (a) beaconLinkClick(a);
+            },
+            { capture: true },
+          );
           // Keyboard Enter on focused anchors
-          document.addEventListener("keydown", (e)=>{
-            if (e.key !== "Enter") return;
-            const el = document.activeElement;
-            const a = el && (el.closest ? el.closest("a[href]") : null);
-            if (a) beaconLinkClick(a);
-          }, { capture: true });
+          document.addEventListener(
+            "keydown",
+            (e) => {
+              if (e.key !== "Enter") return;
+              const el = document.activeElement;
+              const a = el && (el.closest ? el.closest("a[href]") : null);
+              if (a) beaconLinkClick(a);
+            },
+            { capture: true },
+          );
           // Context menu (best-effort)
-          document.addEventListener("contextmenu", (e)=>{
-            const a = e.target && (e.target.closest ? e.target.closest("a[href]") : null);
-            if (a) beaconLinkClick(a);
-          }, { capture: true });
-          addEventListener("error", e=> send("frontend_error", { message: String(e.message||""), source: String(e.filename||"") }));
-          (async()=>{ try{ const { onLCP } = await import('https://unpkg.com/web-vitals@4/dist/web-vitals.iife.js'); onLCP(m=> send("web_vitals", { name:"LCP", value: m.value })); }catch{}})();
-        }catch{}
+          document.addEventListener(
+            "contextmenu",
+            (e) => {
+              const a =
+                e.target &&
+                (e.target.closest ? e.target.closest("a[href]") : null);
+              if (a) beaconLinkClick(a);
+            },
+            { capture: true },
+          );
+          addEventListener("error", (e) =>
+            send("frontend_error", {
+              message: String(e.message || ""),
+              source: String(e.filename || ""),
+            }),
+          );
+          (async () => {
+            try {
+              const { onLCP } = await import(
+                "https://unpkg.com/web-vitals@4/dist/web-vitals.iife.js"
+              );
+              onLCP((m) => send("web_vitals", { name: "LCP", value: m.value }));
+            } catch {}
+          })();
+        } catch {}
       })();
     </script>
 
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
     <!-- Calendly (popup + inline helpers) -->
-    <link rel="preconnect" href="https://assets.calendly.com" crossorigin>
-    <link rel="stylesheet" href="https://assets.calendly.com/assets/external/widget.css">
+    <link rel="preconnect" href="https://assets.calendly.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://assets.calendly.com/assets/external/widget.css"
+    />
     <!-- Attachment button CSS -->
-    <link rel="stylesheet" href="/assets/css/attachment-button.css">
+    <link rel="stylesheet" href="/assets/css/attachment-button.css" />
     <!-- Consent banner (site-wide) -->
     <script defer src="/assets/js/consent.js"></script>
     <script defer src="/assets/js/calendly.js"></script>
@@ -384,23 +564,28 @@
           <img
             src="/assets/brand/lk-logo.png"
             alt="LK — Leo Klemet logo"
-            width="40" height="40"
-            decoding="async" loading="eager" fetchpriority="high"
+            width="40"
+            height="40"
+            decoding="async"
+            loading="eager"
+            fetchpriority="high"
           />
           <span class="brand-text">Leo Klemet</span>
         </a>
 
         <div class="nav-right">
-          <a id="book-call"
-             class="btn-book-call"
-             href="#book"
-             data-testid="book-call"
-             data-calendly-url="https://calendly.com/leok974/intro-15"
-             data-calendly-utm-source="portfolio"
-             data-calendly-utm-campaign="book-call"
-             data-calendly-locale="en"
-             data-calendly-prefill="1"
-             aria-describedby="calendly-live">
+          <a
+            id="book-call"
+            class="btn-book-call"
+            href="#book"
+            data-testid="book-call"
+            data-calendly-url="https://calendly.com/leok974/intro-15"
+            data-calendly-utm-source="portfolio"
+            data-calendly-utm-campaign="book-call"
+            data-calendly-locale="en"
+            data-calendly-prefill="1"
+            aria-describedby="calendly-live"
+          >
             Book a call
           </a>
           <span id="calendly-live" class="sr-only" aria-live="polite"></span>
@@ -489,10 +674,15 @@
     <section class="about" id="about">
       <h1>About me</h1>
       <p>
-        I started as a 3D game designer because I loved building worlds. When AI surged, I was skeptical—honestly, a little afraid it would flatten creativity.
-        Instead of resisting, I learned to use it as a tool. That shift put me on a path to <strong>ML/AI engineering</strong> where my 3D instincts—composition, motion, feel—guide how I design systems.
-        Today I build human-centered AI for creative work—assistants, pipelines, multimedia tools—and I'm focused on pushing the edge where <strong>models meet art</strong>: interactive graphics, audio, and video.
-        I'm here to turn ideas into things you can touch.
+        I started as a 3D game designer because I loved building worlds. When AI
+        surged, I was skeptical—honestly, a little afraid it would flatten
+        creativity. Instead of resisting, I learned to use it as a tool. That
+        shift put me on a path to <strong>ML/AI engineering</strong> where my 3D
+        instincts—composition, motion, feel—guide how I design systems. Today I
+        build human-centered AI for creative work—assistants, pipelines,
+        multimedia tools—and I'm focused on pushing the edge where
+        <strong>models meet art</strong>: interactive graphics, audio, and
+        video. I'm here to turn ideas into things you can touch.
       </p>
     </section>
 
@@ -772,7 +962,11 @@
                 <h4>Resume</h4>
                 <ul>
                   <li>
-                    <a class="btn" href="/dl/resume" data-link-kind="resume" download
+                    <a
+                      class="btn"
+                      href="/dl/resume"
+                      data-link-kind="resume"
+                      download
                       >Download PDF</a
                     >
                   </li>
@@ -840,7 +1034,9 @@
               aria-live="polite"
             ></div>
           </div>
-          <button class="btn submit hover-glow focus-ring" type="submit">Send Message</button>
+          <button class="btn submit hover-glow focus-ring" type="submit">
+            Send Message
+          </button>
         </form>
         <p class="muted mt-4">
           Find me on
@@ -871,8 +1067,11 @@
         <div class="muted footer-build">
           <small id="build-info" data-build-info>build: resolving…</small>
         </div>
-        <div class="muted" style="grid-column: 1 / -1;">
-          <small>Analytics is privacy‑respectful: no cookies, anonymized usage only, honors Do Not Track.</small>
+        <div class="muted" style="grid-column: 1 / -1">
+          <small
+            >Analytics is privacy‑respectful: no cookies, anonymized usage only,
+            honors Do Not Track.</small
+          >
         </div>
       </div>
     </footer>
@@ -937,7 +1136,9 @@
           autocomplete="off"
           data-testid="assistant-input"
         />
-        <button id="chatSend" type="submit" data-testid="assistant-send">Send</button>
+        <button id="chatSend" type="submit" data-testid="assistant-send">
+          Send
+        </button>
       </form>
     </div>
 
@@ -980,7 +1181,8 @@
         const btn = document.createElement("button");
         btn.id = "run-siteagent";
         btn.textContent = "▶ Run siteAgent (dev)";
-        btn.style.cssText = "position:fixed;right:12px;bottom:12px;padding:8px 10px;border-radius:10px;z-index:9999;background:#4CAF50;color:white;border:none;cursor:pointer;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,0.3)";
+        btn.style.cssText =
+          "position:fixed;right:12px;bottom:12px;padding:8px 10px;border-radius:10px;z-index:9999;background:#4CAF50;color:white;border:none;cursor:pointer;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,0.3)";
         btn.onclick = async () => {
           btn.disabled = true;
           btn.textContent = "Running…";
@@ -988,16 +1190,22 @@
             const res = await fetch("/agent/run", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ plan: null, params: {} })
+              body: JSON.stringify({ plan: null, params: {} }),
             });
             const j = await res.json().catch(() => ({}));
             console.log("siteAgent run:", j);
             btn.textContent = "✓ Done";
-            setTimeout(() => (btn.textContent = "▶ Run siteAgent (dev)"), 1200);
+            setTimeout(
+              () => (btn.textContent = "▶ Run siteAgent (dev)"),
+              1200,
+            );
           } catch (e) {
             console.error(e);
             btn.textContent = "✗ Error (see console)";
-            setTimeout(() => (btn.textContent = "▶ Run siteAgent (dev)"), 2000);
+            setTimeout(
+              () => (btn.textContent = "▶ Run siteAgent (dev)"),
+              2000,
+            );
           } finally {
             btn.disabled = false;
           }
@@ -1005,6 +1213,66 @@
         document.body.appendChild(btn);
       })();
     </script>
+    <script>
+      // Dev-only maintenance overlay (appears on localhost/127.0.0.1)
+      (function () {
+        const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
+        if (!isLocal) return;
+        const btn = document.createElement("button");
+        btn.id = "sa-maint";
+        btn.textContent = "🧰 Maintenance (dev)";
+        btn.style.cssText =
+          "position:fixed;left:12px;bottom:12px;padding:8px 10px;border-radius:10px;z-index:9999";
+        document.body.appendChild(btn);
+        const panel = document.createElement("div");
+        panel.style.cssText =
+          "position:fixed;left:12px;bottom:56px;width:360px;max-height:60vh;overflow:auto;padding:12px;border-radius:12px;background:#111;color:#e6e9f2;border:1px solid #2a2f3a;display:none;z-index:9999;font:14px system-ui";
+        panel.innerHTML =
+          "<b>siteAgent report</b><div id='sa-rpt' style='margin-top:8px'>loading…</div><div style='margin-top:8px;display:flex;gap:8px'><button id='sa-run-quick'>Run quick plan</button><button id='sa-close'>Close</button></div>";
+        document.body.appendChild(panel);
+        async function refresh() {
+          try {
+            const res = await fetch("/agent/report", { cache: "no-store" });
+            const j = await res.json();
+            const el = document.getElementById("sa-rpt");
+            el.innerHTML = `
+              <div><b>Last run:</b> ${j.status_ts || "n/a"}</div>
+              <div><b>Projects:</b> ${j.projects} · <b>Media:</b> ${j.media_count}</div>
+              <div><b>News items:</b> ${j.news_items}</div>
+              <div><b>Links:</b> ${j.links_checked} checked · <span style="color:#ffb4b4"><b>${j.links_missing} missing</b></span></div>
+            `;
+          } catch (e) {
+            document.getElementById("sa-rpt").textContent =
+              "Error loading report";
+            console.error(e);
+          }
+        }
+        btn.onclick = () => {
+          panel.style.display =
+            panel.style.display === "none" ? "block" : "none";
+          if (panel.style.display === "block") refresh();
+        };
+        panel.querySelector("#sa-close").onclick = () => {
+          panel.style.display = "none";
+        };
+        panel.querySelector("#sa-run-quick").onclick = async () => {
+          const body = JSON.stringify({
+            plan: ["news.sync", "links.validate", "status.write"],
+            params: {},
+          });
+          try {
+            const res = await fetch("/agent/run", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body,
+            });
+            await res.json().catch(() => ({}));
+            await refresh();
+          } catch (e) {
+            console.error(e);
+          }
+        };
+      })();
+    </script>
   </body>
 </html>
-

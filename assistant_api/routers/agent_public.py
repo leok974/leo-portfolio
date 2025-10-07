@@ -6,6 +6,7 @@ import hmac
 import hashlib
 import os
 import json
+from pathlib import Path
 from ..agent.runner import run, DEFAULT_PLAN
 from ..agent.tasks import REGISTRY
 from ..agent.models import recent_runs
@@ -84,3 +85,38 @@ def status():
         for r in rows
     ]
     return {"recent": items}
+
+
+@router.get("/report")
+def report():
+    """
+    Summarize key artifacts so the UI can show a compact maintenance dashboard.
+    """
+    base = Path("./assets/data")
+
+    def _read(name, default):
+        p = base / name
+        if not p.exists():
+            return default
+        try:
+            return json.loads(p.read_text("utf-8"))
+        except Exception:
+            return default
+
+    news = _read("news.json", {"items": []})
+    links = _read("link-check.json", {"checked": 0, "html_files": 0, "missing": []})
+    media = _read("media-index.json", {"count": 0, "items": []})
+    projects = _read("projects.json", {"projects": []})
+    status_data = _read("siteAgent.json", {"ts": None})
+    return {
+        "status_ts": status_data.get("ts"),
+        "projects": len(projects.get("projects", [])),
+        "media_count": media.get("count", 0),
+        "news_items": len(news.get("items", [])),
+        "links_checked": links.get("checked", 0),
+        "links_missing": len(links.get("missing", [])),
+        "samples": {
+            "missing": links.get("missing", [])[:5],
+            "news": news.get("items", [])[:5],
+        },
+    }
