@@ -35,11 +35,16 @@ def projects_sync(run_id, params):
                         "view",
                         repo,
                         "--json",
-                        "name,description,stargazerCount,updatedAt,topics",
+                        "name,description,stargazerCount,updatedAt,repositoryTopics",
                     ],
                     text=True,
                 )
-                meta = json.loads(out)
+                data = json.loads(out)
+                # Extract topic names from repositoryTopics
+                if "repositoryTopics" in data:
+                    data["topics"] = [t["topic"]["name"] for t in data.get("repositoryTopics", {}).get("nodes", [])]
+                    del data["repositoryTopics"]
+                meta = data
         except Exception as e:
             emit(run_id, "warn", "projects.sync.repo_failed", {"repo": repo, "err": str(e)})
         results.append(meta)
