@@ -1329,12 +1329,49 @@
             if (arts["link-apply.diff"]) {
               const a = arts["link-apply.diff"];
               items.push(
-                `<div>🧾 <a href="${a.path}" target="_blank" rel="noopener">link-apply.diff</a> <span style="opacity:.6">(${fmt(a.size) || ""})</span></div>`,
+                `<div>🧾 <a href="${a.path}" target="_blank" rel="noopener">link-apply.diff</a> <span style="opacity:.6">(${fmt(a.size) || ""})</span>
+                  · <a href="/agent/artifacts/link-apply.md" target="_blank" rel="noopener" title="Open PR-ready Markdown">Open PR-ready diff</a>
+                </div>`,
               );
             }
-            artsEl.innerHTML = items.length
-              ? items.join("")
-              : '<span style="opacity:.6">No artifacts found yet.</span>';
+            if (items.length) {
+              // Always render a copy-to-clipboard button when we have any artifact (json or diff)
+              items.push(
+                `<div><button id="sa-copy-pr" title="Copy PR-ready Markdown">Copy PR Markdown</button></div>`,
+              );
+              artsEl.innerHTML = items.join("");
+            } else {
+              artsEl.innerHTML =
+                '<span style="opacity:.6">No artifacts found yet.</span>';
+            }
+            // Wire the copy action (fetch MD then copy)
+            const cp = document.getElementById("sa-copy-pr");
+            if (cp) {
+              cp.onclick = async () => {
+                try {
+                  const md = await (
+                    await fetch("/agent/artifacts/link-apply.md", {
+                      cache: "no-store",
+                    })
+                  ).text();
+                  if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(md);
+                  } else {
+                    const ta = document.createElement("textarea");
+                    ta.value = md;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand("copy");
+                    document.body.removeChild(ta);
+                  }
+                  const old = cp.textContent;
+                  cp.textContent = "Copied! ✅";
+                  setTimeout(() => (cp.textContent = old), 1200);
+                } catch (e) {
+                  console.error(e);
+                }
+              };
+            }
           } catch (e) {
             document.getElementById("sa-rpt").textContent =
               "Error loading report";
