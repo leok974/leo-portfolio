@@ -10,8 +10,8 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-  "types": [],
-  "jsx": "react-jsx",
+    "types": [],
+    "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
@@ -28,5 +28,12 @@
     "types/**/*.d.ts",
     "vite.config.ts"
   ],
-  "exclude": ["node_modules", "dist", "coverage/lcov-report"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage/lcov-report",
+    "**/*.md",
+    "public/assets/js/**/*.js",
+    "assistant_api/**"
+  ]
 }

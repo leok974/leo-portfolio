@@ -8,3 +8,12 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+// Extend Window interface with custom properties used in the application
+interface Window {
+  __galleryReady?: boolean;
+  consent?: {
+    get?: () => any;
+    set?: (key: string, value: boolean) => void;
+  };
+}

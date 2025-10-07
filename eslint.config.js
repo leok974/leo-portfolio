@@ -21,7 +21,10 @@ export default [
       '.venv/**',
       'assistant_api/**',
       'tests/e2e/**/*.md',  // Exclude test documentation markdown files
-      'docs/**/*.md'  // Exclude project documentation markdown files
+      'docs/**/*.md',  // Exclude project documentation markdown files
+      '*.md',  // Exclude root-level markdown files
+      'public/assets/js/**/*.js',  // Exclude public asset JavaScript files
+      'test-script.js',  // HTML file misnamed as .js
     ],
   },
 
@@ -152,7 +155,11 @@ export default [
         process: 'readonly',
         Buffer: 'readonly',
         console: 'readonly',
-        fetch: 'readonly' // Node 18+
+        fetch: 'readonly', // Node 18+
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly'
       },
     },
     rules: {

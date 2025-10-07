@@ -7,10 +7,9 @@
 
 import assert from 'node:assert';
 import { execSync } from 'node:child_process';
-import { writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
 
 // Setup test fixtures
-const TEST_DIST = 'dist';
 const TEST_MANIFEST = 'public/sitemap.media.json';
 
 console.log('[test] Setting up test fixtures...');
@@ -93,7 +92,7 @@ try {
     encoding: 'utf8'
   });
   console.log('✓ Test 5 passed: Non-strict mode exits with code 0');
-} catch (e) {
+} catch (_e) {
   assert.fail('Non-strict mode should not fail');
 }
 
