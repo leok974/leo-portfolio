@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1200, initial-scale=1" />
+    <title>OG</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 1200px;
+        height: 630px;
+      }
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        background: radial-gradient(1200px 630px at 80% -20%, #151a2a, #0b0e15);
+        color: #e6e9f2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .card {
+        width: 1120px;
+        height: 550px;
+        border-radius: 28px;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.06),
+          rgba(255, 255, 255, 0.02)
+        );
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow:
+          0 40px 80px rgba(0, 0, 0, 0.45),
+          inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        padding: 48px;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 22px;
+      }
+      .title {
+        font-size: 72px;
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+      }
+      .subtitle {
+        font-size: 28px;
+        opacity: 0.9;
+        max-height: 3.2em;
+        overflow: hidden;
+      }
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .tags {
+        font-size: 22px;
+        opacity: 0.8;
+      }
+      .brand {
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        opacity: 0.9;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="title" id="t">Title</div>
+      <div class="subtitle" id="s">Subtitle</div>
+      <div class="footer">
+        <div class="tags" id="g">#tag1 · #tag2 · #tag3</div>
+        <div class="brand">LEO KORCHIA — SITEAGENT</div>
+      </div>
+    </div>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const title = params.get("title") || "Project";
+      const subtitle = params.get("subtitle") || "";
+      const tags = (params.get("tags") || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      document.getElementById("t").textContent = title;
+      document.getElementById("s").textContent = subtitle;
+      document.getElementById("g").textContent = tags.length
+        ? tags.map((t) => `#${t}`).join(" · ")
+        : "";
+    </script>
+  </body>
+</html>

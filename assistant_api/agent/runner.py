@@ -7,6 +7,8 @@ DEFAULT_PLAN = [
     "projects.sync",
     "sitemap.media.update",
     "og.generate",
+    "news.sync",
+    "links.validate",
     "status.write",
 ]
 
