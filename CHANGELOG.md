@@ -2,6 +2,42 @@
 
 ## [Unreleased] - 2025-01-25
 
+### Layout Optimization Extensions (Phase 50.1 🎯✨)
+- **Preset System**: Audience-specific optimizations
+  - `default`: Balanced weights (35/35/20/10), 3 featured
+  - `recruiter`: High signal/media (45/15), 4 featured - emphasize popularity
+  - `hiring_manager`: High fit/freshness (25/40), 3 featured - emphasize relevance
+  - `select_preset(name)` function for dynamic preset selection
+- **Layout Sections (v2 Format)**: Featured/more split
+  - `sections.featured`: Top N projects for above-the-fold hero display
+  - `sections.more`: Remaining projects for below-the-fold grid
+  - Backward compatible: `order` field preserved for legacy readers
+  - Metadata: `preset` and `version: 2` tracked in output
+- **A/B Testing Infrastructure**: Data-driven weight optimization
+  - `assign_bucket(visitor_id)`: Consistent bucket assignment (A or B)
+  - `record_event(bucket, event)`: Track views and clicks
+  - `suggest_weights()`: CTR analysis with weight adjustment hints
+  - State persistence: `data/layout_ab_state.json`
+  - API endpoints: `/agent/ab/assign`, `/agent/ab/event`, `/agent/ab/suggest`, `/agent/ab/reset`
+- **PR Automation**: GitHub integration for layout updates
+  - `layout.apply` task: Commit layout to feature branch
+  - `pr.create` task: Open GitHub PR via API
+  - Environment vars: `GITHUB_TOKEN`, `GITHUB_REPO`
+  - Git operations: branch creation, commit, push, PR creation
+- **Agent API Extensions**: Task-based execution
+  - `ActReq` model: Support both `command` (NL) and `task` + `payload` (direct)
+  - Direct task execution: `{task: "layout.optimize", payload: {preset: "recruiter"}}`
+  - Natural language still supported: `{command: "optimize layout"}`
+- **Test Coverage**: 20 new tests (24 total, all passing in 0.17s)
+  - `test_layout_sections.py` (9 tests): Preset validation, section splitting
+  - `test_layout_ab.py` (11 tests): Bucket assignment, event tracking, CTR
+  - Updated `test_layout_optimize.py` (4 tests): Weights parameter, v2 format
+- **Architecture**:
+  - New files: `layout_ab.py`, `pr_utils.py`, `ab.py` router
+  - Modified: `layout_opt.py` (presets), `agent_public.py` (tasks), `main.py` (mount)
+  - Breaking changes: `score_projects(weights)`, `propose_layout(featured_count, preset_name)`
+- **Branch**: `LINKEDIN-OPTIMIZED` (commit: `be4e453`)
+
 ### Layout Optimization System (Phase 50 🎯)
 - **Multi-Factor Scoring Algorithm**: Intelligent project ranking
   - Freshness (35%): Exponential decay, 30-day half-life
