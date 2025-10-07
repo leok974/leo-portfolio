@@ -127,6 +127,10 @@ app.include_router(agent_public.router)
 from assistant_api.routers import ab
 app.include_router(ab.router)
 
+# Layout weights management routes (for interactive weight tuning)
+from assistant_api.routers import layout_weights
+app.include_router(layout_weights.router)
+
 # Resume public routes (no auth required)
 from assistant_api.routers import resume_public
 app.include_router(resume_public.router)

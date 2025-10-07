@@ -4,6 +4,7 @@ import json
 import time
 import pathlib
 import random
+import hashlib
 from typing import Dict, Any
 
 STATE_PATH = pathlib.Path("data/layout_ab_state.json")
@@ -46,10 +47,11 @@ def assign_bucket(visitor_id: str | None = None) -> str:
     Returns:
         "A" or "B"
     """
-    # Simple random assignment; can hash visitor_id for stickiness
+    # Use SHA1-based deterministic bucketing if visitor_id provided
     if visitor_id:
-        # Consistent bucketing based on visitor_id hash
-        return "A" if hash(visitor_id) % 2 == 0 else "B"
+        h = hashlib.sha1(visitor_id.encode("utf-8")).hexdigest()
+        return "A" if (int(h[:8], 16) % 2 == 0) else "B"
+    # Fallback to random assignment
     return "A" if random.random() < 0.5 else "B"
 
 

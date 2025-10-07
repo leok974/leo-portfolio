@@ -1,22 +1,29 @@
 """A/B testing router for layout optimization."""
-from fastapi import APIRouter
+from fastapi import APIRouter, Header
+from typing import Optional
 from ..services.layout_ab import assign_bucket, record_event, suggest_weights, reset_metrics
 
 router = APIRouter(prefix="/agent/ab", tags=["ab-testing"])
 
 
 @router.get("/assign")
-def ab_assign(visitor_id: str | None = None):
+def ab_assign(
+    visitor_id: Optional[str] = None,
+    x_visitor_id: Optional[str] = Header(None, alias="X-Visitor-Id")
+):
     """
     Assign visitor to A or B bucket.
 
     Args:
-        visitor_id: Optional visitor ID for consistent bucketing
+        visitor_id: Optional visitor ID query parameter
+        x_visitor_id: Optional visitor ID from X-Visitor-Id header
 
     Returns:
         Dict with assigned bucket
     """
-    return {"bucket": assign_bucket(visitor_id)}
+    # Prefer query param over header
+    vid = visitor_id or x_visitor_id
+    return {"bucket": assign_bucket(vid)}
 
 
 @router.post("/event/{bucket}/{event}")

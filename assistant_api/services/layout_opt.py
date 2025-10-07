@@ -9,6 +9,7 @@ import pathlib
 
 from .artifacts import write_artifact
 from .git_utils import make_diff
+from .layout_weights import read_active
 from ..utils.text import slugify
 
 # Paths (adjust if your structure differs)
@@ -303,7 +304,10 @@ def run_layout_optimize(payload: Dict[str, Any] | None = None) -> Dict[str, Any]
     preset = select_preset(payload.get("preset"))
     preset_name = payload.get("preset") or "default"
     roles = set(payload.get("roles") or preset["roles"])
-    weights = preset["weights"]
+    
+    # Weight precedence: payload.weights > active weights > preset weights
+    weights = payload.get("weights") or read_active() or preset["weights"]
+    
     featured_count = int(payload.get("featured_count") or preset["sections"]["featured"])
 
     # Read projects
