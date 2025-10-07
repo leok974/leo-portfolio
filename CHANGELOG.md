@@ -2,6 +2,44 @@
 
 ## [Unreleased] - 2025-10-06
 
+### Service Token Support (NON-INTERACTIVE AUTH)
+- **Dual Authentication**: Backend now accepts both user SSO and service tokens
+  - ✅ **User SSO**: Interactive login via browser (existing)
+  - ✅ **Service Tokens**: Non-interactive authentication for CI/CD
+  - Both work simultaneously without conflicts
+- **Implementation**:
+  - `assistant_api/utils/cf_access.py` - Dual authentication logic
+  - `ACCESS_ALLOWED_EMAILS` - User email allowlist (existing)
+  - `ACCESS_ALLOWED_SERVICE_SUBS` - Service token allowlist (NEW)
+  - Returns generic "principal" (email or token name)
+- **Service Token Flow**:
+  1. Client sends `CF-Access-Client-Id` and `CF-Access-Client-Secret` headers
+  2. Cloudflare validates credentials and injects JWT
+  3. Backend extracts `sub` claim (service token name)
+  4. Backend validates against `ACCESS_ALLOWED_SERVICE_SUBS`
+- **Use Cases**:
+  - 🤖 Automated gallery uploads from CI/CD pipelines
+  - ⏰ Scheduled content updates (cron jobs)
+  - 🚀 GitHub Actions integration (no human required)
+  - 🔄 Bot-based portfolio management
+- **Configuration** (`.env.prod`):
+  ```bash
+  ACCESS_ALLOWED_SERVICE_SUBS=portfolio-admin-smoke
+  ```
+- **Testing**:
+  - `test-service-token.ps1` - Automated test script
+  - Service token authentication verified ✅
+  - Production deployment pending
+- **Documentation**:
+  - `docs/CF_ACCESS_SERVICE_TOKENS.md` - 400+ line comprehensive guide
+  - `SERVICE_TOKEN_IMPLEMENTATION.md` - Implementation summary
+  - `PRODUCTION_DEPLOY_SERVICE_TOKEN.md` - Deployment guide
+  - `SERVICE_TOKEN_COMPLETE_SUMMARY.md` - Full summary
+  - `QUICK_DEPLOY_SERVICE_TOKEN.md` - Quick reference
+- **Breaking Changes**:
+  - 🔴 `/api/admin/whoami` now returns `{"principal": "..."}` instead of `{"email": "..."}`
+  - ⚠️ Update any code expecting `email` field to use `principal`
+
 ### Centralized Admin Router (BREAKING CHANGE)
 - **Single Privileged Prefix**: All protected operations now under `/api/admin/*`
   - ✅ **GET** `/api/admin/whoami` - Returns authenticated user's email (smoke test)
