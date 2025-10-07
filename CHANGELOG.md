@@ -2,6 +2,42 @@
 
 ## [Unreleased] - 2025-01-07
 
+### Logo.fetch Security Hardening & Logo Removal (Phase 43.1 🔒)
+- **SSRF Protection**: Blocks private/loopback/link-local/reserved IPs
+  - Prevents attacks on internal services (AWS metadata, databases, admin panels)
+  - Resolves hostnames before fetching to validate IP address
+  - Blocks: 10.x, 172.16-31.x, 192.168.x, 127.x, 169.254.x, multicast, reserved
+- **HTTPS Enforcement**: Requires HTTPS by default (configurable)
+  - Environment variable: `SITEAGENT_LOGO_ALLOW_HTTP=1` to allow HTTP
+  - Prevents man-in-the-middle attacks on logo downloads
+- **Host Allowlist**: Optional suffix-based host filtering
+  - Environment variable: `SITEAGENT_LOGO_HOSTS=github.com,cdn.example.com`
+  - When set, only allows logos from specified domains
+  - Suffix matching: `raw.githubusercontent.com` matches `githubusercontent.com`
+- **SVG Sanitization**: Strips malicious elements and attributes
+  - Removes `<script>` and `<foreignObject>` tags
+  - Removes all `on*` event attributes (onclick, onload, etc.)
+  - Prevents XSS attacks via SVG injection
+- **Configurable Size Limits**: Environment-based max file size
+  - Environment variable: `SITEAGENT_LOGO_MAX_MB=3` (default 3MB)
+  - Two-stage validation: Content-Length header + streaming check
+  - Prevents disk space exhaustion attacks
+- **Logo Removal Support**: Remove logo mappings without deleting files
+  - Natural language: `remove logo for repo X` or `remove logo for Title`
+  - API: `params.logo = {repo/title, remove: true}`
+  - Deletes mapping from og-overrides.json, regenerates OG images
+- **New Environment Variables**:
+  - `SITEAGENT_LOGO_MAX_MB`: Max logo file size in MB (default 3)
+  - `SITEAGENT_LOGO_ALLOW_HTTP`: Allow plain HTTP downloads (default false)
+  - `SITEAGENT_LOGO_HOSTS`: Comma-separated host suffixes (optional)
+- **Test Coverage**: 4 additional security tests
+  - test_logo_fetch_blocks_private_ip: SSRF guard validation
+  - test_remove_logo_mapping: Logo removal via overrides.update
+  - test_interpret_remove_logo_for_repo: Remove command parsing (repo)
+  - test_interpret_remove_logo_for_title: Remove command parsing (title)
+  - All 20 tests passing (9 logo.fetch + 11 interpreter)
+- **Documentation**: LOGO_FETCH_SECURITY.md (comprehensive security guide)
+
 ### Logo.fetch Task - URL-Based Logo Downloads (Phase 43 ✨)
 - **New logo.fetch Task**: Automated logo downloading from URLs
   - Downloads from any http(s) URL with size validation (default 3MB cap)
