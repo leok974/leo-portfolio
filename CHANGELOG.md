@@ -2,6 +2,41 @@
 
 ## [Unreleased] - 2025-01-25
 
+### Layout Optimization Advanced Features (Phase 50.2 🎯🔬)
+- **Sticky A/B Assignment**: Deterministic bucketing for consistent user experience
+  - SHA1-based bucketing: `bucket_for(visitor_id)` → deterministic 50/50 split
+  - Accept `visitor_id` query param and `X-Visitor-Id` header in `/agent/ab/assign`
+  - Ensures same visitor always gets same bucket across sessions
+  - Frontend integration: `crypto.randomUUID()` stored in localStorage + cookie
+- **Nightly Scheduler**: Automated layout optimization
+  - Async scheduler running at 02:30 daily
+  - Weekday (Mon-Fri) → `recruiter` preset (high signal/media)
+  - Weekend (Sat-Sun) → `hiring_manager` preset (high fit/freshness)
+  - Guard: `SCHEDULER_ENABLED=1` environment variable
+  - Integrated into FastAPI lifespan context
+  - Error handling: 1-hour retry delay on failure
+- **Overlay Weight Editor**: Interactive weight tuning with approval workflow
+  - Weight management service: `layout_weights.py`
+  - Active/proposed weight storage: `data/layout_weights.{active,proposed}.json`
+  - Workflow: Save proposal → Review → Approve → Activate
+  - API endpoints:
+    - `GET /agent/layout/weights`: Get active and proposed weights
+    - `POST /agent/layout/weights/propose`: Save proposed weights
+    - `POST /agent/layout/weights/approve`: Activate proposed weights
+    - `POST /agent/layout/weights/clear`: Clear proposal without activating
+  - Weight precedence in `run_layout_optimize`: payload.weights > active > preset
+  - Frontend ready: Sliders with normalization + save/approve/optimize buttons
+- **Test Coverage**: 10 new tests (32 total, all passing in 0.23s)
+  - `test_ab_sticky.py` (3 tests): Deterministic bucketing, visitor consistency
+  - `test_scheduler_pick.py` (3 tests): Next run time calculation (before/after/at 02:30)
+  - `test_weights_editor.py` (4 tests): Propose, approve, clear, error handling
+  - All existing tests still passing (22 tests)
+- **Architecture**:
+  - New files: `scheduler.py` (82 lines), `layout_weights.py` (82 lines), `layout_weights.py` router (60 lines)
+  - Modified: `layout_ab.py` (SHA1), `ab.py` (visitor_id), `layout_opt.py` (active weights), `main.py` (mount), `lifespan.py` (scheduler)
+  - Breaking changes: `assign_bucket(visitor_id)` now uses SHA1 instead of `hash()`
+- **Branch**: `LINKEDIN-OPTIMIZED` (commit: `b5b534a`)
+
 ### Layout Optimization Extensions (Phase 50.1 🎯✨)
 - **Preset System**: Audience-specific optimizations
   - `default`: Balanced weights (35/35/20/10), 3 featured
