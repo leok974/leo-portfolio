@@ -25,10 +25,10 @@ def test_pdf_works_or_graceful(monkeypatch, tmp_path):
         has_reportlab = True
     except Exception:
         has_reportlab = False
-        
+
         def fake_render(md):
             return b"%PDF-1.4\n%fake\n"
-        
+
         monkeypatch.setattr(rp, "_render_pdf", fake_render)
 
     r = client.get("/resume/generate.pdf")

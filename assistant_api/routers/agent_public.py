@@ -262,7 +262,6 @@ async def act(req: Request, body: bytes = Depends(_authorized)):
             )
 
     return run(plan, params)
-    return run(plan, params)
 
 
 # -----------------------------

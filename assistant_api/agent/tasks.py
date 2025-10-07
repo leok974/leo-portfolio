@@ -692,3 +692,24 @@ def links_validate(run_id, params):
     if missing:
         emit(run_id, "warn", "links.validate.missing", status)
     return status
+
+
+@task("layout.optimize")
+def layout_optimize(run_id, params):
+    """
+    Optimize project layout ordering based on freshness, signal, fit, and media quality.
+    Generates assets/layout.json with prioritized project order.
+    
+    Params:
+        roles: List of target roles (e.g., ["ai", "swe", "ml"])
+    """
+    from ..services.layout_opt import run_layout_optimize
+    
+    emit(run_id, "info", "layout.optimize.start", {"params": params})
+    try:
+        result = run_layout_optimize(params)
+        emit(run_id, "info", "layout.optimize.done", {"summary": result.get("summary")})
+        return result
+    except Exception as e:
+        emit(run_id, "error", "layout.optimize.failed", {"error": str(e)})
+        raise

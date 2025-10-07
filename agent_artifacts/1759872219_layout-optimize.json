@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "generated_at": 1759872219,
+  "order": [
+    "ledgermind",
+    "datapipe-ai",
+    "clarity",
+    "dermaai",
+    "pixo-banana-suite"
+  ],
+  "explain": {
+    "ledgermind": {
+      "score": 0.31,
+      "why": [
+        "freshness=0.50",
+        "signal=0.00",
+        "fit=0.38",
+        "media=0.60",
+        "matches ai:rag",
+        "matches ai:finance",
+        "matches ai:agent"
+      ],
+      "parts": {
+        "freshness": 0.5,
+        "signal": 0.0,
+        "fit": 0.375,
+        "media": 0.6
+      }
+    },
+    "datapipe-ai": {
+      "score": 0.31,
+      "why": [
+        "freshness=0.50",
+        "signal=0.00",
+        "fit=0.38",
+        "media=0.60",
+        "matches ai:rag",
+        "matches ai:data",
+        "matches ai:analytics"
+      ],
+      "parts": {
+        "freshness": 0.5,
+        "signal": 0.0,
+        "fit": 0.375,
+        "media": 0.6
+      }
+    },
+    "clarity": {
+      "score": 0.235,
+      "why": ["freshness=0.50", "signal=0.00", "fit=0.00", "media=0.60"],
+      "parts": {
+        "freshness": 0.5,
+        "signal": 0.0,
+        "fit": 0.0,
+        "media": 0.6
+      }
+    },
+    "dermaai": {
+      "score": 0.235,
+      "why": ["freshness=0.50", "signal=0.00", "fit=0.00", "media=0.60"],
+      "parts": {
+        "freshness": 0.5,
+        "signal": 0.0,
+        "fit": 0.0,
+        "media": 0.6
+      }
+    },
+    "pixo-banana-suite": {
+      "score": 0.235,
+      "why": ["freshness=0.50", "signal=0.00", "fit=0.00", "media=0.60"],
+      "parts": {
+        "freshness": 0.5,
+        "signal": 0.0,
+        "fit": 0.0,
+        "media": 0.6
+      }
+    }
+  }
+}

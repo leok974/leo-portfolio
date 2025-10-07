@@ -1,7 +1,7 @@
 # Resume Generator Enhancement — Phase 49.1 Complete ✅
 
-**Branch:** `LINKEDIN-OPTIMIZED`  
-**Commit:** `6221973`  
+**Branch:** `LINKEDIN-OPTIMIZED`
+**Commit:** `6221973`
 **Date:** October 7, 2025
 
 ---
@@ -30,11 +30,11 @@ def _tune(roles: List[str], seniority: Optional[str]) -> Tuple[str, str, List[st
         headline = "AI Engineer — Agents, LLM Ops, and Retrieval-Augmented Systems"
     elif "swe" in roles:
         headline = "Software Engineer — DX-first, testable systems with AI features"
-    
+
     # Seniority prefix
     if seniority in {"junior", "mid", "senior"}:
         headline = f"{seniority.capitalize()} {headline}"
-    
+
     # About text extensions
     if "ml" in roles or "ai" in roles:
         about_tail.append("Comfortable with local-first inference (Ollama), vector search...")
@@ -72,11 +72,11 @@ GET /resume/generate.md?roles=swe&seniority=mid
 ┌─────────────────────────────────────────┐
 │ Leo Klemet — LinkedIn Resume       (16pt bold)
 │ 2025-10-07                          (9pt)
-│                                          
+│
 │ [Resume text with automatic line wrapping]
-│ [10.5pt font, 13pt leading]             
-│                                          
-│ [Page breaks when needed]               
+│ [10.5pt font, 13pt leading]
+│
+│ [Page breaks when needed]
 └─────────────────────────────────────────┘
 ```
 
@@ -492,18 +492,18 @@ def _tune(roles: List[str], seniority: Optional[str]) -> Tuple[str, str, List[st
         headline = "AI Engineer — Agents, LLM Ops..."
     elif "swe" in roles:
         headline = "Software Engineer — DX-first, testable systems..."
-    
+
     # Seniority prefix
     if seniority in {"junior", "mid", "senior"}:
         headline = f"{seniority.capitalize()} {headline}"
-    
+
     # About extensions (role-specific)
     about_tail = []
     if "ml" in roles or "ai" in roles:
         about_tail.append("Comfortable with local-first inference...")
     if "swe" in roles:
         about_tail.append("Strong DX mindset: CI/CD, coverage gates...")
-    
+
     return headline, " ".join(about_tail), roles
 ```
 
@@ -516,14 +516,14 @@ def _render_pdf(md_text: str) -> bytes:
         from reportlab.lib.units import inch
     except Exception:
         raise HTTPException(503, detail="pdf_unavailable")
-    
+
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=letter)
-    
+
     # Title
     c.setFont("Helvetica-Bold", 16)
     c.drawString(x_margin, y, "Leo Klemet — LinkedIn Resume")
-    
+
     # Body (with line wrapping and pagination)
     for line, leading in wrap_lines(md_text):
         if y < y_margin + 20:  # Page break
@@ -531,7 +531,7 @@ def _render_pdf(md_text: str) -> bytes:
             y = height - y_margin
         c.drawString(x_margin, y, line)
         y -= leading
-    
+
     c.save()
     return buf.getvalue()
 ```
@@ -544,11 +544,11 @@ def _compact_linkedin_text(md: str, limit: int = 2600) -> str:
     text = re.sub(r"^##? .*\n?", "", text, flags=re.M)  # Sections
     text = re.sub(r"\*\*", "", text)  # Bold
     text = re.sub(r"\n{3,}", "\n\n", text).strip()  # Whitespace
-    
+
     # Truncate with ellipsis
     if len(text) > limit:
         text = text[: max(0, limit - 1)].rstrip() + "…"
-    
+
     return text
 ```
 
@@ -629,8 +629,8 @@ All Phase 49.1 requirements met:
 
 All objectives achieved. Resume generator now production-ready with advanced customization, multiple export formats, and comprehensive test coverage.
 
-**Total Implementation Time:** ~45 minutes  
-**Lines Changed:** +492 insertions, -39 deletions  
-**Tests Added:** 5 new tests (11 total)  
-**Files Created:** 4 new files  
+**Total Implementation Time:** ~45 minutes
+**Lines Changed:** +492 insertions, -39 deletions
+**Tests Added:** 5 new tests (11 total)
+**Files Created:** 4 new files
 **Dependencies Added:** 1 (reportlab)

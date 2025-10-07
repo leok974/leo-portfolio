@@ -90,6 +90,16 @@ def parse_command(cmd: str) -> Tuple[List[str], Dict[str, Any]]:
     if re.search(r"\b(suggest|recommend)\b.*\blink\b.*\bfix(es)?\b", c, re.I):
         plan = ["links.suggest", "status.write"]
         return plan, params
+    # optimize layout
+    if re.search(r"\b(optimi[sz]e)\b.*\blayout\b", c, re.I):
+        plan = ["layout.optimize", "status.write"]
+        # Extract roles if specified (e.g., "optimize layout for ai and swe")
+        roles_match = re.search(r"for\s+([\w\s,]+)$", c, re.I)
+        if roles_match:
+            roles_text = roles_match.group(1)
+            roles = [r.strip().lower() for r in re.split(r"[\s,]+and[\s,]+|[\s,]+", roles_text) if r.strip()]
+            params = {"roles": roles}
+        return plan, params
 
     # default: no-op
     return plan, params

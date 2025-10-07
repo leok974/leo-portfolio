@@ -177,7 +177,7 @@ def _make_markdown(projects: list[dict], roles: List[str] = None, seniority: Opt
     """Generate complete Markdown resume with optional role/seniority tuning."""
     if roles is None:
         roles = []
-    
+
     year = dt.date.today().year
     head, tail, _ = _tune(roles, seniority)
     about = _about_blurb()
