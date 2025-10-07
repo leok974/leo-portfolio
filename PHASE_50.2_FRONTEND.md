@@ -1,23 +1,235 @@
 # Phase 50.2 Frontend Implementation Guide
 
-**Status**: ✅ COMPLETE  
-**Backend**: cbf8804  
-**Frontend Components**: NEW  
+**Status**: ✅ COMPLETE (with UX Enhancements)
+**Backend**: cbf8804
+**Frontend Components**: 02cfbfc
+**UX Enhancements**: 6d10dd6
 **Date**: 2025-10-07
 
 ## Overview
 
 Frontend implementation for Phase 50.2 layout optimization tools, providing interactive UI for:
 - **Weight Editor**: Adjust scoring weights with sliders
-- **A/B Analytics**: View CTR comparison and suggestions
-- **Last Run Badge**: Track optimization history
+- **A/B Analytics**: View CTR comparison and suggestions (with Run Now button)
+- **Last Run Badge**: Track optimization history (auto-refreshing)
+- **Toast Notifications**: Real-time feedback for user actions
+- **AB Tracking**: Client-side event tracking with visual feedback
 
 ---
 
-## Components Created
+## ✨ Phase 50.2 UX Enhancements (6d10dd6)
+
+### Core Systems Added
+
+#### 1. Toast Notification System
+**Location**: `src/lib/toast.tsx`
+**Purpose**: Provide real-time user feedback for actions
+
+**Features**:
+- CustomEvent-based architecture (`siteagent:toast`)
+- Auto-dismiss after 2 seconds
+- Fixed bottom-right positioning (z-index 9999)
+- Dark mode compatible
+
+**API**:
+```typescript
+// Emit a toast from anywhere
+import { emitToast } from "@/lib/toast";
+emitToast("Optimization started!");
+
+// Mount once in your app (already added to LayoutAgentPanel)
+import { ToastHost } from "@/lib/toast";
+<ToastHost />
+```
+
+**Use Cases**:
+- AB click tracking: "Thanks! Counted your A click."
+- Optimization status: "Optimization complete!"
+- Error feedback: "Failed to run optimization"
+
+---
+
+#### 2. AB Tracking Client
+**Location**: `src/lib/ab.ts`
+**Purpose**: Client-side A/B testing with sticky bucket assignment
+
+**Features**:
+- Visitor ID generation (UUID)
+- localStorage + cookie persistence
+- Bucket assignment via backend API
+- Event tracking (view/click)
+- Toast notifications on user interactions
+
+**API**:
+```typescript
+import { initAbTracking, fireAbEvent } from "@/lib/ab";
+
+// Initialize on page load (call once)
+await initAbTracking();
+
+// Track events
+await fireAbEvent("view");  // Track page view
+await fireAbEvent("click"); // Track card click → shows toast
+```
+
+**Storage**:
+- `localStorage.visitor_id`: UUID for tracking
+- `localStorage.ab_bucket`: Cached bucket ("A" or "B")
+- Cookie `visitor_id`: 30-day persistent identifier
+
+**Backend Integration**:
+- `GET /agent/ab/assign?visitor_id=xxx` - Get bucket assignment
+- `POST /agent/ab/event/{bucket}/{event}` - Track event
+
+---
+
+### Component Enhancements
+
+#### Enhanced: ABAnalyticsPanel.tsx
+
+**New Features**:
+1. **Run Now Button** with preset selector
+   - Triggers immediate layout optimization
+   - Dropdown: default, recruiter, hiring_manager
+   - Disabled during optimization (prevents double-clicks)
+   - Shows success/failure toast
+
+2. **Bold Winner Display**
+   - Winner CTR: `font-bold` (prominent)
+   - Loser CTR: `opacity-75` (dimmed)
+   - Instant visual identification of better-performing bucket
+
+3. **Event-Driven Updates**
+   - Dispatches `siteagent:layout:updated` after optimization
+   - Triggers badge refresh automatically
+
+**New Props**: None (backward compatible)
+
+**New Test IDs**:
+- `run-now` - Run Now button
+- `preset-select` - Preset dropdown
+
+**API Calls Added**:
+- `POST ${base}/agent/act` - Run optimization with preset
+- `GET ${base}/assets/layout.json` - Refresh current preset
+
+---
+
+#### Enhanced: LastRunBadge.tsx
+
+**New Features**:
+1. **Event Listener for Auto-Refresh**
+   - Listens for `siteagent:layout:updated` event
+   - Refetches layout.json automatically
+   - 500ms delay for backend write completion
+
+**Implementation**:
+```typescript
+useEffect(() => {
+  fetchBadge(); // Initial load
+  
+  const handler = () => {
+    setTimeout(() => fetchBadge(), 500);
+  };
+  window.addEventListener("siteagent:layout:updated", handler);
+  
+  return () => window.removeEventListener("siteagent:layout:updated", handler);
+}, [base]);
+```
+
+**Result**: Badge updates in real-time when Run Now is clicked, no manual refresh needed.
+
+---
+
+#### Enhanced: LayoutAgentPanel.tsx
+
+**New Features**:
+1. **ToastHost Mount**
+   - Added `<ToastHost />` component
+   - Provides app-wide toast notifications
+
+**Changes**:
+```tsx
+import { ToastHost } from "@/lib/toast";
+
+export function LayoutAgentPanel({ base = "" }: { base?: string }) {
+  return (
+    <div data-testid="layout-agent-panel">
+      {/* Existing components */}
+      <ToastHost />
+    </div>
+  );
+}
+```
+
+---
+
+### New E2E Tests (Enhancement Coverage)
+
+#### 1. ab-toast.spec.ts (3 tests)
+**Purpose**: Test toast notifications for AB tracking
+
+**Tests**:
+- ✅ Toast appears on project card click
+- ✅ Correct bucket (A or B) shown in message
+- ✅ Visitor ID stored in localStorage
+
+**Coverage**: Toast system, AB tracking integration
+
+---
+
+#### 2. ab-winner-bold.spec.ts (3 tests)
+**Purpose**: Test winner highlighting in analytics
+
+**Tests**:
+- ✅ Winner CTR is bold, loser is dimmed
+- ✅ Winner indicator ("Better: A" or "Better: B")
+- ✅ Suggested nudge value displayed
+
+**Coverage**: Bold winner logic, CTR display
+
+---
+
+#### 3. run-now-badge.spec.ts (4 tests)
+**Purpose**: Test Run Now button and badge auto-refresh
+
+**Tests**:
+- ✅ Run Now triggers optimization
+- ✅ Button disabled during optimization
+- ✅ Badge updates after optimization
+- ✅ Preset selector works correctly
+- ✅ Error toast on optimization failure
+
+**Coverage**: Run Now workflow, event-driven updates
+
+---
+
+### Running Enhanced E2E Tests
+
+```bash
+# Run all Phase 50.2 tests (base + enhancements)
+npm run playwright test tests/e2e/weights-editor.spec.ts \
+  tests/e2e/ab-analytics.spec.ts \
+  tests/e2e/last-run-badge.spec.ts \
+  tests/e2e/layout-agent-panel.spec.ts \
+  tests/e2e/ab-toast.spec.ts \
+  tests/e2e/ab-winner-bold.spec.ts \
+  tests/e2e/run-now-badge.spec.ts
+
+# Or with filter
+npm run playwright test --grep "@phase50.2"
+```
+
+**Total Tests**: 16 (13 base + 10 enhancements = 23 tests)
+
+---
+
+## Original Components (02cfbfc)
+
+---
 
 ### 1. WeightsEditor.tsx
-**Location**: `src/components/WeightsEditor.tsx`  
+**Location**: `src/components/WeightsEditor.tsx`
 **Purpose**: Interactive weight tuning with propose → approve → optimize workflow
 
 **Features**:
@@ -50,7 +262,7 @@ interface Props {
 ---
 
 ### 2. ABAnalyticsPanel.tsx
-**Location**: `src/components/ABAnalyticsPanel.tsx`  
+**Location**: `src/components/ABAnalyticsPanel.tsx`
 **Purpose**: Display A/B test results and weight adjustment suggestions
 
 **Features**:
@@ -77,7 +289,7 @@ interface Props {
 ---
 
 ### 3. LastRunBadge.tsx
-**Location**: `src/components/LastRunBadge.tsx`  
+**Location**: `src/components/LastRunBadge.tsx`
 **Purpose**: Show when layout was last optimized and with what preset
 
 **Features**:
@@ -102,7 +314,7 @@ interface Props {
 ---
 
 ### 4. LayoutAgentPanel.tsx
-**Location**: `src/components/LayoutAgentPanel.tsx`  
+**Location**: `src/components/LayoutAgentPanel.tsx`
 **Purpose**: Integrated panel combining all Phase 50.2 components
 
 **Features**:
@@ -138,7 +350,7 @@ export function AdminToolsPanel({ base = "" }: { base?: string }) {
       {/* Your existing admin tools */}
       <AdminRebuildButton base={base} />
       <AdminEvalWidget base={base} />
-      
+
       {/* Add Phase 50.2 tools */}
       <LayoutAgentPanel base={base} />
     </div>
@@ -173,13 +385,13 @@ import { LayoutAgentPanel } from "@/components/LayoutAgentPanel";
 
 export function DevOverlay() {
   const [showLayout, setShowLayout] = useState(false);
-  
+
   return (
     <div>
       <button onClick={() => setShowLayout(!showLayout)}>
         Layout Tools
       </button>
-      
+
       {showLayout && <LayoutAgentPanel />}
     </div>
   );
@@ -310,10 +522,10 @@ export function AdminToolsPanel({ base = "" }: { base?: string }) {
   return (
     <div className="space-y-6 p-4">
       <h1 className="text-2xl font-bold">Admin Tools</h1>
-      
+
       {/* Existing tools */}
       <AdminRebuildButton base={base} />
-      
+
       {/* Phase 50.2: Layout optimization tools */}
       <LayoutAgentPanel base={base} />
     </div>
@@ -330,15 +542,15 @@ import { LayoutAgentPanel } from "./LayoutAgentPanel";
 
 export function DevToolsOverlay() {
   const [isDevMode, setIsDevMode] = useState(false);
-  
+
   useEffect(() => {
     // Check dev mode flag (cookie, localStorage, etc.)
     const devFlag = localStorage.getItem("devMode") === "true";
     setIsDevMode(devFlag);
   }, []);
-  
+
   if (!isDevMode) return null;
-  
+
   return (
     <div className="fixed bottom-4 right-4 w-96 max-h-[80vh] overflow-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border p-4">
       <div className="flex justify-between items-center mb-4">
@@ -414,7 +626,7 @@ export function DevToolsOverlay() {
 ## Troubleshooting
 
 ### Components Not Visible
-**Problem**: Components don't appear after integration  
+**Problem**: Components don't appear after integration
 **Solutions**:
 1. Check if they're in a collapsed/hidden panel that needs to be opened
 2. Verify `base` prop points to correct backend URL
@@ -422,7 +634,7 @@ export function DevToolsOverlay() {
 4. Verify backend is running and accessible
 
 ### API Calls Failing
-**Problem**: "Network error" messages in components  
+**Problem**: "Network error" messages in components
 **Solutions**:
 1. Check CORS configuration on backend
 2. Verify backend is running: `curl http://localhost:8001/agent/layout/weights`
@@ -430,7 +642,7 @@ export function DevToolsOverlay() {
 4. Verify `base` prop is correct for your deployment
 
 ### E2E Tests Failing
-**Problem**: Playwright tests timeout or fail  
+**Problem**: Playwright tests timeout or fail
 **Solutions**:
 1. Ensure backend is running: `uvicorn assistant_api.main:app --port 8001`
 2. Run one optimization to create layout.json: `curl -X POST http://localhost:8001/agent/act -d '{"task":"layout.optimize"}'`
@@ -438,7 +650,7 @@ export function DevToolsOverlay() {
 4. Increase timeout in tests if backend is slow: `{ timeout: 15000 }`
 
 ### Styling Issues
-**Problem**: Components look broken or unstyled  
+**Problem**: Components look broken or unstyled
 **Solutions**:
 1. Verify Tailwind CSS is configured in your project
 2. Check dark mode setup (components use `dark:` classes)
@@ -471,11 +683,11 @@ export function DevToolsOverlay() {
 
 ## Summary
 
-✅ **4 React components** created with TypeScript + Tailwind  
-✅ **4 E2E test suites** with 13 total tests  
-✅ **Full dark mode support** and responsive design  
-✅ **Error handling** and graceful fallbacks  
-✅ **Integration ready** - drop into existing admin panel  
+✅ **4 React components** created with TypeScript + Tailwind
+✅ **4 E2E test suites** with 13 total tests
+✅ **Full dark mode support** and responsive design
+✅ **Error handling** and graceful fallbacks
+✅ **Integration ready** - drop into existing admin panel
 ✅ **Production tested** - works with Phase 50.2 backend
 
 **Next Steps**: Integrate `LayoutAgentPanel` into your admin overlay, run E2E tests, deploy!
