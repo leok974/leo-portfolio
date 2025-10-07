@@ -15,14 +15,14 @@ def client(monkeypatch):
 def test_pr_open_disabled(monkeypatch, client):
     """Test that PR open returns 503 when GITHUB_TOKEN not set."""
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
-    
+
     # Try to open PR without GitHub token configured
     r = client.post(
         "/agent/pr/open",
         json={"title": "test", "branch": "test-branch"},
         headers={"X-SiteAgent-Signature": "sha256=invalid"}  # Auth will fail first
     )
-    
+
     # Should fail with auth error first (401) or token missing (503)
     assert r.status_code in [401, 503]
     if r.status_code == 503:
@@ -33,15 +33,15 @@ def test_pr_open_stub_with_token(monkeypatch, client):
     """Test that PR open returns stub response when GITHUB_TOKEN is set."""
     import hmac
     import hashlib
-    
+
     monkeypatch.setenv("SITEAGENT_HMAC_SECRET", "test-hmac")
     monkeypatch.setenv("GITHUB_TOKEN", "fake-token")
     monkeypatch.setenv("GITHUB_REPO", "test/repo")
-    
+
     # Valid HMAC signature
     body = b'{"title":"Test PR","branch":"test","body":"Test body"}'
     sig = hmac.new(b"test-hmac", body, hashlib.sha256).hexdigest()
-    
+
     r = client.post(
         "/agent/pr/open",
         data=body,
@@ -50,7 +50,7 @@ def test_pr_open_stub_with_token(monkeypatch, client):
             "Content-Type": "application/json"
         }
     )
-    
+
     assert r.status_code == 200
     j = r.json()
     assert j["ok"] is True
@@ -64,7 +64,7 @@ def test_workflow_yaml(client):
     r = client.get("/agent/automation/workflow")
     assert r.status_code == 200
     assert r.headers["content-type"] == "text/yaml; charset=utf-8"
-    
+
     text = r.text
     assert "siteagent-nightly" in text
     assert "schedule:" in text
@@ -78,10 +78,10 @@ def test_artifacts_endpoint(client, tmp_path, monkeypatch):
     # Create a temporary artifact
     import os
     os.makedirs("assets/data", exist_ok=True)
-    
+
     with open("assets/data/test-artifact.diff", "w") as f:
         f.write("--- a/file.txt\n+++ b/file.txt\n@@ test diff\n")
-    
+
     try:
         r = client.get("/agent/artifacts/test-artifact.diff")
         assert r.status_code == 200
