@@ -1269,6 +1269,12 @@
         <button id='sa-link-suggest'>Suggest link fixes</button>\
         <button id='sa-close' style='margin-left:auto'>Close</button>\
       </div>\
+      <div id='sa-arts-wrap' style='margin-top:12px'>\
+        <div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap'>\
+          <b>Artifacts</b>\
+        </div>\
+        <div id='sa-arts' style='margin-top:6px;display:grid;gap:6px;font-size:13px;'></div>\
+      </div>\
       <div id='sa-evts-wrap' style='margin-top:12px'>\
         <div style='display:grid;gap:6px'>\
           <div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap'>\
@@ -1304,6 +1310,31 @@
               <div><b>News items:</b> ${j.news_items}</div>
               <div><b>Links:</b> ${j.links_checked} checked · <span style="color:#ffb4b4"><b>${j.links_missing} missing</b></span></div>
             `;
+            // Artifacts
+            const arts = j.artifacts || {};
+            const artsEl = document.getElementById("sa-arts");
+            const fmt = (n) => {
+              if (typeof n !== "number") return "";
+              if (n < 1024) return n + " B";
+              if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+              return (n / (1024 * 1024)).toFixed(1) + " MB";
+            };
+            const items = [];
+            if (arts["link-apply.json"]) {
+              const a = arts["link-apply.json"];
+              items.push(
+                `<div>📄 <a href="${a.path}" target="_blank" rel="noopener">link-apply.json</a> <span style="opacity:.6">(${fmt(a.size) || ""})</span></div>`,
+              );
+            }
+            if (arts["link-apply.diff"]) {
+              const a = arts["link-apply.diff"];
+              items.push(
+                `<div>🧾 <a href="${a.path}" target="_blank" rel="noopener">link-apply.diff</a> <span style="opacity:.6">(${fmt(a.size) || ""})</span></div>`,
+              );
+            }
+            artsEl.innerHTML = items.length
+              ? items.join("")
+              : '<span style="opacity:.6">No artifacts found yet.</span>';
           } catch (e) {
             document.getElementById("sa-rpt").textContent =
               "Error loading report";

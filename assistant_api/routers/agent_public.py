@@ -124,6 +124,20 @@ def report():
     media = _read("media-index.json", {"count": 0, "items": []})
     projects = _read("projects.json", {"projects": []})
     status_data = _read("siteAgent.json", {"ts": None, "brand": "LEO KLEMET — SITEAGENT"})
+    # artifacts (optional)
+    artifacts = {}
+    for fn in ["link-apply.json", "link-apply.diff"]:
+        p = base / fn
+        if p.exists():
+            try:
+                st = p.stat()
+                artifacts[fn] = {
+                    "path": f"/assets/data/{fn}",
+                    "size": int(st.st_size),
+                    "mtime": int(st.st_mtime),
+                }
+            except Exception:
+                artifacts[fn] = {"path": f"/assets/data/{fn}"}
     return {
         "brand": status_data.get("brand"),
         "status_ts": status_data.get("ts"),
@@ -132,6 +146,7 @@ def report():
         "news_items": len(news.get("items", [])),
         "links_checked": links.get("checked", 0),
         "links_missing": len(links.get("missing", [])),
+        "artifacts": artifacts,
         "samples": {
             "missing": links.get("missing", [])[:5],
             "news": news.get("items", [])[:5],
