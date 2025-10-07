@@ -137,7 +137,7 @@ def status_write(run_id, params):
                     brand = str(ov["brand"])
     except Exception as e:
         emit(run_id, "warn", "status.brand_override_failed", {"err": str(e)})
-    
+
     out = {
         "ts": __import__("datetime").datetime.utcnow().isoformat() + "Z",
         "last_run_id": params.get("_run_id"),
@@ -150,6 +150,66 @@ def status_write(run_id, params):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(out, f, indent=2)
     return {"file": path}
+
+
+@task("overrides.update")
+def overrides_update(run_id, params):
+    """
+    Update OG/card overrides file:
+      - params.overrides: full dict merge (brand/title_alias/repo_alias)
+      - params.rename: { repo?: str, from?: str, to: str } convenience
+      - params.brand: string (shortcut)
+    Writes ./assets/data/og-overrides.json
+    """
+    dst = "./assets/data/og-overrides.json"
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    # load current
+    cur = {}
+    if os.path.exists(dst):
+        try:
+            with open(dst, "r", encoding="utf-8") as f:
+                cur = json.load(f) or {}
+        except Exception as e:
+            emit(run_id, "warn", "overrides.update.read_fail", {"err": str(e)})
+            cur = {}
+    # normalize maps
+    cur.setdefault("title_alias", {})
+    cur.setdefault("repo_alias", {})
+    changed = {}
+    # brand shortcut
+    if isinstance(params.get("brand"), str) and params["brand"].strip():
+        cur["brand"] = params["brand"].strip()
+        changed["brand"] = cur["brand"]
+    # merge block
+    if isinstance(params.get("overrides"), dict):
+        o = params["overrides"]
+        if "brand" in o and isinstance(o["brand"], str):
+            cur["brand"] = o["brand"]
+            changed["brand"] = cur["brand"]
+        if "title_alias" in o and isinstance(o["title_alias"], dict):
+            cur["title_alias"].update(o["title_alias"])
+            changed.setdefault("title_alias", {}).update(o["title_alias"])
+        if "repo_alias" in o and isinstance(o["repo_alias"], dict):
+            cur["repo_alias"].update(o["repo_alias"])
+            changed.setdefault("repo_alias", {}).update(o["repo_alias"])
+    # convenience rename
+    rn = params.get("rename") or {}
+    if isinstance(rn, dict) and isinstance(rn.get("to"), str) and rn["to"].strip():
+        new_name = rn["to"].strip()
+        if isinstance(rn.get("repo"), str) and rn["repo"].strip():
+            cur["repo_alias"][rn["repo"].strip()] = new_name
+            changed.setdefault("repo_alias", {})[rn["repo"].strip()] = new_name
+        elif isinstance(rn.get("from"), str) and rn["from"].strip():
+            cur["title_alias"][rn["from"].strip()] = new_name
+            changed.setdefault("title_alias", {})[rn["from"].strip()] = new_name
+        else:
+            emit(run_id, "warn", "overrides.update.rename_ignored",
+                 {"reason": "need repo or from", "rename": rn})
+    # write
+    with open(dst, "w", encoding="utf-8") as f:
+        json.dump(cur, f, indent=2)
+    emit(run_id, "info", "overrides.update.ok", {"changed": changed})
+    return {"file": dst, "changed": changed, "brand": cur.get("brand")}
 
 
 @task("news.sync")
