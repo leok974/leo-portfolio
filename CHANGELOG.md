@@ -1,5 +1,35 @@
 # Changelog
 
+## [Unreleased] - 2025-01-25
+
+### LinkedIn Resume Generator (Phase 49 📄)
+- **Public Resume Endpoints**: No authentication required
+  - `GET /resume/generate.md`: LinkedIn-optimized markdown resume
+  - `GET /resume/generate.json`: Structured JSON + markdown
+  - Auto-download with timestamped filename: `resume-2025-01-25.md`
+- **Dual Content Loading**: Resilient data sourcing
+  - Primary: `projects.json` (structured data)
+  - Fallback: `index.html` (regex extraction from data attributes)
+  - Graceful degradation when structured data unavailable
+- **Skills Extraction**: Union strategy
+  - Extracts unique tags from all project `tags` fields
+  - Adds core stack keywords (AI Engineering, FastAPI, Docker, etc.)
+  - Alphabetically sorted, deduplicated
+- **Featured Project Prioritization**: Rank-based ordering
+  - Featured: SiteAgent, Derma AI, DataPipe AI, LedgerMind (appear first)
+  - Configurable via `featured_order` array
+- **Agent Tools UI**: New "Resume" tab
+  - "Generate Markdown" button → Auto-downloads `.md` file
+  - "View JSON" button → Shows structured data in preview
+  - Status indicator (Generating… / Done / Failed)
+- **Test Coverage**: 5 new tests (all passing in 0.47s)
+  - 404 handling (no content)
+  - JSON structure validation
+  - Featured project ordering
+  - Markdown generation with projects
+- **Branch**: `LINKEDIN-OPTIMIZED` (commit: `be28dc5`)
+- **Documentation**: PHASE_49_RESUME_GENERATOR.md (complete specification)
+
 ## [Unreleased] - 2025-01-20
 
 ### Media Management & Link Suggestion Tasks (Phase 44 📸)
