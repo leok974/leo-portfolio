@@ -7,17 +7,17 @@ import pathlib
 def make_diff(path: str) -> str:
     """
     Generate git diff for a file path.
-    
+
     Args:
         path: Path to file (relative or absolute)
-    
+
     Returns:
         Git diff output as string, or empty string if error
     """
     file_path = pathlib.Path(path)
     if not file_path.exists():
         return ""
-    
+
     try:
         # Produce a working-tree diff
         result = subprocess.run(

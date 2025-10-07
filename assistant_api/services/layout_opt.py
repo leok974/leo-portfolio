@@ -32,6 +32,32 @@ TARGET_KEYWORDS = {
     "swe": {"fastapi", "react", "streaming", "docker", "e2e"},
 }
 
+# ---- Presets for different audiences ----
+PRESETS = {
+    "default": {
+        "weights": {"freshness": 0.35, "signal": 0.35, "fit": 0.20, "media": 0.10},
+        "roles": {"ai", "ml", "swe"},
+        "sections": {"featured": 3},  # top 3
+    },
+    "recruiter": {
+        # emphasize signals + media, less freshness
+        "weights": {"freshness": 0.20, "signal": 0.45, "fit": 0.20, "media": 0.15},
+        "roles": {"ai", "ml", "swe"},
+        "sections": {"featured": 4},
+    },
+    "hiring_manager": {
+        # emphasize fit + freshness (recent, relevant work)
+        "weights": {"freshness": 0.40, "signal": 0.25, "fit": 0.25, "media": 0.10},
+        "roles": {"ai", "ml", "swe"},
+        "sections": {"featured": 3},
+    },
+}
+
+
+def select_preset(name: str | None) -> Dict[str, Any]:
+    """Select a preset configuration by name."""
+    return PRESETS.get(name or "default", PRESETS["default"])
+
 
 @dataclass
 class ProjectScore:
@@ -60,10 +86,10 @@ def _safe_float(x, default=0.0) -> float:
 def _freshness_score(updated_ts: float) -> float:
     """
     Calculate freshness score based on last update timestamp.
-    
+
     Args:
         updated_ts: Unix timestamp (epoch seconds)
-    
+
     Returns:
         Score from 0.0 to 1.0, where 1.0 is now and decays exponentially
     """
@@ -76,10 +102,10 @@ def _freshness_score(updated_ts: float) -> float:
 def _signal_score(p: Dict[str, Any]) -> float:
     """
     Calculate signal score from project metrics.
-    
+
     Args:
         p: Project dict with stars, forks, demo_views, mentions
-    
+
     Returns:
         Score roughly from 0.0 to 1.0 based on popularity
     """
@@ -87,7 +113,7 @@ def _signal_score(p: Dict[str, Any]) -> float:
     forks = _safe_float(p.get("forks", 0))
     views = _safe_float(p.get("demo_views", 0))
     mentions = _safe_float(p.get("mentions", 0))  # blog/news/awards/etc
-    
+
     # Simple log compression to normalize large ranges
     raw = stars * 2 + forks + views / 50 + mentions * 5
     return math.log1p(raw) / 5.0  # roughly 0..~1
@@ -96,11 +122,11 @@ def _signal_score(p: Dict[str, Any]) -> float:
 def _fit_score(p: Dict[str, Any], roles: set[str]) -> Tuple[float, List[str]]:
     """
     Calculate role fit score based on keyword matches.
-    
+
     Args:
         p: Project dict with title, tags, cats
         roles: Set of target roles (ai, ml, swe)
-    
+
     Returns:
         Tuple of (score, rationale_list)
     """
@@ -108,17 +134,17 @@ def _fit_score(p: Dict[str, Any], roles: set[str]) -> Tuple[float, List[str]]:
     tags = [t.lower() for t in p.get("tags", [])]
     cats = [c.lower() for c in p.get("cats", [])]
     text = " ".join([title, *tags, *cats])
-    
+
     hits = 0
     rationales = []
-    
+
     for role in roles:
         keywords = TARGET_KEYWORDS.get(role, set())
         for keyword in keywords:
             if keyword in text:
                 hits += 1
                 rationales.append(f"matches {role}:{keyword}")
-    
+
     # Normalize roughly to 0..1 (8 hits = perfect fit)
     score = min(1.0, hits / 8.0)
     return score, rationales
@@ -127,16 +153,16 @@ def _fit_score(p: Dict[str, Any], roles: set[str]) -> Tuple[float, List[str]]:
 def _media_score(p: Dict[str, Any]) -> float:
     """
     Calculate media quality score.
-    
+
     Args:
         p: Project dict with thumbnail/poster and ogImage/og_image
-    
+
     Returns:
         1.0 if both cover and og present, 0.6 if one, 0.2 if none
     """
     cover = p.get("thumbnail") or p.get("poster")
     og = p.get("ogImage") or p.get("og_image")
-    
+
     if cover and og:
         return 1.0
     elif cover or og:
@@ -145,44 +171,45 @@ def _media_score(p: Dict[str, Any]) -> float:
         return 0.2
 
 
-def score_projects(projects: List[Dict[str, Any]], roles: set[str]) -> List[ProjectScore]:
+def score_projects(projects: List[Dict[str, Any]], roles: set, weights: Dict[str, float]) -> List[ProjectScore]:
     """
     Score all projects and sort by descending score.
-    
+
     Args:
         projects: List of project dicts
         roles: Set of target roles for fit scoring
-    
+        weights: Dict of scoring weights (freshness, signal, fit, media)
+
     Returns:
         List of ProjectScore objects, sorted by score (highest first)
     """
     out: List[ProjectScore] = []
-    
+
     for p in projects:
         slug = p.get("slug") or slugify(p.get("title", "project"))
-        
+
         # Get timestamp (support multiple field names)
         updated_ts = _safe_float(
-            p.get("updated_ts") or 
-            p.get("updated_at_epoch") or 
-            p.get("updated_at") or 
+            p.get("updated_ts") or
+            p.get("updated_at_epoch") or
+            p.get("updated_at") or
             0
         )
-        
+
         # Calculate component scores
         freshness = _freshness_score(updated_ts) if updated_ts else 0.5
         signal = _signal_score(p)
         fit, fit_rationale = _fit_score(p, roles)
         media = _media_score(p)
-        
-        # Weighted total
+
+        # Weighted total using provided weights
         score = (
-            freshness * WEIGHTS["freshness"] +
-            signal * WEIGHTS["signal"] +
-            fit * WEIGHTS["fit"] +
-            media * WEIGHTS["media"]
+            freshness * weights["freshness"] +
+            signal * weights["signal"] +
+            fit * weights["fit"] +
+            media * weights["media"]
         )
-        
+
         # Build rationale
         rationale = [
             f"freshness={freshness:.2f}",
@@ -191,7 +218,7 @@ def score_projects(projects: List[Dict[str, Any]], roles: set[str]) -> List[Proj
             f"media={media:.2f}",
             *fit_rationale[:3]  # keep it short
         ]
-        
+
         out.append(ProjectScore(
             slug=slug,
             score=score,
@@ -203,26 +230,52 @@ def score_projects(projects: List[Dict[str, Any]], roles: set[str]) -> List[Proj
             },
             rationale=rationale
         ))
-    
+
     # Sort by score descending
     out.sort(key=lambda s: s.score, reverse=True)
     return out
 
 
-def propose_layout(scores: List[ProjectScore]) -> Dict[str, Any]:
+def to_sections(scores: List[ProjectScore], featured_count: int) -> Dict[str, List[str]]:
+    """
+    Split ordered projects into sections.
+
+    Args:
+        scores: Sorted list of ProjectScore objects
+        featured_count: Number of projects for featured section
+
+    Returns:
+        Dict with 'featured' and 'more' lists of slugs
+    """
+    order = [s.slug for s in scores]
+    featured = order[:featured_count]
+    more = order[featured_count:]
+    return {
+        "featured": featured,
+        "more": more,
+    }
+
+
+def propose_layout(scores: List[ProjectScore], featured_count: int = 3, preset_name: str = "default") -> Dict[str, Any]:
     """
     Generate layout proposal from scores.
-    
+
     Args:
         scores: List of ProjectScore objects (should be sorted)
-    
+        featured_count: Number of projects for featured section
+        preset_name: Name of preset used
+
     Returns:
-        Layout dict with order, timestamp, and explanations
+        Layout dict with order, sections, timestamp, and explanations
     """
+    sections = to_sections(scores, featured_count)
+
     return {
-        "version": 1,
+        "version": 2,
+        "preset": preset_name,
         "generated_at": int(time.time()),
-        "order": [s.slug for s in scores],
+        "order": [s.slug for s in scores],   # flat order for legacy readers
+        "sections": sections,                # new: sections
         "explain": {
             s.slug: {
                 "score": round(s.score, 3),
@@ -237,19 +290,25 @@ def propose_layout(scores: List[ProjectScore]) -> Dict[str, Any]:
 def run_layout_optimize(payload: Dict[str, Any] | None = None) -> Dict[str, Any]:
     """
     Main entry point for layout.optimize task.
-    
+
     Args:
-        payload: Optional payload with roles list
-    
+        payload: Optional payload with preset, roles, featured_count
+
     Returns:
         Task result dict with artifact path, diff, summary
     """
     payload = payload or {}
-    roles = set(payload.get("roles") or TARGET_ROLES)
-    
+
+    # Select preset and extract parameters
+    preset = select_preset(payload.get("preset"))
+    preset_name = payload.get("preset") or "default"
+    roles = set(payload.get("roles") or preset["roles"])
+    weights = preset["weights"]
+    featured_count = int(payload.get("featured_count") or preset["sections"]["featured"])
+
     # Read projects
     projects_data = _read_json(PROJECTS_PATH) or []
-    
+
     # Normalize to list format
     if isinstance(projects_data, dict):
         # Check if it's {"projects": [...]} wrapper
@@ -262,39 +321,41 @@ def run_layout_optimize(payload: Dict[str, Any] | None = None) -> Dict[str, Any]
         projects = projects_data
     else:
         projects = []
-    
+
     if not projects:
         return {
             "task": "layout.optimize",
             "error": "no_projects",
             "summary": "No projects found in projects.json"
         }
-    
+
     # Score and propose layout
-    scores = score_projects(projects, roles=roles)
-    layout = propose_layout(scores)
-    
+    scores = score_projects(projects, roles=roles, weights=weights)
+    layout = propose_layout(scores, featured_count, preset_name)
+
     # Write artifact (preview) and proposed layout file
     artifact_path = write_artifact("layout-optimize.json", layout)
-    
+
     # Ensure assets directory exists
     LAYOUT_PATH.parent.mkdir(exist_ok=True, parents=True)
-    
+
     # Write proposed layout
     LAYOUT_PATH.write_text(
         json.dumps(layout, indent=2, ensure_ascii=False),
         encoding="utf-8"
     )
-    
+
     # Generate diff if possible
     diff = make_diff(str(LAYOUT_PATH))
-    
+
     # Build summary
-    top_3 = ", ".join(layout["order"][:3])
-    summary = f"Reordered {len(layout['order'])} projects; top: {top_3}"
-    
+    featured_list = layout["sections"]["featured"]
+    top_3 = ", ".join(featured_list[:3])
+    summary = f"Featured={len(featured_list)}; top: {top_3}"
+
     return {
         "task": "layout.optimize",
+        "preset": preset_name,
         "roles": sorted(list(roles)),
         "artifact": artifact_path,
         "proposed_file": str(LAYOUT_PATH),

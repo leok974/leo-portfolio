@@ -29,7 +29,7 @@
   - Empty projects edge case
   - Role-specific keyword matching
   - Freshness decay calculation
-- **Bug Fixes**: 
+- **Bug Fixes**:
   - Fixed duplicate return in `agent_public.py`
   - Added projects.json dict-to-list normalization
 - **Branch**: `LINKEDIN-OPTIMIZED` (commit: `3e525a5`)

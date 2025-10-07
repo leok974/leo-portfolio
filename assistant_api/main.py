@@ -123,6 +123,10 @@ app.include_router(agent.router)
 from assistant_api.routers import agent_public
 app.include_router(agent_public.router)
 
+# A/B testing routes (for layout optimization)
+from assistant_api.routers import ab
+app.include_router(ab.router)
+
 # Resume public routes (no auth required)
 from assistant_api.routers import resume_public
 app.include_router(resume_public.router)
