@@ -1,6 +1,48 @@
 # Changelog
 
-## [Unreleased] - 2025-01-07
+## [Unreleased] - 2025-01-20
+
+### Enhanced Dev Overlay with Event Filtering (Phase 43.3 🎯)
+- **Event Filtering**: Filter events by level (info/warn/error)
+  - Level dropdown with real-time filtering
+  - Shows only selected severity level events
+  - Helps isolate errors and warnings quickly
+- **Run Tracking**: Focus on specific agent runs
+  - Recent runs dropdown with success ratio display
+  - Manual run_id input field with apply button
+  - Shows "abc12345… (3/5 ok)" format for run selection
+- **Focus Button (🎯)**: One-click filtering on any event
+  - Appears on each event in the list
+  - Instantly filters to show only that run's events
+  - Enables quick debugging workflow
+- **Auto-Focus After Actions**: Intelligent filtering post-action
+  - "Tell agent" button auto-focuses on command's run
+  - "Run quick" button auto-focuses on quick-run's events
+  - Provides immediate feedback on action results
+- **Responsive Layout**: Professional, clean UI
+  - flex-wrap buttons for mobile responsiveness
+  - Proper spacing and margins
+  - Close button with margin-left:auto
+- **Backend Support**: New `/agent/events` endpoint
+  - Query parameters: `level`, `run_id`, `limit`
+  - Returns: `{"events": [...]}` with full event details
+  - Limit validation: 1-100 events
+  - Public endpoint (no authentication, like `/agent/status`)
+- **New Functions**:
+  - `query_events()` in models.py: Filtered event retrieval from database
+  - `loadRecentRuns()` in index.html: Populate recent runs dropdown
+  - `refreshEvents()` in index.html: Fetch and render filtered events
+- **Event Format**: Rich event display
+  - Level emoji (🟢 info / 🟠 warn / 🔴 error)
+  - Timestamp (localized time)
+  - Event name (e.g., "logo.fetch.ok")
+  - run_id (clickable code block)
+  - Data payload (JSON formatted, if present)
+- **Test Coverage**: Verified via manual testing
+  - Backend: `/agent/events` endpoint tested with curl
+  - Frontend: UI controls tested in browser
+  - Integration: Auto-focus tested with actual agent commands
+- **Documentation**: PHASE_43_3_DEV_OVERLAY.md (complete specification)
 
 ### Logo.fetch Security Hardening & Logo Removal (Phase 43.1 🔒)
 - **SSRF Protection**: Blocks private/loopback/link-local/reserved IPs
