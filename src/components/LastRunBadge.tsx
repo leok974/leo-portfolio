@@ -11,24 +11,35 @@ interface LayoutData {
 export function LastRunBadge({ base = "" }: { base?: string }) {
   const [text, setText] = useState<string>("");
 
+  async function fetchBadge() {
+    try {
+      const res = await fetch(`${base}/assets/layout.json`, { cache: "no-store" });
+      if (!res.ok) return;
+      const j: LayoutData = await res.json();
+      const dt = j?.generated_at ? new Date(j.generated_at * 1000) : null;
+      const when = dt ? dt.toLocaleString() : "unknown";
+      const featuredCount = Array.isArray(j?.sections?.featured) ? j.sections.featured.length : 0;
+      setText(`${when} — preset=${j?.preset ?? "default"} — featured=${featuredCount}`);
+    } catch (e) {
+      console.error("Failed to load layout.json:", e);
+    }
+  }
+
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(`${base}/assets/layout.json`, { cache: "no-store" });
-        if (!res.ok) return;
-        const j: LayoutData = await res.json();
-        const dt = j?.generated_at ? new Date(j.generated_at * 1000) : null;
-        const when = dt ? dt.toLocaleString() : "unknown";
-        const featuredCount = Array.isArray(j?.sections?.featured) ? j.sections.featured.length : 0;
-        setText(`${when} — preset=${j?.preset ?? "default"} — featured=${featuredCount}`);
-      } catch (e) {
-        console.error("Failed to load layout.json:", e);
-      }
-    })();
+    fetchBadge();
+    
+    // Listen for layout update events from "Run Now" button
+    const handler = () => {
+      // Wait a bit for backend to finish writing layout.json
+      setTimeout(() => fetchBadge(), 500);
+    };
+    window.addEventListener("siteagent:layout:updated", handler);
+    
+    return () => window.removeEventListener("siteagent:layout:updated", handler);
   }, [base]);
 
   if (!text) return null;
-  
+
   return (
     <span
       data-testid="last-run-badge"

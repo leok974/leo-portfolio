@@ -1,6 +1,7 @@
 import { WeightsEditor } from "./WeightsEditor";
 import { ABAnalyticsPanel } from "./ABAnalyticsPanel";
 import { LastRunBadge } from "./LastRunBadge";
+import { ToastHost } from "@/lib/toast";
 
 export function LayoutAgentPanel({ base = "" }: { base?: string }) {
   return (
@@ -11,6 +12,7 @@ export function LayoutAgentPanel({ base = "" }: { base?: string }) {
       </div>
       <WeightsEditor base={base} />
       <ABAnalyticsPanel base={base} />
+      <ToastHost />
     </div>
   );
 }
