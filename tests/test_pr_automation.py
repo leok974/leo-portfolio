@@ -30,13 +30,37 @@ def test_pr_open_disabled(monkeypatch, client):
 
 
 def test_pr_open_stub_with_token(monkeypatch, client):
-    """Test that PR open returns stub response when GITHUB_TOKEN is set."""
+    """Test that PR open now uses real GitHub API (not stub)."""
     import hmac
     import hashlib
 
     monkeypatch.setenv("SITEAGENT_HMAC_SECRET", "test-hmac")
     monkeypatch.setenv("GITHUB_TOKEN", "fake-token")
     monkeypatch.setenv("GITHUB_REPO", "test/repo")
+
+    # Mock httpx to simulate GitHub API
+    class MockAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+        
+        async def __aenter__(self):
+            return self
+        
+        async def __aexit__(self, *args):
+            pass
+        
+        async def get(self, url, **kwargs):
+            # Mock repo GET response
+            return __import__("httpx").Response(200, json={"default_branch": "main"})
+        
+        async def post(self, url, **kwargs):
+            # Mock PR creation response
+            return __import__("httpx").Response(201, json={
+                "html_url": "https://github.com/test/repo/pull/1",
+                "number": 1
+            })
+    
+    monkeypatch.setattr("httpx.AsyncClient", MockAsyncClient)
 
     # Valid HMAC signature
     body = b'{"title":"Test PR","branch":"test","body":"Test body"}'
@@ -54,9 +78,9 @@ def test_pr_open_stub_with_token(monkeypatch, client):
     assert r.status_code == 200
     j = r.json()
     assert j["ok"] is True
-    assert j["mode"] == "stub"
+    assert j["status"] == "created"
     assert j["repo"] == "test/repo"
-    assert j["title"] == "Test PR"
+    assert j["number"] == 1
 
 
 def test_workflow_yaml(client):
