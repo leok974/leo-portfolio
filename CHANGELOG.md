@@ -1,6 +1,26 @@
 # Changelog
 
-## [Unreleased] - 2025-10-07
+## [Unreleased] - 2025-01-07
+
+### Logo.fetch Task - URL-Based Logo Downloads (Phase 43 ✨)
+- **New logo.fetch Task**: Automated logo downloading from URLs
+  - Downloads from any http(s) URL with size validation (default 3MB cap)
+  - Content-Type detection: png, jpeg, webp, svg, gif
+  - Optional Pillow integration: Converts raster formats to PNG
+  - Automatic save to `./assets/logos/<slug>.<ext>`
+  - Automatic registration in `og-overrides.json`
+  - Parameters: `url` (required), `repo`, `title`, `name`, `max_bytes`
+  - Returns: `{file, ctype, mapped}` with download results
+- **Interpreter URL Routing**: Natural language commands for logo fetching
+  - `fetch logo for repo X from https://...` → Routes to `logo.fetch`
+  - `set logo for repo X to assets/...` → Routes to `overrides.update`
+  - Detects http:// or https:// to choose correct task
+  - Maintains backward compatibility with existing commands
+- **Dev Overlay Enhancement**: Added URL fetch example to placeholder
+- **Test Coverage**: 5 comprehensive tests (mock fetch, routing, validation)
+  - All 16 logo.fetch + interpreter tests passing
+  - Mock HTTP responses (no external dependencies)
+  - Temp directory isolation (no file system pollution)
 
 ### SiteAgent Enhanced Tasks - OG Images, News Feed, Link Validation (NEW ✨)
 - **Three New Automated Tasks**:
