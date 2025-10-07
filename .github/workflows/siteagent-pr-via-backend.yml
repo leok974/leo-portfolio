@@ -1,0 +1,97 @@
+name: siteagent-pr-via-backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: "PR title"
+        required: true
+        default: "chore(siteAgent): automated changes"
+      branch:
+        description: "Head branch"
+        required: true
+        default: "siteagent/auto/update"
+      body:
+        description: "PR body (markdown)"
+        required: false
+        default: "Automated PR via CI backend."
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  call-backend:
+    runs-on: ubuntu-latest
+    env:
+      # Pass the built-in token to backend via env
+      GITHUB_TOKEN: ${{ github.token }}
+      GITHUB_REPO: ${{ github.repository }}
+      SITEAGENT_HMAC_SECRET: ${{ secrets.SITEAGENT_HMAC_SECRET }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r assistant_api/requirements.txt
+
+      - name: Start backend (background)
+        run: |
+          nohup python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8010 > backend.log 2>&1 &
+          echo "Backend started, waiting for health check..."
+          sleep 5
+          
+          # Wait for backend to be ready (max 30 seconds)
+          for i in {1..30}; do
+            if curl -sf http://127.0.0.1:8010/ready > /dev/null 2>&1; then
+              echo "Backend is ready!"
+              break
+            fi
+            echo "Waiting for backend... ($i/30)"
+            sleep 1
+          done
+
+      - name: Generate HMAC signature and call /agent/pr/open
+        run: |
+          # Prepare request body
+          BODY=$(cat <<EOF
+          {"title":"${{ github.event.inputs.title }}","branch":"${{ github.event.inputs.branch }}","body":"${{ github.event.inputs.body }}"}
+          EOF
+          )
+          
+          # Generate HMAC-SHA256 signature
+          SIGNATURE=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SITEAGENT_HMAC_SECRET" | sed 's/^.* //')
+          
+          echo "Calling /agent/pr/open endpoint..."
+          RESPONSE=$(curl -sS -w "\n%{http_code}" -X POST "http://127.0.0.1:8010/agent/pr/open" \
+            -H "Content-Type: application/json" \
+            -H "X-SiteAgent-Signature: sha256=$SIGNATURE" \
+            -d "$BODY")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          RESPONSE_BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $RESPONSE_BODY"
+          
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            echo "✅ PR created successfully!"
+            echo "$RESPONSE_BODY" | jq -r '.url // empty'
+          else
+            echo "❌ PR creation failed!"
+            cat backend.log
+            exit 1
+          fi
+
+      - name: Show backend logs on failure
+        if: failure()
+        run: |
+          echo "=== Backend logs ==="
+          cat backend.log || echo "No backend logs found"

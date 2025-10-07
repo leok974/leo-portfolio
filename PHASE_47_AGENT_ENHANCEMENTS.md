@@ -375,7 +375,142 @@ curl "http://backend/agent/events?run_id=abc123&limit=100"
 - ✅ Documentation (this file)
 - ✅ Commit and push
 
-### Future Enhancements
+### CI/CD Integration
+
+### Backend-Assisted PR Automation
+
+Two GitHub Actions workflows enable PR automation using the backend's `/agent/pr/open` endpoint:
+
+#### 1. Manual PR Creation (siteagent-pr-via-backend.yml)
+
+**Trigger:** `workflow_dispatch` with inputs
+
+**Features:**
+- On-demand PR creation from GitHub Actions UI
+- Uses built-in `${{ github.token }}` (no PAT required)
+- HMAC-authenticated requests to backend
+- Health check before API calls
+- Full error logging
+
+**Usage:**
+```bash
+# Via GitHub UI:
+# Actions → siteagent-pr-via-backend → Run workflow
+# Inputs:
+#   - title: "chore(siteAgent): automated changes"
+#   - branch: "siteagent/auto/update"
+#   - body: "Description of changes"
+```
+
+**Flow:**
+1. Checkout repository
+2. Install Python dependencies
+3. Start backend with GITHUB_TOKEN in environment
+4. Wait for `/ready` health check
+5. Generate HMAC signature for request
+6. POST to `/agent/pr/open` with authentication
+7. Parse response and display PR URL
+
+**Required Secrets:**
+- `SITEAGENT_HMAC_SECRET` - For backend authentication
+
+**Permissions:**
+```yaml
+permissions:
+  contents: write
+  pull-requests: write
+```
+
+#### 2. Nightly Maintenance PRs (siteagent-nightly-pr.yml)
+
+**Trigger:** Scheduled cron (`03:27 UTC`) + manual dispatch
+
+**Features:**
+- Automated nightly maintenance tasks
+- Creates PR only if changes detected
+- Dynamic branch naming (`siteagent/nightly/YYYY-MM-DD`)
+- Backend-assisted PR creation
+- Comprehensive error handling
+
+**Workflow:**
+1. Run maintenance tasks:
+   - `links.validate --safe`
+   - `media.optimize --safe --dry-run`
+   - `sitemap.media.update --safe`
+2. Check for git changes
+3. If changes exist:
+   - Create feature branch with date
+   - Commit all changes
+   - Push branch to remote
+   - Start backend with GITHUB_TOKEN
+   - Create PR via `/agent/pr/open`
+4. If no changes: Skip PR creation
+
+**Benefits:**
+- No manual intervention required
+- Uses built-in GitHub token (secure)
+- Backend validates and creates PR
+- Clear audit trail with dated branches
+- Automatic PR description with task list
+
+**Environment Variables:**
+```yaml
+env:
+  GITHUB_TOKEN: ${{ github.token }}       # Built-in token
+  GITHUB_REPO: ${{ github.repository }}   # owner/repo
+  SITEAGENT_HMAC_SECRET: ${{ secrets.SITEAGENT_HMAC_SECRET }}
+  SITEAGENT_NIGHTLY: "1"                  # Nightly flag
+```
+
+### Security Considerations
+
+**Token Scope:**
+- Built-in `github.token` has limited permissions (read/write to repo)
+- Automatically managed by GitHub Actions
+- No long-lived PAT required
+- Token expires when job completes
+
+**Authentication Flow:**
+1. GitHub Actions injects token into environment
+2. Backend reads GITHUB_TOKEN when handling request
+3. Backend authenticates to GitHub API with token
+4. Token never exposed to frontend/logs
+
+**HMAC Protection:**
+- All requests to `/agent/pr/open` require HMAC signature
+- Prevents unauthorized PR creation
+- Secret stored securely in GitHub Secrets
+
+**Fail-Safe:**
+- Backend returns 503 if GITHUB_TOKEN not present
+- No accidental PR creation outside CI
+- Local/dev environments safely disabled
+
+### Local Testing
+
+**Simulate CI environment:**
+```bash
+# Export required variables
+export GITHUB_TOKEN="your-test-pat"
+export GITHUB_REPO="owner/repo"
+export SITEAGENT_HMAC_SECRET="your-hmac-secret"
+
+# Start backend
+python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8010
+
+# Generate signature and call endpoint
+BODY='{"title":"Test PR","branch":"test-branch","body":"Test"}'
+SIGNATURE=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SITEAGENT_HMAC_SECRET" | sed 's/^.* //')
+
+curl -X POST http://127.0.0.1:8010/agent/pr/open \
+  -H "Content-Type: application/json" \
+  -H "X-SiteAgent-Signature: sha256=$SIGNATURE" \
+  -d "$BODY"
+```
+
+## Future Enhancements
+
+
 - [ ] Update agent-tools.html with file checkboxes
 - [ ] Implement `/agent/commit` endpoint with allowlist/denylist
 - [ ] Add PR status polling in frontend
