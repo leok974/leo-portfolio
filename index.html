@@ -1067,6 +1067,12 @@
         <div class="muted footer-build">
           <small id="build-info" data-build-info>build: resolving…</small>
         </div>
+        <div class="muted">
+          <small id="sa-status">
+            <span id="sa-brand">LEO KLEMET — SITEAGENT</span> ·
+            <span id="sa-status-text">status: unknown</span>
+          </small>
+        </div>
         <div class="muted" style="grid-column: 1 / -1">
           <small
             >Analytics is privacy‑respectful: no cookies, anonymized usage only,
@@ -1213,6 +1219,28 @@
         document.body.appendChild(btn);
       })();
     </script>
+
+    <!-- siteAgent status widget -->
+    <script>
+      (async () => {
+        try {
+          const res = await fetch("/assets/data/siteAgent.json", {
+            cache: "no-store",
+          });
+          if (!res.ok) throw new Error("no status");
+          const j = await res.json();
+          // brand
+          const brand = j && j.brand ? j.brand : "LEO KLEMET — SITEAGENT";
+          document.getElementById("sa-brand").textContent = brand;
+          // status
+          document.getElementById("sa-status-text").textContent =
+            `ok — ${j.ts ? new Date(j.ts).toLocaleString() : "n/a"}`;
+        } catch {
+          document.getElementById("sa-status-text").textContent = "offline";
+        }
+      })();
+    </script>
+
     <script>
       // Dev-only maintenance overlay (appears on localhost/127.0.0.1)
       (function () {

@@ -107,8 +107,9 @@ def report():
     links = _read("link-check.json", {"checked": 0, "html_files": 0, "missing": []})
     media = _read("media-index.json", {"count": 0, "items": []})
     projects = _read("projects.json", {"projects": []})
-    status_data = _read("siteAgent.json", {"ts": None})
+    status_data = _read("siteAgent.json", {"ts": None, "brand": "LEO KLEMET — SITEAGENT"})
     return {
+        "brand": status_data.get("brand"),
         "status_ts": status_data.get("ts"),
         "projects": len(projects.get("projects", [])),
         "media_count": media.get("count", 0),

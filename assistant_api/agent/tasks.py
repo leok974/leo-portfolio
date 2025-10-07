@@ -121,12 +121,29 @@ def og_generate(run_id, params):
 
 @task("status.write")
 def status_write(run_id, params):
-    """Write tiny siteAgent heartbeat JSON for the footer widget."""
+    """
+    Write a tiny JSON heartbeat siteAgent.json for the footer/status widget.
+    Includes `brand`, sourced from assets/data/og-overrides.json or SITEAGENT_BRAND.
+    """
+    # Resolve brand from overrides or env
+    brand = os.environ.get("SITEAGENT_BRAND") or "LEO KLEMET — SITEAGENT"
+    try:
+        ov_path = "./assets/data/og-overrides.json"
+        if os.path.exists(ov_path):
+            import json as _json
+            with open(ov_path, "r", encoding="utf-8") as f:
+                ov = _json.load(f)
+                if isinstance(ov, dict) and ov.get("brand"):
+                    brand = str(ov["brand"])
+    except Exception as e:
+        emit(run_id, "warn", "status.brand_override_failed", {"err": str(e)})
+    
     out = {
         "ts": __import__("datetime").datetime.utcnow().isoformat() + "Z",
         "last_run_id": params.get("_run_id"),
         "tasks": params.get("_tasks", []),
         "ok": True,
+        "brand": brand,
     }
     path = "./assets/data/siteAgent.json"
     os.makedirs(os.path.dirname(path), exist_ok=True)
