@@ -2,6 +2,38 @@
 
 ## [Unreleased] - 2025-01-25
 
+### Layout Optimization System (Phase 50 🎯)
+- **Multi-Factor Scoring Algorithm**: Intelligent project ranking
+  - Freshness (35%): Exponential decay, 30-day half-life
+  - Signal (35%): Stars/forks/views with log compression
+  - Fit (20%): Role-specific keyword matching (ai/ml/swe)
+  - Media (10%): Thumbnail + OG image quality
+- **Task Integration**: `layout.optimize` registered in agent system
+  - Natural language: "optimize layout [for roles]"
+  - Agent endpoint: `POST /agent/act` with command
+  - Automatic artifact generation + git diff
+- **Generated Output**: `assets/layout.json`
+  - Ordered project slugs (sorted by score)
+  - Detailed scoring explanations with rationale
+  - Version + timestamp metadata
+- **Supporting Services**: New utility modules
+  - `artifacts.py`: Timestamped JSON artifact writing
+  - `git_utils.py`: Git diff generation for changes
+  - `text.py`: Slugify for URL-safe names
+- **Data Structure Handling**: Flexible input parsing
+  - Handles dict format (slug->project mapping)
+  - Handles array format (project list)
+  - Graceful degradation for missing fields
+- **Test Coverage**: 4 new tests (all passing in 0.03s)
+  - Full scoring workflow validation
+  - Empty projects edge case
+  - Role-specific keyword matching
+  - Freshness decay calculation
+- **Bug Fixes**: 
+  - Fixed duplicate return in `agent_public.py`
+  - Added projects.json dict-to-list normalization
+- **Branch**: `LINKEDIN-OPTIMIZED` (commit: `3e525a5`)
+
 ### LinkedIn Resume Generator (Phase 49 📄)
 - **Public Resume Endpoints**: No authentication required
   - `GET /resume/generate.md`: LinkedIn-optimized markdown resume
