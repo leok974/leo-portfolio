@@ -1,6 +1,73 @@
 # SiteAgent New Tasks - Quick Reference
 
-This document describes the three new automated tasks added to the SiteAgent system.
+This document describes the new automated tasks added to the SiteAgent system.
+
+## 🎨 overrides.update - Dynamic OG/Card Branding
+
+**Purpose:** Update OG card branding and project name aliases via API, without touching code or templates.
+
+**Output:** `./assets/data/og-overrides.json`
+
+**Parameters:**
+- `brand` (string): Update brand text only
+- `rename` (object): Convenience rename - `{repo?, from?, to}`
+- `overrides` (object): Full merge - `{brand?, title_alias?, repo_alias?}`
+
+**Manual Run (Local):**
+```powershell
+# Rename by repository
+curl -s -X POST http://127.0.0.1:8001/agent/run `
+  -H "Content-Type: application/json" `
+  -d '{
+    "plan": ["overrides.update", "og.generate", "status.write"],
+    "params": {
+      "rename": {"repo": "leok974/leo-portfolio", "to": "siteAgent"}
+    }
+  }' | jq
+
+# Update brand only
+curl -s -X POST http://127.0.0.1:8001/agent/run `
+  -H "Content-Type: application/json" `
+  -d '{
+    "plan": ["overrides.update", "status.write"],
+    "params": {"brand": "CUSTOM BRAND"}
+  }' | jq
+```
+
+**Production Run (with HMAC):**
+```bash
+curl -s -X POST https://assistant.ledger-mind.org/agent/run \
+  -H "Content-Type: application/json" \
+  -H "X-SiteAgent-Signature: sha256=<hmac>" \
+  -d '{
+    "plan": ["overrides.update", "og.generate", "status.write"],
+    "params": {"rename": {"repo": "org/repo", "to": "New Name"}}
+  }' | jq
+```
+
+**Behavior:**
+- ✅ Merges with existing aliases (preserves other entries)
+- ✅ Creates file if missing
+- ✅ Returns changed fields in response
+- ✅ Idempotent (safe to run multiple times)
+
+**Response Format:**
+```json
+{
+  "file": "./assets/data/og-overrides.json",
+  "changed": {
+    "repo_alias": {"org/repo": "New Name"}
+  },
+  "brand": "LEO KLEMET — SITEAGENT"
+}
+```
+
+**Task Chaining:**
+Recommended: Chain with `og.generate` and `status.write` to apply changes immediately.
+
+**Documentation:** See [OG_BRANDING_GUIDE.md](./OG_BRANDING_GUIDE.md) for complete usage guide.
+
+---
 
 ## 📸 og.generate - Open Graph Image Generator
 
@@ -35,7 +102,7 @@ node scripts/og-render.mjs `
 
 **Error Handling:**
 - Missing script/template → `{skipped: true}`
-- Node.js not found → `{skipped: true}` 
+- Node.js not found → `{skipped: true}`
 - Playwright missing → `{note: "playwright_not_installed"}`
 - Script failure → `{error: true, code: N}`
 
@@ -52,7 +119,7 @@ node scripts/og-render.mjs `
 2. **Commits** (fallback): 5 most recent commits if no releases exist
 3. **Minimal** (fallback): `{note: "gh_not_available"}` if `gh` CLI missing
 
-**Configuration:** 
+**Configuration:**
 - Environment variable: `SITEAGENT_REPOS=leok974/ledger-mind,leok974/leo-portfolio`
 - Fallback: Uses hardcoded default repos if not set
 
