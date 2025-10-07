@@ -12,6 +12,7 @@ function arg(name, def = undefined) {
 const input = arg('input');
 const outDir = arg('out', './assets/og');
 const template = arg('template', './public/og/template.html');
+const overridesPath = arg('overrides', './assets/data/og-overrides.json');
 
 if (!input || !fs.existsSync(input)) {
   console.log(JSON.stringify({ error: 'missing_input', input }));
@@ -37,6 +38,17 @@ try {
   process.exit(0);
 }
 
+// Load optional overrides: brand + title aliases
+let overrides = {};
+try {
+  if (fs.existsSync(overridesPath)) {
+    overrides = JSON.parse(fs.readFileSync(overridesPath, 'utf-8'));
+  }
+} catch {}
+const brand = overrides.brand || process.env.SITEAGENT_BRAND || 'LEO KLEMET — SITEAGENT';
+const titleAlias = overrides.title_alias || {};    // e.g., { "leo-portfolio": "siteAgent" }
+const repoAlias  = overrides.repo_alias  || {};    // e.g., { "leok974/leo-portfolio": "siteAgent" }
+
 // Try to import Playwright; if missing, no-op gracefully.
 let chromium;
 try {
@@ -58,12 +70,15 @@ const context = await browser.newContext({ viewport: { width: 1200, height: 630 
 const page = await context.newPage();
 
 for (const p of projects) {
-  const name = p.name || p.repo || 'Project';
+  // Prefer displayName/name, allow alias by repo or name
+  let name = p.displayName || p.name || p.repo || 'Project';
+  if (p.repo && repoAlias[p.repo]) name = repoAlias[p.repo];
+  if (p.name && titleAlias[p.name]) name = titleAlias[p.name];
   const desc = p.description || '';
   const tags = (p.topics || []).slice(0, 3).join(', ');
   const file = path.join(outDir, `${slug(name) || 'project'}.png`);
   if (fs.existsSync(file)) { existing++; continue; }
-  const url = `file://${path.resolve(template)}?${toQuery({ title: name, subtitle: desc, tags })}`;
+  const url = `file://${path.resolve(template)}?${toQuery({ title: name, subtitle: desc, tags, brand })}`;
   await page.goto(url, { waitUntil: 'load' });
   await page.screenshot({ path: file });
   generated++;

@@ -82,7 +82,7 @@
       <div class="subtitle" id="s">Subtitle</div>
       <div class="footer">
         <div class="tags" id="g">#tag1 · #tag2 · #tag3</div>
-        <div class="brand">LEO KORCHIA — SITEAGENT</div>
+        <div class="brand" id="brand">LEO KLEMET — SITEAGENT</div>
       </div>
     </div>
     <script>
@@ -93,11 +93,13 @@
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
+      const brand = params.get("brand") || "LEO KLEMET — SITEAGENT";
       document.getElementById("t").textContent = title;
       document.getElementById("s").textContent = subtitle;
       document.getElementById("g").textContent = tags.length
         ? tags.map((t) => `#${t}`).join(" · ")
         : "";
+      document.getElementById("brand").textContent = brand;
     </script>
   </body>
 </html>

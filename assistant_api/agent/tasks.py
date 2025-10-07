@@ -99,7 +99,13 @@ def og_generate(run_id, params):
         return {"generated": 0, "dir": out_dir, "skipped": True}
     try:
         out = subprocess.check_output(
-            ["node", script, "--input", projects_json, "--out", out_dir, "--template", template],
+            [
+                "node", script,
+                "--input", projects_json,
+                "--out", out_dir,
+                "--template", template,
+                "--overrides", "./assets/data/og-overrides.json",
+            ],
             text=True
         ).strip()
         # script prints a single JSON line with {generated, existing, dir}
