@@ -2,6 +2,55 @@
 
 ## [Unreleased] - 2025-10-07
 
+### SiteAgent Enhanced Tasks - OG Images, News Feed, Link Validation (NEW ✨)
+- **Three New Automated Tasks**:
+  1. **og.generate** - Playwright-based Open Graph image generator
+     - Creates 1200×630px social preview images from `projects.json`
+     - Glassmorphic card design with project title, description, topics
+     - Template: `public/og/template.html` with dark gradient background
+     - Script: `scripts/og-render.mjs` (Headless Chromium automation)
+     - Output: `./assets/og/*.png` (one per project)
+     - Graceful fallback when Node/Playwright unavailable
+     - Skips existing images for performance
+  2. **news.sync** - GitHub releases/commits aggregator
+     - Fetches 5 most recent releases via `gh api`
+     - Falls back to recent commits if no releases
+     - Output: `assets/data/news.json` for frontend consumption
+     - Supports multiple repos via `SITEAGENT_REPOS` env var
+     - Graceful degradation when `gh` CLI unavailable
+  3. **links.validate** - Static local link checker
+     - Scans HTML files for broken local references
+     - Validates href/src attributes point to existing files
+     - Output: `assets/data/link-check.json` with broken links
+     - Ignores external URLs, handles directory indexes
+     - Emits warnings for missing targets
+- **Updated Agent Plan**:
+  ```python
+  DEFAULT_PLAN = [
+    "projects.sync",       # GitHub repo metadata
+    "sitemap.media.update", # Media asset indexing
+    "og.generate",         # Social preview images (NEW)
+    "news.sync",           # Activity feed (NEW)
+    "links.validate",      # Broken link detection (NEW)
+    "status.write",        # Heartbeat JSON
+  ]
+  ```
+- **Configuration**:
+  - Added `SITEAGENT_REPOS` to `.env.prod` (repo list for news.sync)
+  - OG template: Responsive 1200×630 viewport, system fonts
+  - Link checker: Scans `./` and `./public` directories
+- **Documentation**:
+  - New file: `docs/SITEAGENT_TASKS.md` (comprehensive task guide)
+  - Manual run instructions for each task
+  - Output format examples and error handling
+  - Production deployment notes (Docker, GitHub Actions)
+  - Testing and troubleshooting guides
+- **Dependencies**:
+  - Node.js (for og.generate script)
+  - Playwright chromium browser (for screenshots)
+  - `gh` CLI (for news.sync, optional)
+  - All with graceful fallback if unavailable
+
 ### SiteAgent Dual Authentication - CF Access OR HMAC (ENHANCED ✅)
 - **Flexible Authentication**: Public `/agent/*` endpoints now accept EITHER authentication method
   - ✅ **Priority 1: CF Access** - Checked first (JWT from Cloudflare Edge)
