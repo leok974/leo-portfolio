@@ -1,7 +1,7 @@
 # GitHub Actions PR Automation - Current Status
 
-**Date:** 2025-01-07  
-**Branch:** `auth`  
+**Date:** 2025-01-07
+**Branch:** `auth`
 **Status:** ⏳ Ready to Activate (pending merge to `main`)
 
 ---
@@ -64,7 +64,7 @@ permissions:
   contents: write
   pull-requests: write
 
-# siteagent-nightly-pr.yml  
+# siteagent-nightly-pr.yml
 permissions:
   contents: write
   pull-requests: write
@@ -84,8 +84,8 @@ env:
 
 ### 1. Enable Repository Workflow Permissions ⏳
 
-**Action Required:** Enable in GitHub web UI  
-**Time Required:** 2 minutes  
+**Action Required:** Enable in GitHub web UI
+**Time Required:** 2 minutes
 **Link:** https://github.com/leok974/leo-portfolio/settings/actions
 
 **Settings to change:**
@@ -104,7 +104,7 @@ env:
 
 ### 2. Merge `auth` Branch to `main` ⏳
 
-**Action Required:** Merge branch  
+**Action Required:** Merge branch
 **Time Required:** 5 minutes
 
 **Option A: Via GitHub UI** (Recommended)
@@ -151,7 +151,7 @@ git push origin main
 1. Go to: Actions → siteagent-nightly-pr → Run workflow
 2. Select branch: main
 3. Click "Run workflow"
-4. Expected: 
+4. Expected:
    - If changes: PR created with branch siteagent/nightly/YYYY-MM-DD
    - If no changes: "No changes detected, skipping PR"
 ```
