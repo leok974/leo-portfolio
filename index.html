@@ -1256,8 +1256,40 @@
         panel.style.cssText =
           "position:fixed;left:12px;bottom:56px;width:360px;max-height:60vh;overflow:auto;padding:12px;border-radius:12px;background:#111;color:#e6e9f2;border:1px solid #2a2f3a;display:none;z-index:9999;font:14px system-ui";
         panel.innerHTML =
-          "<b>siteAgent report</b><div id='sa-rpt' style='margin-top:8px'>loading…</div><div style='margin-top:10px'><textarea id='sa-cmd' rows='3' style='width:100%;border-radius:8px;padding:8px;background:#0b0e15;color:#e6e9f2;border:1px solid #2a2f3a' placeholder=\"e.g. rename leo-portfolio to siteAgent&#10;set brand to LEO KLEMET — SITEAGENT&#10;set logo for repo leok974/leo-portfolio to assets/logos/siteAgent.png&#10;fetch logo for repo leok974/leo-portfolio from https://example.com/logo.png\"></textarea></div><div style='margin-top:8px;display:flex;gap:8px'><button id='sa-run-cmd'>Tell agent</button><button id='sa-run-quick'>Run quick</button><button id='sa-close'>Close</button></div>";
+          "<b>siteAgent report</b>\
+      <div id='sa-rpt' style='margin-top:8px'>loading…</div>\
+      <div style='margin-top:10px'>\
+        <textarea id='sa-cmd' rows='3' style='width:100%;border-radius:8px;padding:8px;background:#0b0e15;color:#e6e9f2;border:1px solid #2a2f3a' placeholder=\"e.g. rename leo-portfolio to siteAgent&#10;set brand to LEO KLEMET — SITEAGENT&#10;set logo for repo leok974/leo-portfolio to assets/logos/siteAgent.png&#10;fetch logo for repo leok974/leo-portfolio from https://example.com/logo.png\"></textarea>\
+      </div>\
+      <div style='margin-top:8px;display:flex;gap:8px;flex-wrap:wrap'>\
+        <button id='sa-run-cmd'>Tell agent</button>\
+        <button id='sa-run-quick'>Run quick</button>\
+        <button id='sa-close' style='margin-left:auto'>Close</button>\
+      </div>\
+      <div id='sa-evts-wrap' style='margin-top:12px'>\
+        <div style='display:grid;gap:6px'>\
+          <div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap'>\
+            <b>Last actions</b>\
+            <label style='display:flex;align-items:center;gap:6px'>Level\
+              <select id='sa-level'>\
+                <option value=''>All</option>\
+                <option value='info'>info</option>\
+                <option value='warn'>warn</option>\
+                <option value='error'>error</option>\
+              </select>\
+            </label>\
+            <label style='display:flex;align-items:center;gap:6px'>Run\
+              <select id='sa-run-sel'><option value=''>— recent —</option></select>\
+            </label>\
+            <input id='sa-run-id' placeholder='or paste run_id' style='flex:1;min-width:180px;border-radius:8px;padding:6px;background:#0b0e15;color:#e6e9f2;border:1px solid #2a2f3a'/>\
+            <button id='sa-evts-apply'>Apply</button>\
+            <button id='sa-evts-refresh' title='Refresh' style='margin-left:auto'>↻</button>\
+          </div>\
+        </div>\
+        <ul id='sa-evts' style='list-style:none;padding-left:0;margin-top:6px;display:grid;gap:6px;'></ul>\
+      </div>";
         document.body.appendChild(panel);
+        let saFilter = { level: "", run_id: "", limit: 10 };
         async function refresh() {
           try {
             const res = await fetch("/agent/report", { cache: "no-store" });
@@ -1275,13 +1307,112 @@
             console.error(e);
           }
         }
+        async function loadRecentRuns() {
+          try {
+            const res = await fetch("/agent/status", { cache: "no-store" });
+            const j = await res.json();
+            const sel = document.getElementById("sa-run-sel");
+            const cur = sel.value;
+            sel.innerHTML = "<option value=''>— recent —</option>";
+            (j.recent || []).forEach((r) => {
+              const opt = document.createElement("option");
+              opt.value = r.run_id;
+              opt.textContent = `${r.run_id.slice(0, 8)}… (${r.ok}/${r.total} ok)`;
+              sel.appendChild(opt);
+            });
+            if (cur) sel.value = cur;
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        async function refreshEvents() {
+          try {
+            const q = new URLSearchParams();
+            q.set("limit", String(saFilter.limit || 10));
+            if (saFilter.level) q.set("level", saFilter.level);
+            if (saFilter.run_id) q.set("run_id", saFilter.run_id);
+            const res = await fetch("/agent/events?" + q.toString(), {
+              cache: "no-store",
+            });
+            const j = await res.json();
+            const ul = document.getElementById("sa-evts");
+            ul.innerHTML = (j.events || [])
+              .map((ev) => {
+                const dt = ev.ts ? new Date(ev.ts).toLocaleTimeString() : "";
+                const lvl = ev.level || "info";
+                const tag =
+                  lvl === "error" ? "🔴" : lvl === "warn" ? "🟠" : "🟢";
+                const detail = ev.event || "";
+                let data = "";
+                try {
+                  data =
+                    ev.data && Object.keys(ev.data).length
+                      ? `<code style='font-size:12px;background:#0b0e15;border:1px solid #2a2f3a;border-radius:6px;padding:2px 4px;display:block;overflow:auto;'>${JSON.stringify(ev.data)}</code>`
+                      : "";
+                } catch {}
+                const rid = ev.run_id || "";
+                const copyBtn = rid
+                  ? `<button data-rid="${rid}" class="sa-focus" title="Focus on this run" style="margin-left:auto">🎯</button>`
+                  : "";
+                return `<li style="padding:6px 8px;border:1px solid #2a2f3a;border-radius:8px;background:#0e131f">
+                <div style="display:flex;gap:8px;align-items:center">
+                  <span>${tag}</span>
+                  <span style="opacity:.8">${dt}</span>
+                  <span style="opacity:.6">•</span>
+                  <b>${detail}</b>
+                  ${copyBtn}
+                </div>
+                ${rid ? `<div style="opacity:.6;font-size:12px;margin-top:2px">run_id: <code>${rid}</code></div>` : ""}
+                ${data}
+              </li>`;
+              })
+              .join("");
+            // attach focus handlers
+            ul.querySelectorAll("button.sa-focus").forEach((b) => {
+              b.onclick = () => {
+                const rid = b.getAttribute("data-rid") || "";
+                if (!rid) return;
+                saFilter.run_id = rid;
+                document.getElementById("sa-run-id").value = rid;
+                document.getElementById("sa-run-sel").value = "";
+                refreshEvents();
+              };
+            });
+          } catch (e) {
+            console.error(e);
+          }
+        }
         btn.onclick = () => {
           panel.style.display =
             panel.style.display === "none" ? "block" : "none";
-          if (panel.style.display === "block") refresh();
+          if (panel.style.display === "block") {
+            refresh();
+            loadRecentRuns();
+            refreshEvents();
+          }
         };
         panel.querySelector("#sa-close").onclick = () => {
           panel.style.display = "none";
+        };
+        // filter event handlers
+        document.getElementById("sa-level").onchange = (e) => {
+          saFilter.level = e.target.value;
+          refreshEvents();
+        };
+        document.getElementById("sa-run-sel").onchange = (e) => {
+          saFilter.run_id = e.target.value;
+          document.getElementById("sa-run-id").value = e.target.value;
+          refreshEvents();
+        };
+        document.getElementById("sa-evts-apply").onclick = () => {
+          const rid = (document.getElementById("sa-run-id").value || "").trim();
+          saFilter.run_id = rid;
+          document.getElementById("sa-run-sel").value = rid;
+          refreshEvents();
+        };
+        document.getElementById("sa-evts-refresh").onclick = () => {
+          loadRecentRuns();
+          refreshEvents();
         };
         panel.querySelector("#sa-run-quick").onclick = async () => {
           const body = JSON.stringify({
@@ -1294,8 +1425,16 @@
               headers: { "Content-Type": "application/json" },
               body,
             });
-            await res.json().catch(() => ({}));
+            const j = await res.json().catch(() => ({}));
             await refresh();
+            await loadRecentRuns();
+            // auto-focus on this run
+            if (j.run_id) {
+              saFilter.run_id = j.run_id;
+              document.getElementById("sa-run-id").value = j.run_id;
+              document.getElementById("sa-run-sel").value = "";
+              await refreshEvents();
+            }
           } catch (e) {
             console.error(e);
           }
@@ -1313,6 +1452,14 @@
             const j = await res.json().catch(() => ({}));
             console.log("agent act:", j);
             await refresh();
+            await loadRecentRuns();
+            // auto-focus on this run
+            if (j.run_id) {
+              saFilter.run_id = j.run_id;
+              document.getElementById("sa-run-id").value = j.run_id;
+              document.getElementById("sa-run-sel").value = "";
+              await refreshEvents();
+            }
           } catch (e) {
             console.error(e);
           }

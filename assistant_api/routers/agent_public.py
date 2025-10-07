@@ -1,5 +1,5 @@
 """Public siteAgent endpoint with dual authentication (CF Access OR HMAC)."""
-from fastapi import APIRouter, Request, HTTPException, Depends
+from fastapi import APIRouter, Request, HTTPException, Depends, Query
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import hmac
@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 from ..agent.runner import run, DEFAULT_PLAN
 from ..agent.tasks import REGISTRY
-from ..agent.models import recent_runs
+from ..agent.models import recent_runs, query_events
 from ..utils.cf_access import require_cf_access
 from ..agent.interpret import parse_command
 
@@ -90,6 +90,17 @@ def status():
         for r in rows
     ]
     return {"recent": items}
+
+
+@router.get("/events")
+def events(
+    level: Optional[str] = Query(None, description="Filter by level (info, warn, error)"),
+    run_id: Optional[str] = Query(None, description="Filter by run_id"),
+    limit: int = Query(10, ge=1, le=100, description="Maximum number of events to return")
+):
+    """Get recent agent events with optional filtering (public endpoint)."""
+    event_list = query_events(level=level, run_id=run_id, limit=limit)
+    return {"events": event_list}
 
 
 @router.get("/report")

@@ -79,3 +79,45 @@ def recent_runs(limit=10):
     ).fetchall()
     con.close()
     return rows
+
+
+def query_events(level: Optional[str] = None, run_id: Optional[str] = None, limit: int = 10):
+    """Query agent events with optional filtering by level and run_id."""
+    con = _con()
+    query = "SELECT run_id, ts, level, event, data FROM agent_events"
+    conditions = []
+    params = []
+    
+    if level:
+        conditions.append("level = ?")
+        params.append(level)
+    
+    if run_id:
+        conditions.append("run_id = ?")
+        params.append(run_id)
+    
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    
+    query += " ORDER BY id DESC LIMIT ?"
+    params.append(limit)
+    
+    rows = con.execute(query, params).fetchall()
+    con.close()
+    
+    # Convert rows to dictionaries
+    events = []
+    for r in rows:
+        try:
+            data_dict = json.loads(r[4]) if r[4] else {}
+        except:
+            data_dict = {}
+        events.append({
+            "run_id": r[0],
+            "ts": r[1],
+            "level": r[2],
+            "event": r[3],
+            "data": data_dict
+        })
+    
+    return events
