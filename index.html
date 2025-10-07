@@ -1264,6 +1264,9 @@
       <div style='margin-top:8px;display:flex;gap:8px;flex-wrap:wrap'>\
         <button id='sa-run-cmd'>Tell agent</button>\
         <button id='sa-run-quick'>Run quick</button>\
+        <button id='sa-media-scan'>Scan media</button>\
+        <button id='sa-media-opt'>Optimize images</button>\
+        <button id='sa-link-suggest'>Suggest link fixes</button>\
         <button id='sa-close' style='margin-left:auto'>Close</button>\
       </div>\
       <div id='sa-evts-wrap' style='margin-top:12px'>\
@@ -1460,6 +1463,78 @@
               document.getElementById("sa-run-sel").value = "";
               await refreshEvents();
             }
+          } catch (e) {
+            console.error(e);
+          }
+        };
+        panel.querySelector("#sa-media-scan").onclick = async () => {
+          try {
+            const body = JSON.stringify({
+              plan: ["media.scan", "status.write"],
+              params: {},
+            });
+            const res = await fetch("/agent/run", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body,
+            });
+            const j = await res.json().catch(() => ({}));
+            if (j && j.run_id) {
+              saFilter.run_id = j.run_id;
+              document.getElementById("sa-run-id").value = j.run_id;
+              document.getElementById("sa-run-sel").value = "";
+            }
+            await refresh();
+            await loadRecentRuns();
+            await refreshEvents();
+          } catch (e) {
+            console.error(e);
+          }
+        };
+        panel.querySelector("#sa-media-opt").onclick = async () => {
+          try {
+            const body = JSON.stringify({
+              plan: ["media.scan", "media.optimize", "status.write"],
+              params: {},
+            });
+            const res = await fetch("/agent/run", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body,
+            });
+            const j = await res.json().catch(() => ({}));
+            if (j && j.run_id) {
+              saFilter.run_id = j.run_id;
+              document.getElementById("sa-run-id").value = j.run_id;
+              document.getElementById("sa-run-sel").value = "";
+            }
+            await refresh();
+            await loadRecentRuns();
+            await refreshEvents();
+          } catch (e) {
+            console.error(e);
+          }
+        };
+        panel.querySelector("#sa-link-suggest").onclick = async () => {
+          try {
+            const body = JSON.stringify({
+              plan: ["links.suggest", "status.write"],
+              params: {},
+            });
+            const res = await fetch("/agent/run", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body,
+            });
+            const j = await res.json().catch(() => ({}));
+            if (j && j.run_id) {
+              saFilter.run_id = j.run_id;
+              document.getElementById("sa-run-id").value = j.run_id;
+              document.getElementById("sa-run-sel").value = "";
+            }
+            await refresh();
+            await loadRecentRuns();
+            await refreshEvents();
           } catch (e) {
             console.error(e);
           }

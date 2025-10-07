@@ -5,6 +5,7 @@ from .models import insert_job, update_job, emit
 
 DEFAULT_PLAN = [
     "projects.sync",
+    "media.scan",
     "sitemap.media.update",
     "og.generate",
     "news.sync",

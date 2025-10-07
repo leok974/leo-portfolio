@@ -77,6 +77,19 @@ def parse_command(cmd: str) -> Tuple[List[str], Dict[str, Any]]:
     if re.search(r"\b(re)?generate\b.*\bog\b", c, re.I):
         plan = ["og.generate", "status.write"]
         return plan, params
+    # scan media
+    if re.search(r"\bscan\b.*\bmedia\b", c, re.I):
+        plan = ["media.scan", "status.write"]
+        return plan, params
+    # optimize images/pictures/media
+    m = re.search(r"\b(optimi[sz]e)\b.*\b(images?|pictures?|media)\b", c, re.I)
+    if m:
+        plan = ["media.scan", "media.optimize", "status.write"]
+        return plan, params
+    # suggest link fixes
+    if re.search(r"\b(suggest|recommend)\b.*\blink\b.*\bfix(es)?\b", c, re.I):
+        plan = ["links.suggest", "status.write"]
+        return plan, params
 
     # default: no-op
     return plan, params

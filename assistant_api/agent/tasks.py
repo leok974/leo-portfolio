@@ -1,5 +1,5 @@
 from typing import Dict, Callable, Any, List, Tuple
-import os, json, subprocess, shutil, re, io, urllib.request, urllib.error, socket, ipaddress
+import os, json, subprocess, shutil, re, io, urllib.request, urllib.error, socket, ipaddress, hashlib
 from .models import emit
 
 TaskFn = Callable[[str, Dict[str, Any]], Dict[str, Any]]
@@ -396,6 +396,188 @@ def logo_fetch(run_id, params):
 
     emit(run_id, "info", "logo.fetch.ok", {"file": rel, "ctype": ctype or "unknown"})
     return {"file": rel, "ctype": ctype or "unknown", "mapped": changed}
+
+
+@task("media.scan")
+def media_scan(run_id, params):
+    """
+    Scan media under ./public and ./assets and write assets/data/media-index.json.
+    Records: path, bytes, width/height (if available), ext, sha1 (first 32 hex), mtime.
+    """
+    roots = ["./public", "./assets"]
+    exts = {".png",".jpg",".jpeg",".webp",".gif",".svg",".bmp",".tiff"}
+    items: List[Dict[str, Any]] = []
+    have_pil = False
+    try:
+        from PIL import Image  # type: ignore
+        have_pil = True
+    except Exception:
+        pass
+
+    def get_dims(p: str, ext: str) -> Tuple[int,int]:
+        if ext == ".svg":
+            try:
+                txt = open(p,"r",encoding="utf-8",errors="ignore").read()
+                m = re.search(r'\bwidth="?(\d+)', txt) and re.search(r'\bheight="?(\d+)', txt)
+            except Exception:
+                m=None
+            if m:
+                w = int(re.search(r'\bwidth="?(\d+)', txt).group(1))
+                h = int(re.search(r'\bheight="?(\d+)', txt).group(1))
+                return w,h
+            return (0,0)
+        if have_pil:
+            try:
+                from PIL import Image  # type: ignore
+                with Image.open(p) as im:
+                    return int(im.width), int(im.height)
+            except Exception:
+                return (0,0)
+        return (0,0)
+
+    for root in roots:
+        if not os.path.isdir(root):
+            continue
+        for r,_,files in os.walk(root):
+            for fn in files:
+                ext = os.path.splitext(fn)[1].lower()
+                if ext not in exts: continue
+                path = os.path.join(r,fn)
+                try:
+                    st = os.stat(path)
+                except FileNotFoundError:
+                    continue
+                w,h = get_dims(path, ext)
+                rel = path.replace("\\","/")
+                sha1 = ""
+                try:
+                    with open(path,"rb") as f:
+                        sha1 = hashlib.sha1(f.read(65536)).hexdigest()[:32]
+                except Exception:
+                    pass
+                items.append({
+                    "path": rel,
+                    "bytes": int(st.st_size),
+                    "width": w, "height": h,
+                    "ext": ext[1:],
+                    "sha1": sha1,
+                    "mtime": int(st.st_mtime),
+                })
+    items.sort(key=lambda x: (-x["bytes"], x["path"]))
+    dst = "./assets/data/media-index.json"
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    with open(dst,"w",encoding="utf-8") as f:
+        json.dump({"count": len(items), "items": items}, f, indent=2)
+    emit(run_id, "info", "media.scan.ok", {"count": len(items)})
+    return {"file": dst, "count": len(items)}
+
+
+@task("media.optimize")
+def media_optimize(run_id, params):
+    """
+    Create WebP + thumbnails (480w, 960w) into ./assets/derived/.
+    Skips SVG/GIF; requires Pillow. Respects params: {quality:int=82, limit:int (max files), overwrite:bool=False}
+    """
+    try:
+        from PIL import Image  # type: ignore
+    except Exception:
+        emit(run_id, "warn", "media.optimize.pillow_missing", {})
+        return {"skipped": True, "reason": "pillow_missing"}
+    idx_path = "./assets/data/media-index.json"
+    if not os.path.exists(idx_path):
+        emit(run_id, "warn", "media.optimize.no_index", {})
+        return {"skipped": True, "reason": "no_index"}
+    idx = json.loads(open(idx_path,"r",encoding="utf-8").read())
+    items = idx.get("items", [])
+    outdir = "./assets/derived"
+    os.makedirs(outdir, exist_ok=True)
+    q = int(params.get("quality") or 82)
+    limit = int(params.get("limit") or 1000)
+    overwrite = bool(params.get("overwrite") or False)
+    done = 0
+    made = []
+    for it in items:
+        if done >= limit: break
+        ext = it.get("ext","").lower()
+        if ext in {"svg","gif"}: continue
+        p = it.get("path","")
+        if not p or not os.path.exists(p): continue
+        base, _ = os.path.splitext(os.path.basename(p))
+        target_webp = os.path.join(outdir, base + ".webp")
+        thumb_480 = os.path.join(outdir, base + ".480w.webp")
+        thumb_960 = os.path.join(outdir, base + ".960w.webp")
+        if not overwrite and all(os.path.exists(x) for x in [target_webp, thumb_480, thumb_960]):
+            continue
+        try:
+            with Image.open(p) as im:
+                im = im.convert("RGB")
+                # main webp
+                if overwrite or not os.path.exists(target_webp):
+                    im.save(target_webp, "WEBP", quality=q, method=6)
+                    made.append(target_webp.replace("\\","/"))
+                # thumbs
+                for size, dest in [(480, thumb_480), (960, thumb_960)]:
+                    if overwrite or not os.path.exists(dest):
+                        rim = im.copy()
+                        rim.thumbnail((size, size*10_000), Image.LANCZOS)
+                        rim.save(dest, "WEBP", quality=q, method=6)
+                        made.append(dest.replace("\\","/"))
+                done += 1
+        except Exception as e:
+            emit(run_id, "warn", "media.optimize.fail", {"path": p, "err": str(e)})
+    emit(run_id, "info", "media.optimize.ok", {"files": len(made)})
+    return {"files": len(made), "outdir": outdir}
+
+
+@task("links.suggest")
+def links_suggest(run_id, params):
+    """
+    Generate suggestions for missing local links using fuzzy filename matching.
+    Input: assets/data/link-check.json
+    Output: assets/data/link-suggest.json with {missing_url: [suggested_paths...]}
+    """
+    lc = "./assets/data/link-check.json"
+    if not os.path.exists(lc):
+        emit(run_id, "warn", "links.suggest.no_report", {})
+        return {"skipped": True}
+    data = json.loads(open(lc,"r",encoding="utf-8").read())
+    missing = [m["url"] for m in data.get("missing", []) if isinstance(m.get("url"), str)]
+    # candidate corpus: all local files
+    corpus: List[str] = []
+    for root in ["./public","./assets"]:
+        if not os.path.isdir(root): continue
+        for r,_,files in os.walk(root):
+            for fn in files:
+                corpus.append(os.path.join(r,fn).replace("\\","/"))
+    import difflib
+    def base(u: str) -> str:
+        u = u.split("#",1)[0].split("?",1)[0]
+        return os.path.basename(u)
+    suggestions: Dict[str, List[str]] = {}
+    for miss in missing:
+        b = base(miss)
+        if not b: continue
+        # quick extension-aware filter
+        ext = os.path.splitext(b)[1].lower()
+        candidates = [c for c in corpus if (not ext or c.lower().endswith(ext))]
+        # fuzzy match by filename
+        names = [os.path.basename(c) for c in candidates]
+        scored = difflib.get_close_matches(b, names, n=5, cutoff=0.6)
+        picks = []
+        for s in scored:
+            for c in candidates:
+                if os.path.basename(c) == s:
+                    picks.append(c)
+                    break
+        if picks:
+            suggestions[miss] = picks[:5]
+    out = {"count": len(suggestions), "suggestions": suggestions}
+    dst = "./assets/data/link-suggest.json"
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    with open(dst,"w",encoding="utf-8") as f:
+        json.dump(out,f,indent=2)
+    emit(run_id, "info", "links.suggest.ok", {"count": out["count"]})
+    return {"file": dst, "count": out["count"]}
 
 
 @task("news.sync")

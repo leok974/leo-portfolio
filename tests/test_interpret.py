@@ -78,3 +78,38 @@ def test_parse_with_extra_whitespace():
     plan, params = parse_command("  rename  leo-portfolio  to  siteAgent  ")
     assert plan == ["overrides.update", "og.generate", "status.write"]
     assert params == {"rename": {"from": "leo-portfolio", "to": "siteAgent"}}
+
+
+def test_parse_scan_media():
+    """Test scan media command."""
+    plan, params = parse_command("scan media")
+    assert plan == ["media.scan", "status.write"]
+    assert params == {}
+
+
+def test_parse_optimize_images():
+    """Test optimize images command."""
+    plan, params = parse_command("optimize images")
+    assert plan == ["media.scan", "media.optimize", "status.write"]
+    assert params == {}
+
+
+def test_parse_optimize_pictures():
+    """Test optimize pictures command (synonym)."""
+    plan, params = parse_command("optimise pictures")
+    assert plan == ["media.scan", "media.optimize", "status.write"]
+    assert params == {}
+
+
+def test_parse_suggest_link_fixes():
+    """Test suggest link fixes command."""
+    plan, params = parse_command("suggest link fixes")
+    assert plan == ["links.suggest", "status.write"]
+    assert params == {}
+
+
+def test_parse_recommend_link_fix():
+    """Test recommend link fix command (synonym)."""
+    plan, params = parse_command("recommend link fix")
+    assert plan == ["links.suggest", "status.write"]
+    assert params == {}
