@@ -1,8 +1,3 @@
--e git+https://github.com/leok974/ai-ops-agent-gke.git@dad4ae71eab6d28fecdd47bbd0e2fccb7bcffa4e#egg=aiops_action_agent&subdirectory=apps\action-agent
--e git+https://github.com/leok974/ai-ops-agent-gke.git@dad4ae71eab6d28fecdd47bbd0e2fccb7bcffa4e#egg=aiops_gateway&subdirectory=apps\gateway
--e git+https://github.com/leok974/ai-ops-agent-gke.git@dad4ae71eab6d28fecdd47bbd0e2fccb7bcffa4e#egg=aiops_monitoring_agent&subdirectory=apps\monitoring-agent
--e git+https://github.com/leok974/ai-ops-agent-gke.git@dad4ae71eab6d28fecdd47bbd0e2fccb7bcffa4e#egg=aiops_responder_agent
--e git+https://github.com/leok974/ai-ops-agent-gke.git@dad4ae71eab6d28fecdd47bbd0e2fccb7bcffa4e#egg=aiops_shared&subdirectory=packages\shared
 alembic==1.16.5
 annotated-types==0.7.0
 anyio==4.11.0
@@ -25,8 +20,6 @@ distro==1.9.0
 faiss-cpu==1.12.0
 fastapi==0.117.1
 filelock==3.19.1
-# Editable install with no version control (finance-agent==0.1.0)
--e c:\users\pierr\onedrive\apps\bankagent
 freezegun==1.5.5
 fsspec==2025.9.0
 git-filter-repo==2.47.0
