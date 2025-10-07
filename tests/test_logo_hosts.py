@@ -21,7 +21,7 @@ def _sig(secret: str, body: bytes) -> str:
 def test_logo_host_allowed_when_list_empty(monkeypatch, client):
     """Test that any host is allowed when SITEAGENT_LOGO_HOSTS is empty (dev mode)."""
     monkeypatch.setenv("SITEAGENT_LOGO_HOSTS", "")
-    
+
     # This should not raise disallowed_host error
     # Note: actual logo fetch might fail for other reasons, but host check passes
     body = b'{"command":"fetch logo for repo test/repo from https://example.com/logo.svg"}'
@@ -42,7 +42,7 @@ def test_logo_host_allowed_when_list_empty(monkeypatch, client):
 def test_logo_host_allowed_in_allowlist(monkeypatch, client):
     """Test that allowed host passes validation."""
     monkeypatch.setenv("SITEAGENT_LOGO_HOSTS", "example.com,assets.example.org")
-    
+
     body = b'{"command":"fetch logo for repo test/repo from https://assets.example.org/logo.svg"}'
     r = client.post(
         "/agent/act",
@@ -60,7 +60,7 @@ def test_logo_host_allowed_in_allowlist(monkeypatch, client):
 def test_logo_host_blocked_not_in_allowlist(monkeypatch, client):
     """Test that disallowed host is blocked."""
     monkeypatch.setenv("SITEAGENT_LOGO_HOSTS", "example.com")
-    
+
     body = b'{"command":"fetch logo for repo test/repo from https://evil.com/logo.svg"}'
     r = client.post(
         "/agent/act",
@@ -80,7 +80,7 @@ def test_logo_host_blocked_not_in_allowlist(monkeypatch, client):
 def test_logo_host_subdomain_allowed(monkeypatch, client):
     """Test that subdomains are allowed when parent domain is in allowlist."""
     monkeypatch.setenv("SITEAGENT_LOGO_HOSTS", "example.com")
-    
+
     body = b'{"command":"fetch logo for repo test/repo from https://cdn.example.com/logo.svg"}'
     r = client.post(
         "/agent/act",

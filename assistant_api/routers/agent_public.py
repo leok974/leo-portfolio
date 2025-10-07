@@ -131,11 +131,11 @@ def events(
     # Note: query_events currently supports level and run_id
     # Task filtering would need to be added to the models layer
     event_list = query_events(level=level, run_id=run_id, limit=limit)
-    
+
     # Filter by task in-memory if needed (until models layer supports it)
     if task:
         event_list = [e for e in event_list if e.get("task") == task]
-    
+
     return {"events": event_list}
 
 
@@ -199,7 +199,7 @@ async def list_link_apply_files():
     _ensure_artifacts_dir()
     if not LINK_APPLY_FILES.exists():
         return {"files": [], "note": "Run dry-run first."}
-    
+
     try:
         with open(LINK_APPLY_FILES, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -246,12 +246,12 @@ async def act(req: Request, body: bytes = Depends(_authorized)):
     Supports logo fetch with host allowlist validation.
     """
     payload = ActReq(**json.loads(body or b"{}"))
-    
+
     # Parse natural language command
     plan, params = parse_command(payload.command)
     if not plan:
         raise HTTPException(status_code=400, detail="Could not interpret command")
-    
+
     # Special handling for logo.fetch to validate host
     if "logo.fetch" in plan and params.get("url"):
         url = params["url"]
@@ -260,7 +260,7 @@ async def act(req: Request, body: bytes = Depends(_authorized)):
                 status_code=400,
                 detail=f"disallowed_host: {urlparse(url).hostname} not in SITEAGENT_LOGO_HOSTS allowlist"
             )
-    
+
     return run(plan, params)
     return run(plan, params)
 
@@ -375,17 +375,17 @@ async def pr_open(payload: PROpenReq, body: bytes = Depends(_authorized)):
     gh = os.environ.get("GITHUB_TOKEN")
     repo = os.environ.get("GITHUB_REPO", "leok974/leo-portfolio")
     base_url = os.environ.get("GITHUB_API_BASE", "https://api.github.com")
-    
+
     if not gh:
         raise HTTPException(
-            status_code=503, 
+            status_code=503,
             detail="pr_disabled: missing GITHUB_TOKEN. Set GITHUB_TOKEN env var to enable PR automation."
         )
-    
+
     title = payload.title or "chore(siteAgent): automated changes"
     branch = payload.branch or "siteagent/auto/update"
     pr_body = payload.body or "Automated update by SiteAgent."
-    
+
     # Call GitHub REST API to create PR
     async with httpx.AsyncClient(timeout=20) as client:
         # Get default branch
@@ -398,9 +398,9 @@ async def pr_open(payload: PROpenReq, body: bytes = Depends(_authorized)):
                 status_code=502,
                 detail=f"github_repo_error: Failed to fetch repo info (status {r_repo.status_code})"
             )
-        
+
         default_branch = r_repo.json().get("default_branch", "main")
-        
+
         # Create pull request
         pr_payload = {
             "title": title,
@@ -414,14 +414,14 @@ async def pr_open(payload: PROpenReq, body: bytes = Depends(_authorized)):
             json=pr_payload,
             headers={"Authorization": f"Bearer {gh}", "Accept": "application/vnd.github+json"}
         )
-        
+
         # 422 means PR already exists (acceptable)
         if r_pr.status_code not in (201, 422):
             raise HTTPException(
                 status_code=502,
                 detail=f"github_pr_error: Failed to create PR (status {r_pr.status_code})"
             )
-        
+
         pr_data = r_pr.json()
         return {
             "ok": True,
@@ -447,23 +447,23 @@ async def automation_workflow(
     """
     # Available safe tasks
     task_all = ["links.validate", "media.optimize", "sitemap.media.update"]
-    
+
     # Process include/exclude filters
     inc_set = set([t.strip() for t in (include or "").split(",") if t.strip()]) or set(task_all)
     exc_set = set([t.strip() for t in (exclude or "").split(",") if t.strip()])
     tasks = [t for t in task_all if t in inc_set and t not in exc_set]
-    
+
     # Generate task run lines
     run_lines = []
     banner = "echo '⚠️  DRY-RUN ENABLED - No changes will be committed'" if dry_run else ""
-    
+
     for t in tasks:
         if t == "media.optimize":
             cmd = f"python -m assistant_api.cli run {t} {'--safe --dry-run' if dry_run else '--safe'}"
         else:
             cmd = f"python -m assistant_api.cli run {t} {'--dry-run' if dry_run else ''}"
         run_lines.append(cmd.strip())
-    
+
     # Build workflow YAML
     workflow = f"""name: siteagent-nightly
 on:
@@ -495,5 +495,5 @@ jobs:
           git commit -m "chore(siteAgent): nightly maintenance" || echo "no changes"
           git push || true
 """
-    
+
     return PlainTextResponse(workflow, media_type="text/yaml")

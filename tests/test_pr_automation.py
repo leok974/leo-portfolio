@@ -42,24 +42,24 @@ def test_pr_open_stub_with_token(monkeypatch, client):
     class MockAsyncClient:
         def __init__(self, *args, **kwargs):
             pass
-        
+
         async def __aenter__(self):
             return self
-        
+
         async def __aexit__(self, *args):
             pass
-        
+
         async def get(self, url, **kwargs):
             # Mock repo GET response
             return __import__("httpx").Response(200, json={"default_branch": "main"})
-        
+
         async def post(self, url, **kwargs):
             # Mock PR creation response
             return __import__("httpx").Response(201, json={
                 "html_url": "https://github.com/test/repo/pull/1",
                 "number": 1
             })
-    
+
     monkeypatch.setattr("httpx.AsyncClient", MockAsyncClient)
 
     # Valid HMAC signature

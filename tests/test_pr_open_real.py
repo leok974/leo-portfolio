@@ -23,7 +23,7 @@ def _sig(secret: str, body: bytes) -> str:
 def test_pr_disabled(monkeypatch, client):
     """Test that PR open returns 503 when GITHUB_TOKEN not set."""
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
-    
+
     body = json.dumps({"title": "t", "branch": "b"}).encode("utf-8")
     r = client.post(
         "/agent/pr/open",
@@ -41,26 +41,26 @@ def test_pr_repo_error(monkeypatch, client):
     """Test that PR open handles repo fetch error."""
     monkeypatch.setenv("GITHUB_TOKEN", "test-token")
     monkeypatch.setenv("GITHUB_REPO", "owner/repo")
-    
+
     # Mock httpx to return error on repo GET
     class MockAsyncClient:
         def __init__(self, *args, **kwargs):
             pass
-        
+
         async def __aenter__(self):
             return self
-        
+
         async def __aexit__(self, *args):
             pass
-        
+
         async def get(self, *args, **kwargs):
             return httpx.Response(500, json={"message": "Internal error"})
-        
+
         async def post(self, *args, **kwargs):
             return httpx.Response(201, json={"html_url": "https://x/pr/1", "number": 1})
-    
+
     monkeypatch.setattr("httpx.AsyncClient", MockAsyncClient)
-    
+
     body = json.dumps({"title": "t", "branch": "b"}).encode("utf-8")
     r = client.post(
         "/agent/pr/open",
@@ -78,26 +78,26 @@ def test_pr_ok(monkeypatch, client):
     """Test successful PR creation."""
     monkeypatch.setenv("GITHUB_TOKEN", "test-token")
     monkeypatch.setenv("GITHUB_REPO", "owner/repo")
-    
+
     # Mock httpx to return success
     class MockAsyncClient:
         def __init__(self, *args, **kwargs):
             pass
-        
+
         async def __aenter__(self):
             return self
-        
+
         async def __aexit__(self, *args):
             pass
-        
+
         async def get(self, url, **kwargs):
             return httpx.Response(200, json={"default_branch": "main"})
-        
+
         async def post(self, url, **kwargs):
             return httpx.Response(201, json={"html_url": "https://github.com/owner/repo/pull/42", "number": 42})
-    
+
     monkeypatch.setattr("httpx.AsyncClient", MockAsyncClient)
-    
+
     body = json.dumps({"title": "Test PR", "branch": "test-branch"}).encode("utf-8")
     r = client.post(
         "/agent/pr/open",
@@ -119,26 +119,26 @@ def test_pr_already_exists(monkeypatch, client):
     """Test PR open when PR already exists (422 response)."""
     monkeypatch.setenv("GITHUB_TOKEN", "test-token")
     monkeypatch.setenv("GITHUB_REPO", "owner/repo")
-    
+
     # Mock httpx to return 422 (PR exists)
     class MockAsyncClient:
         def __init__(self, *args, **kwargs):
             pass
-        
+
         async def __aenter__(self):
             return self
-        
+
         async def __aexit__(self, *args):
             pass
-        
+
         async def get(self, url, **kwargs):
             return httpx.Response(200, json={"default_branch": "main"})
-        
+
         async def post(self, url, **kwargs):
             return httpx.Response(422, json={"message": "Validation Failed"})
-    
+
     monkeypatch.setattr("httpx.AsyncClient", MockAsyncClient)
-    
+
     body = json.dumps({"title": "Test PR", "branch": "test-branch"}).encode("utf-8")
     r = client.post(
         "/agent/pr/open",

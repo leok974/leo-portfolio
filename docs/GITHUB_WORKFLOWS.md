@@ -39,7 +39,7 @@ This project uses GitHub Actions for CI/CD automation, including backend-assiste
 ### 2. siteagent-nightly-pr
 **Purpose:** Automated nightly maintenance with PR creation
 
-**Trigger:** 
+**Trigger:**
 - Scheduled: `03:27 UTC` daily
 - Manual: workflow_dispatch
 
@@ -73,7 +73,7 @@ This project uses GitHub Actions for CI/CD automation, including backend-assiste
 
 **Status:** ⚠️ Consider deprecating in favor of `siteagent-nightly-pr`
 
-**Trigger:** 
+**Trigger:**
 - Scheduled: `03:27 UTC` daily
 - Manual: workflow_dispatch
 

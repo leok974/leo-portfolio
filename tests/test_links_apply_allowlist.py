@@ -18,11 +18,11 @@ def test_files_manifest_endpoint(client, monkeypatch, tmp_path):
     # Create artifacts directory and manifest
     artifacts_dir = tmp_path / "assets" / "data"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
-    
+
     manifest_file = artifacts_dir / "link-apply.files.json"
     with open(manifest_file, "w", encoding="utf-8") as f:
         json.dump({"files": ["a.md", "b.md", "c.md"]}, f)
-    
+
     # Monkeypatch the ARTIFACTS_DIR
     monkeypatch.setattr(
         "assistant_api.routers.agent_public.ARTIFACTS_DIR",
@@ -32,11 +32,11 @@ def test_files_manifest_endpoint(client, monkeypatch, tmp_path):
         "assistant_api.routers.agent_public.LINK_APPLY_FILES",
         manifest_file
     )
-    
+
     # Reload app to pick up new paths
     from assistant_api.main import app
     client_new = TestClient(app)
-    
+
     r = client_new.get("/agent/artifacts/link-apply.files")
     assert r.status_code == 200
     files = r.json()["files"]
