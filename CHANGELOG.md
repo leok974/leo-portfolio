@@ -1,5 +1,184 @@
 # Changelog
 
+## [Unreleased] - 2025-10-06
+
+### Centralized Admin Router (BREAKING CHANGE)
+- **Single Privileged Prefix**: All protected operations now under `/api/admin/*`
+  - ✅ **GET** `/api/admin/whoami` - Returns authenticated user's email (smoke test)
+  - ✅ **POST** `/api/admin/uploads` - File upload with gallery integration
+  - ✅ **POST** `/api/admin/gallery/add` - Add gallery items with metadata
+- **Router Consolidation**: Merged uploads.py and gallery.py into admin.py
+  - Single `APIRouter` with router-level CF Access guard
+  - Impossible to forget protection on new endpoints
+  - Clear naming: `/api/admin/*` signals privileged operation
+- **Security Benefits**:
+  - ✅ Single source of truth for authentication
+  - ✅ Router-level `dependencies=[Depends(require_cf_access)]` protects all endpoints
+  - ✅ CI guard test (`tests/test_admin_guard.py`) ensures protection
+  - ✅ Simple to audit and extend
+- **Breaking Changes**:
+  - 🔴 **Old:** `/api/uploads` → **New:** `/api/admin/uploads`
+  - 🔴 **Old:** `/api/gallery/add` → **New:** `/api/admin/gallery/add`
+  - ⚠️ Update Cloudflare Access application to use `/api/admin` path
+  - ⚠️ Update frontend/test URLs to new paths
+- **Migration**:
+  - `docs/ADMIN_ROUTER_MIGRATION.md` - Complete migration guide
+  - `PRODUCTION_DEPLOY_CF_ACCESS_NEW.md` - Updated deployment steps
+  - `test-production.ps1` - Updated with new URLs
+  - `tests/test_admin_guard.py` - CI test for route protection
+
+### Cloudflare Access Authentication
+- **JWT Verification**: Enterprise-grade authentication for uploads
+  - New module: `assistant_api/utils/cf_access.py` (130+ lines)
+  - JWKS-based JWT signature verification (RS256/ES256 algorithms)
+  - 10-minute public key cache for performance
+  - Extracts principal from verified JWT claims
+  - **NEW:** Service token support for non-interactive automation
+- **Dual Authentication Modes**:
+  - **User SSO:** Interactive login with `cloudflared` CLI (email-based)
+  - **Service Tokens:** Non-interactive with client ID/secret headers (CI/CD friendly)
+- **Configuration**: Environment-based JWT verification
+  - `CF_ACCESS_TEAM_DOMAIN` - Cloudflare team domain (required)
+  - `CF_ACCESS_AUD` - Application audience tag (required)
+  - `ACCESS_ALLOWED_EMAILS` - Email allowlist for user SSO (optional)
+  - `ACCESS_ALLOWED_SERVICE_SUBS` - Service token subject allowlist (optional)
+- **Security Benefits**:
+  - ✅ Enterprise-grade authentication without password management
+  - ✅ Multiple identity providers (Google, GitHub, email OTP)
+  - ✅ JWT signature verification prevents header spoofing
+  - ✅ Centralized access control in Cloudflare dashboard
+  - ✅ Audit logs of all authentication attempts
+  - ✅ Service tokens for automated workflows (CI/CD, scripts)
+  - ✅ No CSRF tokens needed (Cloudflare Tunnel ensures header integrity)
+- **Dependencies**: Added `pyjwt[crypto]>=2.9.0` for cryptographic JWT operations
+- **Documentation**:
+  - `docs/CF_ACCESS.md` - Complete setup and troubleshooting guide
+  - `docs/CF_ACCESS_SERVICE_TOKENS.md` - Service token setup and usage (NEW)
+  - `CLOUDFLARE_ACCESS_COMMANDS.md` - Quick command reference
+  - `PRODUCTION_DEPLOY_CF_ACCESS_NEW.md` - Production deployment guide
+
+### Agent Uploads & Gallery Tools
+- **Backend API**: File upload endpoint (`POST /api/uploads`) with gallery integration
+  - Multipart form-data support for images and videos
+  - Optional gallery card creation via `make_card` parameter
+  - Auto-detects file type by extension
+  - Stores files in timestamped directories: `public/assets/{uploads,video}/YYYY/MM/`
+- **FFmpeg Integration**: Automatic video poster generation
+  - Extracts frame at 1 second, scales to 1280px wide
+  - Graceful degradation if ffmpeg unavailable
+  - Posters stored alongside videos: `filename.mp4` → `filename.jpg`
+- **Gallery Management**: Agent-callable endpoint (`POST /api/gallery/add`)
+  - Pydantic-validated JSON API for programmatic gallery control
+  - Supports all gallery types: image, video-local, youtube, vimeo
+  - Enables AI assistant to manage portfolio content autonomously
+- **Sitemap Automation**: Automatic refresh after every gallery change
+  - Triggers existing `generate-sitemap.mjs` script
+  - Media linter validates assets after upload
+  - Ensures SEO consistency
+- **Frontend Components** (NEW):
+  - Attachment button (📎) in chat interface (254 lines vanilla JS)
+  - Upload API helpers in `src/api.ts` (TypeScript)
+  - CSS styling with dark mode support (101 lines)
+  - Automatic initialization in `assistant-dock.ts`
+  - Zero dependencies, CSP-compliant
+- **E2E Tests** (NEW):
+  - 9 comprehensive Playwright tests (100% passing)
+  - Coverage: accessibility, upload flow, error handling, security
+  - Test fixtures auto-generated (PNG, MP4)
+  - File: `tests/e2e/upload-gallery.spec.ts` (380 lines)
+- **Documentation**: Comprehensive guides covering:
+  - `docs/UPLOADS.md` - Complete API and usage guide
+  - `docs/FRONTEND_IMPLEMENTATION.md` - Frontend implementation summary
+  - API usage examples, FFmpeg setup, testing strategies
+  - Security considerations, deployment checklist
+
+### Calendly Integration & Analytics
+- **Calendly booking system**: Added site-wide "Book a call" popup button and dedicated `/book.html` page with inline widget
+- **Enhanced features**: Prefill support (URL params + localStorage), UTM tracking (source/campaign/medium), locale support, accessibility (ARIA live regions)
+- **Analytics tracking**: Integrated multi-provider analytics (gtag, GTM dataLayer, Plausible, Fathom, Umami) for `calendly_open` and `calendly_inline` events
+- **Theme integration**: Simplified `book.html` to inherit global theme system (supports both `html.dark` class and `[data-theme]` attribute)
+- **Helper script**: Created `/assets/js/calendly.js` with lazy loading, URL building, and readiness signaling (`window.__calendlyHelperLoaded`)
+- **E2E tests**: 16 comprehensive Playwright tests covering basic integration, enhanced features, analytics tracking, theme switching, and privacy
+  - `calendly.spec.ts`: 4 basic integration tests
+  - `calendly.nice.spec.ts`: 6 enhanced feature tests (prefill, UTM, locale, accessibility)
+  - `calendly.analytics-theme.spec.ts`: 2 analytics + theme tests with offline stubs
+  - `calendly.privacy.spec.ts`: 4 privacy tests (consent, DNT, GPC) **(NEW)**
+- **Documentation**: Created comprehensive guides:
+  - `docs/CALENDLY_NICE_TO_HAVES.md` - Feature documentation
+  - `docs/CALENDLY_PRIVACY_HARDENING.md` - Privacy & consent guide **(NEW)**
+
+### Privacy & Consent (NEW)
+- **Consent banner**: Built-in, lightweight cookie consent UI (190 lines vanilla JS, no dependencies)
+  - Shows on first visit, stores preference in localStorage
+  - Auto-declines if DNT or GPC enabled (no banner shown)
+  - Emits `consent:change` event for Calendly integration
+  - Programmatic API: `window.consent.set/get/clear()`
+  - 8 comprehensive E2E tests (`consent-banner.spec.ts`)
+  - Fully customizable (copy, colors, positioning)
+  - **Consent acceptance tracking**: Privacy-compliant analytics (gtag, plausible, fathom, umami) **(NEW)**
+- **Manage privacy preferences**: Footer link to re-open banner and change consent after initial choice **(NEW)**
+  - Force-clear consent: `window.consent.showBanner(true)` clears localStorage and shows banner
+  - Event-driven: `consent:change` triggers Calendly inline widget re-evaluation
+  - E2E test: Footer link flow (decline → manage → accept → widget loads)
+- **Consent management**: Respects `window.__consent` object from cookie banners (marketing/analytics flags)
+- **Browser signals**: Honors Do Not Track (`navigator.doNotTrack`) and Global Privacy Control (`window.globalPrivacyControl`)
+- **Graceful fallbacks**: When consent denied or embeds blocked, renders direct booking links instead of iframes
+- **Analytics gating**: `trackAnalytics()` checks `consentAllowed()` before sending events to providers
+- **GDPR/CCPA compliance**: Explicit consent for analytics, respects GPC for "Do Not Sell" requests
+- **Cookie banner examples**: Integration patterns for Osano, OneTrust, Cookiebot
+- **12 privacy E2E tests total**: 8 consent banner tests + 4 Calendly privacy tests
+
+### Production Deployment (NEW)
+- **Deployment checklist**: Comprehensive 500+ line production checklist (`PRODUCTION_DEPLOY_CHECKLIST.md`)
+  - Security headers (HSTS, CSP, Referrer-Policy, X-Content-Type-Options, X-Frame-Options)
+  - Font configuration (Inter + Space Grotesk with preconnect)
+  - Calendly verification (popup button + inline widget data attributes)
+  - Cache strategy (long-cache for hashed assets, short-cache for HTML)
+  - Pre-deployment verification steps
+  - Troubleshooting guide
+- **Production nginx config**: Ready-to-use config (`deploy/nginx/nginx.calendly-prod.conf`)
+  - All security headers with `always` flag
+  - CSP allowing Calendly + Google Fonts
+  - Long cache (31536000s) for immutable assets
+  - GZIP compression
+  - API proxy + SSE streaming support
+  - HTTPS/TLS configuration (ready to enable)
+- **Consent tracking**: Privacy-compliant acceptance rate tracking added to `consent.js`
+  - Only tracks AFTER consent given
+  - Supports 4 providers: gtag, plausible, fathom, umami
+  - No PII sent (only boolean consent flags)
+  - Respects DNT/GPC
+
+### Performance Optimization (NEW)
+- **IntersectionObserver**: Inline widgets lazy-load when visible (saves bandwidth for above-fold content)
+- **Fallback chain**: IntersectionObserver → requestIdleCallback (2.5s timeout) → setTimeout (immediate)
+- **Reduced initial load**: Calendly script only loads on-demand when user interacts or scrolls to widget
+
+### Security Headers (NEW)
+- **CSP headers**: Added to `index.html` and `book.html` with strict policy allowing only self + Calendly domains
+- **Additional headers**: Referrer-Policy (strict-origin-when-cross-origin), X-Content-Type-Options (nosniff), X-Frame-Options (SAMEORIGIN)
+- **HSTS recommendation**: Document server-level configuration for Strict-Transport-Security
+
+### Deployment & Operations
+- **Deployment checklist**: Created comprehensive `docs/DEPLOYMENT_CHECKLIST.md` with pre-deploy verification, CI/CD guards, post-deploy smoke tests, and troubleshooting
+- **CI/CD pipeline**: Added `.github/workflows/ci.yml` with automated E2E tests, backend tests, linting, and build verification
+- **Smoke test scripts**: Created `scripts/smoke-test.sh` (Bash) and `scripts/smoke-test.ps1` (PowerShell) for post-deployment validation
+  - Tests backend health, RAG diagnostics, Calendly integration, CSP headers, cache configuration, and chat endpoint
+  - Provides actionable output with pass/fail/warn indicators and monitoring commands
+- **CSP headers**: Added proper Content-Security-Policy to `book.html` allowing Calendly domains (assets, frames, connects)
+
+### Testing Improvements
+- **Test reliability**: Switched from network mocking to pre-navigation stubs for deterministic, offline-capable tests
+- **Readiness signals**: Added `window.__calendlyHelperLoaded` flag and `calendly:helper-ready` event for robust test synchronization
+- **Test attributes**: Added `data-testid` attributes to key elements (`book-call` button, `calendly-inline` container)
+- **Fixed assertions**: Updated existing tests to work with simplified `book.html` structure
+
+### UI/UX Polish
+- **Typography**: All 8 typography E2E tests passing across cross-platform environments (Windows/Chromium)
+- **Accessibility**: Screen reader support with live regions, sr-only CSS class, proper ARIA attributes
+- **Theme support**: Light/dark mode with CSS variables, automatic system preference detection
+- **Performance**: Defer-loaded Calendly script, lazy widget initialization, optimized font loading with preconnect
+
 ## [Unreleased] - 2025-10-03
 
 ### Security / Guardrails

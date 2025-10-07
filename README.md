@@ -41,6 +41,10 @@ A fast, modern, **framework-free** portfolio for **Leo Klemet — AI Engineer ·
  - ✅ Route badge shows the chosen path (rag | faq | chitchat) under replies
  - ✅ Quick thumbs feedback on replies (👍/👎), with Admin Feedback card and CSV export
  - ✅ Guardrails: prompt‑injection detection + secret redaction, with a Shield badge in UI and API `guardrails{}` payload
+- ✅ **Gallery with file uploads** — AI assistant can accept image/video attachments and create gallery cards automatically
+  - FFmpeg poster generation for videos
+  - Agent-callable gallery tools for autonomous content management
+  - Sitemap auto-refresh after uploads
 
 > Built with **plain HTML, CSS (Grid/Flex), and vanilla JS**. Easy to extend into React/Vite/CMS later.
 
@@ -97,6 +101,52 @@ Visit: <http://localhost:5173>
 
 
 ## Backend Diagnostics
+
+### Admin Router & Cloudflare Access
+
+All privileged operations (uploads, gallery management, etc.) are now consolidated under `/api/admin/*` with **Cloudflare Access JWT verification**:
+
+- **GET** `/api/admin/whoami` — Returns authenticated principal (email or service token name)
+- **POST** `/api/admin/uploads` — Upload images/videos with optional gallery card creation
+- **POST** `/api/admin/gallery/add` — Add gallery items with metadata
+
+**Authentication Methods:**
+
+1. **User SSO (Interactive):**
+```powershell
+# Authenticate
+cloudflared access login https://assistant.ledger-mind.org/api/admin
+
+# Get JWT token
+$token = cloudflared access token --app https://assistant.ledger-mind.org/api/admin
+
+# Test whoami
+curl -H "Cf-Access-Jwt-Assertion: $token" https://assistant.ledger-mind.org/api/admin/whoami
+# Expected: {"ok":true,"principal":"your-email@example.com"}
+```
+
+2. **Service Token (Non-Interactive - for CI/CD):**
+```powershell
+# Set credentials
+$env:CF_ACCESS_CLIENT_ID = "<client-id>"
+$env:CF_ACCESS_CLIENT_SECRET = "<client-secret>"
+
+# Test whoami (Cloudflare injects JWT automatically)
+curl -H "CF-Access-Client-Id: $env:CF_ACCESS_CLIENT_ID" `
+     -H "CF-Access-Client-Secret: $env:CF_ACCESS_CLIENT_SECRET" `
+     https://assistant.ledger-mind.org/api/admin/whoami
+# Expected: {"ok":true,"principal":"service-token-name"}
+```
+
+**Documentation:**
+- **Service Tokens:** `docs/CF_ACCESS_SERVICE_TOKENS.md` (complete guide)
+- **Migration Guide:** `docs/ADMIN_ROUTER_MIGRATION.md`
+- **Production Deploy:** `PRODUCTION_DEPLOY_CF_ACCESS_NEW.md`
+- **Commands:** `CLOUDFLARE_ACCESS_COMMANDS.md`
+- **CI Guard Test:** `tests/test_admin_guard.py` (ensures all admin routes are protected)
+
+**Security:** Single router-level guard prevents accidentally exposing privileged endpoints. CI test fails if any `/api/admin/*` route lacks CF Access protection.
+
 ### RAG quickstart
 
 ```powershell
