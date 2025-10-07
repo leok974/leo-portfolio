@@ -157,6 +157,36 @@ def report():
     }
 
 
+@router.get("/artifacts/{filename}")
+async def get_artifact(filename: str):
+    """
+    Serve individual artifact files (diffs, markdown, etc).
+    """
+    base = Path("./assets/data")
+    # Sanitize filename to prevent directory traversal
+    safe_name = filename.replace("..", "").replace("/", "").replace("\\", "")
+    file_path = base / safe_name
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail=f"Artifact not found: {filename}")
+    
+    try:
+        content = file_path.read_text("utf-8")
+        # Determine media type based on extension
+        if safe_name.endswith(".md"):
+            media_type = "text/markdown"
+        elif safe_name.endswith(".diff"):
+            media_type = "text/plain"
+        elif safe_name.endswith(".json"):
+            media_type = "application/json"
+        else:
+            media_type = "text/plain"
+        
+        return PlainTextResponse(content, media_type=media_type)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading artifact: {str(e)}")
+
+
 @router.post("/act")
 async def act(req: Request, body: bytes = Depends(_authorized)):
     """
@@ -259,3 +289,85 @@ async def dev_disable(body: bytes = Depends(_authorized)):
     resp = PlainTextResponse("ok")
     resp.delete_cookie("sa_dev", path="/")
     return resp
+
+
+# -----------------------------
+# PR Automation
+# -----------------------------
+class PROpenReq(BaseModel):
+    title: Optional[str] = "chore(siteAgent): automated changes"
+    branch: Optional[str] = "siteagent/auto/update"
+    body: Optional[str] = "Automated update by SiteAgent."
+
+
+@router.post("/pr/open")
+async def pr_open(payload: PROpenReq, body: bytes = Depends(_authorized)):
+    """
+    Open a PR with prepared artifacts. Requires auth.
+    Returns 503 if GITHUB_TOKEN not configured (stub mode).
+    """
+    gh = os.environ.get("GITHUB_TOKEN")
+    repo = os.environ.get("GITHUB_REPO", "leok974/leo-portfolio")
+    
+    if not gh:
+        raise HTTPException(
+            status_code=503, 
+            detail="pr_disabled: missing GITHUB_TOKEN. Set GITHUB_TOKEN env var to enable PR automation."
+        )
+
+    # Lightweight stub for now - returns config without making actual API call
+    # TODO: Implement direct PR via GitHub REST API if desired
+    return {
+        "ok": True,
+        "mode": "stub",
+        "repo": repo,
+        "title": payload.title,
+        "branch": payload.branch,
+        "url": None,
+        "message": "PR opening delegated (stub). Wire GitHub REST here or trigger CI."
+    }
+
+
+# -----------------------------
+# Nightly Workflow Generator
+# -----------------------------
+_WORKFLOW_TEMPLATE = """name: siteagent-nightly
+on:
+  schedule:
+    - cron: '27 3 * * *'   # 03:27 UTC nightly
+  workflow_dispatch: {}
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Run safe SiteAgent tasks
+        env:
+          SITEAGENT_NIGHTLY: "1"
+        run: |
+          # Add safe automated tasks here
+          echo "Nightly automation placeholder"
+          # Example: python -m assistant_api.agent.runner --plan links.validate media.scan
+      - name: Commit updates
+        run: |
+          git config user.name "siteagent-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(siteAgent): nightly maintenance" || echo "no changes"
+          git push || true
+"""
+
+
+@router.get("/automation/workflow")
+async def automation_workflow():
+    """
+    Generate a GitHub Actions workflow YAML for nightly automation.
+    Safe tasks only (no destructive operations).
+    """
+    return PlainTextResponse(_WORKFLOW_TEMPLATE, media_type="text/yaml")

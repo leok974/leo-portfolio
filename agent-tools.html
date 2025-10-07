@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>SiteAgent — Tools</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" href="/assets/favicon.png" />
+    <style>
+      :root {
+        --bg: #0b0d10;
+        --card: #12151a;
+        --text: #e7ecf3;
+        --muted: #9db1c2;
+        --accent: #6ee7ff;
+      }
+      body {
+        margin: 0;
+        font:
+          14px/1.4 system-ui,
+          Segoe UI,
+          Roboto;
+        background: var(--bg);
+        color: var(--text);
+      }
+      header {
+        position: sticky;
+        top: 0;
+        background: rgba(11, 13, 16, 0.9);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid #202630;
+      }
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .tab {
+        border: 1px solid #1e2430;
+        background: var(--card);
+        color: var(--muted);
+        padding: 8px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .tab[aria-selected="true"] {
+        color: #0b0d10;
+        background: var(--accent);
+        border-color: transparent;
+      }
+      main {
+        padding: 20px 0 60px;
+      }
+      section[hidden] {
+        display: none;
+      }
+      .card {
+        border: 1px solid #1e2430;
+        background: var(--card);
+        border-radius: 14px;
+        padding: 16px;
+        margin: 16px 0;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      textarea,
+      input,
+      button,
+      select {
+        font: inherit;
+      }
+      textarea,
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+        color: var(--text);
+        background: #0c0f13;
+        border: 1px solid #222a35;
+        border-radius: 10px;
+      }
+      button {
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid #1e2430;
+        background: #10151b;
+        color: var(--text);
+        cursor: pointer;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #0b0d10;
+        border-color: transparent;
+      }
+      pre {
+        margin: 0;
+        padding: 12px;
+        background: #0b0f14;
+        border: 1px solid #1d2530;
+        border-radius: 10px;
+        overflow: auto;
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12.5px;
+      }
+      .hint {
+        color: var(--muted);
+        font-size: 12.5px;
+      }
+      .pill {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid #253041;
+        color: var(--muted);
+      }
+      .ok {
+        color: #7dffa9;
+      }
+      .warn {
+        color: #ffd27d;
+      }
+      .err {
+        color: #ff9d9d;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            justify-content: space-between;
+            flex-wrap: wrap;
+          "
+        >
+          <div>
+            <a href="/" class="pill">&larr; Back</a>
+            <span class="pill">SiteAgent Tools</span>
+          </div>
+          <nav class="tabs" role="tablist" aria-label="SiteAgent tools">
+            <button class="tab" role="tab" aria-selected="true" data-tab="diff">
+              Diff Preview
+            </button>
+            <button class="tab" role="tab" aria-selected="false" data-tab="pr">
+              PR Automation
+            </button>
+            <button
+              class="tab"
+              role="tab"
+              aria-selected="false"
+              data-tab="events"
+            >
+              Live Events
+            </button>
+            <button
+              class="tab"
+              role="tab"
+              aria-selected="false"
+              data-tab="branding"
+            >
+              Branding
+            </button>
+            <button
+              class="tab"
+              role="tab"
+              aria-selected="false"
+              data-tab="nightly"
+            >
+              Nightly Jobs
+            </button>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <!-- Diff Preview -->
+      <section id="panel-diff" role="tabpanel" aria-labelledby="tab-diff">
+        <div class="card">
+          <h2>Links Apply — Diff Preview</h2>
+          <p class="hint">
+            Run a dry-run, review the diff, then selectively commit.
+          </p>
+          <div
+            style="
+              display: flex;
+              gap: 8px;
+              flex-wrap: wrap;
+              margin-bottom: 10px;
+            "
+          >
+            <button id="btn-dryrun" class="primary">
+              Run Dry-Run (links.apply)
+            </button>
+            <button id="btn-refresh">Refresh Artifacts</button>
+            <button id="btn-commit" title="Commit all changes">
+              Commit All
+            </button>
+          </div>
+          <div class="row">
+            <div>
+              <h3>Unified Diff</h3>
+              <pre class="mono" id="diff-box">–</pre>
+            </div>
+            <div>
+              <h3>PR-ready Markdown</h3>
+              <pre class="mono" id="md-box">–</pre>
+            </div>
+          </div>
+          <p class="hint" id="diff-hint"></p>
+        </div>
+      </section>
+
+      <!-- PR Automation -->
+      <section id="panel-pr" role="tabpanel" aria-labelledby="tab-pr" hidden>
+        <div class="card">
+          <h2>Open Pull Request</h2>
+          <p class="hint">
+            Requires GitHub credentials in backend env. Falls back to a 503 with
+            instructions if disabled.
+          </p>
+          <div class="row">
+            <div>
+              <label class="hint">Title</label>
+              <input
+                id="pr-title"
+                placeholder="chore(siteAgent): apply link diffs & OG updates"
+              />
+            </div>
+            <div>
+              <label class="hint">Branch name</label>
+              <input id="pr-branch" placeholder="siteagent/auto/links-apply" />
+            </div>
+          </div>
+          <label class="hint">Body (Markdown)</label>
+          <textarea id="pr-body" rows="8" class="mono"></textarea>
+          <div style="margin-top: 10px; display: flex; gap: 8px">
+            <button id="btn-open-pr" class="primary">Open PR</button>
+            <span id="pr-status" class="hint"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Live Events -->
+      <section
+        id="panel-events"
+        role="tabpanel"
+        aria-labelledby="tab-events"
+        hidden
+      >
+        <div class="card">
+          <h2>Live Event Stream</h2>
+          <p class="hint">
+            Listening to <code class="mono">/agent/events</code>…
+          </p>
+          <div
+            id="events"
+            class="mono"
+            style="
+              max-height: 420px;
+              overflow: auto;
+              border: 1px solid #1d2530;
+              border-radius: 10px;
+              padding: 8px;
+            "
+          ></div>
+        </div>
+      </section>
+
+      <!-- Branding -->
+      <section
+        id="panel-branding"
+        role="tabpanel"
+        aria-labelledby="tab-branding"
+        hidden
+      >
+        <div class="card">
+          <h2>Branding / Logo Fetch</h2>
+          <p class="hint">
+            Fetch and sanitize a logo from a URL (host allowlist enforced in
+            prod).
+          </p>
+          <div class="row">
+            <div>
+              <label class="hint">Logo URL</label>
+              <input id="logo-url" placeholder="https://example.com/logo.svg" />
+            </div>
+            <div>
+              <label class="hint">Project/Repo</label>
+              <input id="logo-repo" placeholder="leok974/leo-portfolio" />
+            </div>
+          </div>
+          <div style="margin-top: 10px; display: flex; gap: 8px">
+            <button id="btn-logo" class="primary">Fetch Logo</button>
+            <span id="logo-status" class="hint"></span>
+          </div>
+          <div class="row">
+            <div>
+              <h3>Result</h3>
+              <pre id="logo-json" class="mono">–</pre>
+            </div>
+            <div>
+              <h3>Preview</h3>
+              <div
+                id="logo-preview"
+                class="card"
+                style="
+                  min-height: 120px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                –
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Nightly Jobs -->
+      <section
+        id="panel-nightly"
+        role="tabpanel"
+        aria-labelledby="tab-nightly"
+        hidden
+      >
+        <div class="card">
+          <h2>Nightly Automation</h2>
+          <p class="hint">
+            Generate a GitHub Actions workflow (safe tasks only). You can
+            download then commit.
+          </p>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <button id="btn-workflow" class="primary">
+              Generate Workflow YAML
+            </button>
+            <a
+              id="dl-workflow"
+              class="pill"
+              download="siteagent-nightly.yml"
+              hidden
+              >Download workflow</a
+            >
+            <span id="wf-status" class="hint"></span>
+          </div>
+          <div class="card" style="margin-top: 12px">
+            <h3>Preview</h3>
+            <pre id="wf-box" class="mono">–</pre>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (function () {
+        // --- tabs
+        const tabs = document.querySelectorAll(".tab");
+        const panels = {
+          diff: document.getElementById("panel-diff"),
+          pr: document.getElementById("panel-pr"),
+          events: document.getElementById("panel-events"),
+          branding: document.getElementById("panel-branding"),
+          nightly: document.getElementById("panel-nightly"),
+        };
+        tabs.forEach((t) =>
+          t.addEventListener("click", () => {
+            tabs.forEach((x) =>
+              x.setAttribute("aria-selected", String(x === t)),
+            );
+            Object.values(panels).forEach((p) => (p.hidden = true));
+            panels[t.dataset.tab].hidden = false;
+          }),
+        );
+
+        // --- auth/overlay gate: reuse backend cookie status
+        fetch("/agent/dev/status")
+          .then((r) => r.json())
+          .then((j) => {
+            if (!j.allowed) {
+              document.body.innerHTML =
+                '<div class="wrap"><p class="hint">Access requires Dev Overlay authorization. Ask an admin to enable it.</p></div>';
+            }
+          })
+          .catch(() => {});
+
+        // --- Diff Preview
+        const diffBox = document.getElementById("diff-box");
+        const mdBox = document.getElementById("md-box");
+        const diffHint = document.getElementById("diff-hint");
+
+        async function refreshArtifacts() {
+          diffHint.textContent = "Refreshing…";
+          const [diffRes, mdRes] = await Promise.allSettled([
+            fetch("/agent/artifacts/link-apply.diff"),
+            fetch("/agent/artifacts/link-apply.md"),
+          ]);
+          if (diffRes.status === "fulfilled" && diffRes.value.ok) {
+            diffBox.textContent = await diffRes.value.text();
+          } else {
+            diffBox.textContent = "No diff yet. Run a dry-run first.";
+          }
+          if (mdRes.status === "fulfilled" && mdRes.value.ok) {
+            mdBox.textContent = await mdRes.value.text();
+          } else {
+            mdBox.textContent = "No PR-ready markdown yet.";
+          }
+          diffHint.textContent =
+            "Tip: commit-all is available; per-file commit UI coming next.";
+        }
+
+        document.getElementById("btn-dryrun").onclick = async () => {
+          diffHint.textContent = "Running links.apply (dry-run)…";
+          const r = await fetch("/agent/act", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              command: "apply link fixes in dry run mode",
+            }),
+          });
+          diffHint.textContent = r.ok ? "Dry-run complete." : "Dry-run failed.";
+          refreshArtifacts();
+        };
+        document.getElementById("btn-refresh").onclick = refreshArtifacts;
+        document.getElementById("btn-commit").onclick = async () => {
+          if (!confirm("Commit ALL link changes?")) return;
+          const r = await fetch("/agent/act", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ command: "apply link fixes and commit" }),
+          });
+          alert(r.ok ? "Committed." : "Commit failed.");
+          refreshArtifacts();
+        };
+        refreshArtifacts();
+
+        // --- PR Automation
+        const prTitle = document.getElementById("pr-title");
+        const prBranch = document.getElementById("pr-branch");
+        const prBody = document.getElementById("pr-body");
+        const prStatus = document.getElementById("pr-status");
+        document.getElementById("btn-open-pr").onclick = async () => {
+          prStatus.textContent = "Opening PR…";
+          const r = await fetch("/agent/pr/open", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: prTitle.value,
+              branch: prBranch.value,
+              body: prBody.value,
+            }),
+          });
+          const j = await r.json().catch(() => ({}));
+          if (r.ok)
+            prStatus.innerHTML = `<span class="ok">PR opened:</span> ${j.url || "(see CI logs)"}`;
+          else
+            prStatus.innerHTML = `<span class="warn">PR disabled</span> — ${j.detail || r.status}`;
+        };
+
+        // --- Live Events (poll instead of SSE for simplicity)
+        const eventsDiv = document.getElementById("events");
+        async function pollEvents() {
+          try {
+            const r = await fetch("/agent/events?limit=20");
+            if (!r.ok) return;
+            const j = await r.json();
+            eventsDiv.innerHTML = "";
+            (j.events || []).reverse().forEach((evt) => {
+              const line = document.createElement("div");
+              line.className =
+                evt.level === "error"
+                  ? "err"
+                  : evt.level === "warn"
+                    ? "warn"
+                    : "ok";
+              line.textContent = `[${evt.level}] ${evt.msg}`;
+              eventsDiv.appendChild(line);
+            });
+          } catch (e) {
+            eventsDiv.innerHTML = '<span class="err">[fetch error]</span>';
+          }
+        }
+        setInterval(pollEvents, 3000);
+        pollEvents();
+
+        // --- Branding / Logo fetch
+        const logoUrl = document.getElementById("logo-url");
+        const logoRepo = document.getElementById("logo-repo");
+        const logoStatus = document.getElementById("logo-status");
+        const logoJson = document.getElementById("logo-json");
+        const logoPreview = document.getElementById("logo-preview");
+        document.getElementById("btn-logo").onclick = async () => {
+          logoStatus.textContent = "Fetching…";
+          const r = await fetch("/agent/act", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              command: `fetch logo for repo ${logoRepo.value} from ${logoUrl.value}`,
+            }),
+          });
+          const j = await r.json().catch(() => ({}));
+          logoJson.textContent = JSON.stringify(j, null, 2);
+          logoStatus.textContent = r.ok ? "Done." : "Failed.";
+          // Try to preview logo from assets
+          if (r.ok && logoRepo.value) {
+            const slug = logoRepo.value.replace("/", "_");
+            logoPreview.innerHTML = `<img src="/assets/logos/${slug}.png" style="max-width:100%;max-height:180px" onerror="this.style.display='none'" />`;
+          } else {
+            logoPreview.innerHTML = "—";
+          }
+        };
+
+        // --- Nightly workflow generation
+        const wfBox = document.getElementById("wf-box");
+        const wfStatus = document.getElementById("wf-status");
+        const dl = document.getElementById("dl-workflow");
+        document.getElementById("btn-workflow").onclick = async () => {
+          wfStatus.textContent = "Generating…";
+          const r = await fetch("/agent/automation/workflow");
+          const txt = await r.text();
+          wfBox.textContent = txt || "(empty)";
+          wfStatus.textContent = r.ok ? "Ready." : "Failed.";
+          const blob = new Blob([txt], { type: "text/yaml" });
+          dl.href = URL.createObjectURL(blob);
+          dl.hidden = false;
+        };
+      })();
+    </script>
+  </body>
+</html>

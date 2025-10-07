@@ -1632,5 +1632,32 @@
           .catch(() => {});
       })();
     </script>
+
+    <!-- Agent Tools Link (for authorized users) -->
+    <script>
+      fetch("/agent/dev/status")
+        .then((r) => r.json())
+        .then((j) => {
+          if (j && j.allowed) {
+            const nav = document.querySelector(".nav-right");
+            if (nav) {
+              const link = document.createElement("a");
+              link.href = "/agent-tools.html";
+              link.textContent = "🧰 Agent Tools";
+              link.style.cssText =
+                "padding:4px 10px;border-radius:6px;border:1px solid #2a3544;margin-right:8px;font-size:13px";
+              link.title = "SiteAgent maintenance tools";
+              // Insert before the status pill
+              const statusPill = nav.querySelector("[data-status-pill]");
+              if (statusPill) {
+                nav.insertBefore(link, statusPill);
+              } else {
+                nav.appendChild(link);
+              }
+            }
+          }
+        })
+        .catch(() => {});
+    </script>
   </body>
 </html>
