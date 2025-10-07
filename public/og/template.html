@@ -74,10 +74,22 @@
         letter-spacing: 0.08em;
         opacity: 0.9;
       }
+      .logo {
+        position: absolute;
+        right: 36px;
+        top: 36px;
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+        opacity: 0.92;
+        filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.5));
+        display: none;
+      }
     </style>
   </head>
   <body>
-    <div class="card">
+    <div class="card" style="position: relative">
+      <img id="logo" class="logo" alt="logo" />
       <div class="title" id="t">Title</div>
       <div class="subtitle" id="s">Subtitle</div>
       <div class="footer">
@@ -94,12 +106,18 @@
         .map((s) => s.trim())
         .filter(Boolean);
       const brand = params.get("brand") || "LEO KLEMET — SITEAGENT";
+      const logo = params.get("logo");
       document.getElementById("t").textContent = title;
       document.getElementById("s").textContent = subtitle;
       document.getElementById("g").textContent = tags.length
         ? tags.map((t) => `#${t}`).join(" · ")
         : "";
       document.getElementById("brand").textContent = brand;
+      if (logo) {
+        const el = document.getElementById("logo");
+        el.src = logo;
+        el.style.display = "block";
+      }
     </script>
   </body>
 </html>

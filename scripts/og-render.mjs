@@ -46,8 +46,10 @@ try {
   }
 } catch {}
 const brand = overrides.brand || process.env.SITEAGENT_BRAND || 'LEO KLEMET — SITEAGENT';
-const titleAlias = overrides.title_alias || {};    // e.g., { "leo-portfolio": "siteAgent" }
-const repoAlias  = overrides.repo_alias  || {};    // e.g., { "leok974/leo-portfolio": "siteAgent" }
+const titleAlias = overrides.title_alias || {};    // { "leo-portfolio": "siteAgent" }
+const repoAlias  = overrides.repo_alias  || {};    // { "leok974/leo-portfolio": "siteAgent" }
+const titleLogo  = overrides.title_logo  || {};    // { "siteAgent": "assets/logos/siteAgent.png" }
+const repoLogo   = overrides.repo_logo   || {};    // { "owner/repo": "assets/logos/x.png" }
 
 // Try to import Playwright; if missing, no-op gracefully.
 let chromium;
@@ -78,7 +80,16 @@ for (const p of projects) {
   const tags = (p.topics || []).slice(0, 3).join(', ');
   const file = path.join(outDir, `${slug(name) || 'project'}.png`);
   if (fs.existsSync(file)) { existing++; continue; }
-  const url = `file://${path.resolve(template)}?${toQuery({ title: name, subtitle: desc, tags, brand })}`;
+  // Resolve logo path (prefer repo, then title). Convert to file:// if exists.
+  let logoPath = null;
+  const want = p.repo && repoLogo[p.repo] ? repoLogo[p.repo] : (titleLogo[name] || null);
+  if (want) {
+    const abs = path.isAbsolute(want) ? want : path.resolve(want);
+    if (fs.existsSync(abs)) {
+      logoPath = 'file://' + abs.replace(/\\/g, '/');
+    }
+  }
+  const url = `file://${path.resolve(template)}?${toQuery({ title: name, subtitle: desc, tags, brand, logo: logoPath || '' })}`;
   await page.goto(url, { waitUntil: 'load' });
   await page.screenshot({ path: file });
   generated++;

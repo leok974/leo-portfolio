@@ -11,6 +11,7 @@ from ..agent.runner import run, DEFAULT_PLAN
 from ..agent.tasks import REGISTRY
 from ..agent.models import recent_runs
 from ..utils.cf_access import require_cf_access
+from ..agent.interpret import parse_command
 
 router = APIRouter(prefix="/agent", tags=["agent-public"])
 
@@ -18,6 +19,10 @@ router = APIRouter(prefix="/agent", tags=["agent-public"])
 class RunReq(BaseModel):
     plan: Optional[List[str]] = None
     params: Optional[Dict[str, Any]] = None
+
+
+class ActReq(BaseModel):
+    command: str
 
 
 def _verify_hmac(body_bytes: bytes, signature_header: Optional[str]) -> None:
@@ -121,3 +126,16 @@ def report():
             "news": news.get("items", [])[:5],
         },
     }
+
+
+@router.post("/act")
+async def act(req: Request, body: bytes = Depends(_authorized)):
+    """
+    Natural-language agent commands.
+    Interprets command string and executes corresponding plan.
+    """
+    payload = ActReq(**json.loads(body or b"{}"))
+    plan, params = parse_command(payload.command)
+    if not plan:
+        raise HTTPException(status_code=400, detail="Could not interpret command")
+    return run(plan, params)

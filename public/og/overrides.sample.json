@@ -5,5 +5,11 @@
   },
   "repo_alias": {
     "leok974/leo-portfolio": "siteAgent"
+  },
+  "title_logo": {
+    "siteAgent": "assets/logos/siteAgent.png"
+  },
+  "repo_logo": {
+    "leok974/leo-portfolio": "assets/logos/siteAgent.png"
   }
 }

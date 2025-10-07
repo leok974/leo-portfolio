@@ -175,6 +175,8 @@ def overrides_update(run_id, params):
     # normalize maps
     cur.setdefault("title_alias", {})
     cur.setdefault("repo_alias", {})
+    cur.setdefault("title_logo", {})
+    cur.setdefault("repo_logo", {})
     changed = {}
     # brand shortcut
     if isinstance(params.get("brand"), str) and params["brand"].strip():
@@ -205,6 +207,19 @@ def overrides_update(run_id, params):
         else:
             emit(run_id, "warn", "overrides.update.rename_ignored",
                  {"reason": "need repo or from", "rename": rn})
+    # logo assignment: params.logo = { repo?: str, title?: str, path: str }
+    lg = params.get("logo") or {}
+    if isinstance(lg, dict) and isinstance(lg.get("path"), str) and lg["path"].strip():
+        pth = lg["path"].strip()
+        if lg.get("repo"):
+            cur["repo_logo"][lg["repo"].strip()] = pth
+            changed.setdefault("repo_logo", {})[lg["repo"].strip()] = pth
+        elif lg.get("title"):
+            cur["title_logo"][lg["title"].strip()] = pth
+            changed.setdefault("title_logo", {})[lg["title"].strip()] = pth
+        else:
+            emit(run_id, "warn", "overrides.update.logo_ignored",
+                 {"reason": "need repo or title", "logo": lg})
     # write
     with open(dst, "w", encoding="utf-8") as f:
         json.dump(cur, f, indent=2)

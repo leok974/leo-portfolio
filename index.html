@@ -1256,7 +1256,7 @@
         panel.style.cssText =
           "position:fixed;left:12px;bottom:56px;width:360px;max-height:60vh;overflow:auto;padding:12px;border-radius:12px;background:#111;color:#e6e9f2;border:1px solid #2a2f3a;display:none;z-index:9999;font:14px system-ui";
         panel.innerHTML =
-          "<b>siteAgent report</b><div id='sa-rpt' style='margin-top:8px'>loading…</div><div style='margin-top:8px;display:flex;gap:8px'><button id='sa-run-quick'>Run quick plan</button><button id='sa-close'>Close</button></div>";
+          "<b>siteAgent report</b><div id='sa-rpt' style='margin-top:8px'>loading…</div><div style='margin-top:10px'><textarea id='sa-cmd' rows='3' style='width:100%;border-radius:8px;padding:8px;background:#0b0e15;color:#e6e9f2;border:1px solid #2a2f3a' placeholder=\"e.g. rename leo-portfolio to siteAgent&#10;set brand to LEO KLEMET — SITEAGENT&#10;set logo for repo leok974/leo-portfolio to assets/logos/siteAgent.png\"></textarea></div><div style='margin-top:8px;display:flex;gap:8px'><button id='sa-run-cmd'>Tell agent</button><button id='sa-run-quick'>Run quick</button><button id='sa-close'>Close</button></div>";
         document.body.appendChild(panel);
         async function refresh() {
           try {
@@ -1295,6 +1295,23 @@
               body,
             });
             await res.json().catch(() => ({}));
+            await refresh();
+          } catch (e) {
+            console.error(e);
+          }
+        };
+        panel.querySelector("#sa-run-cmd").onclick = async () => {
+          const cmd = (document.getElementById("sa-cmd").value || "").trim();
+          if (!cmd) return;
+          try {
+            const body = JSON.stringify({ command: cmd });
+            const res = await fetch("/agent/act", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body,
+            });
+            const j = await res.json().catch(() => ({}));
+            console.log("agent act:", j);
             await refresh();
           } catch (e) {
             console.error(e);
