@@ -1,5 +1,5 @@
 from typing import Dict, Callable, Any, List, Tuple
-import os, json, subprocess, shutil, re, io, urllib.request, urllib.error
+import os, json, subprocess, shutil, re, io, urllib.request, urllib.error, socket, ipaddress
 from .models import emit
 
 TaskFn = Callable[[str, Dict[str, Any]], Dict[str, Any]]
@@ -207,19 +207,31 @@ def overrides_update(run_id, params):
         else:
             emit(run_id, "warn", "overrides.update.rename_ignored",
                  {"reason": "need repo or from", "rename": rn})
-    # logo assignment: params.logo = { repo?: str, title?: str, path: str }
+    # logo assignment/removal:
+    # params.logo = { repo?: str, title?: str, path?: str, remove?: bool }
     lg = params.get("logo") or {}
-    if isinstance(lg, dict) and isinstance(lg.get("path"), str) and lg["path"].strip():
-        pth = lg["path"].strip()
-        if lg.get("repo"):
-            cur["repo_logo"][lg["repo"].strip()] = pth
-            changed.setdefault("repo_logo", {})[lg["repo"].strip()] = pth
-        elif lg.get("title"):
-            cur["title_logo"][lg["title"].strip()] = pth
-            changed.setdefault("title_logo", {})[lg["title"].strip()] = pth
-        else:
-            emit(run_id, "warn", "overrides.update.logo_ignored",
-                 {"reason": "need repo or title", "logo": lg})
+    if isinstance(lg, dict):
+        if lg.get("remove"):
+            if lg.get("repo") and lg["repo"].strip() in cur["repo_logo"]:
+                del cur["repo_logo"][lg["repo"].strip()]
+                changed.setdefault("repo_logo", {})[lg["repo"].strip()] = None
+            elif lg.get("title") and lg["title"].strip() in cur["title_logo"]:
+                del cur["title_logo"][lg["title"].strip()]
+                changed.setdefault("title_logo", {})[lg["title"].strip()] = None
+            else:
+                emit(run_id, "warn", "overrides.update.logo_remove_ignored",
+                     {"reason": "not found", "logo": lg})
+        elif isinstance(lg.get("path"), str) and lg["path"].strip():
+            pth = lg["path"].strip()
+            if lg.get("repo"):
+                cur["repo_logo"][lg["repo"].strip()] = pth
+                changed.setdefault("repo_logo", {})[lg["repo"].strip()] = pth
+            elif lg.get("title"):
+                cur["title_logo"][lg["title"].strip()] = pth
+                changed.setdefault("title_logo", {})[lg["title"].strip()] = pth
+            else:
+                emit(run_id, "warn", "overrides.update.logo_ignored",
+                     {"reason": "need repo or title", "logo": lg})
     # write
     with open(dst, "w", encoding="utf-8") as f:
         json.dump(cur, f, indent=2)
@@ -246,7 +258,29 @@ def logo_fetch(run_id, params):
     repo = (params.get("repo") or "").strip()
     title = (params.get("title") or "").strip()
     name = (params.get("name") or title or (repo.split("/")[-1] if repo else "")) or "logo"
-    max_bytes = int(params.get("max_bytes") or (3 * 1024 * 1024))
+    max_mb = float(os.environ.get("SITEAGENT_LOGO_MAX_MB", "3"))
+    max_bytes = int(params.get("max_bytes") or (max_mb * 1024 * 1024))
+    require_https = not bool(os.environ.get("SITEAGENT_LOGO_ALLOW_HTTP"))
+    if require_https and url.lower().startswith("http://"):
+        raise ValueError("logo.fetch: plain HTTP disabled (set SITEAGENT_LOGO_ALLOW_HTTP=1 to allow)")
+
+    # SSRF guard: resolve host and block private/loopback/link-local
+    from urllib.parse import urlparse
+    u = urlparse(url)
+    host = u.hostname or ""
+    try:
+        infos = socket.getaddrinfo(host, None)
+        for _family, _type, _proto, _canon, sockaddr in infos:
+            ip = ipaddress.ip_address(sockaddr[0])
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+                raise ValueError(f"logo.fetch: blocked non-public IP {ip}")
+    except socket.gaierror as e:
+        raise ValueError(f"logo.fetch: cannot resolve host {host}: {e}")
+
+    # Optional host allowlist (suffix match)
+    allow_hosts = [h.strip().lower() for h in os.environ.get("SITEAGENT_LOGO_HOSTS", "").split(",") if h.strip()]
+    if allow_hosts and not any(host.lower().endswith(suf) for suf in allow_hosts):
+        raise ValueError(f"logo.fetch: host not allowed by SITEAGENT_LOGO_HOSTS: {host}")
 
     def slug(s: str) -> str:
         return re.sub(r"-{2,}", "-", re.sub(r"[^a-z0-9-]+", "-", s.lower())).strip("-") or "logo"
@@ -297,7 +331,24 @@ def logo_fetch(run_id, params):
     # Optional: convert raster → PNG if Pillow available and ext != svg/png
     final_path = out_path
     try:
-        if ext in {"jpg", "jpeg", "webp", "gif"}:
+        if ext == "svg":
+            # sanitize SVG: strip scripts/foreignObject and event attributes
+            try:
+                import xml.etree.ElementTree as ET
+                txt = data.decode("utf-8", errors="ignore")
+                # Remove script/foreignObject
+                txt = re.sub(r"<\s*(script|foreignObject)[\s\S]*?<\s*/\s*\1\s*>", "", txt, flags=re.I)
+                # Remove on* event attributes
+                txt = re.sub(r"\son[a-zA-Z]+\s*=\s*\"[^\"]*\"", "", txt)
+                txt = re.sub(r"\son[\w-]+\s*=\s*'[^']*'", "", txt)
+                with open(out_path, "w", encoding="utf-8") as f:
+                    f.write(txt)
+                final_path = out_path
+            except Exception:
+                with open(out_path, "wb") as f:
+                    f.write(data)
+                final_path = out_path
+        elif ext in {"jpg", "jpeg", "webp", "gif"}:
             try:
                 from PIL import Image  # type: ignore
                 img = Image.open(io.BytesIO(data)).convert("RGBA")

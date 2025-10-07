@@ -108,7 +108,7 @@ def test_logo_fetch_size_limit(mock_urlopen, mock_emit):
     try:
         os.chdir(test_dir)
         os.makedirs("assets/data", exist_ok=True)
-        
+
         with pytest.raises(ValueError, match="too large"):
             logo_fetch("test-run", {
                 "url": "https://example.com/huge.png",
@@ -119,3 +119,77 @@ def test_logo_fetch_size_limit(mock_urlopen, mock_emit):
         os.chdir(orig_dir)
         import shutil
         shutil.rmtree(test_dir)
+
+
+def test_logo_fetch_blocks_private_ip(monkeypatch, tmp_path):
+    """Test logo.fetch rejects private/loopback IPs (SSRF guard)."""
+    import socket as _s
+    def fake_getaddrinfo(host, *a, **k):
+        return [(_s.AF_INET, None, None, "", ("127.0.0.1", 0))]
+    monkeypatch.setattr("socket.getaddrinfo", fake_getaddrinfo)
+    monkeypatch.chdir(tmp_path)
+    
+    from assistant_api.agent.tasks import logo_fetch
+    import os
+    os.makedirs("assets/data", exist_ok=True)
+    
+    with pytest.raises(ValueError, match="blocked non-public IP"):
+        logo_fetch("test-run", {
+            "url": "https://internal.example/logo.png",
+            "repo": "owner/repo"
+        })
+
+
+def test_remove_logo_mapping(monkeypatch, tmp_path):
+    """Test overrides.update can remove logo mappings."""
+    import json
+    from unittest.mock import MagicMock
+    monkeypatch.chdir(tmp_path)
+    
+    # Mock emit to avoid database dependency
+    mock_emit = MagicMock()
+    monkeypatch.setattr("assistant_api.agent.tasks.emit", mock_emit)
+    
+    # Seed overrides with existing logo mappings
+    d = tmp_path / "assets" / "data"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "og-overrides.json").write_text(
+        json.dumps({
+            "repo_logo": {"owner/repo": "assets/logos/r.png"},
+            "title_logo": {"ProjectX": "assets/logos/x.png"}
+        }),
+        "utf-8"
+    )
+    
+    # Call overrides.update with removal for repo
+    from assistant_api.agent.tasks import overrides_update
+    res = overrides_update("test-run", {"logo": {"repo": "owner/repo", "remove": True}})
+    
+    # Verify repo_logo mapping removed
+    ov = json.loads((d / "og-overrides.json").read_text("utf-8"))
+    assert "owner/repo" not in ov["repo_logo"]
+    assert "ProjectX" in ov["title_logo"]  # Title logo still there
+    
+    # Now remove title logo
+    res = overrides_update("test-run", {"logo": {"title": "ProjectX", "remove": True}})
+    ov = json.loads((d / "og-overrides.json").read_text("utf-8"))
+    assert "ProjectX" not in ov["title_logo"]
+
+
+def test_interpret_remove_logo_for_repo():
+    """Test 'remove logo for repo' command parsing."""
+    cmd = "remove logo for repo leok974/leo-portfolio"
+    plan, params = parse_command(cmd)
+    assert plan == ["overrides.update", "og.generate", "status.write"]
+    assert params["logo"]["repo"] == "leok974/leo-portfolio"
+    assert params["logo"]["remove"] is True
+
+
+def test_interpret_remove_logo_for_title():
+    """Test 'remove logo for title' command parsing."""
+    cmd = "remove logo for siteAgent"
+    plan, params = parse_command(cmd)
+    assert plan == ["overrides.update", "og.generate", "status.write"]
+    assert params["logo"]["title"] == "siteAgent"
+    assert params["logo"]["remove"] is True
+

@@ -61,6 +61,18 @@ def parse_command(cmd: str) -> Tuple[List[str], Dict[str, Any]]:
             plan = ["overrides.update", "og.generate", "status.write"]
             params = {"logo": {"title": m.group(1).strip(), "path": target}}
         return plan, params
+    # remove logo for repo
+    m = re.search(r"remove\s+logo\s+for\s+repo\s+([\w.-]+/[\w.-]+)\b", c, re.I)
+    if m:
+        plan = ["overrides.update", "og.generate", "status.write"]
+        params = {"logo": {"repo": m.group(1), "remove": True}}
+        return plan, params
+    # remove logo for title
+    m = re.search(r"remove\s+logo\s+for\s+(.+)$", c, re.I)
+    if m:
+        plan = ["overrides.update", "og.generate", "status.write"]
+        params = {"logo": {"title": m.group(1).strip(), "remove": True}}
+        return plan, params
     # regenerate og
     if re.search(r"\b(re)?generate\b.*\bog\b", c, re.I):
         plan = ["og.generate", "status.write"]
