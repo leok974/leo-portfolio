@@ -1,7 +1,7 @@
 # Phase 49: LinkedIn Resume Generator — COMPLETE ✅
 
-**Branch:** `LINKEDIN-OPTIMIZED`  
-**Commit:** `be28dc5`  
+**Branch:** `LINKEDIN-OPTIMIZED`
+**Commit:** `be28dc5`
 **Date:** January 25, 2025
 
 ---
@@ -171,19 +171,19 @@ Response:
 
 Body:
   # Leo Klemet — LinkedIn Resume (2025)
-  
+
   **Headline:** AI Engineer · SWE · Generative AI / 3D Artist — Building self-updating agents...
-  
+
   ## About
   I build agentic, self-maintaining apps...
-  
+
   ## Experience (Selected Projects, 2025)
   ### SiteAgent · 2025
   - Tech: python, fastapi, github actions
-  
+
   ## Skills
   AI Engineering, Docker, FastAPI, Python...
-  
+
   ## Links
   - Portfolio: https://assistant.ledger-mind.org
   - GitHub: https://github.com/leok974
@@ -291,12 +291,12 @@ def _load_projects() -> list[dict]:
             return normalize(json.loads(PROJECTS_JSON.read_text()))
         except Exception:
             pass  # Fall through to HTML parsing
-    
+
     # Fallback: regex extraction from HTML
     if SITE_INDEX.exists():
         html = SITE_INDEX.read_text()
         return extract_from_html(html)
-    
+
     return []  # No content available
 ```
 
@@ -317,13 +317,13 @@ def _skills_from_projects(projects: list[dict]) -> list[str]:
         for tag in project.get("tags", []):
             if 1 <= len(tag) <= 40:  # Reasonable length
                 bag.add(tag.lower())
-    
+
     # Core stack keywords (always included)
     core = {
         "AI Engineering", "FastAPI", "Python", "Docker",
         "Ollama", "RAG", "GitHub Actions", ...
     }
-    
+
     # Union and sort
     return sorted({*bag, *{c.lower() for c in core}})
 ```
@@ -393,8 +393,8 @@ projects_sorted = sorted(projects, key=_rank)
 
 ## 📝 Commit Details
 
-**Branch:** `LINKEDIN-OPTIMIZED`  
-**Commit:** `be28dc5`  
+**Branch:** `LINKEDIN-OPTIMIZED`
+**Commit:** `be28dc5`
 **Message:**
 ```
 feat(resume): Add LinkedIn resume generator endpoints
@@ -411,8 +411,8 @@ feat(resume): Add LinkedIn resume generator endpoints
 Enables one-click LinkedIn profile updates from portfolio.
 ```
 
-**Files Changed:** 5  
-**Insertions:** +353  
+**Files Changed:** 5
+**Insertions:** +353
 **Deletions:** -3
 
 ---

@@ -391,6 +391,27 @@
             <button id="btn-resume-json">View JSON</button>
             <span id="resume-status" class="hint"></span>
           </div>
+          <div
+            style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px"
+          >
+            <button id="btn-resume-pdf">Download PDF</button>
+            <button id="btn-resume-copy">Copy (LinkedIn)</button>
+            <select id="resume-roles" title="roles">
+              <option value="">roles: default</option>
+              <option>ai</option>
+              <option>swe</option>
+              <option>ml</option>
+              <option>ai,swe</option>
+              <option>ai,ml</option>
+              <option>swe,ml</option>
+            </select>
+            <select id="resume-seniority" title="seniority">
+              <option value="">seniority: default</option>
+              <option>junior</option>
+              <option>mid</option>
+              <option>senior</option>
+            </select>
+          </div>
           <div class="card" style="margin-top: 12px">
             <h3>Preview</h3>
             <pre id="resume-box" class="mono">
@@ -578,10 +599,16 @@ Click "Generate Markdown" to create your resume</pre
         // --- Resume generation
         const resumeBox = document.getElementById("resume-box");
         const resumeStatus = document.getElementById("resume-status");
+        const rolesSel = document.getElementById("resume-roles");
+        const senSel = document.getElementById("resume-seniority");
 
         document.getElementById("btn-resume-md").onclick = async () => {
           resumeStatus.textContent = "Generating…";
-          const r = await fetch("/resume/generate.md");
+          const q = new URLSearchParams();
+          if (rolesSel.value) q.set("roles", rolesSel.value);
+          if (senSel.value) q.set("seniority", senSel.value);
+          const url = "/resume/generate.md" + (q.toString() ? `?${q}` : "");
+          const r = await fetch(url);
           const md = await r.text();
           resumeBox.textContent = md || "(empty)";
           resumeStatus.textContent = r.ok ? "Done." : "Failed.";
@@ -602,6 +629,31 @@ Click "Generate Markdown" to create your resume</pre
           const json = await r.json().catch(() => ({}));
           resumeBox.textContent = JSON.stringify(json, null, 2);
           resumeStatus.textContent = r.ok ? "Done." : "Failed.";
+        };
+
+        document.getElementById("btn-resume-pdf").onclick = async () => {
+          resumeStatus.textContent = "Generating PDF…";
+          const q = new URLSearchParams();
+          if (rolesSel.value) q.set("roles", rolesSel.value);
+          if (senSel.value) q.set("seniority", senSel.value);
+          const url = "/resume/generate.pdf" + (q.toString() ? `?${q}` : "");
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "Leo_Klemet_LinkedIn.pdf";
+          a.click();
+          resumeStatus.textContent = "PDF download started.";
+        };
+
+        document.getElementById("btn-resume-copy").onclick = async () => {
+          resumeStatus.textContent = "Copying…";
+          const q = new URLSearchParams({ limit: "2600" });
+          if (rolesSel.value) q.set("roles", rolesSel.value);
+          if (senSel.value) q.set("seniority", senSel.value);
+          const r = await fetch("/resume/copy.txt?" + q.toString());
+          const txt = await r.text();
+          await navigator.clipboard.writeText(txt);
+          resumeStatus.textContent = "Copied to clipboard!";
+          resumeBox.textContent = txt;
         };
       })();
     </script>

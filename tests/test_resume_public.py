@@ -39,12 +39,12 @@ def test_resume_markdown_with_projects():
             "year": "2025"
         }
     ]
-    
+
     with patch("assistant_api.routers.resume_public._load_projects", return_value=mock_projects):
         response = client.get("/resume/generate.md")
         assert response.status_code == 200
         assert response.headers["content-type"] == "text/markdown; charset=utf-8"
-        
+
         content = response.text
         assert "# Leo Klemet — LinkedIn Resume" in content
         assert "Test Project" in content
@@ -67,22 +67,22 @@ def test_resume_json_structure():
             "year": "2025"
         }
     ]
-    
+
     with patch("assistant_api.routers.resume_public._load_projects", return_value=mock_projects):
         response = client.get("/resume/generate.json")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "headline" in data
         assert "about" in data
         assert "projects" in data
         assert "markdown" in data
         assert "year" in data
-        
+
         # Verify projects structure
         assert len(data["projects"]) == 1
         assert data["projects"][0]["title"] == "Test Project"
-        
+
         # Verify markdown is included
         assert "# Leo Klemet" in data["markdown"]
         assert data["year"] >= 2025
@@ -95,13 +95,13 @@ def test_resume_markdown_featured_ordering():
         {"title": "SiteAgent", "summary": "Featured", "tags": [], "cats": [], "links": [], "year": "2025", "slug": ""},
         {"title": "Another Project", "summary": "Another", "tags": [], "cats": [], "links": [], "year": "2025", "slug": ""},
     ]
-    
+
     with patch("assistant_api.routers.resume_public._load_projects", return_value=mock_projects):
         response = client.get("/resume/generate.md")
         content = response.text
-        
+
         # SiteAgent should appear before Random/Another
         siteagent_pos = content.find("SiteAgent")
         random_pos = content.find("Random Project")
-        
+
         assert siteagent_pos < random_pos, "Featured project should appear first"
