@@ -1248,18 +1248,20 @@
           /(?:^|[?&])dev=1(?:$|&)/.test(location.search) ||
           localStorage.getItem("saDevOverlay") === "1";
         const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
-        if (!(isLocal || forceDev)) return;
-        const btn = document.createElement("button");
-        btn.id = "sa-maint";
-        btn.textContent = "🧰 Maintenance (dev)";
-        btn.style.cssText =
-          "position:fixed;left:12px;bottom:12px;padding:8px 10px;border-radius:10px;z-index:9999";
-        document.body.appendChild(btn);
-        const panel = document.createElement("div");
-        panel.style.cssText =
-          "position:fixed;left:12px;bottom:56px;width:360px;max-height:60vh;overflow:auto;padding:12px;border-radius:12px;background:#111;color:#e6e9f2;border:1px solid #2a2f3a;display:none;z-index:9999;font:14px system-ui";
-        panel.innerHTML =
-          "<b>siteAgent report</b>\
+
+        const mount = () => {
+          const btn = document.createElement("button");
+          btn.id = "sa-maint";
+          btn.textContent = "🧰 Maintenance (dev)";
+          btn.style.cssText =
+            "position:fixed;left:12px;bottom:12px;padding:8px 10px;border-radius:10px;z-index:9999";
+          document.body.appendChild(btn);
+
+          const panel = document.createElement("div");
+          panel.style.cssText =
+            "position:fixed;left:12px;bottom:56px;width:360px;max-height:60vh;overflow:auto;padding:12px;border-radius:12px;background:#111;color:#e6e9f2;border:1px solid #2a2f3a;display:none;z-index:9999;font:14px system-ui";
+          panel.innerHTML =
+            "<b>siteAgent report</b>\
       <div id='sa-rpt' style='margin-top:8px'>loading…</div>\
       <div style='margin-top:10px'>\
         <textarea id='sa-cmd' rows='3' style='width:100%;border-radius:8px;padding:8px;background:#0b0e15;color:#e6e9f2;border:1px solid #2a2f3a' placeholder=\"e.g. rename leo-portfolio to siteAgent&#10;set brand to LEO KLEMET — SITEAGENT&#10;set logo for repo leok974/leo-portfolio to assets/logos/siteAgent.png&#10;fetch logo for repo leok974/leo-portfolio from https://example.com/logo.png\"></textarea>\
@@ -1300,135 +1302,135 @@
         </div>\
         <ul id='sa-evts' style='list-style:none;padding-left:0;margin-top:6px;display:grid;gap:6px;'></ul>\
       </div>";
-        document.body.appendChild(panel);
-        let saFilter = { level: "", run_id: "", limit: 10 };
-        async function refresh() {
-          try {
-            const res = await fetch("/agent/report", { cache: "no-store" });
-            const j = await res.json();
-            const el = document.getElementById("sa-rpt");
-            el.innerHTML = `
+          document.body.appendChild(panel);
+          let saFilter = { level: "", run_id: "", limit: 10 };
+          async function refresh() {
+            try {
+              const res = await fetch("/agent/report", { cache: "no-store" });
+              const j = await res.json();
+              const el = document.getElementById("sa-rpt");
+              el.innerHTML = `
               <div><b>Last run:</b> ${j.status_ts || "n/a"}</div>
               <div><b>Projects:</b> ${j.projects} · <b>Media:</b> ${j.media_count}</div>
               <div><b>News items:</b> ${j.news_items}</div>
               <div><b>Links:</b> ${j.links_checked} checked · <span style="color:#ffb4b4"><b>${j.links_missing} missing</b></span></div>
             `;
-            // Artifacts
-            const arts = j.artifacts || {};
-            const artsEl = document.getElementById("sa-arts");
-            const fmt = (n) => {
-              if (typeof n !== "number") return "";
-              if (n < 1024) return n + " B";
-              if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
-              return (n / (1024 * 1024)).toFixed(1) + " MB";
-            };
-            const items = [];
-            if (arts["link-apply.json"]) {
-              const a = arts["link-apply.json"];
-              items.push(
-                `<div>📄 <a href="${a.path}" target="_blank" rel="noopener">link-apply.json</a> <span style="opacity:.6">(${fmt(a.size) || ""})</span></div>`,
-              );
-            }
-            if (arts["link-apply.diff"]) {
-              const a = arts["link-apply.diff"];
-              items.push(
-                `<div>🧾 <a href="${a.path}" target="_blank" rel="noopener">link-apply.diff</a> <span style="opacity:.6">(${fmt(a.size) || ""})</span>
+              // Artifacts
+              const arts = j.artifacts || {};
+              const artsEl = document.getElementById("sa-arts");
+              const fmt = (n) => {
+                if (typeof n !== "number") return "";
+                if (n < 1024) return n + " B";
+                if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+                return (n / (1024 * 1024)).toFixed(1) + " MB";
+              };
+              const items = [];
+              if (arts["link-apply.json"]) {
+                const a = arts["link-apply.json"];
+                items.push(
+                  `<div>📄 <a href="${a.path}" target="_blank" rel="noopener">link-apply.json</a> <span style="opacity:.6">(${fmt(a.size) || ""})</span></div>`,
+                );
+              }
+              if (arts["link-apply.diff"]) {
+                const a = arts["link-apply.diff"];
+                items.push(
+                  `<div>🧾 <a href="${a.path}" target="_blank" rel="noopener">link-apply.diff</a> <span style="opacity:.6">(${fmt(a.size) || ""})</span>
                   · <a href="/agent/artifacts/link-apply.md" target="_blank" rel="noopener" title="Open PR-ready Markdown">Open PR-ready diff</a>
                 </div>`,
-              );
-            }
-            if (items.length) {
-              // Always render a copy-to-clipboard button when we have any artifact (json or diff)
-              items.push(
-                `<div><button id="sa-copy-pr" title="Copy PR-ready Markdown">Copy PR Markdown</button></div>`,
-              );
-              artsEl.innerHTML = items.join("");
-            } else {
-              artsEl.innerHTML =
-                '<span style="opacity:.6">No artifacts found yet.</span>';
-            }
-            // Wire the copy action (fetch MD then copy)
-            const cp = document.getElementById("sa-copy-pr");
-            if (cp) {
-              cp.onclick = async () => {
-                try {
-                  const md = await (
-                    await fetch("/agent/artifacts/link-apply.md", {
-                      cache: "no-store",
-                    })
-                  ).text();
-                  if (navigator.clipboard && navigator.clipboard.writeText) {
-                    await navigator.clipboard.writeText(md);
-                  } else {
-                    const ta = document.createElement("textarea");
-                    ta.value = md;
-                    document.body.appendChild(ta);
-                    ta.select();
-                    document.execCommand("copy");
-                    document.body.removeChild(ta);
+                );
+              }
+              if (items.length) {
+                // Always render a copy-to-clipboard button when we have any artifact (json or diff)
+                items.push(
+                  `<div><button id="sa-copy-pr" title="Copy PR-ready Markdown">Copy PR Markdown</button></div>`,
+                );
+                artsEl.innerHTML = items.join("");
+              } else {
+                artsEl.innerHTML =
+                  '<span style="opacity:.6">No artifacts found yet.</span>';
+              }
+              // Wire the copy action (fetch MD then copy)
+              const cp = document.getElementById("sa-copy-pr");
+              if (cp) {
+                cp.onclick = async () => {
+                  try {
+                    const md = await (
+                      await fetch("/agent/artifacts/link-apply.md", {
+                        cache: "no-store",
+                      })
+                    ).text();
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                      await navigator.clipboard.writeText(md);
+                    } else {
+                      const ta = document.createElement("textarea");
+                      ta.value = md;
+                      document.body.appendChild(ta);
+                      ta.select();
+                      document.execCommand("copy");
+                      document.body.removeChild(ta);
+                    }
+                    const old = cp.textContent;
+                    cp.textContent = "Copied! ✅";
+                    setTimeout(() => (cp.textContent = old), 1200);
+                  } catch (e) {
+                    console.error(e);
                   }
-                  const old = cp.textContent;
-                  cp.textContent = "Copied! ✅";
-                  setTimeout(() => (cp.textContent = old), 1200);
-                } catch (e) {
-                  console.error(e);
-                }
-              };
+                };
+              }
+            } catch (e) {
+              document.getElementById("sa-rpt").textContent =
+                "Error loading report";
+              console.error(e);
             }
-          } catch (e) {
-            document.getElementById("sa-rpt").textContent =
-              "Error loading report";
-            console.error(e);
           }
-        }
-        async function loadRecentRuns() {
-          try {
-            const res = await fetch("/agent/status", { cache: "no-store" });
-            const j = await res.json();
-            const sel = document.getElementById("sa-run-sel");
-            const cur = sel.value;
-            sel.innerHTML = "<option value=''>— recent —</option>";
-            (j.recent || []).forEach((r) => {
-              const opt = document.createElement("option");
-              opt.value = r.run_id;
-              opt.textContent = `${r.run_id.slice(0, 8)}… (${r.ok}/${r.total} ok)`;
-              sel.appendChild(opt);
-            });
-            if (cur) sel.value = cur;
-          } catch (e) {
-            console.error(e);
+          async function loadRecentRuns() {
+            try {
+              const res = await fetch("/agent/status", { cache: "no-store" });
+              const j = await res.json();
+              const sel = document.getElementById("sa-run-sel");
+              const cur = sel.value;
+              sel.innerHTML = "<option value=''>— recent —</option>";
+              (j.recent || []).forEach((r) => {
+                const opt = document.createElement("option");
+                opt.value = r.run_id;
+                opt.textContent = `${r.run_id.slice(0, 8)}… (${r.ok}/${r.total} ok)`;
+                sel.appendChild(opt);
+              });
+              if (cur) sel.value = cur;
+            } catch (e) {
+              console.error(e);
+            }
           }
-        }
-        async function refreshEvents() {
-          try {
-            const q = new URLSearchParams();
-            q.set("limit", String(saFilter.limit || 10));
-            if (saFilter.level) q.set("level", saFilter.level);
-            if (saFilter.run_id) q.set("run_id", saFilter.run_id);
-            const res = await fetch("/agent/events?" + q.toString(), {
-              cache: "no-store",
-            });
-            const j = await res.json();
-            const ul = document.getElementById("sa-evts");
-            ul.innerHTML = (j.events || [])
-              .map((ev) => {
-                const dt = ev.ts ? new Date(ev.ts).toLocaleTimeString() : "";
-                const lvl = ev.level || "info";
-                const tag =
-                  lvl === "error" ? "🔴" : lvl === "warn" ? "🟠" : "🟢";
-                const detail = ev.event || "";
-                let data = "";
-                try {
-                  data =
-                    ev.data && Object.keys(ev.data).length
-                      ? `<code style='font-size:12px;background:#0b0e15;border:1px solid #2a2f3a;border-radius:6px;padding:2px 4px;display:block;overflow:auto;'>${JSON.stringify(ev.data)}</code>`
-                      : "";
-                } catch {}
-                const rid = ev.run_id || "";
-                const copyBtn = rid
-                  ? `<button data-rid="${rid}" class="sa-focus" title="Focus on this run" style="margin-left:auto">🎯</button>`
-                  : "";
-                return `<li style="padding:6px 8px;border:1px solid #2a2f3a;border-radius:8px;background:#0e131f">
+          async function refreshEvents() {
+            try {
+              const q = new URLSearchParams();
+              q.set("limit", String(saFilter.limit || 10));
+              if (saFilter.level) q.set("level", saFilter.level);
+              if (saFilter.run_id) q.set("run_id", saFilter.run_id);
+              const res = await fetch("/agent/events?" + q.toString(), {
+                cache: "no-store",
+              });
+              const j = await res.json();
+              const ul = document.getElementById("sa-evts");
+              ul.innerHTML = (j.events || [])
+                .map((ev) => {
+                  const dt = ev.ts ? new Date(ev.ts).toLocaleTimeString() : "";
+                  const lvl = ev.level || "info";
+                  const tag =
+                    lvl === "error" ? "🔴" : lvl === "warn" ? "🟠" : "🟢";
+                  const detail = ev.event || "";
+                  let data = "";
+                  try {
+                    data =
+                      ev.data && Object.keys(ev.data).length
+                        ? `<code style='font-size:12px;background:#0b0e15;border:1px solid #2a2f3a;border-radius:6px;padding:2px 4px;display:block;overflow:auto;'>${JSON.stringify(ev.data)}</code>`
+                        : "";
+                  } catch {}
+                  const rid = ev.run_id || "";
+                  const copyBtn = rid
+                    ? `<button data-rid="${rid}" class="sa-focus" title="Focus on this run" style="margin-left:auto">🎯</button>`
+                    : "";
+                  return `<li style="padding:6px 8px;border:1px solid #2a2f3a;border-radius:8px;background:#0e131f">
                 <div style="display:flex;gap:8px;align-items:center">
                   <span>${tag}</span>
                   <span style="opacity:.8">${dt}</span>
@@ -1439,177 +1441,195 @@
                 ${rid ? `<div style="opacity:.6;font-size:12px;margin-top:2px">run_id: <code>${rid}</code></div>` : ""}
                 ${data}
               </li>`;
-              })
-              .join("");
-            // attach focus handlers
-            ul.querySelectorAll("button.sa-focus").forEach((b) => {
-              b.onclick = () => {
-                const rid = b.getAttribute("data-rid") || "";
-                if (!rid) return;
-                saFilter.run_id = rid;
-                document.getElementById("sa-run-id").value = rid;
-                document.getElementById("sa-run-sel").value = "";
-                refreshEvents();
-              };
-            });
-          } catch (e) {
-            console.error(e);
+                })
+                .join("");
+              // attach focus handlers
+              ul.querySelectorAll("button.sa-focus").forEach((b) => {
+                b.onclick = () => {
+                  const rid = b.getAttribute("data-rid") || "";
+                  if (!rid) return;
+                  saFilter.run_id = rid;
+                  document.getElementById("sa-run-id").value = rid;
+                  document.getElementById("sa-run-sel").value = "";
+                  refreshEvents();
+                };
+              });
+            } catch (e) {
+              console.error(e);
+            }
           }
-        }
-        btn.onclick = () => {
-          panel.style.display =
-            panel.style.display === "none" ? "block" : "none";
-          if (panel.style.display === "block") {
-            refresh();
+          btn.onclick = () => {
+            panel.style.display =
+              panel.style.display === "none" ? "block" : "none";
+            if (panel.style.display === "block") {
+              refresh();
+              loadRecentRuns();
+              refreshEvents();
+            }
+          };
+          panel.querySelector("#sa-close").onclick = () => {
+            panel.style.display = "none";
+          };
+          // filter event handlers
+          document.getElementById("sa-level").onchange = (e) => {
+            saFilter.level = e.target.value;
+            refreshEvents();
+          };
+          document.getElementById("sa-run-sel").onchange = (e) => {
+            saFilter.run_id = e.target.value;
+            document.getElementById("sa-run-id").value = e.target.value;
+            refreshEvents();
+          };
+          document.getElementById("sa-evts-apply").onclick = () => {
+            const rid = (
+              document.getElementById("sa-run-id").value || ""
+            ).trim();
+            saFilter.run_id = rid;
+            document.getElementById("sa-run-sel").value = rid;
+            refreshEvents();
+          };
+          document.getElementById("sa-evts-refresh").onclick = () => {
             loadRecentRuns();
             refreshEvents();
-          }
-        };
-        panel.querySelector("#sa-close").onclick = () => {
-          panel.style.display = "none";
-        };
-        // filter event handlers
-        document.getElementById("sa-level").onchange = (e) => {
-          saFilter.level = e.target.value;
-          refreshEvents();
-        };
-        document.getElementById("sa-run-sel").onchange = (e) => {
-          saFilter.run_id = e.target.value;
-          document.getElementById("sa-run-id").value = e.target.value;
-          refreshEvents();
-        };
-        document.getElementById("sa-evts-apply").onclick = () => {
-          const rid = (document.getElementById("sa-run-id").value || "").trim();
-          saFilter.run_id = rid;
-          document.getElementById("sa-run-sel").value = rid;
-          refreshEvents();
-        };
-        document.getElementById("sa-evts-refresh").onclick = () => {
-          loadRecentRuns();
-          refreshEvents();
-        };
-        panel.querySelector("#sa-run-quick").onclick = async () => {
-          const body = JSON.stringify({
-            plan: ["news.sync", "links.validate", "status.write"],
-            params: {},
-          });
-          try {
-            const res = await fetch("/agent/run", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body,
+          };
+          panel.querySelector("#sa-run-quick").onclick = async () => {
+            const body = JSON.stringify({
+              plan: ["news.sync", "links.validate", "status.write"],
+              params: {},
             });
-            const j = await res.json().catch(() => ({}));
-            await refresh();
-            await loadRecentRuns();
-            // auto-focus on this run
-            if (j.run_id) {
-              saFilter.run_id = j.run_id;
-              document.getElementById("sa-run-id").value = j.run_id;
-              document.getElementById("sa-run-sel").value = "";
+            try {
+              const res = await fetch("/agent/run", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body,
+              });
+              const j = await res.json().catch(() => ({}));
+              await refresh();
+              await loadRecentRuns();
+              // auto-focus on this run
+              if (j.run_id) {
+                saFilter.run_id = j.run_id;
+                document.getElementById("sa-run-id").value = j.run_id;
+                document.getElementById("sa-run-sel").value = "";
+                await refreshEvents();
+              }
+            } catch (e) {
+              console.error(e);
+            }
+          };
+          panel.querySelector("#sa-run-cmd").onclick = async () => {
+            const cmd = (document.getElementById("sa-cmd").value || "").trim();
+            if (!cmd) return;
+            try {
+              const body = JSON.stringify({ command: cmd });
+              const res = await fetch("/agent/act", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body,
+              });
+              const j = await res.json().catch(() => ({}));
+              console.log("agent act:", j);
+              await refresh();
+              await loadRecentRuns();
+              // auto-focus on this run
+              if (j.run_id) {
+                saFilter.run_id = j.run_id;
+                document.getElementById("sa-run-id").value = j.run_id;
+                document.getElementById("sa-run-sel").value = "";
+                await refreshEvents();
+              }
+            } catch (e) {
+              console.error(e);
+            }
+          };
+          panel.querySelector("#sa-media-scan").onclick = async () => {
+            try {
+              const body = JSON.stringify({
+                plan: ["media.scan", "status.write"],
+                params: {},
+              });
+              const res = await fetch("/agent/run", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body,
+              });
+              const j = await res.json().catch(() => ({}));
+              if (j && j.run_id) {
+                saFilter.run_id = j.run_id;
+                document.getElementById("sa-run-id").value = j.run_id;
+                document.getElementById("sa-run-sel").value = "";
+              }
+              await refresh();
+              await loadRecentRuns();
               await refreshEvents();
+            } catch (e) {
+              console.error(e);
             }
-          } catch (e) {
-            console.error(e);
-          }
-        };
-        panel.querySelector("#sa-run-cmd").onclick = async () => {
-          const cmd = (document.getElementById("sa-cmd").value || "").trim();
-          if (!cmd) return;
-          try {
-            const body = JSON.stringify({ command: cmd });
-            const res = await fetch("/agent/act", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body,
-            });
-            const j = await res.json().catch(() => ({}));
-            console.log("agent act:", j);
-            await refresh();
-            await loadRecentRuns();
-            // auto-focus on this run
-            if (j.run_id) {
-              saFilter.run_id = j.run_id;
-              document.getElementById("sa-run-id").value = j.run_id;
-              document.getElementById("sa-run-sel").value = "";
+          };
+          panel.querySelector("#sa-media-opt").onclick = async () => {
+            try {
+              const body = JSON.stringify({
+                plan: ["media.scan", "media.optimize", "status.write"],
+                params: {},
+              });
+              const res = await fetch("/agent/run", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body,
+              });
+              const j = await res.json().catch(() => ({}));
+              if (j && j.run_id) {
+                saFilter.run_id = j.run_id;
+                document.getElementById("sa-run-id").value = j.run_id;
+                document.getElementById("sa-run-sel").value = "";
+              }
+              await refresh();
+              await loadRecentRuns();
               await refreshEvents();
+            } catch (e) {
+              console.error(e);
             }
-          } catch (e) {
-            console.error(e);
-          }
-        };
-        panel.querySelector("#sa-media-scan").onclick = async () => {
-          try {
-            const body = JSON.stringify({
-              plan: ["media.scan", "status.write"],
-              params: {},
-            });
-            const res = await fetch("/agent/run", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body,
-            });
-            const j = await res.json().catch(() => ({}));
-            if (j && j.run_id) {
-              saFilter.run_id = j.run_id;
-              document.getElementById("sa-run-id").value = j.run_id;
-              document.getElementById("sa-run-sel").value = "";
+          };
+          panel.querySelector("#sa-link-suggest").onclick = async () => {
+            try {
+              const body = JSON.stringify({
+                plan: ["links.suggest", "status.write"],
+                params: {},
+              });
+              const res = await fetch("/agent/run", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body,
+              });
+              const j = await res.json().catch(() => ({}));
+              if (j && j.run_id) {
+                saFilter.run_id = j.run_id;
+                document.getElementById("sa-run-id").value = j.run_id;
+                document.getElementById("sa-run-sel").value = "";
+              }
+              await refresh();
+              await loadRecentRuns();
+              await refreshEvents();
+            } catch (e) {
+              console.error(e);
             }
-            await refresh();
-            await loadRecentRuns();
-            await refreshEvents();
-          } catch (e) {
-            console.error(e);
-          }
+          };
+          // End of mount() function
         };
-        panel.querySelector("#sa-media-opt").onclick = async () => {
-          try {
-            const body = JSON.stringify({
-              plan: ["media.scan", "media.optimize", "status.write"],
-              params: {},
-            });
-            const res = await fetch("/agent/run", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body,
-            });
-            const j = await res.json().catch(() => ({}));
-            if (j && j.run_id) {
-              saFilter.run_id = j.run_id;
-              document.getElementById("sa-run-id").value = j.run_id;
-              document.getElementById("sa-run-sel").value = "";
-            }
-            await refresh();
-            await loadRecentRuns();
-            await refreshEvents();
-          } catch (e) {
-            console.error(e);
-          }
-        };
-        panel.querySelector("#sa-link-suggest").onclick = async () => {
-          try {
-            const body = JSON.stringify({
-              plan: ["links.suggest", "status.write"],
-              params: {},
-            });
-            const res = await fetch("/agent/run", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body,
-            });
-            const j = await res.json().catch(() => ({}));
-            if (j && j.run_id) {
-              saFilter.run_id = j.run_id;
-              document.getElementById("sa-run-id").value = j.run_id;
-              document.getElementById("sa-run-sel").value = "";
-            }
-            await refresh();
-            await loadRecentRuns();
-            await refreshEvents();
-          } catch (e) {
-            console.error(e);
-          }
-        };
+
+        // Mount overlay if local or forceDev is set
+        if (isLocal || forceDev) {
+          mount();
+          return;
+        }
+
+        // Otherwise, ask backend if dev overlay is allowed by signed cookie
+        fetch("/agent/dev/status", { cache: "no-store" })
+          .then((r) => r.json())
+          .then((j) => {
+            if (j && j.allowed) mount();
+          })
+          .catch(() => {});
       })();
     </script>
   </body>

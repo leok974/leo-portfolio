@@ -1,11 +1,14 @@
 """Public siteAgent endpoint with dual authentication (CF Access OR HMAC)."""
-from fastapi import APIRouter, Request, HTTPException, Depends, Query
+from fastapi import APIRouter, Request, HTTPException, Depends, Query, Response, Cookie
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import hmac
 import hashlib
 import os
 import json
+import base64
+import time
 from pathlib import Path
 from ..agent.runner import run, DEFAULT_PLAN
 from ..agent.tasks import REGISTRY
@@ -165,3 +168,94 @@ async def act(req: Request, body: bytes = Depends(_authorized)):
     if not plan:
         raise HTTPException(status_code=400, detail="Could not interpret command")
     return run(plan, params)
+
+
+# -----------------------------
+# Dev overlay signed-cookie flow
+# -----------------------------
+def _b64u(b: bytes) -> str:
+    return base64.urlsafe_b64encode(b).rstrip(b"=").decode("ascii")
+
+
+def _b64u_dec(s: str) -> bytes:
+    pad = "=" * (-len(s) % 4)
+    return base64.urlsafe_b64decode(s + pad)
+
+
+def _sign_dev(payload: Dict[str, Any], key: str) -> str:
+    raw = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    sig = hmac.new(key.encode("utf-8"), raw, hashlib.sha256).digest()
+    return _b64u(raw) + "." + _b64u(sig)
+
+
+def _verify_dev(token: str, key: str) -> Optional[Dict[str, Any]]:
+    try:
+        raw_b64, sig_b64 = token.split(".", 1)
+        raw = _b64u_dec(raw_b64)
+        want = hmac.new(key.encode("utf-8"), raw, hashlib.sha256).digest()
+        got = _b64u_dec(sig_b64)
+        if not hmac.compare_digest(want, got):
+            return None
+        obj = json.loads(raw.decode("utf-8"))
+        if int(obj.get("exp", 0)) < int(time.time()):
+            return None
+        return obj
+    except Exception:
+        return None
+
+
+class DevEnableReq(BaseModel):
+    hours: Optional[int] = 2
+
+
+@router.get("/dev/status")
+def dev_status(sa_dev: Optional[str] = Cookie(default=None)):
+    """
+    Returns whether the dev overlay is enabled via signed cookie.
+    """
+    # local dev always allowed (index.html also guards by host or ?dev=1)
+    # but this endpoint reflects cookie status only.
+    key = os.environ.get("SITEAGENT_DEV_COOKIE_KEY", "")
+    if not key or not sa_dev:
+        return {"allowed": False}
+    ok = _verify_dev(sa_dev, key) is not None
+    return {"allowed": ok}
+
+
+@router.post("/dev/enable")
+async def dev_enable(req: Request, body: bytes = Depends(_authorized)):
+    """
+    Set a signed cookie enabling the maintenance overlay for a short time.
+    Requires auth (CF Access or HMAC). Default 2 hours.
+    """
+    key = os.environ.get("SITEAGENT_DEV_COOKIE_KEY", "")
+    if not key:
+        raise HTTPException(status_code=500, detail="SITEAGENT_DEV_COOKIE_KEY not set")
+    try:
+        data = json.loads(body or b"{}")
+    except Exception:
+        data = {}
+    hours = int(data.get("hours") or 2)
+    exp = int(time.time()) + max(300, min(hours, 24) * 3600)
+    token = _sign_dev({"exp": exp, "v": 1}, key)
+    resp = PlainTextResponse("ok")
+    resp.set_cookie(
+        "sa_dev",
+        token,
+        max_age=exp - int(time.time()),
+        path="/",
+        secure=True,
+        httponly=True,
+        samesite="lax",
+    )
+    return resp
+
+
+@router.post("/dev/disable")
+async def dev_disable(body: bytes = Depends(_authorized)):
+    """
+    Clear the dev overlay cookie. Requires auth.
+    """
+    resp = PlainTextResponse("ok")
+    resp.delete_cookie("sa_dev", path="/")
+    return resp
