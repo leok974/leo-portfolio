@@ -123,6 +123,10 @@ app.include_router(agent.router)
 from assistant_api.routers import agent_public
 app.include_router(agent_public.router)
 
+# Resume public routes (no auth required)
+from assistant_api.routers import resume_public
+app.include_router(resume_public.router)
+
 # Ultra-fast ping for UI hydration fallback (/api/ping)
 _ping_router = APIRouter()
 
