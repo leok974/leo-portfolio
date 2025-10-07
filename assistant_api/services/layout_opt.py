@@ -304,10 +304,10 @@ def run_layout_optimize(payload: Dict[str, Any] | None = None) -> Dict[str, Any]
     preset = select_preset(payload.get("preset"))
     preset_name = payload.get("preset") or "default"
     roles = set(payload.get("roles") or preset["roles"])
-    
+
     # Weight precedence: payload.weights > active weights > preset weights
     weights = payload.get("weights") or read_active() or preset["weights"]
-    
+
     featured_count = int(payload.get("featured_count") or preset["sections"]["featured"])
 
     # Read projects

@@ -1,9 +1,9 @@
 # Phase 50.2: Sticky A/B Assignment, Nightly Scheduler & Overlay Weight Editor
 
-**Status**: ✅ COMPLETE (b5b534a)  
-**Branch**: `LINKEDIN-OPTIMIZED`  
-**Date**: 2025-01-25  
-**Previous**: Phase 50.1 (be4e453) - Presets, sections, A/B testing, PR automation  
+**Status**: ✅ COMPLETE (b5b534a)
+**Branch**: `LINKEDIN-OPTIMIZED`
+**Date**: 2025-01-25
+**Previous**: Phase 50.1 (be4e453) - Presets, sections, A/B testing, PR automation
 **Tests**: 32 passing (22 existing + 10 new) in 0.23s
 
 ## Overview
@@ -115,11 +115,11 @@ async def scheduler_loop():
     while True:
         next_run = _next_230_local()
         await _sleep_until(next_run)
-        
+
         # Weekday/weekend preset selection
         weekday = next_run.weekday()  # 0=Mon, 6=Sun
         preset = "recruiter" if weekday < 5 else "hiring_manager"
-        
+
         result = run_layout_optimize({"preset": preset})
         logger.info(f"Scheduler completed: {result.get('status')}")
 ```
@@ -327,7 +327,7 @@ await fetch('/agent/act', {
 def test_approve_weights():
     weights = {"freshness": 0.4, "signal": 0.3, "fit": 0.2, "media": 0.1}
     propose_weights(weights)
-    
+
     result = approve_weights()
     assert result["status"] == "approved"
     assert read_active() == weights
@@ -540,10 +540,10 @@ curl -X POST http://localhost:8001/agent/act \
 
 Phase 50.2 completes the layout optimization system with automation and interactivity:
 
-✅ **Sticky A/B Assignment**: SHA1-based deterministic bucketing ensures consistent user experience  
-✅ **Nightly Scheduler**: Automated optimization with weekday/weekend presets  
-✅ **Overlay Weight Editor**: Safe proposal → approval workflow for interactive tuning  
-✅ **32 Tests Passing**: Full regression coverage + 10 new tests  
-✅ **Production Ready**: Error handling, logging, graceful shutdown  
+✅ **Sticky A/B Assignment**: SHA1-based deterministic bucketing ensures consistent user experience
+✅ **Nightly Scheduler**: Automated optimization with weekday/weekend presets
+✅ **Overlay Weight Editor**: Safe proposal → approval workflow for interactive tuning
+✅ **32 Tests Passing**: Full regression coverage + 10 new tests
+✅ **Production Ready**: Error handling, logging, graceful shutdown
 
 **Next Steps**: Frontend integration (weight editor UI, A/B test dashboard), analytics improvements.

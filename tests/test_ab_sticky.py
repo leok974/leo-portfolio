@@ -6,12 +6,12 @@ from assistant_api.services.layout_ab import assign_bucket
 def test_sticky_assignment():
     """Test that same visitor_id always returns same bucket."""
     visitor_id = "test-visitor-123"
-    
+
     # Call multiple times with same visitor_id
     bucket1 = assign_bucket(visitor_id)
     bucket2 = assign_bucket(visitor_id)
     bucket3 = assign_bucket(visitor_id)
-    
+
     # All should be identical
     assert bucket1 == bucket2
     assert bucket2 == bucket3
@@ -25,7 +25,7 @@ def test_different_visitors_different_buckets():
     for i in range(100):
         bucket = assign_bucket(f"visitor-{i}")
         buckets.add(bucket)
-    
+
     # Should have both A and B in the set
     assert "A" in buckets
     assert "B" in buckets
