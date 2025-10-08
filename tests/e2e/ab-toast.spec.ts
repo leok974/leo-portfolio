@@ -23,8 +23,8 @@ test.describe("AB Toast System (Public Site)", () => {
     const card = page.locator('.card-click').first();
     await card.click();
 
-    // Wait for toast to appear (from sonner)
-    const toast = page.locator('[data-sonner-toast]');
+    // Wait for toast to appear (use test ID)
+    const toast = page.getByTestId('toast');
     await expect(toast).toBeVisible({ timeout: 3000 });
 
     // Toast should have some content (may vary based on bucket)

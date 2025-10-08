@@ -1,7 +1,7 @@
 {
   "version": 2,
   "preset": "recruiter",
-  "generated_at": 1759894329,
+  "generated_at": 1759893291,
   "order": [
     "ledgermind",
     "datapipe-ai",
@@ -39,8 +39,8 @@
         "signal=0.00",
         "fit=0.38",
         "media=0.60",
-        "matches ai:data",
         "matches ai:rag",
+        "matches ai:data",
         "matches ai:analytics"
       ],
       "parts": {

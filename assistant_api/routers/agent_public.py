@@ -377,14 +377,15 @@ class DevEnableReq(BaseModel):
 def dev_status(sa_dev: Optional[str] = Cookie(default=None)):
     """
     Returns whether the dev overlay is enabled via signed cookie.
+    Returns both 'enabled' and 'allowed' keys for API compatibility.
     """
     # local dev always allowed (index.html also guards by host or ?dev=1)
     # but this endpoint reflects cookie status only.
     key = os.environ.get("SITEAGENT_DEV_COOKIE_KEY", "")
     if not key or not sa_dev:
-        return {"allowed": False}
+        return {"enabled": False, "allowed": False}
     ok = _verify_dev(sa_dev, key) is not None
-    return {"allowed": ok}
+    return {"enabled": ok, "allowed": ok}
 
 
 @router.post("/dev/enable")
@@ -404,11 +405,11 @@ async def dev_enable(req: Request, body: bytes = Depends(_authorized)):
     exp = int(time.time()) + max(300, min(hours, 24) * 3600)
     token = _sign_dev({"exp": exp, "v": 1}, key)
     resp = PlainTextResponse("ok")
-    
+
     # In dev/test environments, use httponly=false so JS can read cookie
     # In production, use httponly=true for security
     is_dev = os.environ.get("APP_ENV", "dev").lower() != "prod"
-    
+
     resp.set_cookie(
         "sa_dev",
         token,

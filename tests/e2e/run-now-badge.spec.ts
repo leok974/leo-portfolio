@@ -10,8 +10,8 @@ test.describe("Run Now Button & Badge Auto-Refresh @tools", () => {
     await enableOverlayOnPage(page);
     await page.goto("/tools.html", { waitUntil: "networkidle" });
 
-    // Wait for tools page to load (use test ID)
-    await expect(page.getByTestId("ab-analytics")).toBeVisible({ timeout: 10000 });
+    // Wait for tools page to load
+    await page.getByTestId("ab-analytics").waitFor({ state: "visible" });
 
     // Find autotune button
     const autotuneBtn = page.locator('button:has-text("Run Autotune")');
@@ -23,7 +23,7 @@ test.describe("Run Now Button & Badge Auto-Refresh @tools", () => {
     await enableOverlayOnPage(page);
     await page.goto("/tools.html", { waitUntil: "networkidle" });
 
-    await expect(page.getByTestId("ab-analytics")).toBeVisible({ timeout: 10000 });
+    await page.getByTestId("ab-analytics").waitFor({ state: "visible" });
 
     // Find autotune button
     const autotuneBtn = page.locator('button:has-text("Run Autotune")');
@@ -49,7 +49,7 @@ test.describe("Run Now Button & Badge Auto-Refresh @tools", () => {
     await enableOverlayOnPage(page);
     await page.goto("/tools.html", { waitUntil: "networkidle" });
 
-    await expect(page.getByTestId("ab-analytics")).toBeVisible({ timeout: 10000 });
+    await page.getByTestId("ab-analytics").waitFor({ state: "visible" });
 
     // Check for learning rate display
     const alphaText = page.locator("text=Learning rate");
