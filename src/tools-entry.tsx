@@ -10,7 +10,10 @@ function ToolsPage() {
 
   useEffect(() => {
     isPrivilegedUIEnabled()
-      .then(setEnabled)
+      .then((result) => {
+        setEnabled(result);
+        console.debug(`[ToolsPage] isPrivilegedUIEnabled()=${result}`);
+      })
       .finally(() => setLoading(false));
   }, []);
 
