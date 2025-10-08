@@ -18,7 +18,7 @@ export async function seedLayout(request: APIRequestContext, preset = 'recruiter
         payload: { preset }
       }
     });
-    
+
     if (!response.ok()) {
       console.warn('[seed] Layout optimization failed:', response.status());
     }
@@ -34,7 +34,7 @@ export async function seedAbEvents(request: APIRequestContext) {
   try {
     // Fire a few test events
     const visitorId = 'test-visitor-' + Date.now();
-    
+
     // View event
     await request.post(`${API_URL}/api/ab/track`, {
       headers: { 'Content-Type': 'application/json' },
@@ -44,7 +44,7 @@ export async function seedAbEvents(request: APIRequestContext) {
         event_type: 'view'
       }
     });
-    
+
     // Click event
     await request.post(`${API_URL}/api/ab/track`, {
       headers: { 'Content-Type': 'application/json' },

@@ -4,7 +4,7 @@ This guide explains how to run the E2E tests for the Leo Portfolio project with 
 
 ## Quick Start (Automated Servers)
 
-The E2E test suite is configured to automatically start both backend and frontend servers.
+The E2E test suite is configured to automatically start both backend and frontend servers with optimal settings for test stability.
 
 ### Prerequisites
 
@@ -24,6 +24,10 @@ The E2E test suite is configured to automatically start both backend and fronten
 ### Running Tests (Single Command)
 
 ```powershell
+# Clear any previous environment variables (important!)
+$env:PW_SKIP_WS=$null
+$env:PLAYWRIGHT_GLOBAL_SETUP_SKIP=$null
+
 # Run all E2E tests (Playwright will start both servers)
 pnpm playwright test --project=chromium
 
@@ -34,8 +38,10 @@ pnpm playwright test tests/e2e/run-now-badge.spec.ts --project=chromium      # A
 ```
 
 **How it works:**
-- `playwright.config.ts` defines a `webServer` that runs `pnpm preview --port 5173`
-- `global-setup.ts` checks if backend is running at `http://127.0.0.1:8001` and starts it if needed
+- `playwright.config.ts` starts preview via `pnpm exec vite preview --port 5173 --strictPort` (Windows-friendly)
+- `global-setup.ts` starts backend WITHOUT `--reload` (prevents restarts when tests write files)
+- `global-setup.ts` sets `SCHEDULER_ENABLED=0` (keeps tests deterministic)
+- `global-setup.ts` seeds dev overlay and initial layout data
 - Tests wait for both servers to be ready before executing
 
 ## Manual Server Control (Alternative)
@@ -44,14 +50,16 @@ If you prefer to manually control the servers (for debugging or faster iteration
 
 ### Terminal 1: Backend Server
 ```powershell
-# Start the FastAPI backend
-uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 --reload
+# Start the FastAPI backend WITHOUT reload (prevents restarts during tests)
+# Also disable scheduler for deterministic tests
+$env:SCHEDULER_ENABLED='0'
+uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001
 ```
 
 ### Terminal 2: Frontend Preview Server
 ```powershell
-# Serve the built frontend
-pnpm preview --port 5173
+# Serve the built frontend with strictPort
+pnpm exec vite preview --port 5173 --strictPort
 ```
 
 ### Terminal 3: Run Tests
@@ -113,7 +121,7 @@ export default defineConfig({
     baseURL,
   },
   webServer: process.env.PW_SKIP_WS ? undefined : {
-    command: 'pnpm preview --port 5173',
+    command: 'pnpm exec vite preview --port 5173 --strictPort',  // Windows-friendly
     url: 'http://127.0.0.1:5173',
     reuseExistingServer: true,
     timeout: 120_000,
@@ -121,11 +129,20 @@ export default defineConfig({
 });
 ```
 
+**Key improvements:**
+- Uses `pnpm exec vite` instead of `pnpm preview` (more reliable on Windows)
+- `--strictPort` ensures port 5173 or fail (no random port assignment)
+
 ### `global-setup.ts`
-- Checks if backend is reachable at `$API_URL`
-- Starts `uvicorn assistant_api.main:app` if not running
-- Waits up to 30 seconds for backend to be ready
-- Returns cleanup function to stop backend after tests
+**Automatic backend startup with optimal settings:**
+- Starts `uvicorn` WITHOUT `--reload` flag (prevents restarts when tests write files)
+- Sets `SCHEDULER_ENABLED=0` environment variable (disables nightly jobs during tests)
+- Waits for backend health check at `/agent/dev/status`
+- Seeds dev overlay cookie and initial layout data
+- Returns cleanup function to gracefully stop backend
+
+**Why no reload?**
+When tests write to `assets/layout.json` or `data/*.jsonl`, uvicorn's file watcher triggers a restart, killing active requests. Running without reload keeps the server stable during test execution.
 
 ## Environment Variables
 
@@ -236,6 +253,30 @@ pnpm playwright show-report
 ```powershell
 pnpm playwright show-trace test-results/[test-name]/trace.zip
 ```
+
+## Production Safety
+
+### Dev Overlay Protection
+
+The dev overlay endpoint `/agent/dev/enable` has production safety built in:
+
+```python
+# In production (APP_ENV=prod), the enable endpoint returns 403 by default
+# This prevents unauthorized access to admin features
+```
+
+**Environment variables for production:**
+- `APP_ENV=prod` - Enables production mode (blocks dev overlay by default)
+- `ALLOW_DEV_OVERLAY_IN_PROD=1` - Explicitly allows dev overlay in production (not recommended)
+
+**Recommended production setup:**
+1. Use Cloudflare Access or similar authentication on `/agent/*` routes
+2. Set `APP_ENV=prod` in production environment
+3. Dev overlay will be blocked unless request passes through Cloudflare Access
+
+**For testing/staging environments:**
+- Leave `APP_ENV=dev` (default)
+- Dev overlay works freely for development/testing
 
 ## Success Criteria
 

@@ -1,5 +1,6 @@
 """Dev overlay router for enabling/disabling admin UI via cookie."""
-from fastapi import APIRouter, Response, Request
+import os
+from fastapi import APIRouter, Response, Request, HTTPException, status
 
 router = APIRouter(prefix="/agent/dev")
 
@@ -15,7 +16,25 @@ def get_status(request: Request):
 
 @router.post("/enable")
 def enable_overlay(response: Response):
-    """Enable dev overlay by setting cookie."""
+    """
+    Enable dev overlay by setting cookie.
+    
+    Production safety: In production environments, this endpoint should be
+    protected by Cloudflare Access or similar authentication middleware.
+    If APP_ENV=prod and no authentication is configured, this will return 403.
+    """
+    # Production safety check - disable in prod unless explicitly allowed
+    app_env = os.getenv("APP_ENV", "dev").lower()
+    allow_dev_in_prod = os.getenv("ALLOW_DEV_OVERLAY_IN_PROD", "0") == "1"
+    
+    if app_env == "prod" and not allow_dev_in_prod:
+        # In production, dev overlay should be gated by Cloudflare Access or similar
+        # This prevents unauthorized access to admin features
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Dev overlay disabled in production. Use Cloudflare Access or set ALLOW_DEV_OVERLAY_IN_PROD=1"
+        )
+    
     response.set_cookie(
         COOKIE_NAME,
         "1",

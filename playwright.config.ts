@@ -48,7 +48,7 @@ export default defineConfig({
     },
   ],
   webServer: process.env.PW_SKIP_WS ? undefined : {
-    command: 'pnpm preview --port 5173',
+    command: 'pnpm exec vite preview --port 5173 --strictPort',
     url: 'http://127.0.0.1:5173',
     reuseExistingServer: true,
     timeout: 120_000,
