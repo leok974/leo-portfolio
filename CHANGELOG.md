@@ -2,6 +2,44 @@
 
 ## [Unreleased] - 2025-01-25
 
+### Analytics Dashboard, Adaptive Autotuning, and Scheduler Extensions (Phase 50.3 🎯📊🤖)
+- **AB Analytics Dashboard**: Visual CTR insights with Recharts
+  - Event storage: `ab_store.py` with JSONL persistence (`data/ab_events.jsonl`)
+  - Daily CTR aggregation: `summary(from_day, to_day)` with date filtering
+  - API endpoint: `GET /agent/ab/summary?from=YYYY-MM-DD&to=YYYY-MM-DD`
+  - Frontend component: `ABAnalyticsDashboard.tsx` (Recharts line chart)
+  - Features: Daily CTR trends, overall stats cards, winner display, date filters, refresh button
+  - Responsive design: Grid layout, mobile-friendly inputs, 100% width chart
+- **Adaptive Agentic Feedback Loop**: AI-driven weight optimization
+  - Autotuning service: `weights_autotune.py` with learning rate alpha
+  - Algorithm: `new_weight = max(0, base + alpha * hint)` then normalize to 1.0
+  - API endpoint: `POST /agent/autotune?alpha=0.5` (default alpha: 0.5)
+  - Frontend component: `AutotuneButton.tsx` with loading state and feedback
+  - Safety: Non-negative weights, gradual updates controlled by alpha
+  - Integration: Dispatches `siteagent:layout:updated` event to refresh admin badge
+- **Scheduler Extensions**: YAML policy and manual triggers
+  - YAML configuration: `data/schedule.policy.yml`
+  - Settings: `nightly_time: "02:30"`, weekday/weekend/holidays presets, custom holiday list
+  - Enhanced `scheduler.py`: `pick_preset_for_day(date)` for day-type selection
+  - Manual trigger: `POST /agent/run_now?preset=X` for immediate optimization
+  - Audit trail: `agent_events.py` with JSONL logging (`data/agent_events.jsonl`)
+  - API endpoint: `GET /agent/events?limit=50` for event history
+  - Event types: `scheduler_run`, `manual_optimize`, `autotune`
+- **Test Coverage**: 16 new tests (48 total)
+  - Backend: 8 tests (all passing in 0.10s)
+    - `test_ab_summary.py` (4 tests): Event logging, daily CTR, date filtering, empty state
+    - `test_autotune.py` (4 tests): Normalization, alpha, non-negative, zero alpha
+  - E2E: 8 tests created (ab-dashboard.spec.ts, autotune.spec.ts)
+    - Dashboard: Render, date filters, refresh button, chart display
+    - Autotune: Render, trigger request, error handling, event dispatch
+- **Dependencies**: Recharts (3.2.1) installed, PyYAML (6.0.2) already present
+- **Architecture**:
+  - New files: `ab_store.py`, `agent_events.py`, `weights_autotune.py`, `schedule.policy.yml`
+  - Frontend: `ABAnalyticsDashboard.tsx`, `AutotuneButton.tsx` (integrated into `render-admin.tsx`)
+  - Enhanced: `scheduler.py` (YAML parsing), `ab.py` (/summary), `agent_public.py` (3 endpoints)
+  - All dev/admin-gated: No public exposure of analytics or autotuning
+- **Branch**: `PHASE-50.3` (commit: pending)
+
 ### Layout Optimization Advanced Features (Phase 50.2 🎯🔬)
 - **Sticky A/B Assignment**: Deterministic bucketing for consistent user experience
   - SHA1-based bucketing: `bucket_for(visitor_id)` → deterministic 50/50 split

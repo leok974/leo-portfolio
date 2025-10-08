@@ -31,7 +31,7 @@ export function WeightsEditor({ base = "" }: { base?: string }) {
     () => (draft ? draft.freshness + draft.signal + draft.fit + draft.media : 1),
     [draft]
   );
-  
+
   const norm = useMemo(() => {
     if (!draft || total === 0) return null;
     return {

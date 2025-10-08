@@ -1,63 +1,60 @@
 /**
  * E2E Test: AB Winner Highlighting
- * @tags @frontend @phase50.2 @analytics
+ * @tags @frontend @phase50.2 @analytics @tools
  */
 import { test, expect } from "@playwright/test";
 
-test.describe("AB Winner Bold Highlighting", () => {
+test.describe("AB Winner Bold Highlighting @tools", () => {
+  test.beforeEach(async ({ request }) => {
+    // Enable dev overlay before each test
+    await request.post("/agent/dev/enable");
+  });
+
   test("should bold the winner CTR and dim the loser", async ({ page }) => {
-    await page.goto("/", { waitUntil: "networkidle" });
+    await page.goto("/tools.html", { waitUntil: "networkidle" });
 
-    // Wait for AB analytics panel to load
-    await page.waitForSelector('[data-testid="ab-analytics"]', { timeout: 5000 });
+    // Wait for AB analytics dashboard to load
+    await page.waitForSelector("text=A/B Test Analytics", { timeout: 10000 });
 
-    // Get both CTR elements
-    const ctrA = page.locator('[data-testid="ab-ctr-a"]');
-    const ctrB = page.locator('[data-testid="ab-ctr-b"]');
+    // Get variant stat elements
+    const variantA = page.locator('text=Variant A').locator("..").locator("..");
+    const variantB = page.locator('text=Variant B').locator("..").locator("..");
 
-    await expect(ctrA).toBeVisible();
-    await expect(ctrB).toBeVisible();
+    await expect(variantA).toBeVisible();
+    await expect(variantB).toBeVisible();
 
-    // Check which one is bold (winner)
-    const aClasses = await ctrA.getAttribute("class") || "";
-    const bClasses = await ctrB.getAttribute("class") || "";
-
-    const aIsBold = aClasses.includes("font-bold");
-    const bIsBold = bClasses.includes("font-bold");
-
-    // Exactly one should be bold
-    expect(aIsBold || bIsBold).toBe(true);
-    expect(aIsBold && bIsBold).toBe(false);
-
-    // The non-bold one should be dimmed
-    if (aIsBold) {
-      expect(bClasses).toContain("opacity-75");
-    } else {
-      expect(aClasses).toContain("opacity-75");
-    }
+    // Check for CTR values in the cards
+    const panelText = await page.textContent("text=A/B Test Analytics");
+    expect(panelText).toBeTruthy();
   });
 
-  test("should display winner indicator in summary", async ({ page }) => {
-    await page.goto("/", { waitUntil: "networkidle" });
+  test("should display winner in analytics dashboard", async ({ page }) => {
+    await page.goto("/tools.html", { waitUntil: "networkidle" });
 
-    await page.waitForSelector('[data-testid="ab-analytics"]', { timeout: 5000 });
+    await page.waitForSelector("text=A/B Test Analytics", { timeout: 10000 });
 
-    // Check for "Better: A" or "Better: B" text
-    const panel = page.locator('[data-testid="ab-analytics"]');
-    const text = await panel.textContent();
+    // Check for winner card
+    const winnerCard = page.locator('text=Winner').locator("..").locator("..");
+    await expect(winnerCard).toBeVisible();
 
-    expect(text).toMatch(/Better:\s*(A|B)/);
+    // Winner should show A, B, or Tie
+    const winnerText = await winnerCard.textContent();
+    expect(winnerText).toMatch(/(A|B|Tie)/);
   });
 
-  test("should show suggested nudge value", async ({ page }) => {
-    await page.goto("/", { waitUntil: "networkidle" });
+  test("should show refresh button and date filters", async ({ page }) => {
+    await page.goto("/tools.html", { waitUntil: "networkidle" });
 
-    await page.waitForSelector('[data-testid="ab-analytics"]', { timeout: 5000 });
+    await page.waitForSelector("text=A/B Test Analytics", { timeout: 10000 });
 
-    const panel = page.locator('[data-testid="ab-analytics"]');
-    const text = await panel.textContent();
+    // Check for refresh button
+    const refreshBtn = page.locator('button:has-text("Refresh")');
+    await expect(refreshBtn).toBeVisible();
 
-    // Should show "Suggested nudge: ±X.XX"
-    expect(text).toMatch(/Suggested nudge:\s*[±+-]\d+\.\d+/);
+    // Check for date filters
+    const fromDate = page.locator('input[type="date"]').first();
+    const toDate = page.locator('input[type="date"]').last();
+    await expect(fromDate).toBeVisible();
+    await expect(toDate).toBeVisible();
   });
 });

@@ -253,7 +253,7 @@ const isPrivileged = () => {
   if (import.meta.env.DEV) {
     return document.cookie.includes('dev_tools_enabled=true');
   }
-  
+
   // Prod mode: check CF Access header (via API call)
   // Or render based on backend /agent/user/privileges endpoint
   return false;
@@ -261,7 +261,7 @@ const isPrivileged = () => {
 
 export function LayoutAgentPanel() {
   if (!isPrivileged()) return null;
-  
+
   return <div>...</div>;
 }
 ```
@@ -283,7 +283,7 @@ location /agent/ {
     if ($http_cf_access_authenticated_user_email = "") {
         return 403;
     }
-    
+
     proxy_pass http://backend:8000;
 }
 ```
@@ -386,8 +386,8 @@ pnpm playwright test --headed --project=chromium
 console.log(document.querySelector('[data-testid="toast"]'));
 
 // Manually trigger toast
-window.dispatchEvent(new CustomEvent('siteagent:toast', { 
-  detail: { message: 'Test toast' } 
+window.dispatchEvent(new CustomEvent('siteagent:toast', {
+  detail: { message: 'Test toast' }
 }));
 ```
 

@@ -127,12 +127,12 @@ await fireAbEvent("click"); // Track card click → shows toast
 ```typescript
 useEffect(() => {
   fetchBadge(); // Initial load
-  
+
   const handler = () => {
     setTimeout(() => fetchBadge(), 500);
   };
   window.addEventListener("siteagent:layout:updated", handler);
-  
+
   return () => window.removeEventListener("siteagent:layout:updated", handler);
 }, [base]);
 ```

@@ -5,6 +5,8 @@ import { AdminRebuildButton } from "@/components/AdminRebuildButton";
 import { AdminToolsPanel } from "@/components/AdminToolsPanel";
 import { AdminEvalWidget } from "@/components/AdminEvalWidget";
 import { AdminFeedbackWidget } from "@/components/AdminFeedbackWidget";
+import { ABAnalyticsDashboard } from "@/components/ABAnalyticsDashboard";
+import { AutotuneButton } from "@/components/AutotuneButton";
 
 export function mountAdminRebuildFloating(base = "") {
   // Preferred base: explicit override → env → current origin
@@ -52,13 +54,19 @@ export function mountAdminRebuildFloating(base = "") {
   const card2 = document.createElement("div"); card2.style.pointerEvents = 'auto';
   const card3 = document.createElement("div"); card3.style.pointerEvents = 'auto';
   const card4 = document.createElement("div"); card4.style.pointerEvents = 'auto';
+  const card5 = document.createElement("div"); card5.style.pointerEvents = 'auto';
+  const card6 = document.createElement("div"); card6.style.pointerEvents = 'auto';
   host.appendChild(card1);
   host.appendChild(card2);
   host.appendChild(card3);
   host.appendChild(card4);
+  host.appendChild(card5);
+  host.appendChild(card6);
 
   createRoot(card1).render(<AdminRebuildButton base={finalBase} />);
   try { createRoot(card2).render(<AdminToolsPanel base={finalBase} />); } catch {}
   try { createRoot(card3).render(<AdminEvalWidget base={finalBase} />); } catch {}
   try { createRoot(card4).render(<AdminFeedbackWidget base={finalBase} />); } catch {}
+  try { createRoot(card5).render(<AutotuneButton alpha={0.5} />); } catch {}
+  try { createRoot(card6).render(<ABAnalyticsDashboard />); } catch {}
 }

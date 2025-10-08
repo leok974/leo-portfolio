@@ -1,0 +1,27 @@
+# Scheduler Policy Template
+# Copy this file to: data/schedule.policy.yml
+
+schedule:
+  # Time to run nightly optimization (HH:MM format, 24-hour)
+  nightly_time: "02:30"
+
+  # Preset to use on weekdays (Monday-Friday)
+  weekday: recruiter
+
+  # Preset to use on weekends (Saturday-Sunday)
+  weekend: hiring_manager
+
+  # Preset to use on holidays
+  holidays: creative
+
+# List of holidays (YYYY-MM-DD format)
+# Scheduler will use the 'holidays' preset on these dates
+holidays:
+  - 2025-12-25  # Christmas
+  - 2026-01-01  # New Year's Day
+  - 2025-07-04  # Independence Day
+  - 2025-11-28  # Thanksgiving
+  - 2025-12-24  # Christmas Eve
+  - 2026-07-04  # Independence Day 2026
+  - 2026-11-26  # Thanksgiving 2026
+  - 2026-12-25  # Christmas 2026

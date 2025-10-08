@@ -21,6 +21,10 @@ from ..utils.cf_access import require_cf_access
 from ..agent.interpret import parse_command
 from ..services.pr_utils import git_commit, open_pr_via_api
 from ..services.layout_opt import run_layout_optimize
+from ..services.scheduler import pick_preset_for_day
+from ..services.weights_autotune import run_autotune
+from ..services.agent_events import log_event, recent_events
+import datetime as dt
 
 router = APIRouter(prefix="/agent", tags=["agent-public"])
 
@@ -563,3 +567,77 @@ jobs:
 """
 
     return PlainTextResponse(workflow, media_type="text/yaml")
+
+
+@router.post("/run_now")
+async def run_now(
+    req: Request,
+    body: bytes = Depends(_authorized),
+    preset: Optional[str] = None
+):
+    """
+    Manually trigger layout optimization with specified or auto-selected preset.
+
+    Args:
+        preset: Optimization preset (recruiter, hiring_manager, etc.)
+                If not provided, selects based on current day type.
+
+    Returns:
+        Optimization result with summary
+    """
+    # Use preset from query or select based on today's day type
+    selected_preset = preset or pick_preset_for_day(dt.date.today())
+
+    # Run optimization
+    result = run_layout_optimize({"preset": selected_preset})
+
+    # Log event for audit trail
+    log_event("manual.optimize", {
+        "preset": selected_preset,
+        "summary": result.get("summary"),
+        "status": result.get("status")
+    })
+
+    return {
+        "ok": True,
+        "preset": selected_preset,
+        "summary": result.get("summary"),
+        "status": result.get("status")
+    }
+
+
+@router.post("/autotune")
+async def autotune(
+    req: Request,
+    body: bytes = Depends(_authorized),
+    alpha: float = 0.5
+):
+    """
+    Run adaptive weight tuning based on A/B test results (Phase 50.3).
+
+    Args:
+        alpha: Learning rate (0-1). Higher = more aggressive tuning.
+               Default 0.5 for gradual adjustment.
+
+    Returns:
+        Dict with tuned weights, A/B suggestion, and optimization result
+    """
+    return run_autotune(alpha=alpha)
+
+
+@router.get("/events")
+async def list_events(
+    req: Request,
+    _: bytes = Depends(_authorized),
+    limit: int = Query(default=50, le=200)
+):
+    """
+    Get recent agent events (scheduler runs, manual optimizations, autotuning).
+
+    Args:
+        limit: Maximum number of events to return (max 200)
+
+    Returns:
+        List of recent events with timestamps
+    """
+    return {"events": recent_events(limit=limit)}

@@ -27,14 +27,14 @@ export function LastRunBadge({ base = "" }: { base?: string }) {
 
   useEffect(() => {
     fetchBadge();
-    
+
     // Listen for layout update events from "Run Now" button
     const handler = () => {
       // Wait a bit for backend to finish writing layout.json
       setTimeout(() => fetchBadge(), 500);
     };
     window.addEventListener("siteagent:layout:updated", handler);
-    
+
     return () => window.removeEventListener("siteagent:layout:updated", handler);
   }, [base]);
 

@@ -135,6 +135,10 @@ app.include_router(layout_weights.router)
 from assistant_api.routers import resume_public
 app.include_router(resume_public.router)
 
+# Dev overlay routes (for enabling/disabling admin UI via cookie)
+from assistant_api.routers import dev_overlay
+app.include_router(dev_overlay.router)
+
 # Ultra-fast ping for UI hydration fallback (/api/ping)
 _ping_router = APIRouter()
 

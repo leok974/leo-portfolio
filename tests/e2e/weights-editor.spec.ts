@@ -5,13 +5,13 @@ test.describe('Weights Editor @frontend', () => {
     // Navigate to page with weights editor
     // Adjust this URL if your overlay is on a different route
     await page.goto('/');
-    
+
     // Wait for and check if editor is visible
     const editor = page.getByTestId('weights-editor');
-    
+
     // If not visible by default, you may need to open your dev/admin overlay first
     // await page.getByRole('button', { name: /dev tools/i }).click();
-    
+
     await expect(editor).toBeVisible({ timeout: 10000 });
 
     // Adjust a slider
