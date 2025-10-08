@@ -3,11 +3,12 @@
  * @tags @frontend @phase50.2 @analytics @tools
  */
 import { test, expect } from "@playwright/test";
+import { API_URL } from "./lib/api";
 
 test.describe("AB Winner Bold Highlighting @tools", () => {
   test.beforeEach(async ({ request }) => {
     // Enable dev overlay before each test
-    await request.post("/agent/dev/enable");
+    await request.post(`${API_URL}/agent/dev/enable`);
   });
 
   test("should bold the winner CTR and dim the loser", async ({ page }) => {

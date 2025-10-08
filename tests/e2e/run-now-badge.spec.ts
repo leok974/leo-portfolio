@@ -3,11 +3,12 @@
  * @tags @frontend @phase50.2 @optimization @tools
  */
 import { test, expect } from "@playwright/test";
+import { API_URL } from "./lib/api";
 
 test.describe("Run Now Button & Badge Auto-Refresh @tools", () => {
   test.beforeEach(async ({ request }) => {
     // Enable dev overlay before each test
-    await request.post("/agent/dev/enable");
+    await request.post(`${API_URL}/agent/dev/enable`);
   });
 
   test("should show autotune button in tools panel", async ({ page }) => {
@@ -42,7 +43,7 @@ test.describe("Run Now Button & Badge Auto-Refresh @tools", () => {
     // Wait for completion (success or error message)
     const successMsg = page.locator("text=✅");
     const errorMsg = page.locator("text=❌");
-    
+
     // One of them should appear within 15 seconds
     await expect(successMsg.or(errorMsg)).toBeVisible({ timeout: 15000 });
   });

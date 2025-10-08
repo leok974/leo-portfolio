@@ -4,7 +4,7 @@ import { AutotuneButton } from "@/components/AutotuneButton";
 
 /**
  * AgentToolsPanel - Admin/dev-only UI that combines all site agent tools.
- * 
+ *
  * Includes:
  * - AB Analytics Dashboard (CTR trends, date filters, winner display)
  * - Autotune Button (adaptive weight optimization)
