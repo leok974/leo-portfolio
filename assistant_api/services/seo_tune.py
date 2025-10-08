@@ -44,7 +44,12 @@ def _collect_projects() -> List[Dict]:
     # TODO: integrate with your actual content source
     projects_path = Path("projects.json")
     if projects_path.exists():
-        return json.loads(projects_path.read_text(encoding="utf-8"))
+        projects_data = json.loads(projects_path.read_text(encoding="utf-8"))
+        # Handle both array format and object format (keyed by slug)
+        if isinstance(projects_data, dict):
+            # Convert object to list of projects
+            return list(projects_data.values())
+        return projects_data
     # Fallback minimal stub
     return [
         {

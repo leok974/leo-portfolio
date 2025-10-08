@@ -58,9 +58,9 @@ An autonomous `seo.tune` task periodically reviews site content, updates SEO tag
 
 | Endpoint | Method | Purpose |
 |-----------|--------|----------|
-| `/agent/run?task=seo.tune` | POST | Runs full SEO tune pipeline |
-| `/agent/artifacts/seo-tune.diff` | GET | Returns unified diff |
-| `/agent/artifacts/seo-tune.md` | GET | Returns reasoning log |
+| `/agent/seo/tune?dry_run=true` | POST | Runs full SEO tune pipeline |
+| `/agent/seo/artifacts/diff` | GET | Returns unified diff |
+| `/agent/seo/artifacts/log` | GET | Returns reasoning log |
 | `/agent/events?task=seo.tune` | GET (SSE) | Streams live progress and logs |
 
 ---
