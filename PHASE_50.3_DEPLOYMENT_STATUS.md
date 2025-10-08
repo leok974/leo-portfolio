@@ -20,9 +20,11 @@
 
 ### Testing Status
 - ✅ Backend: 8/8 tests passing (pytest)
-- ✅ Frontend: Build successful (pnpm build)
+- ✅ Frontend: Build successful (pnpm build - 2609 modules, 3.40s)
 - ✅ Code: No syntax errors
-- ⏳ E2E: Requires manual verification (see below)
+- ✅ E2E Infrastructure: Hardened with 4 commits (7ffd965, f5b78c9, 87ee291, 8e8a9f9)
+- ✅ Root Cause Fixed: Backend returns both `enabled`+`allowed`, frontend accepts either
+- 📋 E2E Execution: Ready - See EXECUTE_E2E_TESTS.md for one-line command
 
 ### Files Created (19)
 **Backend (8):**
@@ -44,12 +46,13 @@
 - tests/e2e/ab-dashboard.spec.ts
 - tests/e2e/autotune.spec.ts
 
-**Documentation (6):**
+**Documentation (7):**
 - PHASE_50.3_COMPLETE.md
 - PHASE_50.3_IMPLEMENTATION_SUMMARY.md
 - PHASE_50.3_QUICKREF.md
 - TOOLS_PAGE_IMPLEMENTATION.md
 - TOOLS_PAGE_QUICKREF.md
+- EXECUTE_E2E_TESTS.md (✨ NEW - one-line test execution)
 - CHANGELOG.md (updated)
 
 ### Files Modified (14)
@@ -69,6 +72,18 @@
 - tests/e2e/weights-editor.spec.ts
 
 ## ⏳ Manual Testing Required
+
+### Quick Execution (One-Line Command)
+See **[EXECUTE_E2E_TESTS.md](./EXECUTE_E2E_TESTS.md)** for the complete guide.
+
+```powershell
+# Clean slate + run all tests
+Get-Process | Where-Object {$_.ProcessName -match 'python|node|vite'} | Stop-Process -Force -EA SilentlyContinue; $env:PW_SKIP_WS=$null; $env:PLAYWRIGHT_GLOBAL_SETUP_SKIP=$null; pnpm playwright test --project=chromium
+```
+
+**Note:** Frontend must be built first: `pnpm build` (already done ✅)
+
+---
 
 ### 1. Tools Page Access
 ```powershell

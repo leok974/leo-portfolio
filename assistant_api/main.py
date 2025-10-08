@@ -139,6 +139,13 @@ app.include_router(resume_public.router)
 from assistant_api.routers import dev_overlay
 app.include_router(dev_overlay.router)
 
+# Phase 50.4 — SEO & OG Intelligence routes
+try:
+    from assistant_api.routers import seo as seo_router
+    app.include_router(seo_router.router)
+except Exception as e:  # optional soft-fail in dev
+    print("[warn] seo router not loaded:", e)
+
 # Ultra-fast ping for UI hydration fallback (/api/ping)
 _ping_router = APIRouter()
 
