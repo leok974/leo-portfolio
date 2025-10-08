@@ -1,6 +1,7 @@
 import React from "react";
 import { ABAnalyticsDashboard } from "@/components/ABAnalyticsDashboard";
 import { AutotuneButton } from "@/components/AutotuneButton";
+import { SeoTunePanel } from "@/components/SeoTunePanel";
 
 /**
  * AgentToolsPanel - Admin/dev-only UI that combines all site agent tools.
@@ -8,6 +9,7 @@ import { AutotuneButton } from "@/components/AutotuneButton";
  * Includes:
  * - AB Analytics Dashboard (CTR trends, date filters, winner display)
  * - Autotune Button (adaptive weight optimization)
+ * - SEO Tune Panel (meta optimization, PR automation, before/after preview)
  * - Future: Scheduler controls, manual optimization, weight editor
  */
 export function AgentToolsPanel() {
@@ -34,6 +36,9 @@ export function AgentToolsPanel() {
       <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <ABAnalyticsDashboard />
       </section>
+
+      {/* SEO Tune Section */}
+      <SeoTunePanel />
 
       {/* Future sections */}
       <section className="rounded-lg border border-gray-200 bg-gray-50 p-6">
