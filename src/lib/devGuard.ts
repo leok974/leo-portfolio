@@ -1,20 +1,29 @@
 /**
  * Dev guard: Check if privileged/admin UI should be enabled.
- * Returns true if sa_dev cookie is set to "1" or if /agent/dev/status returns enabled.
+ * Returns true if sa_dev cookie exists or if /agent/dev/status returns enabled.
  */
 export async function isPrivilegedUIEnabled(): Promise<boolean> {
-  // Check cookie first (fast path)
+  // Check cookie first (fast path) - just check if it exists, backend validates it
   if (typeof document !== "undefined") {
     const cookies = document.cookie.split(";");
     for (const cookie of cookies) {
-      const [name, value] = cookie.trim().split("=");
-      if (name === "sa_dev" && value === "1") {
-        return true;
+      const [name] = cookie.trim().split("=");
+      if (name === "sa_dev") {
+        // Cookie exists - validate via API to ensure it's valid
+        try {
+          const res = await fetch("/agent/dev/status");
+          if (res.ok) {
+            const data = await res.json();
+            return data.enabled === true;
+          }
+        } catch {
+          return false;
+        }
       }
     }
   }
 
-  // Check API endpoint (fallback)
+  // No cookie found - check API endpoint (fallback)
   try {
     const res = await fetch("/agent/dev/status");
     if (!res.ok) return false;

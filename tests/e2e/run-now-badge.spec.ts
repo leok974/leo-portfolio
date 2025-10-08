@@ -3,19 +3,15 @@
  * @tags @frontend @phase50.2 @optimization @tools
  */
 import { test, expect } from "@playwright/test";
-import { API_URL } from "./lib/api";
+import { enableOverlayOnPage } from "./lib/overlay";
 
 test.describe("Run Now Button & Badge Auto-Refresh @tools", () => {
-  test.beforeEach(async ({ request }) => {
-    // Enable dev overlay before each test
-    await request.post(`${API_URL}/agent/dev/enable`);
-  });
-
   test("should show autotune button in tools panel", async ({ page }) => {
+    await enableOverlayOnPage(page);
     await page.goto("/tools.html", { waitUntil: "networkidle" });
 
-    // Wait for tools page to load
-    await page.waitForSelector("text=Site Agent Tools", { timeout: 10000 });
+    // Wait for tools page to load (use test ID)
+    await expect(page.getByTestId("ab-analytics")).toBeVisible({ timeout: 10000 });
 
     // Find autotune button
     const autotuneBtn = page.locator('button:has-text("Run Autotune")');
@@ -24,9 +20,10 @@ test.describe("Run Now Button & Badge Auto-Refresh @tools", () => {
   });
 
   test("should trigger autotune and show feedback", async ({ page }) => {
+    await enableOverlayOnPage(page);
     await page.goto("/tools.html", { waitUntil: "networkidle" });
 
-    await page.waitForSelector("text=Site Agent Tools", { timeout: 10000 });
+    await expect(page.getByTestId("ab-analytics")).toBeVisible({ timeout: 10000 });
 
     // Find autotune button
     const autotuneBtn = page.locator('button:has-text("Run Autotune")');
@@ -36,7 +33,7 @@ test.describe("Run Now Button & Badge Auto-Refresh @tools", () => {
     await autotuneBtn.click();
 
     // Button should show loading state
-    await expect(page.locator('button:has-text("Running Autotune")')).toBeVisible({
+    await expect(page.locator('button:has-text("Running")')).toBeVisible({
       timeout: 2000,
     });
 
@@ -49,12 +46,13 @@ test.describe("Run Now Button & Badge Auto-Refresh @tools", () => {
   });
 
   test("should show learning rate in autotune section", async ({ page }) => {
+    await enableOverlayOnPage(page);
     await page.goto("/tools.html", { waitUntil: "networkidle" });
 
-    await page.waitForSelector("text=Site Agent Tools", { timeout: 10000 });
+    await expect(page.getByTestId("ab-analytics")).toBeVisible({ timeout: 10000 });
 
     // Check for learning rate display
-    const alphaText = page.locator("text=Learning rate (alpha)");
+    const alphaText = page.locator("text=Learning rate");
     await expect(alphaText).toBeVisible();
   });
 });

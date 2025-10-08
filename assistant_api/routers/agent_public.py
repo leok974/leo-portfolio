@@ -404,13 +404,18 @@ async def dev_enable(req: Request, body: bytes = Depends(_authorized)):
     exp = int(time.time()) + max(300, min(hours, 24) * 3600)
     token = _sign_dev({"exp": exp, "v": 1}, key)
     resp = PlainTextResponse("ok")
+    
+    # In dev/test environments, use httponly=false so JS can read cookie
+    # In production, use httponly=true for security
+    is_dev = os.environ.get("APP_ENV", "dev").lower() != "prod"
+    
     resp.set_cookie(
         "sa_dev",
         token,
         max_age=exp - int(time.time()),
         path="/",
-        secure=True,
-        httponly=True,
+        secure=not is_dev,  # No HTTPS in dev
+        httponly=not is_dev,  # Allow JS access in dev for testing
         samesite="lax",
     )
     return resp

@@ -11,6 +11,14 @@ test.describe("AB Toast System (Public Site)", () => {
     // Wait for page to be interactive
     await page.waitForSelector('.card-click', { timeout: 5000 });
 
+    // Prevent navigation once so toast can appear (navigation hides it instantly)
+    await page.evaluate(() => {
+      const card = document.querySelector('.card-click');
+      if (card) {
+        card.addEventListener('click', (e) => e.preventDefault(), { once: true });
+      }
+    });
+
     // Click first project card
     const card = page.locator('.card-click').first();
     await card.click();

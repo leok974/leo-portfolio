@@ -1,10 +1,12 @@
 # Phase 50.3 + Tools Page + E2E Testing - Final Summary
 
 **Date:** 2025-10-07
-**Commits:** 215f9ee (Phase 50.3 + Tools), bc7d8ce (E2E improvements), aa2ad90 (E2E fixes)
-**Status:** ✅ Complete - Ready for Testing## Overview
+**Commits:** 215f9ee, bc7d8ce, aa2ad90, d9e234e
+**Status:** ⏳ E2E Infrastructure Complete - Tests Partially Passing (2/9)
 
-Successfully implemented Phase 50.3 features, tools page with dev overlay system, and comprehensive E2E testing infrastructure. All code is committed, documented, and ready for execution.
+## Overview
+
+Successfully implemented Phase 50.3 features, tools page with dev overlay system, and comprehensive E2E testing infrastructure with Vite proxy configuration. Major infrastructure issues resolved - proxy enables frontend → backend communication.
 
 ## Commits Summary
 
@@ -40,6 +42,30 @@ Successfully implemented Phase 50.3 features, tools page with dev overlay system
 3. Windows-compatible webServer command (`pnpm exec vite`)
 4. Production safety for dev overlay endpoint
 5. Automatic test data seeding in global-setup
+
+### Commit 4: `d9e234e` - Vite Proxy for Backend Requests ✨
+**14 files changed, 637 insertions**
+
+**Root Cause Fix:**
+Vite preview doesn't proxy `/agent/*` requests → 404s on admin tools fetches.
+
+**Solution:**
+1. **vite.config.ts** - Added `server.proxy['/agent']` → `http://127.0.0.1:8001`
+2. **playwright.config.ts** - Use `vite` dev server (not preview) with `--host` flag
+3. **global-setup.ts** - Set `SITEAGENT_DEV_COOKIE_KEY` for dev overlay
+4. **Documentation** - Updated E2E guides to emphasize proxy requirement
+
+**Benefits:**
+- ✅ No build needed for E2E - dev server serves from source
+- ✅ Frontend→backend requests work (`/agent/ab/summary`, etc.)
+- ✅ Fast HMR during development
+- ✅ Consistent manual/automatic server behavior
+
+**Test Results:**
+- ✅ 2/9 tests passing (localStorage tracking tests)
+- ✅ Backend starts automatically with correct env vars
+- ✅ Proxy forwards requests successfully
+- ⏳ Tools page rendering issue (investigating)
 
 ## Implementation Details
 
