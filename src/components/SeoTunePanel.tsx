@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
+import { toast } from "sonner";
 
 interface BeforeAfter {
   before?: {
@@ -29,6 +30,26 @@ export function SeoTunePanel() {
   const [diff, setDiff] = useState("");
   const [log, setLog] = useState("");
   const [beforeAfter, setBeforeAfter] = useState<BeforeAfter | null>(null);
+  const [prUrl, setPrUrl] = useState<string | null>(null);
+  const [persistMode, setPersistMode] = useState<'session' | 'local'>('session');
+  const [badgePulse, setBadgePulse] = useState(false);
+
+  // Restore PR URL from chosen storage on mount
+  useEffect(() => {
+    try {
+      const storage = getPersistStorage();
+      setPersistMode(storage === localStorage ? 'local' : 'session');
+      const saved = storage.getItem('seo.pr.url');
+      if (saved) setPrUrl(saved);
+    } catch {}
+  }, []);
+
+  // Animate badge when persistMode changes
+  useEffect(() => {
+    setBadgePulse(true);
+    const t = setTimeout(() => setBadgePulse(false), 600);
+    return () => clearTimeout(t);
+  }, [persistMode]);
 
   const runDryRun = useCallback(async () => {
     setLoading(true);
@@ -79,10 +100,40 @@ export function SeoTunePanel() {
       });
       const data = await response.json();
       if (data.ok) {
-        const message = data.pr
-          ? `PR created: ${data.pr}`
-          : `Branch pushed: ${data.branch}. ${data.detail || "Create PR manually."}`;
-        setSuccess(message);
+        // Extract PR URL from gh CLI output
+        const match = String(data.pr || "").match(/https?:\/\/\S+/);
+        if (match) {
+          const url = match[0];
+          // Persist PR URL in chosen storage
+          try {
+            const storage = getPersistStorage();
+            storage.setItem('seo.pr.url', url);
+          } catch {}
+          setPrUrl(url);
+          // Persist mode may change if query flag toggled; refresh label
+          try {
+            const storage = getPersistStorage();
+            setPersistMode(storage === localStorage ? 'local' : 'session');
+          } catch {}
+          setSuccess(`PR created: ${url}`);
+          toast.success("PR created", {
+            action: {
+              label: "Copy link",
+              onClick: async () => {
+                try {
+                  await navigator.clipboard.writeText(url);
+                  toast.info("Copied!");
+                } catch {}
+              },
+            },
+          });
+        } else {
+          const message = data.pr
+            ? `PR created: ${data.pr}`
+            : `Branch pushed: ${data.branch}. ${data.detail || "Create PR manually."}`;
+          setSuccess(message);
+          toast.success("Branch pushed");
+        }
       } else {
         setError(data.detail || "PR creation failed");
       }
@@ -131,6 +182,56 @@ export function SeoTunePanel() {
           </button>
         </div>
       </header>
+
+      {prUrl && (
+        <div className="mb-3 flex items-center gap-2 text-sm">
+          <span className="opacity-70">Last PR:</span>
+          <span
+            data-testid="seo-pr-persist-badge"
+            className={
+              `px-2 py-0.5 rounded-full text-[11px] border uppercase tracking-wide opacity-80 ` +
+              (badgePulse ? 'animate-pulse' : '')
+            }
+            title={persistMode === 'local' ? 'Stored in localStorage (persists across tabs)' : 'Stored in sessionStorage (this tab only)'}
+          >{persistMode}</span>
+          <a
+            data-testid="seo-pr-link"
+            className="underline hover:text-blue-600"
+            href={prUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open
+          </a>
+          <button
+            data-testid="seo-pr-copy"
+            className="rounded-md border border-gray-300 px-2 py-1 text-xs hover:bg-gray-50"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(prUrl);
+                toast.info("PR link copied");
+              } catch {}
+            }}
+          >
+            Copy
+          </button>
+          <button
+            data-testid="seo-pr-clear"
+            className={`rounded-md border border-gray-300 px-2 py-1 text-xs hover:bg-gray-50 ${!prUrl ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={!prUrl}
+            onClick={() => {
+              if (!prUrl) return;
+              try {
+                const storage = getPersistStorage();
+                storage.removeItem('seo.pr.url');
+              } catch {}
+              setPrUrl(null);
+            }}
+          >
+            Clear
+          </button>
+        </div>
+      )}
 
       {/* Status messages */}
       {error && (
@@ -191,7 +292,7 @@ function parseBeforeAfterFromDiff(diff: string): BeforeAfter {
 
   for (const ln of lines) {
     const trimmed = ln.trim();
-    
+
     // Extract title changes
     if (trimmed.startsWith("- title:")) {
       result.before!.title = trimmed.replace("- title:", "").trim();
@@ -284,4 +385,24 @@ function MetaCardPreview({ data }: { data: BeforeAfter }) {
       </div>
     </div>
   );
+}
+
+/**
+ * Get the storage mechanism based on feature flags.
+ *
+ * Supports two modes:
+ * 1. Query param: ?seoPersist=local → use localStorage
+ * 2. Global flag: window.__SEO_PR_PERSIST__ = 'local' → use localStorage
+ * 3. Default: sessionStorage
+ *
+ * @returns Storage object (localStorage or sessionStorage)
+ */
+function getPersistStorage(): Storage {
+  try {
+    const qs = new URLSearchParams(location.search);
+    const mode = (window as any).__SEO_PR_PERSIST__ || qs.get('seoPersist');
+    return mode === 'local' ? localStorage : sessionStorage;
+  } catch {
+    return sessionStorage;
+  }
 }

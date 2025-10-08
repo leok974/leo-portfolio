@@ -34,9 +34,24 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
   },
   projects: [
+    // Setup project that creates auth state for dev overlay tests
+    {
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
+    },
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      dependencies: [], // Don't depend on setup by default
+    },
+    {
+      name: 'chromium-dev-overlay',
+      testMatch: /(dev-overlay\.(session|expiry)\.spec\.ts|seo-pr-(persist|disabled-when-no-diff|copy-toast|localstorage-persist|storage-badge)\.spec\.ts)/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: path.resolve(__dirname, 'playwright/.auth/dev-overlay.json'),
+      },
+      dependencies: ['setup'], // Run setup first
     },
     {
       name: 'chromium-ui-polish',

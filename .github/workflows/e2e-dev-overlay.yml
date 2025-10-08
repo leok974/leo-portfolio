@@ -1,0 +1,91 @@
+name: E2E Dev Overlay Tests
+
+on:
+  push:
+    branches: [main, LINKEDIN-OPTIMIZED]
+  pull_request:
+    branches: [main, LINKEDIN-OPTIMIZED]
+
+jobs:
+  e2e-dev-overlay:
+    name: Dev Overlay & SEO E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Start backend server
+        run: |
+          python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 &
+        env:
+          SCHEDULER_ENABLED: '0'
+          SITEAGENT_DEV_COOKIE_KEY: 'test-key-for-e2e-only'
+          SITEAGENT_HMAC_SECRET: 'local-dev-secret-12345'
+
+      - name: Start Vite dev server
+        run: |
+          pnpm dev &
+
+      - name: Wait for services to be ready
+        run: |
+          npx wait-on -t 60000 http://127.0.0.1:8001/ready http://localhost:5173
+        timeout-minutes: 2
+
+      - name: Run dev overlay and SEO tests
+        env:
+          BASE_URL: http://localhost:5173
+          CI: true
+        run: |
+          pnpm playwright test \
+            tests/e2e/dev-overlay*.spec.ts \
+            tests/e2e/seo-pr-persist.spec.ts \
+            --project=setup \
+            --project=chromium-dev-overlay
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+
+      - name: Upload trace on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/**/*.zip
+          retention-days: 7

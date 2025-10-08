@@ -79,4 +79,45 @@ test.describe('SEO PR & Preview @frontend @seo', () => {
     await expect(page.getByTestId('seo-dry')).toBeVisible();
     await expect(page.getByTestId('seo-pr')).toBeVisible();
   });
+
+  test('PR URL persists after reload', async ({ page }) => {
+    const unavailableMsg = page.getByText('Enable the admin overlay to access tools.');
+    if (await unavailableMsg.isVisible()) {
+      test.skip(true, 'Dev overlay not enabled');
+    }
+
+    // Simulate PR creation by setting sessionStorage
+    await page.evaluate(() => {
+      sessionStorage.setItem('seo.pr.url', 'https://github.com/test/repo/pull/123');
+    });
+
+    // Reload the page
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+
+    // Verify PR banner persists
+    const prLink = page.getByTestId('seo-pr-link');
+    await expect(prLink).toBeVisible();
+    await expect(prLink).toHaveAttribute('href', 'https://github.com/test/repo/pull/123');
+
+    // Verify Open link works
+    await expect(prLink).toHaveText('Open');
+
+    // Verify Copy button exists
+    const copyBtn = page.getByTestId('seo-pr-copy');
+    await expect(copyBtn).toBeVisible();
+    await expect(copyBtn).toHaveText('Copy');
+
+    // Verify Clear button exists and works
+    const clearBtn = page.getByTestId('seo-pr-clear');
+    await expect(clearBtn).toBeVisible();
+    await clearBtn.click();
+
+    // PR banner should disappear
+    await expect(prLink).not.toBeVisible();
+
+    // Verify sessionStorage was cleared
+    const stored = await page.evaluate(() => sessionStorage.getItem('seo.pr.url'));
+    expect(stored).toBeNull();
+  });
 });
