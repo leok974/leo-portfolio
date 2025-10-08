@@ -37,7 +37,7 @@ async function ensureBackendRunning(): Promise<void> {
   const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
 
   // Start uvicorn WITHOUT --reload to prevent restarts when tests write files
-  // Also disable scheduler to keep tests deterministic
+  // Also disable scheduler and set cookie key for test determinism
   backendProcess = spawn(
     pythonCmd,
     ['-m', 'uvicorn', 'assistant_api.main:app', '--host', '127.0.0.1', '--port', '8001'],
@@ -48,6 +48,7 @@ async function ensureBackendRunning(): Promise<void> {
       env: {
         ...process.env,
         SCHEDULER_ENABLED: '0',  // Disable scheduler during tests
+        SITEAGENT_DEV_COOKIE_KEY: 'test-key-for-e2e-only',  // Required for dev overlay
       }
     }
   );
@@ -71,7 +72,7 @@ async function ensureBackendRunning(): Promise<void> {
 async function seedTestData(): Promise<void> {
   console.log('[globalSetup] Seeding test data...');
   const ctx = await playwrightRequest.newContext();
-  
+
   try {
     // Enable dev overlay for admin tests
     await ctx.post(`${API_URL}/agent/dev/enable`);

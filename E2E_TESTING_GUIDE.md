@@ -8,18 +8,15 @@ The E2E test suite is configured to automatically start both backend and fronten
 
 ### Prerequisites
 
-1. **Build the frontend** (required for preview server):
-   ```powershell
-   pnpm build
-   ```
+**Ensure Python environment is set up**:
+```powershell
+# Windows
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-2. **Ensure Python environment is set up**:
-   ```powershell
-   # Windows
-   python -m venv .venv
-   .venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
+**Note:** No frontend build needed - E2E uses Vite dev server which serves from source.
 
 ### Running Tests (Single Command)
 
@@ -38,10 +35,11 @@ pnpm playwright test tests/e2e/run-now-badge.spec.ts --project=chromium      # A
 ```
 
 **How it works:**
-- `playwright.config.ts` starts preview via `pnpm exec vite preview --port 5173 --strictPort` (Windows-friendly)
+- `playwright.config.ts` starts Vite dev server via `pnpm exec vite --port 5173 --strictPort`
+- `vite.config.ts` proxies `/agent/*` requests to backend (fixes 404s)
 - `global-setup.ts` starts backend WITHOUT `--reload` (prevents restarts when tests write files)
 - `global-setup.ts` sets `SCHEDULER_ENABLED=0` (keeps tests deterministic)
-- `global-setup.ts` seeds dev overlay and initial layout data
+- `global-setup.ts` seeds dev overlay and initial layout data once
 - Tests wait for both servers to be ready before executing
 
 ## Manual Server Control (Alternative)
@@ -56,11 +54,14 @@ $env:SCHEDULER_ENABLED='0'
 uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001
 ```
 
-### Terminal 2: Frontend Preview Server
+### Terminal 2: Frontend Dev Server with Proxy
 ```powershell
-# Serve the built frontend with strictPort
-pnpm exec vite preview --port 5173 --strictPort
+# Vite dev server with /agent/* proxy to backend
+# NO BUILD NEEDED - serves from source
+pnpm exec vite --port 5173 --strictPort
 ```
+
+**Key:** Use `vite` (dev mode), NOT `vite preview`. Dev server has proxy configured in `vite.config.ts` to forward `/agent/*` requests to the backend.
 
 ### Terminal 3: Run Tests
 ```powershell
@@ -70,6 +71,19 @@ pnpm playwright test --project=chromium
 ```
 
 ## Test Architecture
+
+### Vite Dev Server Proxy (Critical Fix)
+- **File**: `vite.config.ts`
+- **Configuration**:
+  ```typescript
+  server: {
+    proxy: {
+      '/agent': 'http://127.0.0.1:8001',  // Forward all /agent/* to FastAPI
+    },
+  }
+  ```
+- **Why**: Vite preview doesn't proxy requests, causing 404s on `/agent/*` endpoints
+- **Result**: Frontend can fetch from `/agent/ab/summary`, etc., and it reaches the backend
 
 ### API Configuration
 - **File**: `tests/e2e/lib/api.ts`
@@ -121,7 +135,8 @@ export default defineConfig({
     baseURL,
   },
   webServer: process.env.PW_SKIP_WS ? undefined : {
-    command: 'pnpm exec vite preview --port 5173 --strictPort',  // Windows-friendly
+    // Dev server (not preview) - has proxy for /agent/*
+    command: 'pnpm exec vite --port 5173 --strictPort',
     url: 'http://127.0.0.1:5173',
     reuseExistingServer: true,
     timeout: 120_000,
@@ -129,16 +144,36 @@ export default defineConfig({
 });
 ```
 
-**Key improvements:**
-- Uses `pnpm exec vite` instead of `pnpm preview` (more reliable on Windows)
-- `--strictPort` ensures port 5173 or fail (no random port assignment)
+**Key Changes:**
+- Uses `vite` (dev mode) instead of `vite preview`
+- Dev server includes proxy configuration from `vite.config.ts`
+- No build needed - serves from source with fast HMR
+
+### `vite.config.ts`
+**Critical proxy configuration:**
+```typescript
+export default defineConfig({
+  server: {
+    port: 5173,
+    strictPort: true,
+    proxy: {
+      '/agent': 'http://127.0.0.1:8001',  // Forward all /agent/* to FastAPI
+    },
+  },
+});
+```
+
+**Why this matters:**
+- Vite preview doesn't proxy requests → 404s on `/agent/*`
+- Dev server with proxy → frontend can fetch from `/agent/ab/summary` and it reaches backend
+- This is the **root cause fix** for most E2E flakiness
 
 ### `global-setup.ts`
 **Automatic backend startup with optimal settings:**
 - Starts `uvicorn` WITHOUT `--reload` flag (prevents restarts when tests write files)
 - Sets `SCHEDULER_ENABLED=0` environment variable (disables nightly jobs during tests)
 - Waits for backend health check at `/agent/dev/status`
-- Seeds dev overlay cookie and initial layout data
+- Seeds dev overlay cookie and initial layout data once
 - Returns cleanup function to gracefully stop backend
 
 **Why no reload?**
@@ -155,13 +190,21 @@ When tests write to `assets/layout.json` or `data/*.jsonl`, uvicorn's file watch
 
 ## Troubleshooting
 
+### Issue: "/agent/* requests return 404"
+
+**Cause**: Using Vite preview instead of dev server (preview doesn't proxy)
+**Solution**:
+1. Check `playwright.config.ts` uses `pnpm exec vite` (not `vite preview`)
+2. Check `vite.config.ts` has `server.proxy['/agent']`
+3. Manual test: `pnpm exec vite --port 5173` and verify `/agent/dev/status` works
+
 ### Issue: "net::ERR_CONNECTION_REFUSED"
 
 **Cause**: Frontend server not running
 **Solution**:
-1. Build frontend: `pnpm build`
-2. Check if port 5173 is available
-3. Manually start preview: `pnpm preview --port 5173`
+1. No build needed - use dev server
+2. Check if port 5173 is available: `Get-NetTCPConnection -LocalPort 5173`
+3. Manually start dev: `pnpm exec vite --port 5173 --strictPort`
 
 ### Issue: "Backend failed to start within 30 seconds"
 
@@ -169,7 +212,7 @@ When tests write to `assets/layout.json` or `data/*.jsonl`, uvicorn's file watch
 **Solution**:
 1. Check Python is installed: `python --version`
 2. Check port: `Get-NetTCPConnection -LocalPort 8001`
-3. Manually start backend: `uvicorn assistant_api.main:app --port 8001`
+3. Manually start backend: `$env:SCHEDULER_ENABLED='0'; uvicorn assistant_api.main:app --port 8001`
 
 ### Issue: "Target page, context or browser has been closed"
 
@@ -185,19 +228,18 @@ $env:API_URL = $null
 
 ### Issue: webServer timeout
 
-**Cause**: `pnpm preview` takes longer than 120 seconds (rare)
+**Cause**: Vite dev server takes longer than 120 seconds (rare)
 **Solution**:
-1. Build first: `pnpm build`
+1. Check if port 5173 is already in use
 2. Use manual server control method instead
+3. Increase timeout in playwright.config.ts if needed
 
 ## CI/CD Integration
 
 For CI environments (GitHub Actions, etc.):
 
 ```yaml
-- name: Build frontend
-  run: pnpm build
-
+# No build needed - dev server serves from source
 - name: Run E2E tests
   run: pnpm playwright test --project=chromium
   env:

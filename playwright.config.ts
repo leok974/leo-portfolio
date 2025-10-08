@@ -48,8 +48,10 @@ export default defineConfig({
     },
   ],
   webServer: process.env.PW_SKIP_WS ? undefined : {
-    command: 'pnpm exec vite preview --port 5173 --strictPort',
-    url: 'http://127.0.0.1:5173',
+    // Use dev server (not preview) - has proxy for /agent/* -> backend
+    // No build needed for E2E - dev serves from source with proxy
+    command: 'pnpm exec vite --port 5173 --strictPort --host',
+    url: 'http://localhost:5173',
     reuseExistingServer: true,
     timeout: 120_000,
     stdout: 'pipe',

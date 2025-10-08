@@ -1,10 +1,8 @@
 # Phase 50.3 + Tools Page + E2E Testing - Final Summary
 
 **Date:** 2025-10-07
-**Commits:** 215f9ee (Phase 50.3 + Tools), bc7d8ce (E2E improvements)
-**Status:** ✅ Complete - Ready for Testing
-
-## Overview
+**Commits:** 215f9ee (Phase 50.3 + Tools), bc7d8ce (E2E improvements), aa2ad90 (E2E fixes)
+**Status:** ✅ Complete - Ready for Testing## Overview
 
 Successfully implemented Phase 50.3 features, tools page with dev overlay system, and comprehensive E2E testing infrastructure. All code is committed, documented, and ready for execution.
 
@@ -32,6 +30,16 @@ Successfully implemented Phase 50.3 features, tools page with dev overlay system
 2. Fixed test routing (API_URL + /tools.html)
 3. Seed utilities for test data
 4. Comprehensive testing documentation
+
+### Commit 3: `aa2ad90` - E2E Reliability Fixes
+**6 files changed, 374 insertions**
+
+**Critical Fixes:**
+1. Backend runs WITHOUT `--reload` (prevents restarts during file writes)
+2. `SCHEDULER_ENABLED=0` (deterministic tests)
+3. Windows-compatible webServer command (`pnpm exec vite`)
+4. Production safety for dev overlay endpoint
+5. Automatic test data seeding in global-setup
 
 ## Implementation Details
 
@@ -90,27 +98,34 @@ Successfully implemented Phase 50.3 features, tools page with dev overlay system
 
 ## Running Tests
 
-### Automated (Recommended)
+### ✅ Recommended (Manual Servers - Most Reliable)
 ```powershell
-# Build frontend first
-pnpm build
-
-# Run all E2E tests (Playwright starts both servers automatically)
-pnpm playwright test --project=chromium
-```
-
-### Manual Server Control
-```powershell
-# Terminal 1: Backend
-uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 --reload
+# Terminal 1: Backend (no reload, scheduler disabled)
+$env:SCHEDULER_ENABLED='0'
+uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001
 
 # Terminal 2: Frontend
-pnpm preview --port 5173
+pnpm exec vite preview --port 5173 --strictPort
 
-# Terminal 3: Tests (skip auto-start)
+# Terminal 3: Tests
 $env:PW_SKIP_WS='1'
 pnpm playwright test --project=chromium
 ```
+
+### Alternative (Automatic - CI/CD)
+```powershell
+# Clear environment first
+$env:PW_SKIP_WS=$null
+$env:PLAYWRIGHT_GLOBAL_SETUP_SKIP=$null
+
+# Build and test (Playwright starts servers)
+pnpm build
+pnpm playwright test --project=chromium
+```
+
+**Note:** Automatic server startup may have issues on Windows. Use manual approach for local development.
+
+For detailed instructions, see `E2E_QUICK_START.md`.
 
 ## API Endpoints
 

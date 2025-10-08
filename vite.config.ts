@@ -8,6 +8,15 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
     }
   },
+  server: {
+    port: 5173,
+    strictPort: true,
+    proxy: {
+      // Forward all /agent/* requests to FastAPI backend
+      // This fixes 404s in E2E tests when dev server runs on :5173
+      '/agent': 'http://127.0.0.1:8001',
+    },
+  },
   build: {
     outDir: 'dist',
     sourcemap: true,
