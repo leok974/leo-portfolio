@@ -1578,7 +1578,7 @@ const json = await waitForArtifact(
 
 - GitHub Actions workflow `behavior-learning-nightly.yml` runs daily at ~02:30 ET.
 - It executes `scripts/analyze_behavior.py` which reads JSONL in `./data/analytics/`, updates `weights.json` if needed, and commits changes back to the repo.
-- View your current metrics at `/metrics.html` (requires privileged access).
+- View your current metrics at `/agent/metrics/dashboard` (requires privileged access).
 
 ### Privileged Panel Access
 
@@ -1586,7 +1586,35 @@ The Behavior Metrics dashboard is embedded under the privileged Admin panel.
 
 - The guard is checked via `isPrivilegedUIEnabled()` in `src/lib/devGuard.ts`.
 - To enable locally, use your existing unlock flow (e.g., calling `/agent/dev/enable` endpoint) as defined in `devGuard`.
-- When unlocked, **AdminToolsPanel** renders the **Behavior Metrics** section with an iframe to `/metrics.html`.
+- When unlocked, **AdminToolsPanel** renders the **Behavior Metrics** section with an iframe to `/agent/metrics/dashboard`.
+
+### Locking the Dashboard (server-enforced)
+
+The metrics dashboard is protected by server-side authentication:
+
+**Configuration**:
+- Set a token:
+  - Local dev: `export METRICS_DEV_TOKEN="dev-$(openssl rand -hex 24)"`
+  - Prod: set a strong secret in your runtime env/Secrets
+- Localhost bypass: `export METRICS_ALLOW_LOCALHOST=true` (default: true)
+  - When enabled, requests from `127.0.0.1` are allowed without token
+
+**Backend serves the dashboard at `/agent/metrics/dashboard`** and requires the token via:
+- `Authorization: Bearer <token>` header
+- `X-Dev-Token: <token>` header
+- `?dev=<token>` query parameter
+- Cookie: `dev_token=<token>`
+
+**Frontend integration**:
+- The privileged panel automatically appends `?dev=<token>` if `localStorage["dev:token"]` exists
+- To set the token for UI access:
+  ```javascript
+  localStorage.setItem("dev:token", "your-dev-token-here");
+  ```
+
+**Environment Variables**:
+- `METRICS_DEV_TOKEN` - Random token for dashboard access (required in production)
+- `METRICS_ALLOW_LOCALHOST` - Allow 127.0.0.1 without token (default: true)
 - `LAYOUT_SECTIONS_DEFAULT="hero,projects,skills,about,contact"` (baseline ordering)
 - `ANALYTICS_DIR="./data/analytics"` (storage path)
 

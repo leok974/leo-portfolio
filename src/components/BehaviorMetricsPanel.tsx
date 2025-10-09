@@ -35,13 +35,30 @@ export default function BehaviorMetricsPanel() {
 
   return (
     <div className="rounded-2xl overflow-hidden border border-neutral-800/40 shadow-sm">
-      <iframe
-        src="/metrics.html"
-        title="Behavior Metrics"
-        className="w-full"
-        style={{ height: "70vh" }}
-        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-      />
+      <GuardedIframe />
     </div>
+  );
+}
+
+function GuardedIframe() {
+  const [src, setSrc] = React.useState("/agent/metrics/dashboard");
+  
+  React.useEffect(() => {
+    try {
+      const token = localStorage.getItem("dev:token");
+      if (token) {
+        setSrc(`/agent/metrics/dashboard?dev=${encodeURIComponent(token)}`);
+      }
+    } catch {}
+  }, []);
+  
+  return (
+    <iframe
+      src={src}
+      title="Behavior Metrics"
+      className="w-full"
+      style={{ height: "70vh" }}
+      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+    />
   );
 }

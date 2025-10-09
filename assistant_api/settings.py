@@ -112,6 +112,9 @@ def get_settings() -> Dict[str, Any]:
         "LEARNING_EMA_ALPHA": float(os.getenv("LEARNING_EMA_ALPHA", "0.30")),
         "LAYOUT_SECTIONS_DEFAULT": _split_env_list(os.getenv("LAYOUT_SECTIONS_DEFAULT", "hero,projects,skills,about,contact")),
         "ANALYTICS_DIR": os.getenv("ANALYTICS_DIR", "./data/analytics"),
+        # --- Dev/Privileged access for metrics dashboard ---
+        "METRICS_DEV_TOKEN": os.getenv("METRICS_DEV_TOKEN"),  # set a long random string in prod
+        "METRICS_ALLOW_LOCALHOST": os.getenv("METRICS_ALLOW_LOCALHOST", "1") in {"1", "true", "TRUE", "yes", "on"},  # allow 127.0.0.1 without token during local dev
         # --- Optional Enhancements ---
         "GEOIP_DB_PATH": os.getenv("GEOIP_DB_PATH"),  # e.g., "./geo/GeoLite2-Country.mmdb"
         "LOG_IP_ENABLED": os.getenv("LOG_IP_ENABLED", "0") in {"1", "true", "TRUE", "yes", "on"},

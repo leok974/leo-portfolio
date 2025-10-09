@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request, HTTPException, Response
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, HTMLResponse
 from pathlib import Path
 import json
 import csv
@@ -12,6 +12,7 @@ from ..settings import get_settings
 from ..models.metrics import MetricIngestRequest
 from ..services.analytics_store import AnalyticsStore
 from ..services.behavior_learning import analyze, order_sections
+from ..security.dev_access import ensure_dev_access
 
 try:
     import geoip2.database  # optional
@@ -45,7 +46,7 @@ async def ingest(
     allowlist = settings["ANALYTICS_ORIGIN_ALLOWLIST"]
     if allowlist and origin not in allowlist:
         raise HTTPException(status_code=403, detail="origin_not_allowed")
-    
+
     evs = []
     # Optional geo/anon IP enrichment
     reader = None
@@ -54,7 +55,7 @@ async def ingest(
             reader = geoip2.database.Reader(settings["GEOIP_DB_PATH"])
         except Exception:
             reader = None
-    
+
     client_ip = req.client.host if req.client else None
     xff = req.headers.get("x-forwarded-for")
     if xff:
@@ -83,7 +84,7 @@ async def ingest(
             country = reader.country(client_ip).country.iso_code
         except Exception:
             country = None
-    
+
     for e in payload.events:
         d = e.model_dump()
         if settings["LOG_IP_ENABLED"]:
@@ -91,7 +92,7 @@ async def ingest(
             if country:
                 d.setdefault("country", country)
         evs.append(d)
-    
+
     store.append_jsonl(evs)
     return {"ok": True, "count": len(payload.events)}
 
@@ -290,7 +291,7 @@ async def metrics_export_pdf(store: AnalyticsStore = Depends(get_store)):
     """
     if canvas is None:
         return Response(content="ReportLab not installed", status_code=501)
-    
+
     summary = await metrics_summary(store)
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=letter)
@@ -375,3 +376,38 @@ async def metrics_ab(section: str, store: AnalyticsStore = Depends(get_store)):
         )
     rows.sort(key=lambda r: -r["ctr"])
     return {"section": section, "rows": rows}
+
+
+@router.get("/metrics/dashboard", response_class=HTMLResponse)
+async def metrics_dashboard(
+    request: Request,
+    store: AnalyticsStore = Depends(get_store),
+):
+    """
+    Serves the metrics dashboard HTML only to privileged viewers.
+    Token may be provided via:
+    - Authorization: Bearer <token>
+    - X-Dev-Token: <token>
+    - ?dev=<token>
+    - Cookie: dev_token=<token>
+    
+    Localhost (127.0.0.1) is allowed without token when METRICS_ALLOW_LOCALHOST=true.
+    """
+    settings = get_settings()
+    ensure_dev_access(request, settings)
+    
+    # Prefer repo path admin_assets/metrics.html; fallback to public/metrics.html if present
+    candidates = [
+        Path("admin_assets/metrics.html"),
+        Path("public/metrics.html"),
+    ]
+    for p in candidates:
+        if p.exists():
+            html = p.read_text(encoding="utf-8")
+            return HTMLResponse(content=html, media_type="text/html; charset=utf-8")
+    
+    # If file missing, emit a simple message (keeps route private)
+    return HTMLResponse(
+        content="<h1>Metrics Dashboard</h1><p>metrics.html not found. Make sure 'admin_assets/metrics.html' exists.</p>",
+        media_type="text/html; charset=utf-8",
+    )
