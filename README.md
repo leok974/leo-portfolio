@@ -1,5 +1,30 @@
 # Leo Klemet — Portfolio (HTML/CSS/JS)
 
+<p align="center">
+  <a href="https://github.com/leok974/leo-portfolio/actions/workflows/seo-intel-nightly.yml">
+    <img alt="Nightly SEO & Analytics" src="https://img.shields.io/github/actions/workflow/status/leok974/leo-portfolio/seo-intel-nightly.yml?branch=main&label=Nightly%20SEO%20%26%20Analytics&logo=githubactions&logoColor=white">
+  </a>
+  <a href="https://github.com/leok974/leo-portfolio/pulls?q=is%3Apr+label%3Aautomation+label%3Aseo">
+    <img alt="Auto-PRs" src="https://img.shields.io/badge/Auto%E2%80%91PRs-SEO%20%26%20Analytics-4c9">
+  </a>
+</p>
+
+[![e2e-mock](https://github.com/leok974/leo-portfolio/actions/workflows/e2e-mock.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/e2e-mock.yml)
+[![e2e-keywords-mock](https://github.com/leok974/leo-portfolio/actions/workflows/e2e-keywords-mock.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/e2e-keywords-mock.yml)
+[![Nightly SEO Meta](https://github.com/leok974/leo-portfolio/actions/workflows/siteagent-meta-auto.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/siteagent-meta-auto.yml)
+[![SEO JSON-LD](https://github.com/leok974/leo-portfolio/actions/workflows/seo-ld-validate.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/seo-ld-validate.yml)
+[![SEO SERP Nightly](https://github.com/leok974/leo-portfolio/actions/workflows/seo-serp-cron.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/seo-serp-cron.yml)
+
+> Nightly auto-PR **skips** when no pages are selected or when all selected pages already meet title/description limits.
+
+### Nightly Health Snapshot
+
+- **Workflow**: [Nightly SEO & Analytics](https://github.com/leok974/leo-portfolio/actions/workflows/seo-intel-nightly.yml) — Automated daily monitoring at 02:30 ET
+- **Latest PRs**: [automation+seo](https://github.com/leok974/leo-portfolio/pulls?q=is%3Apr+label%3Aautomation+label%3Aseo+sort%3Acreated-desc) — Auto-generated reports with actionable insights
+- **Includes**: SEO intelligence checks (14+), Playwright E2E tests (JSON reporter), autofix dry-run summaries, comprehensive artifacts
+
+---
+
 [![Release](https://img.shields.io/github/v/release/leok974> _"Copilot, audit the site for WCAG 2.1: focus states, ARIA labels, color contrast, and generate a checklist in `docs/a11y.md`."_
 
 ---
@@ -26,6 +51,69 @@ The overlay lets you run agent plans, see last actions, and download artifacts (
   ```bash
   npm run test:e2e
   ```
+
+---
+
+## Metrics & Grafana
+
+- Nightly job writes JSONL metrics to the `metrics` branch and publishes a rolling CSV:
+  - `agent/metrics/seo-meta-auto.jsonl`
+  - `agent/metrics/seo-meta-auto.csv`
+- CSV workflow: **siteagent-metrics-csv** (runs daily + on metrics updates)
+- Optional API export: `/agent/metrics/seo-meta-auto.csv?limit_days=180`
+
+**Grafana Dashboard**:
+1. Install the **Infinity** datasource (yesoreyeram-infinity-datasource) in Grafana
+2. Import `grafana/seo-meta-auto-dashboard.json`
+3. Update panel query URLs to your API endpoint or GitHub raw CSV
+
+**Setup Guides**:
+- 📖 **Full setup**: [`docs/GRAFANA_SETUP.md`](docs/GRAFANA_SETUP.md)
+- ⚡ **Quick setup**: [`grafana/QUICK_SETUP.md`](grafana/QUICK_SETUP.md)
+- 🔧 **VS Code extension**: [`docs/GRAFANA_VSCODE_SETUP.md`](docs/GRAFANA_VSCODE_SETUP.md)
+- 🛠️ **grafanactl CLI**: [`grafana/GRAFANACTL_QUICKREF.md`](grafana/GRAFANACTL_QUICKREF.md)
+- 📊 **Method comparison**: [`grafana/SETUP_COMPARISON.md`](grafana/SETUP_COMPARISON.md)
+
+---
+
+## Nightly SEO & Analytics (Phase 50.9)
+
+Automated nightly reports check SEO health and generate auto-PRs with actionable insights.
+
+**What it checks**:
+- ✅ Meta tags (title, description, Open Graph)
+- ✅ Structured data (JSON-LD)
+- ✅ Backend health (/ready, /api/metrics/behavior)
+- ✅ Asset optimization (WebP ratios)
+- ✅ Privacy compliance (privacy.html, opt-out instructions)
+
+**How to use**:
+1. **Local run**:
+   ```bash
+   node scripts/seo-intel.mjs --base http://localhost:5173 --backend http://localhost:8001
+   ```
+   Reports generated in `reports/summary.json` and `reports/summary.md`
+
+2. **Nightly workflow**:
+   - Runs daily at 02:30 ET (06:30 UTC)
+   - Creates auto-PR with findings
+   - Uploads artifacts for review
+
+3. **Safe autofixes** (optional):
+   ```bash
+   node scripts/seo-autofix.mjs --base http://localhost:5173 --apply
+   ```
+   Only applies conservative fixes (missing meta tags, robots.txt)
+
+**Configuration**:
+- Set `BASE_URL` and `BACKEND_URL` in GitHub Actions → Variables
+- Set `AUTO_FIX=true` in workflow to enable autofixes
+- Workflow: `.github/workflows/seo-intel-nightly.yml`
+
+**Documentation**:
+- Reports stored in `reports/` (gitignored except `.gitkeep`)
+- Artifacts uploaded to each workflow run
+- PR body auto-generated with pass/fail summary
 
 ---
 
@@ -74,6 +162,19 @@ A fast, modern, **framework-free** portfolio for **Leo Klemet — AI Engineer ·
   - FFmpeg poster generation for videos
   - Agent-callable gallery tools for autonomous content management
   - Sitemap auto-refresh after uploads
+- ✅ **Self-improving layout** via Telemetry + Behavior Learning:
+  - Frontend tracker collects anonymous section-level signals (views, clicks, dwell).
+  - Backend analyzes recent activity, updates per-section weights (EMA + time decay), and reorders sections with a small exploration rate.
+  - Endpoints: `/agent/metrics/ingest`, `/agent/analyze/behavior`, `/agent/layout`, `/agent/metrics/summary`.
+  - Dashboard: open `/metrics.html` to view 14-day views/clicks/CTR/dwell and current weights/order (privileged access required).
+  - **Optional enhancements**:
+    - Time series: `/agent/metrics/timeseries?metric=ctr&days=30&section=X`
+    - Exports: `/agent/metrics/export.csv`, `/agent/metrics/export.pdf` (requires ReportLab)
+    - A/B testing: `/agent/metrics/ab?section=X` - Compare variants by adding `data-variant` attribute to sections
+    - Geo insights: Set `LOG_IP_ENABLED=true` and `GEOIP_DB_PATH` for anonymized IP prefixes and country detection
+    - Weekly email summary: Configure `SENDGRID_API_KEY`, `EMAIL_FROM`, `EMAIL_TO` for automated reports (Mondays 08:00 ET)
+    - **Retention & Compression**: Weekly gzip + prune of event logs via `analytics_retention.py`
+    - **On-demand retention** (guarded): POST `/agent/metrics/retention/run` - Manual gzip + prune with dev token
 
 > Built with **plain HTML, CSS (Grid/Flex), and vanilla JS**. Easy to extend into React/Vite/CMS later.
 
@@ -337,6 +438,288 @@ jobs:
 - **Agent Manifesto:** `agent.html` (public documentation)
 
 **Architecture:** Task registry pattern with SQLite tracking (`agent_jobs`, `agent_events` tables), sequential execution engine, and comprehensive error handling.
+
+### Behavior Analytics (dev-friendly)
+
+**Status:** ✅ **Phase 50.8 Complete** | **Endpoints:** 3 | **Storage:** JSONL + Ring Buffer
+
+Lightweight behavior event tracking for understanding user interactions without heavyweight analytics platforms.
+
+**Architecture:**
+- **In-Memory Ring Buffer:** Fast access to recent events (default capacity: 500)
+- **JSONL Sink:** Append-only persistent storage at `./data/metrics.jsonl`
+- **Anonymous Tracking:** All events use hashed `visitor_id` (6-64 characters)
+- **Flexible Metadata:** Store custom key-value pairs per event
+
+**Endpoints:**
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/metrics/event` | POST | Ingest anonymized behavior event |
+| `/api/metrics/behavior` | GET | Snapshot of recent events + aggregated counts |
+| `/api/metrics/behavior/health` | GET | Lightweight health check for metrics subsystem |
+
+**Quick Test:**
+
+```powershell
+# Post a page view event
+curl -X POST "http://127.0.0.1:8001/api/metrics/event" `
+     -H "Content-Type: application/json" `
+     -d '{"visitor_id":"test123abc","event":"page_view","metadata":{"path":"/"}}'
+# Expected: {"ok":true,"stored":1,"file":"./data/metrics.jsonl"}
+
+# Post a link click event
+curl -X POST "http://127.0.0.1:8001/api/metrics/event" `
+     -H "Content-Type: application/json" `
+     -d '{"visitor_id":"test123abc","event":"link_click","metadata":{"href":"https://example.com"}}'
+
+# Get behavior snapshot (last 50 events)
+curl "http://127.0.0.1:8001/api/metrics/behavior?limit=50" | ConvertFrom-Json
+# Expected: {"total":123,"by_event":[{"event":"page_view","count":80}],"last_events":[...],"file_size_bytes":4096}
+
+# Check metrics health
+curl "http://127.0.0.1:8001/api/metrics/behavior/health" | ConvertFrom-Json
+# Expected: {"ok":true,"ring_capacity":500,"sink_exists":true}
+```
+
+**Configuration (Environment Variables):**
+
+```bash
+# JSONL sink path (default: ./data/metrics.jsonl)
+METRICS_JSONL=./data/metrics.jsonl
+
+# In-memory ring buffer capacity (default: 500)
+METRICS_RING_CAPACITY=500
+```
+
+**Event Schema:**
+
+```json
+{
+  "visitor_id": "abc123",         // Anonymous hash (6-64 chars, required)
+  "event": "page_view",           // Event name (1-64 chars, required)
+  "timestamp": "2025-10-09T12:34:56Z",  // ISO 8601 (auto-generated if omitted)
+  "metadata": {                   // Optional custom key-value pairs
+    "path": "/",
+    "section": "projects",
+    "variant": "A"
+  },
+  "user_agent": "Mozilla/5.0..."  // Auto-captured from request header
+}
+```
+
+**Behavior Snapshot Response:**
+
+```json
+{
+  "total": 123,                   // Total events in ring buffer
+  "by_event": [                   // Aggregated counts
+    {"event": "page_view", "count": 80},
+    {"event": "link_click", "count": 43}
+  ],
+  "last_events": [                // Recent events (newest first)
+    {
+      "visitor_id": "abc123",
+      "event": "page_view",
+      "timestamp": "2025-10-09T12:34:56Z",
+      "metadata": {"path": "/"},
+      "user_agent": "Mozilla/5.0..."
+    }
+  ],
+  "file_size_bytes": 4096        // JSONL sink size (null if doesn't exist)
+}
+```
+
+**E2E Tests:**
+
+```powershell
+# Run Playwright E2E tests for behavior metrics API
+npx playwright test tests/e2e/metrics-behavior.spec.ts --project=chromium
+# Expected: 2 tests passing (POST event, GET behavior, health endpoint)
+```
+
+**Docker Compose Setup:**
+
+Ensure the backend container has a writable `./data` volume:
+
+```yaml
+services:
+  backend:
+    volumes:
+      - ../data:/app/data  # Metrics sink will be persisted here
+```
+
+**Use Cases:**
+- A/B testing: Track variant impressions and interactions
+- Feature adoption: Monitor which sections/features users engage with
+- Performance: Correlate events with dwell times and viewport metrics
+- Funnel analysis: Build custom conversion funnels from event sequences
+
+**Documentation:**
+- **API Reference:** `docs/API.md` (Behavior Metrics section)
+- **E2E Tests:** `tests/e2e/metrics-behavior.spec.ts`
+- **Patch Notes:** `phase_50.md` (Phase 50.8 implementation)
+
+### Behavior Analytics (Frontend Integration)
+
+**Status:** ✅ **Phase 50.8 Complete** | **Components:** 3 | **Auto-Tracking:** page_view + link_click
+
+The frontend includes React/TypeScript utilities for automatic behavior tracking and a debug panel for viewing metrics snapshots.
+
+**Components:**
+
+| File | Description |
+|------|-------------|
+| `src/lib/metrics.ts` | Core utilities: `getVisitorId()`, `sendEvent()`, `fetchSnapshot()` |
+| `src/components/BehaviorMetricsDebugPanel.tsx` | Live snapshot viewer with demo events and refresh |
+| `src/lib/useAutoBeacons.ts` | Hook for automatic page_view and link_click tracking |
+
+**Configuration:**
+
+```bash
+# .env or Vite config
+VITE_API_BASE_URL=http://127.0.0.1:8001  # Backend URL for metrics API
+```
+
+**Quick Integration:**
+
+```tsx
+// In your root App.tsx or main layout component
+import { useAutoBeacons } from "@/lib/useAutoBeacons";
+
+export default function App() {
+  // Automatically tracks page views and link clicks
+  useAutoBeacons();
+
+  return <YourAppContent />;
+}
+```
+
+**Manual Event Tracking:**
+
+```tsx
+import { sendEvent, getVisitorId } from "@/lib/metrics";
+
+// Track custom events
+async function trackFeatureUsage() {
+  await sendEvent({
+    visitor_id: getVisitorId(),
+    event: "feature_used",
+    metadata: {
+      feature: "chat_dock",
+      action: "opened"
+    }
+  });
+}
+```
+
+**Debug Panel:**
+
+The `BehaviorMetricsDebugPanel` component is integrated into the privileged admin panel and shows:
+- Total events in ring buffer
+- Event counts by type
+- Recent events table with timestamps, visitor IDs, and metadata
+- "Send demo events" button for testing
+- "Refresh" button to reload snapshot
+
+**Access:** Navigate to Admin Panel → Behavior Metrics (requires privileged mode)
+
+**Privileged UI:**
+
+The metrics debug panel and navbar badge are gated behind a developer flag for security and performance:
+
+**Enable Developer Mode:**
+- **Query String:** Visit `?dev=1` to enable, `?dev=0` to disable
+- **Manually:** Set `localStorage.dev_unlocked = "1"` in browser console
+- **Programmatic:** Use `enableDevUI()` / `disableDevUI()` from `src/lib/devGuard.ts`
+
+**What's Unlocked:**
+- Behavior Metrics Debug Panel (in admin panel)
+- Live Metrics Badge in navbar (shows total events + top event type)
+- Other developer-only widgets
+
+**Dual Guard System:**
+- **Cookie-based:** Async server validation via `isPrivilegedUIEnabled()` (calls `/agent/dev/status`)
+- **LocalStorage-based:** Synchronous client check via `isDevUIEnabled()` (reads `dev_unlocked` flag)
+- Both systems coexist: cookie guards for API-backed features, localStorage for client-only UI
+
+**Components:**
+- `src/lib/devGuard.ts` - Dual privilege checking utilities
+- `src/components/PrivilegedOnly.tsx` - Conditional rendering wrapper
+- `src/components/MetricsBadge.tsx` - Live navbar badge (polls every 5s)
+
+**Features:**
+- **Persistent Visitor ID:** Generated once and stored in localStorage
+- **Automatic Tracking:** page_view on mount, link_click on any `<a>` element
+- **Non-Blocking:** Uses `void` to fire-and-forget, never blocks UI
+- **Privacy-Focused:** All tracking is anonymous with hashed visitor IDs
+- **CORS-Ready:** Works with VITE_API_BASE_URL pointing to any backend
+
+**Vanilla JS Alternative:**
+
+For static HTML builds without React, add this beacon script to `index.html`:
+
+```html
+<script>
+(function(){
+  const BASE = "http://127.0.0.1:8001";
+  function vid(){
+    const k = 'visitor_id';
+    let v = localStorage.getItem(k);
+    if(!v){
+      v = 'v-'+Math.random().toString(36).slice(2)+'-'+Date.now().toString(36);
+      localStorage.setItem(k,v);
+    }
+    return v;
+  }
+  function send(evt, meta){
+    const body = {
+      visitor_id: vid(),
+      event: evt,
+      timestamp: new Date().toISOString(),
+      metadata: meta||{}
+    };
+    navigator.sendBeacon?.(`${BASE}/api/metrics/event`,
+      new Blob([JSON.stringify(body)], { type: 'application/json' }))
+      || fetch(`${BASE}/api/metrics/event`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+  }
+  // Track page view
+  send('page_view', { path: location.pathname });
+  // Track link clicks
+  addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a[href]');
+    if (a) send('link_click', { href: a.href });
+  }, true);
+})();
+</script>
+```
+
+**Documentation:**
+- **Metrics Library:** `src/lib/metrics.ts` (EventPayload interface, API wrappers)
+- **Auto-Beacons Hook:** `src/lib/useAutoBeacons.ts` (React hook)
+- **Debug Panel:** `src/components/BehaviorMetricsDebugPanel.tsx` (snapshot viewer)
+- **API Reference:** `docs/API.md` (Backend endpoints)
+
+### Privacy (Behavior Analytics)
+
+**What We Collect:**
+- Events are **anonymous**: only a random `visitor_id`, event name, timestamp, and coarse metadata (e.g., path/href).
+- No PII is collected. You can disable analytics by clearing `localStorage.dev_unlocked` and not enabling the dev UI.
+
+**Data Management:**
+- Production deployments can reduce volume via `VITE_METRICS_SAMPLE_RATE` (client) and `METRICS_SAMPLE_RATE` (server).
+- Raw events are stored as JSONL under `./data/` and rotated + gzipped per retention policy.
+- Default retention: gzip after 3 days, delete after 30 days (configurable via `scripts/metrics_rotate.py`).
+
+**Rate Limiting:**
+- Nginx rate limit: 5 requests/second with burst of 10 for `/api/metrics/event`.
+- Client and server sampling reduce unnecessary data collection.
+
+**Full Privacy Policy:** See `/privacy.html` for complete details on data collection, usage, and your rights.
 
 ### RAG quickstart
 
@@ -924,6 +1307,25 @@ All code changes must be reflected in project documentation:
 - Note added tests or tooling in `DEVELOPMENT.md`.
 
 Copilot is configured (see `.github/copilot-instructions.md`) to nudge for doc updates whenever code impacts setup, APIs, or deployment. PRs without necessary doc updates may be flagged.
+
+### SEO Meta PRs — Guardrails & Reviewers
+
+The **siteagent-meta-pr** workflow automates SEO meta change PRs with built-in validation:
+
+- **Auto-request reviewers**: Use workflow inputs `reviewers` (comma-separated usernames) and `team_reviewers` (comma-separated team slugs)
+  - Example: `reviewers: alice,bob` or `team_reviewers: web,platform`
+  - If empty, no reviewers are requested
+
+- **SEO Meta Guardrails**: The **seo-meta-guardrails** check runs automatically on PRs that change `*.apply.json` files
+  - Validates: Title ≤ 60 characters, Description ≤ 155 characters
+  - Fails PR check with inline annotations if violations found
+  - Script: `scripts/seo-meta-guardrails.mjs`
+  - No build dependencies — fast validation
+
+**Quick local validation**:
+```bash
+node scripts/seo-meta-guardrails.mjs agent/artifacts/seo-meta-apply/*.apply.json
+```
 
 ---
 

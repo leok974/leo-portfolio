@@ -1,0 +1,203 @@
+# Phase 50.9 Commit Messages (Enhanced with Cheerio)
+
+## Recommended Commit Sequence
+
+### Commit 1: Enhanced Autofix Script
+```
+chore(seo): enhance autofix with cheerio HTML parser
+
+Replaces basic regex-based fixes with robust HTML parsing using cheerio.
+
+**New capabilities**:
+- Scans multiple HTML entrypoints (index.html, public/, src/pages/, apps/web/)
+- Comprehensive meta tag fixes:
+  - Meta description (derived from H1 or neutral fallback)
+  - Canonical URL (from BASE_URL)
+  - Open Graph tags (type, url, title, description, image)
+  - Twitter Card (summary_large_image)
+  - Image alt text (humanized from filename)
+  - Viewport meta tag
+- Framework-aware: Detects React/Next.js shells
+- Idempotent: Only writes when changes needed
+- JSON output for CI integration
+- Exit code 3 in dry-run if changes detected
+
+**Usage**:
+node scripts/seo-autofix.mjs --base http://localhost:5173 --dry-run
+node scripts/seo-autofix.mjs --base http://localhost:5173 --apply
+
+**Dependencies**: Added cheerio for HTML parsing
+
+File: scripts/seo-autofix.mjs (240 lines)
+```
+
+### Commit 2: E2E Tests for Autofix
+```
+test(e2e): add SEO autofix verification tests
+
+Validates that autofix script correctly applies:
+- Canonical URL
+- Meta description
+- Open Graph tags (type, url, title, description, image)
+- Twitter Card
+- Image alt text
+- Viewport meta
+- Page title
+
+Tests ensure SEO requirements are met across all pages.
+
+File: tests/e2e/seo-autofix.spec.ts
+```
+
+### Commit 3: Wire Autofix to Workflow
+```
+chore(ci): integrate autofix tests into nightly workflow
+
+Adds seo-autofix.spec.ts to existing SEO test run.
+Workflow already has autofix step (guarded by AUTO_FIX env).
+
+Updated: .github/workflows/seo-intel-nightly.yml
+```
+
+### Commit 4: Documentation Updates
+```
+docs: update Phase 50.9 docs for enhanced autofix
+
+Updates documentation to reflect cheerio-based HTML parsing:
+- PHASE_50.9_COMPLETE.md: Enhanced autofix section with JSON output examples
+- PHASE_50.9_QUICKREF.md: Updated autofix commands and features
+- CHANGELOG.md: Comprehensive autofix capabilities listed
+
+Files updated:
+- PHASE_50.9_COMPLETE.md
+- PHASE_50.9_QUICKREF.md
+- CHANGELOG.md
+```
+
+### Commit 5: Dependencies
+```
+chore(deps): add cheerio for SEO autofix HTML parsing
+
+Adds cheerio as dev dependency for robust HTML manipulation
+in seo-autofix.mjs script.
+
+npm install -D cheerio
+
+Updated: package.json, package-lock.json
+```
+
+---
+
+## Alternative: All-in-One Commit
+
+```
+chore(seo): enhance autofix with cheerio + E2E tests (Phase 50.9)
+
+Upgrades SEO autofix script with robust HTML parsing using cheerio library.
+
+**Enhanced Autofix Script** (scripts/seo-autofix.mjs):
+- Replaces regex-based fixes with cheerio HTML parser
+- Scans multiple HTML entrypoints:
+  - index.html, public/, src/pages/, apps/web/
+  - Skips node_modules, dist, build directories
+- Comprehensive meta tag fixes:
+  - Meta description (derived from H1 or neutral fallback)
+  - Canonical URL (from BASE_URL)
+  - Open Graph tags (type, url, title, description, image)
+  - Twitter Card (summary_large_image)
+  - Image alt text (humanized from filename)
+  - Viewport meta tag
+- Framework-aware: Detects React/Next.js shells, applies conservative fixes
+- Idempotent: Only writes when changes needed
+- JSON output for CI integration
+- Exit codes: 0=no changes, 3=changes in dry-run
+
+**E2E Tests** (tests/e2e/seo-autofix.spec.ts):
+- Validates canonical URL presence
+- Checks meta description length
+- Verifies all Open Graph tags
+- Ensures Twitter Card meta
+- Confirms all images have alt text
+- Validates viewport and title
+
+**Workflow Integration**:
+- Added seo-autofix.spec.ts to nightly test run
+- Existing autofix step already configured (AUTO_FIX guard)
+
+**Documentation**:
+- PHASE_50.9_COMPLETE.md: Enhanced autofix section
+- PHASE_50.9_QUICKREF.md: Updated commands and features
+- CHANGELOG.md: Comprehensive capabilities listed
+
+**Dependencies**:
+- Added cheerio as dev dependency
+
+**Usage**:
+# Dry run (show changes)
+node scripts/seo-autofix.mjs --base http://localhost:5173 --dry-run
+
+# Apply fixes
+node scripts/seo-autofix.mjs --base http://localhost:5173 --apply
+
+# Workflow auto mode
+AUTO_FIX=true BASE_URL=http://localhost:5173 node scripts/seo-autofix.mjs
+
+Files changed:
+- scripts/seo-autofix.mjs (rewritten, 240 lines)
+- tests/e2e/seo-autofix.spec.ts (new, 78 lines)
+- .github/workflows/seo-intel-nightly.yml (updated)
+- PHASE_50.9_COMPLETE.md (updated)
+- PHASE_50.9_QUICKREF.md (updated)
+- CHANGELOG.md (updated)
+- package.json (cheerio added)
+- package-lock.json (updated)
+
+Co-authored-by: GitHub Copilot <noreply@github.com>
+```
+
+---
+
+## Git Commands
+
+### For Split Commits:
+```bash
+# 1. Commit autofix script
+git add scripts/seo-autofix.mjs
+git commit -m "chore(seo): enhance autofix with cheerio HTML parser"
+
+# 2. Commit E2E tests
+git add tests/e2e/seo-autofix.spec.ts
+git commit -m "test(e2e): add SEO autofix verification tests"
+
+# 3. Commit workflow integration
+git add .github/workflows/seo-intel-nightly.yml
+git commit -m "chore(ci): integrate autofix tests into nightly workflow"
+
+# 4. Commit documentation
+git add PHASE_50.9_COMPLETE.md PHASE_50.9_QUICKREF.md CHANGELOG.md
+git commit -m "docs: update Phase 50.9 docs for enhanced autofix"
+
+# 5. Commit dependencies
+git add package.json package-lock.json
+git commit -m "chore(deps): add cheerio for SEO autofix HTML parsing"
+
+# 6. Push
+git push origin LINKEDIN-OPTIMIZED
+```
+
+### For All-in-One Commit:
+```bash
+# Stage all changes
+git add .
+
+# Commit with comprehensive message
+git commit -F COMMIT_MESSAGE_PHASE_50.9_ENHANCED.txt
+
+# Push
+git push origin LINKEDIN-OPTIMIZED
+```
+
+---
+
+**Recommendation**: Use **all-in-one commit** for simplicity since these changes
+are tightly coupled (autofix rewrite + tests + docs + deps).

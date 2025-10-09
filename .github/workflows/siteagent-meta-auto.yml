@@ -1,0 +1,297 @@
+name: siteagent-meta-auto
+
+on:
+  schedule:
+    - cron: "28 3 * * *"   # nightly @ 03:28 UTC
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "How many pages to include"
+        required: false
+        default: "3"
+        type: string
+      exclude_globs:
+        description: "Comma-separated globs to exclude (e.g. /drafts/*,/private/*)"
+        required: false
+        default: "/drafts/*"
+        type: string
+      draft:
+        description: "Open the PR as draft"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: siteagent-meta-auto-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Backend knobs (safe defaults for CI-run local API)
+  ALLOW_DEV_ROUTES: "1"
+  ALLOW_TEST_ROUTES: "1"
+  SEO_LLM_ENABLED: "0"       # auto-downgrade to mock path
+  SEO_SITEMAP_CACHE: "1"
+  # Optional header if your API expects it; leave empty if not needed
+  API_AUTH: "Bearer dev"
+  # PR review mode for guardrails (COMMENT or REQUEST_CHANGES)
+  REVIEW_MODE: REQUEST_CHANGES
+
+jobs:
+  auto:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      pages_count: ${{ steps.metrics.outputs.pages_count }}
+      over_count:  ${{ steps.metrics.outputs.over_count }}
+      skipped:     ${{ steps.metrics.outputs.skipped }}
+      pr_number:   ${{ steps.metrics.outputs.pr_number }}
+      pr_url:      ${{ steps.metrics.outputs.pr_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backend deps (best-effort)
+        run: |
+          pip install -q "fastapi" "uvicorn[standard]" || true
+          # If your repo has a requirements file, uncomment:
+          # pip install -r requirements.txt || true
+
+      - name: Boot API in background
+        run: |
+          nohup python -m assistant_api.main > api.log 2>&1 &
+          for i in {1..45}; do
+            if curl -sf http://127.0.0.1:8001/ready >/dev/null; then
+              echo "API ready"; break
+            fi
+            sleep 1
+          done
+          curl -s http://127.0.0.1:8001/ready || (echo "API failed to start" && exit 1)
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Warm keywords (ensures seo-keywords.json exists)
+        run: |
+          curl -s -X POST "http://127.0.0.1:8001/agent/seo/keywords" \
+            -H "Accept: application/json" \
+            ${API_AUTH:+-H "Authorization: $API_AUTH"} >/dev/null || true
+
+      - name: Pick pages (analytics → sitemap fallback)
+        id: pick
+        run: |
+          node scripts/siteagent-pick-pages.mjs \
+            --base "http://127.0.0.1:8001" \
+            --limit "${{ github.event.inputs.limit || '3' }}" \
+            --exclude "${{ github.event.inputs.exclude_globs || '/drafts/*' }}"
+        env:
+          API_AUTH: ${{ env.API_AUTH }}
+
+      # Early digest (no branch links) to compute all_ok and counts for gating
+      - name: Build pre-PR digest (gating)
+        id: digest_pre
+        run: |
+          node scripts/siteagent-digest.mjs \
+            --pages "${{ steps.pick.outputs.pages }}" \
+            --branch "" \
+            --repo "${{ github.repository }}"
+
+      - name: Generate suggestions & previews (artifacts, trimmed to limits)
+        if: steps.pick.outputs.count != '0'
+        run: |
+          node scripts/siteagent-gen-previews.mjs \
+            --base "http://127.0.0.1:8001" \
+            --pages "${{ steps.pick.outputs.pages }}" \
+            --trim 1
+        env:
+          API_AUTH: ${{ env.API_AUTH }}
+
+      - name: Gate PR creation (skip when empty or all OK)
+        id: gate
+        run: |
+          COUNT="${{ steps.pick.outputs.count || '0' }}"
+          ALL_OK="${{ steps.digest_pre.outputs.all_ok || 'false' }}"
+          if [ "$COUNT" = "0" ]; then
+            echo "open=0" >> "$GITHUB_OUTPUT"
+            echo "reason=No pages selected" >> "$GITHUB_OUTPUT"
+          elif [ "$ALL_OK" = "true" ]; then
+            echo "open=0" >> "$GITHUB_OUTPUT"
+            echo "reason=All selected pages within limits (no changes needed)" >> "$GITHUB_OUTPUT"
+          else
+            echo "open=1" >> "$GITHUB_OUTPUT"
+            echo "reason=Opening PR" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build PR metadata
+        id: meta
+        if: steps.gate.outputs.open == '1'
+        run: |
+          node scripts/meta-pr-summary.mjs --compress 1
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Open draft PR with artifacts
+        id: cpr
+        if: steps.gate.outputs.open == '1'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ${{ steps.meta.outputs.branch }}
+          title:  ${{ steps.meta.outputs.title }} (auto)
+          body:   ${{ steps.meta.outputs.body }}
+          draft:  ${{ github.event.inputs.draft || 'true' }}
+          commit-message: ${{ steps.meta.outputs.commit }}
+          labels: |
+            seo-meta
+            automation
+          add-paths: |
+            agent/artifacts/seo-meta-apply/**
+
+      - name: Build nightly digest (counts, limits, links)
+        id: digest
+        if: steps.gate.outputs.open == '1'
+        run: |
+          node scripts/siteagent-digest.mjs \
+            --pages "${{ steps.pick.outputs.pages }}" \
+            --branch "${{ steps.meta.outputs.branch }}" \
+            --repo "${{ github.repository }}"
+
+      - name: Append digest to PR description
+        if: steps.gate.outputs.open == '1' && steps.cpr.outputs.pull-request-number != '' && steps.digest.outputs.body != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = Number("${{ steps.cpr.outputs.pull-request-number }}");
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner, repo: context.repo.repo, pull_number: prNumber
+            });
+            const sep = "\n\n---\n";
+            const newBody = (pr.body || "") + sep + `${{ toJSON(steps.digest.outputs.body) }}`;
+            await github.rest.pulls.update({
+              owner: context.repo.owner, repo: context.repo.repo, pull_number: prNumber, body: newBody
+            });
+
+      - name: Echo PR URL
+        if: steps.gate.outputs.open == '1' && steps.cpr.outputs.pull-request-url != ''
+        run: |
+          echo "PR: ${{ steps.cpr.outputs.pull-request-url }}"
+
+      - name: Add digest to job summary (opened)
+        if: steps.gate.outputs.open == '1' && steps.digest.outputs.body != ''
+        run: |
+          echo "${{ steps.digest.outputs.body }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Add skip reason to job summary
+        if: steps.gate.outputs.open != '1'
+        run: |
+          echo "### Nightly SEO Meta — Skipped" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Reason: ${{ steps.gate.outputs.reason }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Selected pages: ${{ steps.pick.outputs.count || '0' }}" >> $GITHUB_STEP_SUMMARY
+
+      # --- METRICS (works for both opened + skipped runs) ---
+      - name: Build metrics JSON
+        id: metrics
+        run: |
+          NOW=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          RUN_ID="${{ github.run_id }}"
+          RUN_NUM="${{ github.run_number }}"
+          REPO="${{ github.repository }}"
+
+          # choose counts from pre-digest (skip case) or final digest (opened)
+          if [ "${{ steps.gate.outputs.open }}" = "1" ]; then
+            PAGES_COUNT="${{ steps.digest.outputs.pages_count || '0' }}"
+            OVER_COUNT="${{ steps.digest.outputs.over_count  || '0' }}"
+          else
+            PAGES_COUNT="${{ steps.digest_pre.outputs.pages_count || '0' }}"
+            OVER_COUNT="${{ steps.digest_pre.outputs.over_count  || '0' }}"
+          fi
+
+          SKIPPED=$([ "${{ steps.gate.outputs.open }}" = "1" ] && echo "false" || echo "true")
+          REASON="${{ steps.gate.outputs.reason || 'Opened PR' }}"
+          PR_NUM="${{ steps.cpr.outputs.pull-request-number || '' }}"
+          PR_URL="${{ steps.cpr.outputs.pull-request-url    || '' }}"
+
+          mkdir -p metrics
+          cat > metrics/seo-meta-auto.metrics.json <<JSON
+          {
+            "ts":        "$NOW",
+            "repo":      "$REPO",
+            "run_id":    "$RUN_ID",
+            "run_number":"$RUN_NUM",
+            "pages_count": $PAGES_COUNT,
+            "over_count":  $OVER_COUNT,
+            "skipped":     $SKIPPED,
+            "reason":     "$REASON",
+            "pr_number":  "${PR_NUM}",
+            "pr_url":     "${PR_URL}"
+          }
+          JSON
+
+          # expose as step outputs for downstream jobs
+          {
+            echo "pages_count=$PAGES_COUNT"
+            echo "over_count=$OVER_COUNT"
+            echo "skipped=$SKIPPED"
+            echo "pr_number=${PR_NUM}"
+            echo "pr_url=${PR_URL}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload metrics artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-metrics-${{ github.run_id }}
+          path: metrics/seo-meta-auto.metrics.json
+          if-no-files-found: error
+
+      - name: Add metrics table to job summary
+        run: |
+          echo "### Nightly SEO Meta — Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Key | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Pages | ${{ steps.metrics.outputs.pages_count }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Over-limit | ${{ steps.metrics.outputs.over_count }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Skipped | ${{ steps.metrics.outputs.skipped }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| PR | ${{ steps.metrics.outputs.pr_url || '—' }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Append to metrics branch (optional)
+        if: env.METRICS_PUSH == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # fetch or create metrics branch
+          if git ls-remote --exit-code --heads origin metrics >/dev/null 2>&1; then
+            git fetch origin metrics:metrics
+            git checkout metrics
+          else
+            git checkout --orphan metrics
+            rm -rf .
+            echo "# Metrics branch" > README.md
+            git add README.md
+            git commit -m "chore(metrics): initialize branch"
+          fi
+
+          mkdir -p agent/metrics
+          # append to JSONL
+          jq -c . < "$GITHUB_WORKSPACE/metrics/seo-meta-auto.metrics.json" >> agent/metrics/seo-meta-auto.jsonl
+
+          git add agent/metrics/seo-meta-auto.jsonl
+          git commit -m "metrics: append nightly run $GITHUB_RUN_ID"
+          git push origin metrics

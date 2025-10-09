@@ -1,0 +1,116 @@
+feat(phase-50.6.1): LLM-based SEO rewriting with graceful fallback
+
+Implements intelligent SEO metadata optimization using LLMs with
+three-tier fallback strategy (Primary → Fallback → Heuristic).
+
+## New Features
+
+### LLM SEO Rewriter Module
+- OpenAI-compatible Chat Completions API adapter
+- Primary endpoint (Ollama) with fallback endpoint (OpenAI) support
+- Graceful degradation to heuristic rewrites when LLMs unavailable
+- JSON mode with structured output validation
+- Configurable timeouts and character limits (70/155)
+- Works with both requests and urllib (no new dependencies)
+
+### Enhanced SEO Tune Task
+- Attempts LLM rewrite before heuristic fallback
+- Tracks method used in artifacts ("llm" or "heuristic")
+- Transparent fallback - never fails even when LLMs offline
+- No breaking changes to existing API
+
+### Configuration Settings
+- SEO_LLM_ENABLED: Toggle LLM rewriting (default: true)
+- SEO_LLM_TIMEOUT: Request timeout seconds (default: 9.0)
+- Reuses OPENAI_* and FALLBACK_* environment variables
+
+## Testing
+
+### Automated Tests
+- tests/test_seo_llm_fallback.py: Graceful fallback verification
+  - Test LLM unreachable → heuristic fallback
+  - Test LLM disabled → heuristic direct
+  - Validates notes field tracking
+- All tests passing (2/2)
+
+### Manual Testing
+- test-seo-llm.ps1: End-to-end smoke test script
+  - Ingests sample CTR data
+  - Runs seo.tune with LLM enabled
+  - Reports LLM vs heuristic usage
+  - Inspects generated artifacts
+
+## Documentation
+
+- docs/API.md: LLM rewriting section with config details
+- CHANGELOG.md: Phase 50.6.1 entry
+- docs/DEVELOPMENT.md: SEO LLM smoke test instructions
+- PHASE_50.6.1_COMPLETE.md: Full implementation docs
+- PHASE_50.6.1_QUICKREF.md: Quick reference guide
+
+## Files Modified/Created
+
+New:
+- assistant_api/llm/__init__.py
+- assistant_api/llm/seo_rewriter.py (164 lines)
+- tests/test_seo_llm_fallback.py (143 lines)
+- test-seo-llm.ps1 (115 lines)
+- PHASE_50.6.1_COMPLETE.md (full docs)
+- PHASE_50.6.1_QUICKREF.md (quick ref)
+
+Modified:
+- assistant_api/settings.py (+9 settings)
+- assistant_api/tasks/seo_tune.py (+15 lines)
+- docs/API.md (+25 lines)
+- CHANGELOG.md (+28 lines)
+- docs/DEVELOPMENT.md (+30 lines)
+
+## Architecture
+
+```
+seo.tune task
+  ↓
+llm_rewrite(url, ctr, current_meta)
+  ↓
+1. Try PRIMARY (Ollama @ 127.0.0.1:11434/v1)
+   ↓ timeout/error
+2. Try FALLBACK (OpenAI @ api.openai.com/v1)
+   ↓ timeout/error
+3. Return None
+  ↓
+If None: heuristic_rewrite() (always succeeds)
+  ↓
+Artifact with "notes" field ("llm" or "heuristic")
+```
+
+## Benefits
+
+- Natural, context-aware metadata when LLM available
+- Instant deterministic fallback when LLM unavailable
+- Zero breaking changes to existing workflows
+- Works with local Ollama or cloud OpenAI
+- Comprehensive error handling and timeout protection
+- Clear tracking of which method was used per page
+
+## Usage Example
+
+```powershell
+# Configure Ollama
+$env:OPENAI_BASE_URL = "http://127.0.0.1:11434/v1"
+$env:OPENAI_MODEL = "qwen2.5:7b-instruct"
+$env:SEO_LLM_ENABLED = "1"
+
+# Ingest data
+Invoke-RestMethod -Method Post `
+  -Uri "http://127.0.0.1:8001/agent/analytics/ingest" `
+  -Headers @{"Authorization"="Bearer dev"} `
+  -Body '{"source":"search_console","rows":[...]}'
+
+# Run tune (will use LLM, fallback to heuristic if offline)
+Invoke-RestMethod -Method Post `
+  -Uri "http://127.0.0.1:8001/agent/run?task=seo.tune" `
+  -Headers @{"Authorization"="Bearer dev"} `
+  -Body '{"threshold":0.02}'
+```
+
+BREAKING CHANGES: None

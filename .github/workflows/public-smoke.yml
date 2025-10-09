@@ -24,6 +24,20 @@ jobs:
       - name: Install Playwright
         run: npx playwright install --with-deps
 
+      - name: Health check - Metrics Behavior API (Phase 50.8)
+        run: |
+          echo "Testing production metrics endpoint..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" https://assistant.ledger-mind.org/api/metrics/behavior?limit=10)
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response Body: $BODY"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Production metrics endpoint failed with status $HTTP_CODE"
+            exit 1
+          fi
+          echo "✅ Production metrics endpoint healthy"
+
       - name: Run public smoke
         env:
           PUBLIC_URL: https://assistant.ledger-mind.org

@@ -1,0 +1,62 @@
+name: siteagent-metrics-csv
+
+on:
+  schedule:
+    - cron: "12 4 * * *"          # daily @ 04:12 UTC
+  workflow_dispatch:
+    inputs:
+      limit_days:
+        description: "Keep last N days (0 = all)"
+        required: false
+        default: "90"
+        type: string
+  push:
+    branches: [ metrics ]
+    paths:
+      - 'agent/metrics/seo-meta-auto.jsonl'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: metrics-csv-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  csv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout metrics branch (or repo)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: metrics
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate CSV from JSONL
+        run: |
+          node scripts/metrics-jsonl-to-csv.mjs \
+            --in  agent/metrics/seo-meta-auto.jsonl \
+            --out agent/metrics/seo-meta-auto.csv \
+            --limit-days "${{ github.event.inputs.limit_days || '90' }}"
+        shell: bash
+
+      - name: Upload CSV artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-meta-auto-csv-${{ github.run_id }}
+          path: agent/metrics/seo-meta-auto.csv
+          if-no-files-found: error
+
+      - name: Commit CSV to metrics branch
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add agent/metrics/seo-meta-auto.csv
+          git commit -m "metrics(csv): refresh $GITHUB_RUN_ID" || echo "No changes"
+          git push origin metrics

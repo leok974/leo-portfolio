@@ -1,6 +1,804 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **SEO Intelligence & Nightly Auto-PR (Phase 50.9)**:
+  - **Nightly Workflow** (`.github/workflows/seo-intel-nightly.yml`):
+    - Automated daily runs at 02:30 ET (06:30 UTC)
+    - Creates auto-PR with SEO health findings
+    - Uploads artifacts (JSON/MD reports) for review
+    - Optional safe autofixes (guarded by `AUTO_FIX=true`)
+    - Uses GitHub Actions variables: `BASE_URL`, `BACKEND_URL`
+  - **SEO Intelligence Scanner** (`scripts/seo-intel.mjs`):
+    - **Frontend checks**: Title length, meta description, Open Graph tags, canonical URLs, JSON-LD structured data
+    - **Backend checks**: Health endpoints (/ready), metrics health, behavior snapshot
+    - **Asset checks**: WebP optimization ratios
+    - **Privacy checks**: privacy.html accessibility, data collection explanations, retention policy, opt-out instructions
+    - **Output**: `reports/summary.json` (machine-readable), `reports/summary.md` (human-readable)
+    - **Exit codes**: Non-zero if any checks fail (CI integration)
+  - **PR Body Generator** (`scripts/seo-pr-body.mjs`):
+    - Auto-generates formatted PR descriptions from intelligence reports
+    - Groups checks by category (Frontend, Backend, Assets, Privacy)
+    - Includes pass/fail summary with percentages
+    - Provides action items for failed checks
+    - Adds changelog stub for easy integration
+  - **Safe Autofix Script** (`scripts/seo-autofix.mjs`):
+    - **Enhanced with Cheerio HTML parser** for robust DOM manipulation
+    - **Smart scanning**: Discovers HTML files in index.html, public/, src/pages/, apps/web/
+    - **Comprehensive fixes**:
+      - Meta description (derived from H1 or neutral fallback)
+      - Canonical URL (from BASE_URL)
+      - Open Graph tags (type, url, title, description, image)
+      - Twitter Card (summary_large_image)
+      - Image alt text (humanized from filename)
+      - Viewport meta tag
+    - **Framework-aware**: Detects React/Next.js shells and applies conservative fixes
+    - **Idempotent**: Only writes when changes needed
+    - **Modes**: Dry-run (default), apply (--apply), auto (AUTO_FIX env)
+    - **Output**: JSON to stdout with scanned/changed/wrote stats
+    - **Exit codes**: 0=no changes, 3=changes in dry-run (CI integration)
+    - **E2E tests**: `tests/e2e/seo-autofix.spec.ts` validates canonical, OG tags, alt text
+    - **Dependency**: Requires `cheerio` package
+  - **Autofix Report Generator** (`scripts/seo-autofix-report.mjs`):
+    - Parses autofix JSON output and generates concise Markdown summary
+    - Lists files needing fixes with dry-run notes
+    - Shows scan statistics (scanned, changed, wrote)
+    - **Usage**: `--in=file.json` or pipe from stdin
+    - **Integration**: Auto-posts to PR comments in workflow
+    - **Manual use**: `gh pr comment <PR_NUM> --body-file reports/seo-autofix.md`
+  - **Playwright Summary Generator** (`scripts/playwright-summary.mjs`):
+    - Parses Playwright JSON reporter output
+    - Generates compact stats with pass/fail percentage
+    - **Output modes**: Markdown (default), JSON (`--json`)
+    - **Markdown features**: Color chips (🟢/🟡/🔴), emoji indicators, metrics table
+    - **Integration**: Auto-posts to PR comments, included in PR body badges
+    - **Usage**: `--in=file.json --out=file.md` or stdout
+  - **Enhanced PR Body Generator** (`scripts/seo-pr-body.mjs`):
+    - Now accepts `--playwright` parameter for test results
+    - Badge line includes Playwright pass percentage
+    - Dedicated Playwright section with test metrics
+    - Supports optional autofix and Playwright integration
+  - **Documentation Updates**:
+    - README.md: New "Nightly SEO & Analytics" section with local run instructions
+    - docs/DEVELOPMENT.md: Comprehensive scripts documentation with usage examples
+    - .gitignore: Added `reports/` directory (keeps `.gitkeep`)
+
+---
+
+## [0.2.1] - 2025-01-09
+
+### Added
+- **Behavior Metrics API (Phase 50.8)**:
+  - **Backend API:**
+    - **POST** `/api/metrics/event` — Ingest anonymized behavior events with visitor_id, event name, timestamp, and metadata
+    - **GET** `/api/metrics/behavior` — Snapshot of recent events with aggregated counts (limit query param)
+    - **GET** `/api/metrics/behavior/health` — Lightweight health check for metrics subsystem
+    - **Architecture**: In-memory ring buffer (default 500 events) + JSONL persistent sink (`./data/metrics.jsonl`)
+    - **Models**: `BehaviorEvent`, `EventIngestResult`, `BehaviorAggBucket`, `BehaviorSnapshot` with Pydantic v2 validation
+    - **Configuration**: `METRICS_RING_CAPACITY` (ring size), `METRICS_JSONL` (sink path)
+  - **Frontend Integration:**
+    - **Metrics Library** (`src/lib/metrics.ts`): `getVisitorId()`, `sendEvent()`, `fetchSnapshot()` utilities
+    - **Debug Panel** (`src/components/BehaviorMetricsDebugPanel.tsx`): Live snapshot viewer with demo events and refresh
+    - **Auto-Beacons Hook** (`src/lib/useAutoBeacons.ts`): Automatic page_view and link_click tracking
+    - **Configuration**: `VITE_API_BASE_URL` for backend endpoint
+    - **Features**: Persistent visitor ID in localStorage, non-blocking async tracking, CORS-ready
+  - **Privilege Guard System:**
+    - **Dev Guard Utilities** (`src/lib/devGuard.ts`): Dual guard system with cookie-based and localStorage-based privilege checking
+      - Sync functions: `isDevUIEnabled()`, `enableDevUI()`, `disableDevUI()`, `syncDevFlagFromQuery()`
+      - Query string support: `?dev=1` to enable, `?dev=0` to disable
+    - **Conditional Wrapper** (`src/components/PrivilegedOnly.tsx`): Renders children only if dev flag enabled
+    - **Navbar Badge** (`src/components/MetricsBadge.tsx`): Live metrics counter with 5-second polling
+      - Shows total events + top event type
+      - Visibility toggles with dev flag (re-checks every 1 second)
+    - **Integration**: MetricsBadge mounted in navbar, BehaviorMetricsDebugPanel wrapped with PrivilegedOnly
+    - **Initialization**: `syncDevFlagFromQuery()` called in main.ts for query string support
+  - **Testing:**
+    - Backend E2E tests: Playwright tests for event ingestion, snapshot queries, and health endpoint
+    - All tests passing (2/2) with PW_SKIP_WS mode
+  - **CI/CD Integration:**
+    - Added `metrics-behavior.spec.ts` to CI Playwright matrix (`ci.yml`)
+    - Added metrics health check to staging backend tests (`backend-tests.yml`)
+    - Added metrics health check to production smoke tests (`public-smoke.yml`) - runs every 30 minutes
+    - Verified existing ruff linting and pip-audit security scanning
+    - Dedicated E2E metrics workflow (`e2e-metrics.yml`) with health checks and lint/audit
+  - **Operations & Scaling (Phase 50.8 Follow-ups):**
+    - **JSONL Rotation:** `scripts/metrics_rotate.py` with gzip + retention (configurable)
+    - **Docker Compose Sidecar:** `metrics-rotator` service for automated maintenance
+    - **Client Sampling:** `VITE_METRICS_SAMPLE_RATE` environment variable (0.0 to 1.0)
+    - **Server Sampling:** `METRICS_SAMPLE_RATE` environment variable for backend sampling
+    - **Nginx Rate Limiting:** 5 req/s with burst=10 for `/api/metrics/event` endpoint
+    - **Privacy Documentation:** Privacy section in README.md, existing privacy.html covers data practices
+  - **Documentation**:
+    - API reference (`docs/API.md`),
+    - README sections (backend + frontend + privilege UI + privacy),
+    - Complete implementation guides (`PHASE_50.8_BEHAVIOR_METRICS_COMPLETE.md`, `PHASE_50.8_FRONTEND_COMPLETE.md`, `PHASE_50.8_PRIVILEGE_GUARD_COMPLETE.md`, `PHASE_50.8_CI_TOUCHUPS.md`)
+  - **Use Cases**: A/B testing, feature adoption tracking, funnel analysis, performance monitoring
+- **Metrics Dashboard Unlock UX**:
+  - Friendly HTML unlock screens for authentication failures (instead of JSON errors)
+  - Split HTTP status codes: 401 (no token) vs 403 (wrong token/server misconfigured)
+  - Themed templates: `admin_assets/metrics_401.html` and `metrics_403.html`
+  - Password input form with auto-save to localStorage + cookie and instant redirect
+  - Works seamlessly in iframe context (privileged panel)
+  - Inline fallback template (~50 lines) if themed files missing
+  - Updated E2E tests to expect HTML unlock screens
+- **Telemetry + Behavior Learning System**:
+  - `/agent/metrics/ingest` endpoint for anonymous section analytics
+  - `/agent/analyze/behavior` and `/agent/layout` for learned ordering
+  - `/agent/metrics/summary` for dashboard aggregation (14-day views/clicks/CTR/dwell/weights)
+  - Frontend tracker (`src/lib/behavior-tracker.js`) with IntersectionObserver
+  - Runtime layout reordering (`src/lib/apply-learned-layout.js`)
+  - `public/metrics.html` lightweight dashboard (no extra deps)
+  - `BehaviorMetricsPanel` React component for privileged Admin panel
+  - Nightly GitHub Action (`behavior-learning-nightly.yml`) to auto-update `data/analytics/weights.json`
+  - **Weekly retention**: gzip after N days, prune after M days (`scripts/analytics_retention.py` + `analytics-retention-weekly.yml` workflow)
+    - **On-demand retention**: POST `/agent/metrics/retention/run` (guarded) for manual gzip + prune operations
+  - `scripts/analyze_behavior.py` for CLI/CI weight computation
+  - Settings: `ANALYTICS_ENABLED`, `ANALYTICS_ORIGIN_ALLOWLIST`, `LEARNING_EPSILON`, `LEARNING_DECAY`, `LEARNING_EMA_ALPHA`, `LAYOUT_SECTIONS_DEFAULT`, `ANALYTICS_DIR`
+  - Backend test (`tests/test_metrics_learning.py`) and E2E tests (`tests/e2e/behavior-analytics.spec.ts`, `tests/e2e/privileged-metrics.spec.ts`)
+  - Documentation updates: README, API.md, SECURITY.md, DEVELOPMENT.md
+- **Advanced Analytics Enhancements**:
+  - **Geo Enrichment**: IP anonymization (IPv4 /24, IPv6 /48) + optional GeoIP country lookup via MaxMind DB
+  - **Export Endpoints**:
+    - `GET /agent/metrics/timeseries?metric=ctr&days=30&section=X` - Daily aggregation for time series charts
+    - `GET /agent/metrics/export.csv` - CSV download of 14-day summary
+    - `GET /agent/metrics/export.pdf` - PDF report with ReportLab (graceful 501 if not installed)
+    - `GET /agent/metrics/ab?section=X` - A/B variant comparison within section
+  - **A/B Testing Support**: Frontend captures `data-variant` attribute, backend aggregates by variant
+  - **Email Notifications**: Weekly SendGrid email summary (Mondays 08:00 ET) via `behavior-metrics-email.yml` workflow
+  - **Dashboard UI**: CTR trend chart (canvas), export buttons, section selector dropdown
+  - **New Settings**: `GEOIP_DB_PATH`, `LOG_IP_ENABLED`, `METRICS_EXPORT_MAX_DAYS`, `EMAIL_FROM`, `EMAIL_TO`, `SENDGRID_API_KEY`
+  - **Model Extensions**: `variant`, `anon_ip_prefix`, `country` fields in `MetricEvent`
+
+## [0.2.3] - 2025-10-08
+
+### Phase 50.9: Indexing & SERP Feedback Loop
+**Status**: Complete - E2E tests passing - Nightly automation ready
+
+**New Router**: `/agent/seo/serp/*`
+- **POST /fetch**: Fetch Google Search Console data (or mock) with artifact persistence
+- **POST /analyze**: Detect CTR anomalies and performance issues with actionable suggestions
+- **GET /report**: Retrieve latest SERP analysis with anomaly detection
+- **POST /ping-sitemaps**: Notify search engines of sitemap updates (safe dry-run default)
+- **POST /mock/populate** (dev-only): Generate test artifacts for E2E/CI
+
+**Nightly GitHub Action** (`seo-serp-cron.yml`):
+- Runs daily at 07:00 UTC (03:00-04:00 ET)
+- Fetches yesterday → today GSC data (or mock when credentials missing)
+- Analyzes for CTR anomalies and performance regressions
+- **Auto-files GitHub Issues**: Creates/updates issue when anomalies ≥ threshold (default: 2)
+  - Issue includes Markdown table with top 10 anomalies
+  - Shows page URL, impressions, CTR, position, reasons, suggestions
+  - Auto-labels with `seo`, `serp`, `automated`
+  - Updates existing issue if one already exists for that day
+- Uploads artifacts for trending analysis
+- Badge added to README.md
+
+**Admin Tools Integration**:
+- New "Indexing & SERP" section in AdminToolsPanel
+- `SerpLatest` component displays latest anomalies
+- Shows median CTR, day, and top 5 flagged pages with reasons
+- Real-time fetch from `/report` endpoint
+
+**Configuration** (Optional - Production Ready):
+- `GSC_PROPERTY`: Full property URL (e.g., `https://leok974.github.io/leo-portfolio/`)
+- `GSC_SA_JSON`: Service account JSON string (or `GSC_SA_FILE` for file path)
+- Falls back to mock data when credentials not configured (CI-friendly)
+
+**E2E Tests**:
+- `tests/e2e/seo-serp.api.spec.ts`: Mock populate → report → verify anomaly detection
+- Tests pass with or without real GSC credentials
+
+**Documentation**:
+- Updated `docs/API.md` with all SERP endpoints and examples
+- README badge for nightly workflow
+- CHANGELOG entry documenting Phase 50.9
+
+**Files Modified**: 8 total
+1. `assistant_api/routers/seo_serp.py` (NEW - 315 lines)
+2. `assistant_api/main.py` (added router import)
+3. `assistant_api/settings.py` (added GSC settings)
+4. `.github/workflows/seo-serp-cron.yml` (NEW - 54 lines)
+5. `tests/e2e/seo-serp.api.spec.ts` (NEW - 18 lines)
+6. `src/components/SerpLatest.tsx` (NEW - 45 lines)
+7. `src/components/AdminToolsPanel.tsx` (added SERP section)
+8. `README.md` (added badge)
+9. `docs/API.md` (added SERP documentation)
+10. `CHANGELOG.md` (this entry)
+
+## [0.2.2] - 2025-01-25
+
+### SEO JSON-LD System - Production Deployment Complete
+**Status**: Production Ready - All 9 E2E tests passing (100%) - Deployment checklist complete
+
+**Production Configuration**:
+- Runtime injector: Dev-only (localhost/127.0.0.1 check) + dry-run mode ✅
+- Environment variables: `ALLOW_DEV_ROUTES=0`, `SEO_LD_VALIDATE_STRICT=1` ✅
+- CORS origins: Verified `https://leok974.github.io` and `https://app.ledger-mind.org` ✅
+- Build-time injector: Expanded to cover all public pages (9 pages total) ✅
+- Canonical links: Added to privacy.html and book.html ✅
+- Security headers: Locked down in edge nginx config (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, CSP) ✅
+- GitHub Action: New SEO JSON-LD validation workflow with badge in README ✅
+
+**Admin Tools Panel Integration**:
+- React component (`src/components/SeoJsonLdPanel.tsx`) integrated into AdminToolsPanel
+- Location: Floating dock (bottom-right) → Admin Tools panel → SEO section
+- Scroll container: AdminToolsPanel now has `max-h-[80vh]` + `overflow-y-auto`
+- Vanilla JS fallback (`assets/js/ld-admin.js`) available via `?seoLd=1` query param
+- E2E tests: 9/9 passing (6 API/presence + 3 UI tests)
+
+**Documentation**:
+- 6 comprehensive markdown files (3500+ lines total)
+- Complete deployment guide in `SEO_LD_PRODUCTION_CHECKLIST.md`
+- Final completion summary in `SEO_LD_PHASE_50_8_COMPLETE.md`
+
 ## [Unreleased] - 2025-01-25
+
+### SEO JSON-LD System - ✅ **INTEGRATED & PRODUCTION READY** � (Phase 50.8 Complete)
+- **Status**: 🎉 100% Complete - All 9 E2E tests passing (100%) - Admin Tools fully integrated - Ready for production deployment
+- **Admin Tools Panel Integration (COMPLETE)**:
+  - **React Component** (`src/components/SeoJsonLdPanel.tsx`): ✅ Integrated into AdminToolsPanel
+    - **Location**: Floating dock (bottom-right) → Admin Tools panel → SEO section (at bottom)
+    - **Scroll Container**: AdminToolsPanel now has `max-h-[80vh]` + `overflow-y-auto`
+    - **Test ID**: `data-testid="admin-tools-panel"` added for testing
+    - **Features**:
+      - Load JSON-LD from DOM (parses existing scripts)
+      - Generate fresh JSON-LD via backend API
+      - Validate structure and schema compliance
+      - Copy to clipboard for external validation
+      - Manual editing with live validation
+      - Dark mode support, responsive design
+  - **Vanilla JS Fallback** (`assets/js/ld-admin.js`): Zero-dependency floating panel (backup)
+    - Enabled via `?seoLd=1` query param or `localStorage.seoLdPanel="1"`
+    - Same features as React component
+    - Works without React/TypeScript
+    - Safe to include (does nothing unless activated)
+  - **E2E Tests** (`tests/e2e/seo-ld.ui.spec.ts`): ✅ 3/3 UI tests passing
+    - Panel load and validate workflow ✅
+    - Load from DOM button functionality ✅
+    - Copy to clipboard integration ✅
+    - Tests both React and fallback gracefully ✅
+    - Uses JavaScript click evaluation to bypass viewport constraints
+- **Production Hardening (Final Polish)**:
+  - **Runtime Injector: Dry-Run Only**: Changed to `dry_run: true` to prevent server-side artifact writes on page views
+  - **Runtime Injector: Dev-Only**: Disabled in production (`window.SEO_LD_ENABLED` checks for localhost/127.0.0.1)
+  - **Static JSON-LD**: Source of truth for production (GitHub Pages)
+  - **Recommended Settings**: `ALLOW_DEV_ROUTES=0`, `SEO_LD_VALIDATE_STRICT=1`, proper CORS origins
+- **Enhanced JSON-LD Types**: Extended FastAPI router with richer schema.org types
+  - **Person**: Author/creator entity with sameAs links (LinkedIn, etc.)
+  - **Organization**: Brand/company entity with logo and URL
+  - **Article**: Blog posts and articles with author, dates, images
+  - **CreativeWork**: Projects and creative content with metadata
+  - **BreadcrumbList**: Navigation breadcrumbs for pages
+  - Existing types: WebSite, WebPage, ImageObject, VideoObject
+- **Critical Bug Fixes**:
+  - Fixed Pydantic field naming issue (changed `_type`/`_ctx` to `type`/`context` with aliases)
+  - Updated test helper to parse JSON-LD with `@graph` wrapper format
+  - Added `@context` inheritance from parent to child items in `@graph`
+  - Fixed validate test to accept both 200 (lenient) and 422 (strict mode) status codes
+  - Added `WebPage` entries to static JSON-LD in home and project pages
+  - Fixed test URL validation to accept both dev and production URLs
+- **Metadata Collection**: Intelligent page analysis
+  - URL pattern detection (projects vs articles)
+  - Automatic breadcrumb generation for nested pages
+  - Configurable brand/person settings via environment variables
+  - Published date stamping (ISO-8601 format)
+- **Frontend Injectors**: Dual deployment strategies
+  - **Runtime Injector** (`assets/js/ld-inject.js`): Zero-build, dynamic JSON-LD injection (dev-only + dry-run)
+    - Fetches from backend at page load
+    - Feature-flagged with `window.SEO_LD_ENABLED`
+    - Page-type detection (projects vs articles)
+    - Silent failure (graceful degradation)
+    - Configured in `index.html` with feature flags
+  - **Build-time Injector** (`scripts/inject-jsonld.mjs`): Static SEO-optimized injection
+    - Pre-generates JSON-LD during build
+    - Idempotent HTML injection before `</head>`
+    - Configurable page list with per-page types
+    - Ideal for search engine crawlers
+    - NPM script: `npm run seo:ld:inject`
+- **Static JSON-LD Enhancement**:
+  - Home page (`index.html`): Person, Organization, WebSite, WebPage
+  - Project pages (e.g., `projects/ledgermind.html`): SoftwareSourceCode, CreativeWork, BreadcrumbList, WebPage
+  - All use `@graph` format with proper `@context` at root level
+- **Settings Configuration**:
+  - `BRAND_NAME`: Site/organization name (default: "Leo Klemet — SiteAgent")
+  - `BRAND_URL`: Main site URL
+  - `BRAND_LOGO`: Logo URL for Organization schema
+  - `PERSON_NAME`: Author/creator name
+  - `PERSON_SAME_AS`: Social profile URLs (LinkedIn, etc.)
+  - `SEO_LD_VALIDATE_STRICT`: Strict validation mode (1=422 for errors, 0=200 with warnings)
+- **E2E Tests - ALL PASSING ✅**:
+  - Backend API tests (3/3): validate & generate, validation with invalid data, artifact storage
+  - Frontend tests (3/3): Home page JSON-LD presence, generate API, project page BreadcrumbList
+  - Test helper supports both direct arrays and `@graph` format with context inheritance
+  - Accepts both 200 and 422 status codes for validation endpoint (strict mode support)
+  - URL validation accepts both dev server and production URLs
+- **Documentation**:
+  - `SEO_LD_IMPLEMENTATION_SUMMARY.md` - Complete overview (500+ lines)
+  - `SEO_LD_QUICKSTART.md` - Quick start guide (600+ lines)
+  - `SEO_LD_TEST_SUCCESS.md` - Test analysis (2000+ lines)
+  - `SEO_LD_COMPLETE.md` - Final completion summary with all fixes
+  - `docs/API.md` - API endpoint documentation
+
+### Sitemap & Meta Tools (Phase 50.7 seed 🗺️✨)
+- **Sitemap Status Endpoint**: `GET /agent/status/sitemap`
+  - Metadata mode: Returns `{ok, files, count, urls, integrity}`
+  - Raw mode (`raw=1`): Streams sitemap.xml as `application/xml`
+  - Discovers sitemap from `public/`, `dist/`, or root
+  - SHA-256 integrity checksums for validation
+  - E2E tests: `tests/e2e/sitemap-status.api.spec.ts` (3 tests)
+- **SEO Meta Suggestion Endpoint**: `GET /agent/seo/meta/suggest?path=<url>`
+  - Generates SEO-optimized title (≤60 chars) and description (≤155 chars)
+  - Incorporates keywords from `seo-keywords.json` when available
+  - Returns `{path, base, keywords, suggestion, integrity}`
+  - Writes artifacts to `agent/artifacts/seo-meta/<slug>.json`
+  - E2E tests: `tests/e2e/seo-meta.suggest.api.spec.ts` (5 tests)
+- **SEO Meta Apply Endpoints** (Phase 50.7 — Dev Only 🚀):
+  - `POST /agent/seo/meta/preview?path=<url>`: Preview meta changes with PR-ready diff
+    - Writes artifacts: `<slug>.diff`, `<slug>.preview.html`, `<slug>.apply.json`
+    - Returns `{ok, path, changed, artifacts, integrity, empty_diff}`
+    - Always available (no auth required)
+  - `POST /agent/seo/meta/commit?path=<url>&confirm=1`: Apply changes with backup
+    - Requires `ALLOW_DEV_ROUTES=1` environment variable
+    - Creates timestamped backup: `<file>.bak.<timestamp>.html`
+    - Writes modified HTML to original file
+    - Dry-run mode: Omit `confirm=1` to preview without writing
+  - **Safety**: Traversal-guarded (public dirs only), SHA-256 integrity, size-safe operations
+  - E2E tests: `tests/e2e/seo-meta.apply.api.spec.ts` (5 tests, commit tests skipped by default)
+- **Dev Overlay Actions**:
+  - **Reveal**: Checks if page exists in sitemap.xml, opens raw sitemap
+  - **Suggest meta**: Opens modal with title/description suggestions
+  - **Editable fields**: Title and description are editable (not readonly)
+  - **Preview diff** button: Shows proposed changes with artifact paths
+  - **Approve & commit** button: Applies changes with backup creation
+  - **Open PR helper** button: Opens GitHub Actions workflow dispatch page
+  - Modal includes keywords display, character count limits, copy buttons, diff preview
+  - E2E tests: `tests/e2e/devpages.suggest.ui.spec.ts` (4 tests, optional)
+- **Meta PR Automation** (GitHub Actions 🤖):
+  - **Workflow**: `.github/workflows/siteagent-meta-pr.yml`
+    - Workflow dispatch with inputs: `page_path`, `compress`, `include_html`, `draft`
+    - Creates draft PR with meta artifacts for code review
+    - Uses `GITHUB_TOKEN` (no PAT required)
+    - Permissions: `contents: write`, `pull-requests: write`
+  - **Script**: `scripts/meta-pr-summary.mjs`
+    - Picks artifacts from `--page` or newest `*.apply.json`
+    - Optionally creates ZIP in `_pr/` directory
+    - Emits GitHub Actions outputs: `branch`, `title`, `commit`, `body`, `html_glob`
+    - Builds PR markdown with artifact paths and integrity checksums
+  - **PR Structure**:
+    - Branch: `meta/<slug>-<timestamp>`
+    - Title: `SEO Meta: <page> — PR-ready diff`
+    - Body: Artifact paths, changed fields, integrity checksum
+    - Files: All artifacts in `agent/artifacts/seo-meta-apply/` (+ optional HTML)
+  - **Usage**: Click "Open PR helper" in Dev Overlay → Fill inputs → Run workflow
+- **PR Enhancements** (Phase 50.7++ 🏷️💬):
+  - **Automatic Labels**: PRs tagged with `seo-meta` and `automation` labels
+  - **Repo-wide PR Labeler**: `.github/workflows/labeler.yml` applies labels to ALL PRs
+    - Configuration: `.github/labeler.yml` with path-based rules
+    - Labels: `seo-meta` (artifacts), `html` (HTML files), `automation` (workflows/scripts)
+    - Uses `pull_request_target` for fork safety
+  - **Preview Comments**: Workflow posts comment with proposal and autolinks
+    - Proposed title (≤60 chars) and description (≤155 chars)
+    - Clickable GitHub links to diff, preview HTML, and apply JSON
+    - Enables instant review without downloading artifacts
+  - **Artifact Enrichment**: All `.apply.json` files now include `proposal` field
+    - Structure: `{"proposal": {"title": "...", "desc": "..."}}`
+    - Enables PR comments to show proposed changes
+  - **Script Upgrade**: `meta-pr-summary.mjs` emits `comment` output with autolinks
+    - Additional outputs: `apply_path`, `diff_path`, `preview_path`
+    - Autolink helper: `link(branch, relPath)` generates GitHub blob URLs
+    - Uses `GITHUB_REPOSITORY` environment variable
+  - **Reviewer Assignment** (Phase 50.7+++ 👥):
+    - New workflow inputs: `reviewers` (usernames), `team_reviewers` (team slugs)
+    - Auto-requests reviews from specified users/teams when PR is created
+    - Comma-separated format (e.g., `alice,bob` or `web,platform`)
+    - If empty, no reviewers are requested
+  - **SEO Meta Guardrails** (Phase 50.7+++ 🛡️):
+    - New workflow: `.github/workflows/seo-meta-guardrails.yml`
+    - Validates title ≤ 60 chars, description ≤ 155 chars on PRs
+    - Triggers on changes to `agent/artifacts/seo-meta-apply/**/*.apply.json`
+    - Uses GitHub log annotations for inline errors
+    - New script: `scripts/seo-meta-guardrails.mjs`
+    - Validates `proposal.title` and `proposal.desc` from `.apply.json` files
+    - Writes `guardrails-violations.json` report with violation details
+    - Posts automated PR review (REQUEST_CHANGES) summarizing all violations
+    - Uploads violations report as workflow artifact
+    - Includes violation excerpts in review (title/desc snippets)
+    - Exits 0 but workflow fails after posting review
+    - Fast validation with no build dependencies
+    - Permissions: `contents: read`, `pull-requests: write`
+  - **Path-based Reviewer Auto-Assignment** (Phase 50.7++++ 🎯):
+    - New config: `.github/seo-meta-reviewers.json` with glob-based rules
+    - New script: `scripts/seo-meta-reviewers.mjs` to resolve reviewers from page path
+    - Maps page paths to reviewers/teams (e.g., `/blog/**` → `alice` + `content` team)
+    - Supports `**` (any subpath) and `*` (single segment) glob patterns
+    - Merges path-based reviewers with manual workflow inputs
+    - Removes duplicates and leading `@` symbols
+    - Falls back to `defaults` if no rules match
+    - Emits `page` output from `meta-pr-summary.mjs` for path resolution
+    - Workflow resolves reviewers via new "Resolve reviewers from path rules" step
+
+**Quick Local Checks**:
+```bash
+# Enable dev routes for commit endpoint
+$env:ALLOW_DEV_ROUTES='1'  # PowerShell
+
+# Reveal sitemap (JSON)
+curl -s http://127.0.0.1:8001/agent/status/sitemap | jq
+
+# Raw sitemap (opens in browser)
+start "" "http://127.0.0.1:8001/agent/status/sitemap?raw=1"
+
+# Suggest meta for index.html
+curl -s "http://127.0.0.1:8001/agent/seo/meta/suggest?path=/index.html" | jq '.suggestion'
+
+# Preview meta changes (always available)
+curl -s -X POST "http://127.0.0.1:8001/agent/seo/meta/preview?path=/index.html" `
+  -H "Content-Type: application/json" `
+  -d '{"title":"New Title","desc":"New description"}' | jq
+
+# Commit meta changes (requires ALLOW_DEV_ROUTES=1)
+curl -s -X POST "http://127.0.0.1:8001/agent/seo/meta/commit?path=/index.html&confirm=1" `
+  -H "Content-Type: application/json" `
+  -d '{"title":"New Title","desc":"New description"}' | jq
+
+# View artifacts
+Get-ChildItem agent\artifacts\seo-meta-apply\*
+```
+
+### SEO Keywords Intelligence Router (Phase 50.6.3+ 🔑🔍)
+- **New Endpoints**: `/agent/seo/keywords` for keyword intelligence generation
+  - POST: Generate keyword recommendations with trends enrichment
+  - GET: Fetch last generated report
+- **Mock Route**: `/agent/seo/keywords/mock` for fast CI testing
+  - Deterministic output (2 pages: `/index.html`, `/agent.html`)
+  - Instantly writes artifacts (~500ms)
+  - No LLM dependencies
+  - Includes SHA-256 integrity
+  - Test suite: `tests/e2e/seo-keywords.mock.spec.ts` (3 tests)
+  - CI workflow: `.github/workflows/e2e-keywords-mock.yml`
+  - README badge added
+- **Extraction Modes**:
+  - **LLM mode** (`SEO_LLM_ENABLED=1`): High-quality keyword extraction via LLM
+  - **Heuristic mode** (`SEO_LLM_ENABLED=0`): Fast rule-based extraction
+    - Title trigrams/bigrams (confidence 0.9-0.95)
+    - Title unigrams (confidence 0.65)
+    - Description unigrams (confidence 0.55)
+    - Domain-specific boosts (autonomous, siteagent, portfolio, etc.)
+- **Trends Enrichment**: Google Trends-like interest scoring (0-100)
+  - Currently deterministic stub (length-based)
+  - Ready for real Google Trends API integration
+- **CTR Underperformer Bias**: Pages with CTR < 2% get +15% confidence boost
+  - Fetches underperformers from Phase 50.5 analytics endpoint
+  - Encourages broader keyword exploration for low-performing pages
+- **Ranking Algorithm**: `effectiveness = confidence × (trend / 100)`
+  - Returns top 10 keywords per page
+  - Sorted by effectiveness descending
+- **Artifacts**:
+  - `agent_artifacts/seo-keywords.json` — Full report with integrity
+  - `agent_artifacts/seo-keywords.md` — Human-readable report with effectiveness scores
+- **SHA-256 Integrity**: Embedded in both JSON and Markdown
+  - Compact JSON format for consistent hashing
+  - Integrity field: `{"algo": "sha256", "value": "<64-char-hex>", "size": "<bytes>"}`
+- **HTTP Utility**: New `assistant_api/utils/http.py` for internal service calls
+  - Simple urllib-based JSON GET
+  - Configurable timeout and headers
+  - Reusable across routers
+- **Sitemap Loader**: `assistant_api/utils/sitemap.py` for auto-discovery of pages
+  - **Dependency-free** (stdlib only): xml.etree, re, pathlib, fnmatch, json
+  - **Multi-source discovery**: sitemap.xml → filesystem scan (3 levels deep) → fallback defaults
+  - **Nested path support**: Derives base-relative URLs (e.g., `/blog/post/index.html`)
+  - **Include/Exclude globs**: `SEO_SITEMAP_INCLUDE`, `SEO_SITEMAP_EXCLUDE` env vars
+  - **Configurable public dirs**: `SEO_PUBLIC_DIRS` env var (comma-separated)
+  - **Optional caching**: `SEO_SITEMAP_CACHE=1` writes to `agent/artifacts/status.json`
+  - **Title/description extraction**: Regex-based from HTML `<title>` and `<meta name="description">`
+  - Returns deduplicated `List[PageMeta]` with path, title, desc
+  - Used by `/agent/seo/keywords` to auto-discover all portfolio pages
+  - **Unit tests**: `tests/unit/test_sitemap.py` (4 tests covering nested paths, filtering, caching)
+  - **E2E tests**: `tests/e2e/seo-keywords.discovery.spec.ts` (2 tests validating sitemap integration)
+- **Status Pages Router**: `assistant_api/routers/status_pages.py` (Phase 50.6.5+)
+  - **Endpoint**: `GET /agent/status/pages` — Returns discovered pages with metadata
+  - **Caching**: Reads from `agent/artifacts/status.json` or triggers on-demand discovery
+  - **Integrity**: SHA-256 checksum of compact JSON for validation
+  - **Response**: `{ok, generated_at, count, integrity, pages[]}`
+  - **Dev Overlay Panel**: `src/features/dev/DevPagesPanel.tsx` for UI visualization
+    - Real-time filtering by path, title, description
+    - Copy JSON export to clipboard
+    - Table view with metadata columns
+  - **E2E tests**: `tests/e2e/status-pages.api.spec.ts` (3 tests validating API + cache consistency)
+- **Status Open Endpoint** (dev-only): `GET /agent/status/open` (Phase 50.6.7)
+  - **Purpose**: View underlying HTML files for discovered pages
+  - **Authentication**: Requires `ALLOW_DEV_ROUTES=1` environment variable
+  - **Modes**:
+    - Metadata (`raw=0`): Returns `{ok, abs_path, size, mtime, hint_raw_url}`
+    - Raw (`raw=1`): Streams HTML content with 2MB size cap
+  - **Security**: Directory traversal protection, validates paths within public dirs
+  - **File Resolver**: `assistant_api/utils/sitemap.py::resolve_file_for_url_path()` helper
+  - **Dev Panel Actions**: `DevPagesPanel.tsx` updated with "Open" and "Copy path" buttons
+  - **E2E tests**: `tests/e2e/status-open.api.spec.ts` (4 tests: metadata, raw, traversal, validation)
+- **Settings Update**: Added `BACKEND_URL` for internal service-to-service calls
+- **Documentation**:
+  - `docs/API.md`: Added `/agent/seo/keywords` endpoint documentation
+  - `PHASE_50.6.3_KEYWORDS_COMPLETE.md`: Complete implementation guide
+
+### Changed
+- **Auto-Downgrade to Mock**: `/agent/seo/keywords` automatically downgrades to mock when `SEO_LLM_ENABLED=0`
+  - Provides seamless fallback without code changes (parity with Phase 50.5 seo.tune)
+  - Verified by `tests/e2e/seo-keywords.fallback.spec.ts` (2 tests)
+  - CI workflow updated to test both mock and fallback paths
+- **SEO Keywords Auto-Discovery**: `/agent/seo/keywords` now uses enhanced sitemap loader
+  - Replaced 3 hardcoded pages with automatic discovery via `discover_pages()`
+  - Discovers 29+ pages from sitemap.xml and filesystem scan (supports 3-level nesting)
+  - Extracts title/description from built HTML files
+  - Provides complete portfolio coverage for keyword generation
+  - Supports include/exclude filtering via env vars
+  - Optional caching to `agent/artifacts/status.json`
+  - Discovers 22+ pages from sitemap.xml and filesystem scan
+  - Extracts title/description from built HTML files
+  - Provides complete portfolio coverage for keyword generation
+
+### E2E Mock Infrastructure & CI (Phase 50.6.3+ 🧪🔒)
+- **GitHub Actions Workflow**: `.github/workflows/e2e-mock.yml`
+  - Dedicated CI for fast mock E2E tests (~3s vs ~2min for full tests)
+  - Runs on push/PR to main and LINKEDIN-OPTIMIZED branches
+  - Full setup: Node 20, PNPM 9, Playwright, Python 3.11, backend startup
+  - Environment: `SEO_LLM_ENABLED=0` (forces mock), `ALLOW_TEST_ROUTES=1`
+  - Uploads test results on failure (7-day retention)
+  - Badge added to README.md for build status visibility
+- **SHA-256 Integrity for Artifacts**: Mock artifacts now include cryptographic checksums
+  - Added `_sha256_bytes()` helper in `agent_run_mock.py`
+  - Computes hash on stable JSON format (compact separators for consistent size)
+  - Embedded integrity field: `{"algo": "sha256", "value": "<64-char-hex>", "size": <bytes>}`
+  - Returned in API response and written to artifact file
+  - Test validation: `seo-analytics.mock.spec.ts` validates integrity in both API response and artifact
+- **Auto-Downgrade Feature**: Seamless fallback when `SEO_LLM_ENABLED=0`
+  - Modified `@task("seo.tune")` in `assistant_api/agent/tasks.py`
+  - Automatically uses mock implementation when LLM disabled
+  - Backend logs `seo.tune.auto_mock` event (reason: `SEO_LLM_ENABLED=0`)
+  - No test code changes needed - full test suite transparently uses mock
+  - Use cases:
+    - Local dev without LLM setup
+    - CI environments without API keys
+    - Fast smoke tests in pipelines
+- **Documentation Updates**:
+  - `docs/DEVELOPMENT.md`: Added comprehensive "Agent E2E Tests (SEO Analytics)" section
+    - Quick command reference (mock vs full tests)
+    - Comparison table (duration, dependencies, use cases)
+    - Auto-downgrade feature explanation
+    - Helper function documentation
+    - Prerequisites and troubleshooting
+  - CI badge added to section
+  - `CHANGELOG.md`: This entry documenting all mock infrastructure improvements
+
+### E2E Test Mock Routes (Phase 50.6.2+ 🧪🚀)
+- **Test-only Mock Endpoint**: `/agent/run/mock` for fast E2E tests
+  - New router: `assistant_api/routers/agent_run_mock.py`
+  - Instantly writes fake `seo-tune.json` and `seo-tune.md` artifacts
+  - Guarded by `ALLOW_TEST_ROUTES=1` (disable in production)
+  - Returns deterministic mock data (2 pages: `/` and `/projects/siteagent`)
+  - Eliminates LLM/database dependencies for smoke tests
+- **Reusable Artifact Helper**: `tests/e2e/helpers/waitForArtifact.ts`
+  - Smart polling with content validation
+  - Supports both JSON and text artifacts (MD, diff)
+  - Configurable timeout (default 45s)
+  - Clear error messages on timeout
+- **Fast Mock Test Suite**: `tests/e2e/seo-analytics.mock.spec.ts`
+  - 30s timeout (vs 60s for full tests)
+  - 2 passing tests + 1 skipped (UI integration)
+  - Tests mock endpoint, artifact structure, custom threshold
+  - npm scripts: `test:e2e:seo:mock` (fast) and `test:e2e:seo:full` (complete)
+- **Documentation Updates**:
+  - `docs/API.md`: Added `/agent/run/mock` endpoint documentation
+  - `package.json`: Added test scripts for mock and full E2E
+  - Settings: `ALLOW_TEST_ROUTES` flag added
+
+### E2E Test Refactoring (Phase 50.6.2+ 🧪⚡)
+- **Dedicated API Context Pattern**: Separate backend calls from UI navigation
+  - Updated: `tests/e2e/seo-analytics.spec.ts`
+  - API calls bypass Vite proxy, go directly to backend (port 8001)
+  - UI navigation still uses Vite dev server (port 5173)
+  - Eliminates timeout issues with Vite proxy
+  - Test timeout increased to 60s for async agent tasks
+- **Polling Helper**: Wait for async artifact generation
+  - New helper: `pollForArtifact(api, url, timeoutMs)`
+  - Polls every 1s for up to 45s for agent task completion
+  - Graceful handling of async agent workflows
+  - Proper error messages on timeout
+- **All Tests Updated**: 6/6 tests now use dedicated API contexts
+  1. ingest → tune → artifact (LLM path)
+  2. MD artifact generation
+  3. Custom threshold configuration
+  4. Heuristic fallback behavior
+  5. Multiple source tracking
+  6. UI path (Vite navigation + API calls)
+- **Clean Architecture**: Proper resource management
+  - Each test creates fresh API context
+  - Cleanup with `api.dispose()` at end
+  - No shared state between tests
+  - Production-ready pattern
+
+### E2E Cookie Authentication (Phase 50.6.2+ 🍪🔐)
+- **Global Setup**: Automatic dev overlay cookie injection
+  - New: `tests/e2e/setup/dev-overlay.ui.setup.ts`
+  - Fetches HttpOnly cookie from `/agent/dev/enable` endpoint
+  - Saves cookie to storage state for all tests
+  - Injects cookie for both UI and backend origins
+  - Eliminates manual cookie management in tests
+- **Playwright Config Update**: Automatic storage state loading
+  - Updated: `playwright.config.ts`
+  - Points `globalSetup` to cookie fetcher
+  - Auto-loads `tests/e2e/.auth/dev-overlay-state.json` in all contexts
+  - Keeps Bearer token header for API compatibility
+- **Test Simplification**: No manual auth headers needed
+  - Tests automatically have dev overlay cookie
+  - Cookie persists for 30 days (auto-refresh on expiry)
+  - More realistic testing (uses production auth mechanism)
+- **Documentation**: Complete E2E testing guide
+  - New: `docs/E2E_COOKIE_AUTH.md`
+  - Setup instructions for local and CI environments
+  - Troubleshooting guide for common issues
+  - Architecture details and security notes
+- **Security**: Production-safe implementation
+  - Storage state file excluded from git (`.gitignore`)
+  - Only works when `ALLOW_DEV_ROUTES=1`
+  - Cookie is HttpOnly and signed
+  - 30-day expiration with automatic refresh
+
+### Dev Auth Bypass (Phase 50.6.2+ 🔓🧪)
+- **Settings**: Dev authentication configuration
+  - New settings: `ALLOW_DEV_AUTH`, `DEV_BEARER_TOKEN`
+  - Default: Enabled in dev (`ALLOW_DEV_AUTH=1`)
+  - Production-safe: Set `ALLOW_DEV_AUTH=0` to disable
+- **Auth Guard Enhancement**: Bearer token bypass
+  - Updated: `assistant_api/utils/cf_access.py`
+  - Checks Bearer token before Cloudflare Access validation
+  - Returns "dev-user" principal for valid dev tokens
+  - Falls through to CF Access if token doesn't match
+  - Zero impact on production CF Access behavior
+- **Router Fixes**: Settings access corrections
+  - Fixed: `assistant_api/routers/agent_analytics.py`
+  - Corrected settings access: `settings["RAG_DB"]` (dict, not attribute)
+  - Fixed JSON parsing: Parse from raw bytes instead of double `request.json()`
+  - Prevents stream consumption errors
+- **Test Configuration**: Playwright Bearer token
+  - Updated: `playwright.config.ts`
+  - Added `extraHTTPHeaders: { 'Authorization': 'Bearer dev' }`
+  - All API request contexts include auth header automatically
+- **Documentation**: Dev auth implementation details
+  - New: `DEV_AUTH_BYPASS_COMPLETE.md`
+  - Usage examples for curl and Playwright
+  - Production deployment checklist
+
+### Multi-Format Analytics Ingestion (Phase 50.6.2 📥🔄)
+- **Parser Module**: Unified analytics data parsing
+  - New module: `assistant_api/analytics/parsers.py`
+  - Supports 4 input formats with auto-detection:
+    - Internal JSON: `{ source, rows: [{url, impressions, clicks}] }`
+    - GSC API JSON: `{ rows: [{keys:["/path"], clicks, impressions}] }`
+    - GSC CSV: UI export with Page, Clicks, Impressions columns
+    - GA4 JSON: Loose mapping with dimensionValues/metricValues
+  - URL normalization: Converts absolute URLs to relative paths
+  - Handles thousand separators in CSV numbers (e.g., "2,200" → 2200)
+- **Router Enhancement**: Accept JSON or CSV seamlessly
+  - Updated: `assistant_api/routers/agent_analytics.py`
+  - Reads raw request body for format detection
+  - Auto-detects CSV via Content-Type or file content
+  - Backwards compatible with existing internal JSON format
+- **Frontend UI Update**: CSV upload support
+  - Modified: `public/assets/js/seo-analytics.js` and `dist/assets/js/seo-analytics.js`
+  - Detects CSV files by extension or MIME type
+  - Sends CSV with `Content-Type: text/csv`
+  - Updated file input: accepts `.json`, `.csv` files
+  - Updated label: "Upload Search Console JSON or CSV"
+- **Test Coverage**: Parser validation
+  - New: `tests/test_analytics_parsers.py` (9 comprehensive tests)
+  - Tests: CSV parsing, GSC API JSON, internal JSON, GA4 JSON
+  - URL normalization tests (absolute → relative)
+  - CSV number parsing with commas
+  - Empty payload validation
+  - Multiple source tracking
+- **Documentation Updates**:
+  - API.md: Complete format examples for all 4 input types
+  - CHANGELOG.md: This entry
+
+### LLM-Based SEO Rewriting (Phase 50.6.1 🤖✍️)
+- **LLM SEO Rewriter**: Intelligent metadata optimization with graceful fallback
+  - New module: `assistant_api/llm/seo_rewriter.py`
+  - Primary → Fallback → Heuristic routing
+  - OpenAI-compatible Chat Completions API (`/chat/completions`)
+  - JSON mode with structured output validation
+  - Works with both `requests` and `urllib` (no new dependencies)
+  - Timeout protection (default: 9 seconds)
+- **SEO Tune Task Enhanced**: LLM-first approach
+  - Attempts LLM rewrite before heuristic fallback
+  - Tracks method used in `notes` field ("llm" or "heuristic")
+  - Graceful error handling for unreachable endpoints
+  - No behavior change when LLM unavailable (transparent fallback)
+- **Settings Extensions**: LLM configuration
+  - `SEO_LLM_ENABLED`: Toggle LLM rewriting (default: true)
+  - `SEO_LLM_TIMEOUT`: Request timeout in seconds (default: 9.0)
+  - Reuses existing `OPENAI_BASE_URL`, `OPENAI_MODEL`, `OPENAI_API_KEY`
+  - Reuses existing `FALLBACK_BASE_URL`, `FALLBACK_MODEL`, `FALLBACK_API_KEY`
+- **Test Coverage**: Fallback verification
+  - `tests/test_seo_llm_fallback.py`: Graceful fallback tests (2 unit tests)
+  - `tests/e2e/seo-analytics.spec.ts`: Comprehensive E2E suite (6 tests)
+    - Full ingestion → tune → artifact flow with LLM detection
+    - Custom threshold parameters and multiple data sources
+    - Character limit enforcement and CTR accuracy validation
+    - Frontend UI upload/run workflow (when available)
+  - Tests: LLM unreachable → heuristic, LLM disabled → heuristic
+  - Validates `notes` field tracks method used
+  - Smart LLM detection: probes `/llm/primary/latency` and `/llm/health`
+  - Graceful test skipping when LLM unavailable (no flakes)
+- **Dev Smoke Test**: PowerShell script for manual testing
+  - `test-seo-llm.ps1`: End-to-end LLM rewrite workflow
+  - Ingests sample CTR data
+  - Runs SEO tune with LLM enabled
+  - Inspects artifacts and reports LLM vs heuristic counts
+- **Ollama Integration**: Works with local models
+  - Points to Ollama's OpenAI proxy: `http://127.0.0.1:11434/v1`
+  - Example model: `qwen2.5:7b-instruct`
+  - No API key required for local Ollama
+- **Documentation Updates**:
+  - API.md: LLM rewriting section with configuration details
+  - CHANGELOG.md: This entry
+  - DEVELOPMENT.md: Dev smoke test instructions (pending)
+
+### Analytics Ingestion & SEO Tune (Phase 50.6 📊🔍)
+- **Analytics CTR Storage**: SQLite-based CTR tracking
+  - New module: `assistant_api/analytics/storage.py`
+  - Table: `analytics_ctr` (url, impressions, clicks, ctr, last_seen, source)
+  - Functions: `ensure_tables()`, `upsert_ctr_rows()`, `fetch_below_ctr(threshold)`
+  - Supports multiple sources: search_console, ga4, manual
+- **Analytics Ingestion API**: `/agent/analytics/ingest`
+  - POST endpoint for bulk CTR data ingestion
+  - Auto-calculates CTR from impressions/clicks
+  - Returns inserted_or_updated count
+  - Schema: `IngestPayload` with source and rows[]
+- **SEO Tune Task**: Automated metadata optimization
+  - New task: `seo.tune` in agent task registry
+  - Module: `assistant_api/tasks/seo_tune.py`
+  - Features:
+    - Loads current metadata from HTML files (title, description)
+    - Applies heuristic rewrites for low-CTR pages
+    - Generates JSON and Markdown artifacts
+    - Configurable CTR threshold (default 0.02)
+  - Heuristics:
+    - Adds action verbs and value props to short titles
+    - Injects AI/Automation keywords
+    - Extends short descriptions with benefits
+    - Clips to SEO-friendly lengths (70/155 chars)
+- **Artifact Generation**: Structured output
+  - JSON artifact: `seo-tune.json` with old/new metadata pairs
+  - Markdown artifact: `seo-tune.md` for human review
+  - Location: `agent_artifacts/` (configurable via `ARTIFACTS_DIR`)
+- **Settings Extensions**: New environment variables
+  - `RAG_DB`: SQLite database path (default: ./data/rag.sqlite)
+  - `ARTIFACTS_DIR`: Output directory (default: ./agent_artifacts)
+  - `WEB_ROOT`: HTML source directory (default: ./dist)
+  - `SEO_CTR_THRESHOLD`: CTR threshold for tune task (default: 0.02)
+- **Test Coverage**: Comprehensive pytest suite
+  - `tests/test_analytics_ingest.py`: Integration tests
+  - Tests: Ingest + tune workflow, CTR calculation, meta extraction, heuristics
+  - PowerShell test script: `test-analytics-ingest.ps1`
+- **Documentation Updates**:
+  - API.md: Added `/agent/analytics/ingest` and `seo.tune` task docs
+  - CHANGELOG.md: This entry
+  - ARCHITECTURE.md: Analytics loop section (pending)
+- **Usage**:
+  ```powershell
+  # Ingest data
+  Invoke-RestMethod -Method Post `
+    -Uri "http://127.0.0.1:8001/agent/analytics/ingest" `
+    -Headers @{ "Cookie"="dev_overlay=enabled" } `
+    -Body '{"source":"search_console","rows":[...]}'
+
+  # Run tune
+  Invoke-RestMethod -Method Post `
+    -Uri "http://127.0.0.1:8001/agent/run?task=seo.tune" `
+    -Headers @{ "Cookie"="dev_overlay=enabled" } `
+    -Body '{"threshold":0.02}'
+  ```
 
 ### Analytics Dashboard, Adaptive Autotuning, and Scheduler Extensions (Phase 50.3 🎯📊🤖)
 - **AB Analytics Dashboard**: Visual CTR insights with Recharts

@@ -74,6 +74,29 @@ def _log(msg: str) -> None:
 @asynccontextmanager
 async def lifespan(app) -> AsyncIterator[None]:  # type: ignore[override]
     _log("startup: begin")
+
+    # Log analytics configuration (no secrets)
+    try:
+        from .settings import get_settings
+        from pathlib import Path
+        settings = get_settings()
+        geo_path = settings.get("GEOIP_DB_PATH")
+        geo_exists = bool(geo_path and Path(geo_path).exists())
+        _log(
+            f"telemetry: dir={settings['ANALYTICS_DIR']} "
+            f"retention_days={settings['ANALYTICS_RETENTION_DAYS']} "
+            f"gzip_after_days={settings['ANALYTICS_GZIP_AFTER_DAYS']} "
+            f"log_ip_enabled={settings['LOG_IP_ENABLED']} "
+            f"geoip_db_set={bool(geo_path)} "
+            f"geoip_db_exists={geo_exists} "
+            f"epsilon={settings['LEARNING_EPSILON']:.3f} "
+            f"decay={settings['LEARNING_DECAY']:.3f} "
+            f"ema_alpha={settings['LEARNING_EMA_ALPHA']:.3f} "
+            f"allow_localhost={settings.get('METRICS_ALLOW_LOCALHOST', True)}"
+        )
+    except Exception as exc:
+        _log(f"telemetry: config check error: {exc!r}")
+
     stopper = asyncio.Event()
     hold_task = asyncio.create_task(_hold_open(stopper))
     poll_task: asyncio.Task | None = None

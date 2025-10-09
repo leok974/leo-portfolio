@@ -1,107 +1,155 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Book a call — Leo Klemet</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <head>
+    <meta charset="utf-8" />
+    <title>Book a call — Leo Klemet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="canonical"
+      href="https://leok974.github.io/leo-portfolio/book.html"
+    />
 
-  <!-- Content Security Policy for Calendly integration -->
-  <meta http-equiv="Content-Security-Policy" content="
+    <!-- Content Security Policy for Calendly integration -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
     default-src 'self';
     script-src 'self' https://assets.calendly.com;
     style-src 'self' 'unsafe-inline' https://assets.calendly.com;
     img-src 'self' data: https://*.calendly.com;
     frame-src https://calendly.com https://*.calendly.com;
     connect-src 'self' https://calendly.com https://*.calendly.com;
-    font-src 'self' https://fonts.gstatic.com;">
+    font-src 'self' https://fonts.gstatic.com;"
+    />
 
-  <!-- Calendly assets -->
-  <link rel="preconnect" href="https://assets.calendly.com" crossorigin>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://assets.calendly.com/assets/external/widget.css">
+    <!-- Calendly assets -->
+    <link rel="preconnect" href="https://assets.calendly.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://assets.calendly.com/assets/external/widget.css"
+    />
 
-  <!-- Consent banner (site-wide) -->
-  <script defer src="/assets/js/consent.js"></script>
-  <script defer src="/assets/js/calendly.js"></script>
+    <!-- Consent banner (site-wide) -->
+    <script defer src="/assets/js/consent.js"></script>
+    <script defer src="/assets/js/calendly.js"></script>
 
-  <style>
-    :root {
-      /* default (light) palette — overridden by .dark or [data-theme="dark"] */
-      --bg: #f8fafc;
-      --fg: #0b1321;
-      --muted: #4b5563;
-      --card: #ffffff;
-      --ring: #005bbb;
-    }
-    /* Dark mode: support either a class or a data attribute */
-    html.dark, html[data-theme="dark"] {
-      --bg: #0b0b0f;
-      --fg: #e8eef7;
-      --muted: #a7b1c2;
-      --card: #121319;
-      --ring: #8ad8ff;
-    }
+    <style>
+      :root {
+        /* default (light) palette — overridden by .dark or [data-theme="dark"] */
+        --bg: #f8fafc;
+        --fg: #0b1321;
+        --muted: #4b5563;
+        --card: #ffffff;
+        --ring: #005bbb;
+      }
+      /* Dark mode: support either a class or a data attribute */
+      html.dark,
+      html[data-theme="dark"] {
+        --bg: #0b0b0f;
+        --fg: #e8eef7;
+        --muted: #a7b1c2;
+        --card: #121319;
+        --ring: #8ad8ff;
+      }
 
-    body {
-      background: var(--bg);
-      color: var(--fg);
-      font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
-    .wrap {
-      max-width: 1100px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-    }
-    #calendly-inline {
-      min-height: 680px;
-      height: 680px;
-      display: block;
-      background: var(--card);
-      border-radius: 16px;
-      box-shadow: 0 1px 10px rgba(0, 0, 0, 0.15);
-      padding: 0.5rem;
-    }
-    .sr-only {
-      position: absolute;
-      left: -10000px;
-      top: auto;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-    }
-  </style>
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family:
+          "Inter",
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Arial,
+          sans-serif;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap {
+        max-width: 1100px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      #calendly-inline {
+        min-height: 680px;
+        height: 680px;
+        display: block;
+        background: var(--card);
+        border-radius: 16px;
+        box-shadow: 0 1px 10px rgba(0, 0, 0, 0.15);
+        padding: 0.5rem;
+      }
+      .sr-only {
+        position: absolute;
+        left: -10000px;
+        top: auto;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <h1
+        style="
+          font-family:
+            &quot;Space Grotesk&quot;, &quot;Inter&quot;, system-ui, sans-serif;
+          font-weight: 700;
+          font-size: clamp(1.75rem, 3vw+1rem, 2.5rem);
+          margin-bottom: 1.5rem;
+        "
+      >
+        Book a call
+      </h1>
 
-</head>
-<body>
-  <main class="wrap">
-    <h1 style="font-family:'Space Grotesk','Inter',system-ui,sans-serif;font-weight:700;font-size:clamp(1.75rem,3vw+1rem,2.5rem);margin-bottom:1.5rem">Book a call</h1>
+      <!-- Inline Calendly container (inherits global theme) -->
+      <div
+        id="calendly-inline"
+        data-testid="calendly-inline"
+        data-calendly-url="https://calendly.com/leok974/intro-15"
+        data-calendly-utm-source="portfolio"
+        data-calendly-utm-campaign="book-page"
+        data-calendly-locale="en"
+        data-calendly-prefill="1"
+      ></div>
 
-    <!-- Inline Calendly container (inherits global theme) -->
-    <div id="calendly-inline"
-         data-testid="calendly-inline"
-         data-calendly-url="https://calendly.com/leok974/intro-15"
-         data-calendly-utm-source="portfolio"
-         data-calendly-utm-campaign="book-page"
-         data-calendly-locale="en"
-         data-calendly-prefill="1"></div>
+      <p class="sr-only" id="calendly-live" aria-live="polite"></p>
 
-    <p class="sr-only" id="calendly-live" aria-live="polite"></p>
+      <footer
+        style="
+          margin-top: 2rem;
+          padding-top: 1rem;
+          border-top: 1px solid var(--muted);
+          text-align: center;
+        "
+      >
+        <button
+          data-testid="manage-privacy"
+          onclick="if (window.consent && window.consent.showBanner) window.consent.showBanner(true);"
+          style="
+            background: transparent;
+            border: none;
+            color: var(--ring);
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+          "
+        >
+          Manage privacy preferences
+        </button>
+      </footer>
 
-    <footer style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--muted);text-align:center;">
-      <button
-        data-testid="manage-privacy"
-        onclick="if (window.consent && window.consent.showBanner) window.consent.showBanner(true);"
-        style="background:transparent;border:none;color:var(--ring);text-decoration:underline;cursor:pointer;font-size:0.9rem;padding:0.5rem 1rem;">
-        Manage privacy preferences
-      </button>
-    </footer>
-
-    <noscript>
-      JavaScript is required to book a meeting. You can schedule directly here:
-      <a href="https://calendly.com/leok974/intro-15" rel="noopener">https://calendly.com/leok974/intro-15</a>
-    </noscript>
-  </main>
-</body>
+      <noscript>
+        JavaScript is required to book a meeting. You can schedule directly
+        here:
+        <a href="https://calendly.com/leok974/intro-15" rel="noopener"
+          >https://calendly.com/leok974/intro-15</a
+        >
+      </noscript>
+    </main>
+  </body>
 </html>

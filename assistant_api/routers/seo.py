@@ -38,5 +38,5 @@ def act(action: str = Query(..., description="Action to perform (e.g., 'seo.pr')
             raise HTTPException(status_code=404, detail=str(e))
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"PR creation failed: {str(e)}")
-    
+
     return {"ok": False, "detail": "unsupported_action"}

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Unlock Metrics Dashboard · 403</title>
+    <style>
+      body {
+        font-family:
+          Inter,
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Arial,
+          sans-serif;
+        margin: 40px;
+        color: #111;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+      }
+      .card {
+        max-width: 640px;
+        border: 1px solid #eee;
+        border-radius: 14px;
+        padding: 22px 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+      }
+      h1 {
+        margin: 0 0 6px;
+      }
+      .muted {
+        color: #666;
+      }
+      input,
+      button {
+        font: inherit;
+      }
+      input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #ddd;
+      }
+      button {
+        margin-top: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #111;
+        background: #111;
+        color: #fff;
+        cursor: pointer;
+      }
+      .tips {
+        font-size: 12px;
+        color: #666;
+        line-height: 1.5;
+        margin-top: 12px;
+      }
+      code {
+        background: #f6f6f6;
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Invalid Token</h1>
+      <div class="muted">
+        The dev token provided is incorrect, or the server is not configured.
+      </div>
+      <form id="unlock" onsubmit="return store(event)">
+        <label for="tok" class="muted" style="display: block; margin-top: 12px"
+          >Try another token</label
+        >
+        <input
+          id="tok"
+          name="tok"
+          type="password"
+          autofocus
+          placeholder="Paste dev token…"
+        />
+        <button type="submit">Unlock</button>
+      </form>
+      <div class="tips">
+        Server must set <code>METRICS_DEV_TOKEN</code>. You can pass it via
+        <code>?dev=</code>, <code>Authorization: Bearer</code>,
+        <code>X-Dev-Token</code>, or cookie <code>dev_token</code>.
+      </div>
+    </div>
+    <script>
+      function store(e) {
+        e.preventDefault();
+        var t = document.getElementById("tok").value.trim();
+        if (!t) return false;
+        try {
+          localStorage.setItem("dev:token", t);
+        } catch {}
+        document.cookie =
+          "dev_token=" + encodeURIComponent(t) + "; Path=/; SameSite=Lax";
+        var url = new URL(location.href);
+        url.searchParams.set("dev", t);
+        location.replace(url.toString());
+        return false;
+      }
+    </script>
+  </body>
+</html>

@@ -189,4 +189,13 @@ Streaming specifics:
 - SSE path includes `guardrails` inside the initial `meta` event so the UI can render the badge immediately during streaming.
 - In `enforce` mode the streaming handler short‑circuits with a single safe delta and `done` after emitting the `meta` with `blocked: true`.
 
+## Anonymous Analytics
+
+- Analytics are anonymous: `visitor_id` is a client-generated random ID (hashed/local), no emails or PII sent.
+- Restrict ingestion via `ANALYTICS_ORIGIN_ALLOWLIST` and standard CORS.
+- Raw events are stored as JSONL in `./data/analytics/` and can be rotated or redacted as needed.
+- No external tracking services or third-party beacons are used.
+- Data retention: Events older than 14 days are not analyzed (can be manually archived/deleted).
+
+
 

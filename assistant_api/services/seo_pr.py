@@ -48,18 +48,18 @@ def open_seo_pr(
     branch_prefix: str = "seo/tune-"
 ) -> Dict:
     """Create a GitHub PR with SEO tune changes.
-    
+
     Args:
         base_branch: Base branch to create PR against (default: "main")
         branch_prefix: Prefix for new branch name (default: "seo/tune-")
-    
+
     Returns:
         Dict with keys:
             - ok: bool (success status)
             - branch: str (branch name)
             - pr: str | None (PR URL or None if gh CLI unavailable)
             - detail: str | None (additional info)
-    
+
     Raises:
         SeoPRConfigError: If GITHUB_TOKEN not set
         FileNotFoundError: If seo-tune.diff not found
@@ -101,15 +101,15 @@ def open_seo_pr(
         try:
             # Add worktree at base branch
             _run(["git", "worktree", "add", tmp, base_branch])
-            
+
             # Create new branch in worktree
             _run(["git", "checkout", "-b", branch], cwd=tmp)
-            
+
             # Apply the unified diff
             patch = diff_path.read_text(encoding="utf-8")
             patch_file = Path(tmp) / "seo.patch"
             patch_file.write_text(patch, encoding="utf-8")
-            
+
             # Apply patch (may fail if patch doesn't apply cleanly)
             try:
                 _run(["git", "apply", "seo.patch"], cwd=tmp)
@@ -117,14 +117,14 @@ def open_seo_pr(
                 raise RuntimeError(
                     "Failed to apply patch. Changes may conflict with current state."
                 ) from e
-            
+
             # Stage and commit changes
             _run(["git", "add", "-A"], cwd=tmp)
             _run(["git", "commit", "-m", title], cwd=tmp)
-            
+
             # Push using token auth
             origin_url = _run(["git", "remote", "get-url", "origin"], cwd=tmp).strip()
-            
+
             # Inject token for HTTPS push
             if origin_url.startswith("https://") and "@" not in origin_url:
                 origin_url = origin_url.replace(
@@ -132,10 +132,10 @@ def open_seo_pr(
                     f"https://x-access-token:{token}@"
                 )
                 _run(["git", "remote", "set-url", "origin", origin_url], cwd=tmp)
-            
+
             # Push branch
             _run(["git", "push", "-u", "origin", branch], cwd=tmp)
-            
+
         finally:
             # Always clean up worktree
             try:

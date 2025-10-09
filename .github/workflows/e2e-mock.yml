@@ -1,0 +1,72 @@
+name: e2e-mock
+on:
+  push:
+    branches: [ main, LINKEDIN-OPTIMIZED ]
+  pull_request:
+    branches: [ main, LINKEDIN-OPTIMIZED ]
+
+jobs:
+  mock-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install PNPM
+        run: npm i -g pnpm@9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r assistant_api/requirements.txt
+
+      - name: Start backend
+        run: |
+          uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 &
+          sleep 5
+        env:
+          ALLOW_TEST_ROUTES: "1"
+          ALLOW_DEV_ROUTES: "1"
+          SEO_LLM_ENABLED: "0"
+
+      - name: Run mock E2E (fast)
+        env:
+          SEO_LLM_ENABLED: "0"
+          UI_URL: "http://localhost:5173"
+          BACKEND_URL: "http://127.0.0.1:8001"
+          ALLOW_TEST_ROUTES: "1"
+          ALLOW_DEV_ROUTES: "1"
+          DEV_BEARER: "dev"
+          SITEAGENT_DEV_COOKIE_KEY: "dev-secret-test"
+        run: |
+          if pnpm -s test:e2e:seo:mock; then
+            echo "✅ Ran mock suite via script"
+          else
+            echo "ℹ️ Fallback to direct spec path"
+            npx playwright test tests/e2e/seo-analytics.mock.spec.ts --project=chromium
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7

@@ -75,6 +75,7 @@ def require_cf_access(request: Request) -> str:
     Accepts either:
     - User SSO tokens (contains email claim)
     - Service tokens (contains sub claim with token name)
+    - Dev Bearer token (only when ALLOW_DEV_AUTH=1, for local testing)
 
     Returns:
         str: Principal identifier (email for users, subject for service tokens)
@@ -82,6 +83,16 @@ def require_cf_access(request: Request) -> str:
     Raises:
         HTTPException: 403 if header missing, 401 if JWT invalid, 403 if principal not allowed
     """
+    # Dev bypass — keeps prod behavior unchanged
+    from ..settings import get_settings
+    settings = get_settings()
+    if settings.get("ALLOW_DEV_AUTH"):
+        auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
+        if auth_header:
+            expected = f"bearer {settings.get('DEV_BEARER_TOKEN', 'dev')}"
+            if auth_header.strip().lower() == expected.lower():
+                return "dev-user"
+
     token = request.headers.get("Cf-Access-Jwt-Assertion")
     if not token:
         # If you ONLY reach origin via Cloudflare Tunnel, header spoofing is unlikely,

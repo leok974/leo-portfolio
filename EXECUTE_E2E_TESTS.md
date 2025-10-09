@@ -1,7 +1,7 @@
 # E2E Test Execution - Final Instructions
 
-**Status:** Ready to Execute ✅  
-**Last Updated:** 2025-10-08  
+**Status:** Ready to Execute ✅
+**Last Updated:** 2025-10-08
 **Final Commit:** 8e8a9f9
 
 ---
@@ -83,7 +83,7 @@ Visit in browser: **http://127.0.0.1:5173/tools.html**
 Running 9 tests using 9 workers
 
 ✓ [chromium] › ab-toast.spec.ts › should display toast notification
-✓ [chromium] › ab-toast.spec.ts › should track visitor ID  
+✓ [chromium] › ab-toast.spec.ts › should track visitor ID
 ✓ [chromium] › ab-toast.spec.ts › should initialize AB bucket
 ✓ [chromium] › ab-winner-bold.spec.ts › should bold winner CTR
 ✓ [chromium] › ab-winner-bold.spec.ts › should display winner
@@ -165,7 +165,7 @@ pnpm build
 
 **Solutions Applied:**
 - ✅ Backend returns both `enabled` AND `allowed` keys
-- ✅ Frontend accepts either key (boolean or "1")  
+- ✅ Frontend accepts either key (boolean or "1")
 - ✅ Same-origin cookie via Vite proxy
 - ✅ Test IDs for stable selectors
 - ✅ Debug logging added

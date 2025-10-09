@@ -89,19 +89,21 @@ jobs:
               return `| ${a.page} | ${a.impressions ?? ''} | ${a.ctr ?? ''} | ${a.position ?? ''} | ${reasons} | ${sugg} |`;
             }).join('\n');
             const median = data.analysis?.median_ctr ?? 0;
-            const body = `## SERP Anomalies — ${day}
-
-**Median CTR:** ${median}
-
-**Total anomalies:** ${anomalies.length} (threshold: ${threshold})
-
-| Page | Impressions | CTR | Position | Reasons | Suggestions |
-|---|---:|---:|---:|---|---|
-${rows}
-
-**Artifacts:** \`agent/artifacts/seo-serp/${day}\`
-
-> This issue was auto-filed by the SEO SERP Nightly workflow.`;
+            const body = [
+              `## SERP Anomalies — ${day}`,
+              '',
+              `**Median CTR:** ${median}`,
+              '',
+              `**Total anomalies:** ${anomalies.length} (threshold: ${threshold})`,
+              '',
+              '| Page | Impressions | CTR | Position | Reasons | Suggestions |',
+              '|---|---:|---:|---:|---|---|',
+              rows,
+              '',
+              `**Artifacts:** \`agent/artifacts/seo-serp/${day}\``,
+              '',
+              '> This issue was auto-filed by the SEO SERP Nightly workflow.'
+            ].join('\n');
             if (existing) {
               await github.rest.issues.update({
                 owner: context.repo.owner, repo: context.repo.repo,
@@ -146,13 +148,15 @@ ${rows}
             const issue = openIssues.find(i => i.title.startsWith(prefix));
             if (!issue) { core.info(`No open issue matching "${prefix}"`); return; }
             const items = (plan.plan || []).slice(0, 10).map(p => `- **${p.url}** — ${p.reason || ''}${p.suggestions?.length ? ` _(suggestions: ${p.suggestions.join('; ')})_` : ''}`).join('\n');
-            const body = `### Remediation plan
-
-**Planned actions:** ${plan.count}
-
-${items || '_No actions planned._'}
-
-Artifacts: \`${plan.artifacts?.actions || 'N/A'}\``;
+            const body = [
+              '### Remediation plan',
+              '',
+              `**Planned actions:** ${plan.count}`,
+              '',
+              items || '_No actions planned._',
+              '',
+              `Artifacts: \`${plan.artifacts?.actions || 'N/A'}\``
+            ].join('\n');
             await github.rest.issues.createComment({
               owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, body
             });

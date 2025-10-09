@@ -1,0 +1,165 @@
+name: SEO & Analytics Nightly Auto-PR
+
+on:
+  schedule:
+    # 02:30 America/New_York == 06:30 UTC (approx; GH uses UTC)
+    - cron: "30 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  BASE_URL: ${{ vars.BASE_URL }}          # e.g. http://127.0.0.1:8080 or Pages URL
+  BACKEND_URL: ${{ vars.BACKEND_URL }}    # e.g. http://127.0.0.1:8001
+  AUTO_FIX: "false"                        # flip to true to allow safe edits
+  DEV_GUARD_ENABLED: "false"               # disable dev guards in CI
+  DEV_ALLOW_PLACEHOLDER_OG: "false"        # no placeholder OG images in CI
+  NODE_VERSION: "20"
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci || npm install
+          npx playwright install --with-deps chromium || true
+
+      - name: Spin minimal preview (optional if purely static)
+        run: |
+          python3 -m http.server 5173 >/dev/null 2>&1 &
+          echo "Local served at :5173"
+          sleep 3
+
+      - name: Run smoke & SEO checks
+        run: |
+          mkdir -p reports
+          node scripts/seo-intel.mjs --base "$BASE_URL" --out reports/summary.json --md reports/summary.md
+          echo "✅ SEO intelligence report generated"
+
+      - name: Run Playwright tests (JSON reporter, non-blocking)
+        run: |
+          mkdir -p reports
+          set +e
+          npx playwright test tests/e2e/seo-ld*.spec.ts tests/e2e/seo-autofix.spec.ts --project=chromium --reporter=json > reports/playwright.json
+          CODE=$?
+          if [ $CODE -ne 0 ]; then
+            echo "::warning::Playwright reported failures (exit $CODE)"
+          fi
+          set -e
+
+      - name: Build Playwright summary (Markdown)
+        run: |
+          node scripts/playwright-summary.mjs --in reports/playwright.json --out reports/playwright.md
+
+      - name: SEO autofix (dry-run → JSON)
+        id: autofix
+        run: |
+          mkdir -p reports
+          set +e
+          node scripts/seo-autofix.mjs --base "$BASE_URL" --dry-run > reports/seo-autofix.json
+          CODE=$?
+          if [ $CODE -ne 0 ]; then
+            echo "::warning::Autofix reports pending changes (exit $CODE)"
+          fi
+          set -e
+
+      - name: Build autofix PR comment (Markdown)
+        run: |
+          node scripts/seo-autofix-report.mjs --in reports/seo-autofix.json > reports/seo-autofix.md
+
+      - name: Safe autofixes (guarded)
+        if: env.AUTO_FIX == 'true'
+        run: |
+          node scripts/seo-autofix.mjs --base "$BASE_URL" --apply
+          echo "Autofixes applied"
+
+      - name: Build PR body (with badges)
+        run: |
+          node scripts/seo-pr-body.mjs \
+            --summary reports/summary.json \
+            --autofix reports/seo-autofix.json \
+            --playwright reports/playwright.json \
+            > reports/PR_BODY.md
+          cat reports/PR_BODY.md
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-intel-artifacts
+          path: reports/
+
+      - name: Create branch & commit
+        run: |
+          BR="chore/seo-intel-$(date +%F)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BR" || git checkout "$BR"
+          git add reports/
+          git commit -m "chore(seo): nightly SEO & analytics report $(date +%F)" || echo "No changes to commit"
+          git push origin "$BR" --force
+
+      - name: Open PR
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "Nightly SEO & Analytics Report (${{ github.run_id }})"
+          body-path: "reports/PR_BODY.md"
+          branch: "chore/seo-intel-$(date +%F)"
+          base: "main"
+          labels: |
+            automation
+            seo
+            analytics
+          draft: false
+          committer: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+          author: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+
+      - name: Comment with autofix summary
+        if: steps.cpr.outputs.pull-request-number
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const pr = Number('${{ steps.cpr.outputs.pull-request-number }}');
+            const body = fs.readFileSync('reports/seo-autofix.md', 'utf8');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr,
+              body
+            });
+          result-encoding: string
+
+      - name: Comment with Playwright summary
+        if: steps.cpr.outputs.pull-request-number
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const pr = Number('${{ steps.cpr.outputs.pull-request-number }}');
+            if (pr && fs.existsSync('reports/playwright.md')) {
+              const body = fs.readFileSync('reports/playwright.md', 'utf8');
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr,
+                body
+              });
+            }
+

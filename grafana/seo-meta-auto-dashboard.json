@@ -1,0 +1,83 @@
+{
+  "id": null,
+  "title": "SiteAgent — Nightly SEO Meta",
+  "timezone": "browser",
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Pages vs Over-limit",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 9 },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "Infinity"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "csv",
+          "source": "url",
+          "url": "https://YOUR_HOST/agent/metrics/seo-meta-auto.csv?limit_days=180",
+          "columns": ["ts", "pages_count", "over_count"],
+          "format": "timeseries",
+          "timeField": "ts",
+          "series": [
+            { "name": "pages_count", "value": "pages_count" },
+            { "name": "over_count", "value": "over_count" }
+          ]
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "stat",
+      "title": "Last Run — Pages / Over / Skipped",
+      "gridPos": { "x": 0, "y": 9, "w": 8, "h": 6 },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "Infinity"
+      },
+      "targets": [
+        {
+          "refId": "B",
+          "type": "csv",
+          "source": "url",
+          "url": "https://YOUR_HOST/agent/metrics/seo-meta-auto.csv?limit_days=1",
+          "columns": ["pages_count", "over_count", "skipped"],
+          "format": "table"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "type": "table",
+      "title": "Recent Runs (20)",
+      "gridPos": { "x": 8, "y": 9, "w": 16, "h": 12 },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "Infinity"
+      },
+      "targets": [
+        {
+          "refId": "C",
+          "type": "csv",
+          "source": "url",
+          "url": "https://YOUR_HOST/agent/metrics/seo-meta-auto.csv?limit_days=3650",
+          "columns": ["ts", "pages_count", "over_count", "skipped", "pr_url"],
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        { "id": "sortBy", "options": { "fields": ["ts"], "order": "desc" } },
+        { "id": "limit", "options": { "limit": 20 } }
+      ],
+      "options": { "showHeader": true }
+    }
+  ],
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "time": { "from": "now-180d", "to": "now" },
+  "editable": true,
+  "schemaVersion": 38
+}

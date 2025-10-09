@@ -1,0 +1,104 @@
+name: siteagent-meta-pr
+
+on:
+  workflow_dispatch:
+    inputs:
+      page_path:
+        description: "Page path (e.g., /index.html). If empty, use the most recent artifact."
+        required: false
+        type: string
+      compress:
+        description: "Zip the .diff + .apply.json (+ preview) into /agent/artifacts/seo-meta-apply/_pr/"
+        required: false
+        default: true
+        type: boolean
+      include_html:
+        description: "Also include modified HTML files in the PR (if they exist)."
+        required: false
+        default: false
+        type: boolean
+      draft:
+        description: "Open the PR as draft."
+        required: false
+        default: true
+        type: boolean
+      reviewers:
+        description: "Comma-separated GitHub usernames to request review from (e.g. alice,bob)."
+        required: false
+        type: string
+      team_reviewers:
+        description: "Comma-separated team slugs to request review from (e.g. web,platform)."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: siteagent-meta-pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node (for the summary helper)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Find artifacts and build PR summary
+        id: meta
+        run: |
+          node scripts/meta-pr-summary.mjs \
+            --page "${{ github.event.inputs.page_path }}" \
+            --include-html "${{ github.event.inputs.include_html }}" \
+            --compress "${{ github.event.inputs.compress }}"
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Resolve reviewers from path rules
+        id: auto
+        run: |
+          node scripts/seo-meta-reviewers.mjs \
+            --page "${{ steps.meta.outputs.page }}" \
+            --config ".github/seo-meta-reviewers.json" \
+            --reviewers "${{ github.event.inputs.reviewers }}" \
+            --team-reviewers "${{ github.event.inputs.team_reviewers }}"
+
+      - name: Create pull request
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ${{ steps.meta.outputs.branch }}
+          title:  ${{ steps.meta.outputs.title }}
+          body:   ${{ steps.meta.outputs.body }}
+          draft:  ${{ github.event.inputs.draft }}
+          commit-message: ${{ steps.meta.outputs.commit }}
+          labels: |
+            seo-meta
+            automation
+          reviewers: ${{ steps.auto.outputs.reviewers || github.event.inputs.reviewers }}
+          team-reviewers: ${{ steps.auto.outputs.team_reviewers || github.event.inputs.team_reviewers }}
+          add-paths: |
+            agent/artifacts/seo-meta-apply/**
+            ${{ steps.meta.outputs.html_glob }}
+
+      - name: Comment preview snippet
+        if: steps.cpr.outputs.pull-request-number != ''
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ steps.cpr.outputs.pull-request-number }}
+          body: ${{ steps.meta.outputs.comment }}
+
+      - name: Echo PR URL
+        if: steps.cpr.outputs.pull-request-url != ''
+        run: |
+          echo "✅ PR created: ${{ steps.cpr.outputs.pull-request-url }}"

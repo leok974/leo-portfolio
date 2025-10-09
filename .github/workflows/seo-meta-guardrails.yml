@@ -1,0 +1,119 @@
+name: seo-meta-guardrails
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'agent/artifacts/seo-meta-apply/**/*.apply.json'
+
+permissions:
+  contents: read
+  pull-requests: write   # needed to create a PR review
+
+concurrency:
+  group: seo-meta-guardrails-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REVIEW_MODE: REQUEST_CHANGES   # or COMMENT for non-blocking
+
+jobs:
+  validate:
+    name: Validate SEO meta limits
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Compute changed apply.json files
+        id: ch
+        shell: bash
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          CHANGED=$(git diff --name-only "$BASE" "$HEAD" -- 'agent/artifacts/seo-meta-apply/**/*.apply.json' | tr '\n' ' ')
+          echo "files=$CHANGED" >> "$GITHUB_OUTPUT"
+          echo "Changed files: $CHANGED"
+
+      - name: Validate limits (title ≤ 60, desc ≤ 155)
+        id: validate
+        continue-on-error: true
+        run: |
+          node scripts/seo-meta-guardrails.mjs ${{ steps.ch.outputs.files }}
+
+      - name: Detect violations report
+        id: collect
+        shell: bash
+        run: |
+          if [ -f guardrails-violations.json ]; then
+            echo "has_violations=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_violations=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post PR review with violations
+        if: steps.collect.outputs.has_violations == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const core = require('@actions/core');
+            const reportPath = path.join(process.cwd(), 'guardrails-violations.json');
+            const r = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            const bullets = r.violations.map(v => {
+              const label = v.field === 'json'
+                ? `Invalid JSON`
+                : `${v.field} length ${v.length} > ${v.limit}`;
+              const excerpt = v.excerpt ? `\n> ${v.excerpt}` : '';
+              return `- **${label}** in \`${v.file}\`${excerpt}`;
+            }).join('\n');
+
+            const body = [
+              '### ❌ SEO Meta Guardrails failed',
+              '',
+              `**Rules:** Title ≤ ${r.title_max}, Description ≤ ${r.desc_max}`,
+              '',
+              bullets || '- (no details)',
+              '',
+              '_Automated review by **seo-meta-guardrails**._'
+            ].join('\n');
+
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              event: '${{ env.REVIEW_MODE }}',
+              body
+            });
+
+      - name: Upload violations report (artifact)
+        if: steps.collect.outputs.has_violations == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: guardrails-violations
+          path: guardrails-violations.json
+          if-no-files-found: ignore
+
+      - name: Fail if violations
+        if: steps.collect.outputs.has_violations == 'true'
+        run: exit 1
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## SEO Meta Guardrails" >> $GITHUB_STEP_SUMMARY
+          echo "- Checked: ${{ steps.ch.outputs.files }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.collect.outputs.has_violations }}" = "true" ]; then
+            echo "- ❌ Violations found. A PR review has been posted (Request changes)." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ✅ No violations." >> $GITHUB_STEP_SUMMARY
+          fi

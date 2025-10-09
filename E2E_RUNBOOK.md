@@ -1,12 +1,41 @@
 # E2E Test Suite - Quick Runbook (Clean Slate)
 
-**Last Updated:** 2025-10-07  
-**Commit:** f5b78c9  
+![E2E Dev Overlay Tests](https://github.com/leok974/leo-portfolio/actions/workflows/e2e-dev-overlay.yml/badge.svg)
+
+**Last Updated:** 2025-10-08
+**Commit:** Phase 50.5 + Dev Overlay Tests
 **Purpose:** Reliable E2E test execution from clean state
 
 ---
 
+## 🎯 What These Tests Guarantee
+
+- ✅ **Dev Overlay Authentication**: HMAC-signed cookie access to privileged UI
+- ✅ **Cookie Persistence**: Storage state preserved across browser contexts
+- ✅ **Fail-Closed Security**: Expired/missing cookies deny access
+- ✅ **SEO PR Workflow**: PR URL banner persistence via sessionStorage
+- ✅ **Negative Flows**: Graceful handling when GitHub CLI/token unavailable
+- ✅ **AB Analytics**: Toast notifications and admin panel rendering
+- ✅ **Backend API Shape**: Correct JSON responses for all endpoints
+
+---
+
 ## 🚀 Quick Start (One Command)
+
+### Local Development
+
+```powershell
+# Run dev overlay tests (auto-starts servers)
+.\scripts\e2e-dev-overlay.ps1
+
+# Or if servers already running:
+.\scripts\e2e-dev-overlay.ps1 -SkipServers
+
+# Run in headed mode (see browser):
+.\scripts\e2e-dev-overlay.ps1 -Headed
+```
+
+### Manual Test Execution
 
 ```powershell
 # 0) Kill any old servers
@@ -60,7 +89,7 @@ curl -s http://127.0.0.1:5173/agent/dev/status
 # {"enabled":true,"allowed":true}
 ```
 
-**What this tests:** 
+**What this tests:**
 - Vite proxy forwards `/agent/*` to backend
 - Cookie is set on correct origin
 - Backend validates cookie correctly
@@ -127,13 +156,13 @@ import { enableOverlayOnPage } from "./lib/overlay";
 test("...", async ({ page }) => {
   // ✅ Set cookie via same-origin helper
   await enableOverlayOnPage(page);
-  
+
   // ✅ Navigate to tools page
   await page.goto("/tools.html");
-  
+
   // ✅ Wait for panel by test ID (not text)
   await page.getByTestId("ab-analytics").waitFor({ state: "visible" });
-  
+
   // ✅ Continue with assertions...
 });
 ```
@@ -378,7 +407,241 @@ All tests green means:
 
 ---
 
+## 🔐 Dev Overlay Authentication Flow
+
+### Architecture Overview
+
+The dev overlay uses a **setup project** pattern for authentication:
+
+1. **Setup Project** (`dev-overlay.setup.ts`):
+   - Runs once before tests
+   - Calculates HMAC signature using Node's `crypto` module
+   - Calls `/agent/dev/enable` via frontend proxy
+   - Cookie is set on `localhost:5173` (same origin as tests)
+   - Saves authenticated state to `playwright/.auth/dev-overlay.json`
+
+2. **Test Projects**:
+   - `chromium-dev-overlay`: Uses saved storage state (has cookie)
+   - `chromium`: No authentication (tests public features)
+
+3. **Authentication Chain**:
+   ```
+   Node crypto → HMAC signature → POST /agent/dev/enable
+   → Backend validates signature → Sets sa_dev cookie
+   → Cookie saved in storage state → Tests load storage state
+   → Tests have authenticated session
+   ```
+
+### Storage State File
+
+```json
+{
+  "cookies": [
+    {
+      "name": "sa_dev",
+      "value": "eyJleHAi...",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1760017594,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}
+```
+
+**Critical:** Cookie must be on `localhost` domain to work with tests on `http://localhost:5173`
+
+---
+
+## 🐛 Troubleshooting Dev Overlay Tests
+
+### Cookie Domain Mismatch
+
+**Symptom:** Tests fail with "enabled: false" even after setup runs
+
+**Cause:** Cookie set on `127.0.0.1` but tests access `localhost` (different domains!)
+
+**Solution:**
+```powershell
+# Check cookie domain
+Get-Content playwright\.auth\dev-overlay.json | ConvertFrom-Json |
+  Select-Object -ExpandProperty cookies | Select-Object name, domain
+
+# Should show: domain = "localhost"
+# If it shows "127.0.0.1", delete and regenerate:
+Remove-Item playwright\.auth\dev-overlay.json
+pnpm playwright test --project=setup
+```
+
+**Prevention:** Always use frontend proxy (`/agent/*`) not direct API URL (`http://127.0.0.1:8001`)
+
+### GitHub CLI Not Installed
+
+**Symptom:** SEO PR test tries to create PR but button is disabled
+
+**Expected Behavior:** Test should gracefully skip or simulate PR URL
+
+**Current Handling:**
+```typescript
+// Test checks if button is enabled before clicking
+if ((await prBtn.isVisible()) && (await prBtn.isEnabled())) {
+  await prBtn.click();
+}
+
+// If no PR URL returned, simulates via sessionStorage
+if (!(await banner.isVisible())) {
+  await page.evaluate(() => {
+    sessionStorage.setItem('seo.pr.url', 'https://github.com/example/repo/pull/1234');
+  });
+}
+```
+
+**No action needed** - test design handles this gracefully.
+
+### HMAC Signature Mismatch
+
+**Symptom:** Setup project fails with "401 Unauthorized" or "Signature mismatch"
+
+**Causes:**
+1. `SITEAGENT_HMAC_SECRET` environment variable mismatch
+2. Body encoding issue (UTF-8 vs ASCII)
+3. Signature header format wrong
+
+**Solutions:**
+```powershell
+# Verify backend has correct secret
+# In backend terminal or .env:
+$env:SITEAGENT_HMAC_SECRET='local-dev-secret-12345'
+
+# Check setup script uses matching secret:
+# tests/e2e/dev-overlay.setup.ts line 19
+const secret = process.env.SITEAGENT_HMAC_SECRET || 'local-dev-secret-12345';
+
+# Verify signature format:
+X-SiteAgent-Signature: sha256=<hex-digest>
+# NOT: sha256:<hex> or <hex> alone
+```
+
+### Storage State File Not Created
+
+**Symptom:** Session tests fail with "ENOENT: no such file or directory"
+
+**Cause:** Setup project didn't run or failed silently
+
+**Solutions:**
+```powershell
+# 1. Manually run setup project
+pnpm playwright test --project=setup
+
+# 2. Check setup output for errors
+# Should see: "[setup] Dev overlay enabled and auth state saved"
+
+# 3. Verify file exists
+Test-Path playwright\.auth\dev-overlay.json
+
+# 4. If file exists but tests fail, check cookie domain (see above)
+```
+
+### Cookie Expiry During Long Test Runs
+
+**Symptom:** Tests pass initially but fail after 2+ hours
+
+**Cause:** `sa_dev` cookie expires (default 24 hours, can be customized)
+
+**Solution:**
+```powershell
+# Regenerate storage state before long test sessions
+Remove-Item playwright\.auth\dev-overlay.json
+pnpm playwright test --project=setup
+
+# Or increase cookie duration in setup:
+# tests/e2e/dev-overlay.setup.ts
+const bodyStr = JSON.stringify({ hours: 48 }); // up to 24 max by default
+```
+
+---
+
+## 🧪 Test Coverage Map
+
+### Dev Overlay Tests (`dev-overlay*.spec.ts`)
+
+| Test File | Tests | Purpose |
+|-----------|-------|---------|
+| `dev-overlay.setup.ts` | 1 | Authenticate and save storage state |
+| `dev-overlay.spec.ts` | 3 | Basic status checks, tools rendering |
+| `dev-overlay.session.spec.ts` | 2 | Cookie persistence, storage state reuse |
+| `dev-overlay.expiry.spec.ts` | 2 | Security: fail-closed on cookie removal |
+
+**Total:** 8 tests
+
+### SEO Tests (`seo-pr-persist.spec.ts`)
+
+| Test | Purpose |
+|------|---------|
+| PR banner persistence | sessionStorage survives reload |
+| PR creation without token | Graceful handling, no crash |
+
+**Total:** 2 tests
+
+### AB Analytics Tests (existing)
+
+| Test | Purpose |
+|------|---------|
+| Toast notifications | Public site shows AB variant changes |
+| Winner bold styling | Admin panel highlights winning variants |
+| Run Now badge | Admin shows timestamp of last execution |
+
+**Total:** 3 tests
+
+**Grand Total:** 13 E2E tests
+
+---
+
+## 📋 CI/CD Integration
+
+### GitHub Actions Workflow
+
+Tests run automatically on:
+- Push to `main` or `LINKEDIN-OPTIMIZED` branches
+- Pull requests to `main` or `LINKEDIN-OPTIMIZED`
+
+**Workflow:** `.github/workflows/e2e-dev-overlay.yml`
+
+**Key Steps:**
+1. Install dependencies (pnpm, Python, Playwright browsers)
+2. Start backend with test environment variables
+3. Start Vite dev server
+4. Wait for services to be ready (`wait-on`)
+5. Run setup + dev-overlay tests
+6. Upload traces/screenshots on failure
+
+**Environment Variables (CI):**
+```yaml
+SCHEDULER_ENABLED: '0'                    # Disable background jobs
+SITEAGENT_DEV_COOKIE_KEY: 'test-key...'  # Enable cookie signing
+SITEAGENT_HMAC_SECRET: 'local-dev...'    # Enable HMAC auth
+BASE_URL: http://localhost:5173          # Frontend URL
+CI: true                                  # Enable CI-specific settings
+```
+
+### Local vs CI Differences
+
+| Aspect | Local | CI |
+|--------|-------|-----|
+| Browser | Chromium (system) | Chromium (Playwright-bundled) |
+| Servers | Manual or script-started | Started by workflow |
+| Storage State | Reused across runs | Generated fresh each run |
+| Retries | 0 | 2 (on failure) |
+| Traces | On failure only | On first retry |
+| Reporter | Line (console) | HTML + Line |
+
+---
+
 **Related Docs:**
 - [E2E Hardening Complete](./E2E_HARDENING_COMPLETE.md)
 - [E2E Testing Guide](./E2E_TESTING_GUIDE.md)
+- [Dev Overlay E2E Tests](./DEV_OVERLAY_E2E_TESTS.md)
 - [Phase 50.3 Deployment Status](./PHASE_50.3_DEPLOYMENT_STATUS.md)

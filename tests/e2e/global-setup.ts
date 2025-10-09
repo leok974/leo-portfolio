@@ -1,5 +1,6 @@
 import { request as playwrightRequest } from '@playwright/test';
 import { spawn, type ChildProcess } from 'node:child_process';
+import { createHmac } from 'node:crypto';
 import { API_URL } from './lib/api';
 
 let backendProcess: ChildProcess | null = null;
@@ -74,9 +75,24 @@ async function seedTestData(): Promise<void> {
   const ctx = await playwrightRequest.newContext();
 
   try {
-    // Enable dev overlay for admin tests
-    await ctx.post(`${API_URL}/agent/dev/enable`);
-    console.log('[globalSetup] Dev overlay enabled');
+    // Enable dev overlay for admin tests with HMAC signature
+    const secret = process.env.SITEAGENT_HMAC_SECRET || 'local-dev-secret-12345';
+    const body = JSON.stringify({ hours: 24 });
+    const signature = createHmac('sha256', secret).update(body).digest('hex');
+
+    const enableResponse = await ctx.post(`${API_URL}/agent/dev/enable`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-SiteAgent-Signature': `sha256=${signature}`
+      },
+      data: body
+    });
+
+    if (enableResponse.ok()) {
+      console.log('[globalSetup] Dev overlay enabled');
+    } else {
+      console.warn('[globalSetup] Dev overlay enable failed:', enableResponse.status(), await enableResponse.text());
+    }
 
     // Seed initial layout optimization
     const layoutResponse = await ctx.post(`${API_URL}/agent/act`, {

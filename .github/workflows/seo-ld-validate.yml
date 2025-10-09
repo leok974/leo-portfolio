@@ -1,0 +1,113 @@
+name: SEO JSON-LD Validation
+
+on:
+  push:
+    branches: [main, LINKEDIN-OPTIMIZED]
+    paths:
+      - 'assistant_api/routers/seo_ld.py'
+      - 'index.html'
+      - 'projects/**/*.html'
+      - 'scripts/inject-jsonld.mjs'
+      - 'tests/e2e/seo-ld*.spec.ts'
+      - '.github/workflows/seo-ld-validate.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'assistant_api/routers/seo_ld.py'
+      - 'index.html'
+      - 'projects/**/*.html'
+      - 'scripts/inject-jsonld.mjs'
+      - 'tests/e2e/seo-ld*.spec.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate JSON-LD
+    runs-on: ubuntu-latest
+
+    env:
+      ALLOW_DEV_ROUTES: 1
+      SEO_LD_VALIDATE_STRICT: 1
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        working-directory: assistant_api
+        run: |
+          pip install --no-deps -r requirements-lock.txt
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Start backend server
+        working-directory: assistant_api
+        run: |
+          python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 &
+          echo $! > /tmp/backend.pid
+          # Wait for server to be ready
+          timeout 30 sh -c 'until curl -f http://127.0.0.1:8001/api/ready; do sleep 1; done'
+
+      - name: Run SEO JSON-LD E2E tests
+        run: |
+          npx playwright test tests/e2e/seo-ld.spec.ts tests/e2e/seo-ld.api.spec.ts --project=chromium
+
+      - name: Test JSON-LD generation for main pages
+        run: |
+          # Home page
+          curl -X POST http://127.0.0.1:8001/agent/seo/ld/generate \
+            -H "Content-Type: application/json" \
+            -d '{"url": "https://leok974.github.io/", "types": ["WebPage","WebSite","BreadcrumbList","Person","Organization"], "dry_run": true}' \
+            -f -s | jq -e '.jsonld != null'
+
+          # Project page
+          curl -X POST http://127.0.0.1:8001/agent/seo/ld/generate \
+            -H "Content-Type: application/json" \
+            -d '{"url": "https://leok974.github.io/projects/ledgermind", "types": ["WebPage","WebSite","BreadcrumbList","Person","Organization","CreativeWork"], "dry_run": true}' \
+            -f -s | jq -e '.jsonld != null'
+
+      - name: Validate JSON-LD report (zero errors)
+        run: |
+          ERRORS=$(curl -X POST http://127.0.0.1:8001/agent/seo/ld/validate \
+            -H "Content-Type: application/json" \
+            -d '{"url": "https://leok974.github.io/"}' \
+            -f -s | jq -r '.report.error_count')
+          echo "Error count: $ERRORS"
+          if [ "$ERRORS" != "0" ]; then
+            echo "❌ Validation failed with $ERRORS errors"
+            exit 1
+          fi
+          echo "✅ Validation passed with zero errors"
+
+      - name: Stop backend server
+        if: always()
+        run: |
+          if [ -f /tmp/backend.pid ]; then
+            kill $(cat /tmp/backend.pid) || true
+          fi
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-ld-test-results
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
