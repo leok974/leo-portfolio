@@ -9,12 +9,12 @@ import os
 
 def is_test_mode() -> bool:
     """Check if running in test mode.
-    
+
     Returns True if any of these conditions are met:
     - TEST_MODE=1 environment variable
     - VITE_E2E=1 environment variable (E2E tests)
     - PYTEST_CURRENT_TEST is set (pytest auto-sets this)
-    
+
     Returns:
         bool: True if in test mode, False otherwise
     """

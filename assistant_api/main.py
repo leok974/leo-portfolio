@@ -321,13 +321,14 @@ if os.getenv("CORS_LOG_PREFLIGHT", "0") in {"1", "true", "TRUE", "yes", "on"}:
 
 @app.get("/metrics")
 def metrics():
-    # Test mode: return JSON with in-memory counters
+    # Test mode: return JSON with actual router counters
     from assistant_api.util.testmode import is_test_mode
     if is_test_mode():
         from fastapi.responses import JSONResponse
-        # Return empty counters dict for test mode
-        return JSONResponse({"counters": {}})
-    
+        # Import the router counters from metrics module
+        from .metrics import router_route_total
+        return JSONResponse({"router": dict(router_route_total), "counters": dict(router_route_total)})
+
     # Prometheus format for analytics + any registered metrics
     try:
         return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)

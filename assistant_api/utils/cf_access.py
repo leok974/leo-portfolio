@@ -92,7 +92,7 @@ def require_cf_access(request: Request) -> str:
             return "test-user"
         # Or just allow all in test mode
         return "test-user"
-    
+
     # Dev bypass — keeps prod behavior unchanged
     from ..settings import get_settings
     settings = get_settings()

@@ -379,11 +379,8 @@ class DevEnableReq(BaseModel):
 def dev_status(sa_dev: Optional[str] = Cookie(default=None)):
     """
     Returns whether the dev overlay is enabled via signed cookie.
-    Returns both 'enabled' and 'allowed' keys for API compatibility.
-    In test mode, returns only 'allowed' key to match test expectations.
+    Returns only 'allowed' key for test compatibility.
     """
-    from ..util.testmode import is_test_mode
-    
     # local dev always allowed (index.html also guards by host or ?dev=1)
     # but this endpoint reflects cookie status only.
     key = os.environ.get("SITEAGENT_DEV_COOKIE_KEY", "")
@@ -392,23 +389,17 @@ def dev_status(sa_dev: Optional[str] = Cookie(default=None)):
     else:
         ok = _verify_dev(sa_dev, key) is not None
         allowed = ok
-    
-    # Test mode: return only 'allowed' key to match test expectations
-    if is_test_mode():
-        return {"allowed": allowed}
-    
-    # Production: return both keys for full API compatibility
-    return {"enabled": allowed, "allowed": allowed}
+
+    return {"allowed": allowed}
 
 
 @router.post("/dev/enable")
-async def dev_enable(req: Request, body: bytes = Depends(_authorized)):
+async def dev_enable(body: bytes = Depends(_authorized)):
     """
     Set a signed cookie enabling the maintenance overlay for a short time.
     Requires auth (CF Access or HMAC). Default 2 hours.
+    Returns JSON with 'allowed' key and sets cookie.
     """
-    from ..util.testmode import is_test_mode
-    
     key = os.environ.get("SITEAGENT_DEV_COOKIE_KEY", "")
     if not key:
         raise HTTPException(status_code=500, detail="SITEAGENT_DEV_COOKIE_KEY not set")
@@ -419,19 +410,14 @@ async def dev_enable(req: Request, body: bytes = Depends(_authorized)):
     hours = int(data.get("hours") or 2)
     exp = int(time.time()) + max(300, min(hours, 24) * 3600)
     token = _sign_dev({"exp": exp, "v": 1}, key)
-    
-    # Test mode: return JSON with 'allowed' key
-    if is_test_mode():
-        from fastapi.responses import JSONResponse
-        return JSONResponse({"allowed": True})
-    
-    resp = PlainTextResponse("ok")
 
     # In dev/test environments, use httponly=false so JS can read cookie
     # In production, use httponly=true for security
     is_dev = os.environ.get("APP_ENV", "dev").lower() != "prod"
 
-    resp.set_cookie(
+    from fastapi.responses import JSONResponse
+    response = JSONResponse({"allowed": True})
+    response.set_cookie(
         "sa_dev",
         token,
         max_age=exp - int(time.time()),
@@ -440,17 +426,19 @@ async def dev_enable(req: Request, body: bytes = Depends(_authorized)):
         httponly=not is_dev,  # Allow JS access in dev for testing
         samesite="lax",
     )
-    return resp
+    return response
 
 
 @router.post("/dev/disable")
 async def dev_disable(body: bytes = Depends(_authorized)):
     """
     Clear the dev overlay cookie. Requires auth.
+    Returns JSON with 'allowed' key and clears cookie.
     """
-    resp = PlainTextResponse("ok")
-    resp.delete_cookie("sa_dev", path="/")
-    return resp
+    from fastapi.responses import JSONResponse
+    response = JSONResponse({"allowed": False})
+    response.delete_cookie("sa_dev", path="/")
+    return response
 
 
 # -----------------------------
