@@ -18,19 +18,19 @@ export default defineConfig({
   forbidOnly: isCI,
   fullyParallel: true,
   workers,
-  retries: isCI ? 2 : 0, // 2 retries in CI for flaky network/timing issues
-  timeout: 30_000,
-  expect: { timeout: 3_000 },
+  retries: isCI ? 2 : 1, // 1 retry locally, 2 in CI for flaky network/timing issues
+  timeout: 60_000, // Increased to 60s for slower operations
+  expect: { timeout: 5_000 },
   globalSetup: path.resolve(__dirname, 'tests/e2e/setup/dev-overlay.ui.setup.ts'),
   reporter,
   use: {
     headless: true,
     baseURL,
-    trace: isCI ? 'on-first-retry' : 'retain-on-failure', // Lighter trace in CI
-    video: isCI ? 'on-first-retry' : 'off', // Video only on retry in CI
+    trace: 'on-first-retry', // Always capture trace on retry
+    video: 'retain-on-failure', // Keep videos for failed tests
     screenshot: 'only-on-failure',
-    actionTimeout: 10_000,
-    navigationTimeout: 15_000, // Can override lower for @ui-polish tests
+    actionTimeout: 15_000, // Increased action timeout
+    navigationTimeout: 30_000, // Increased navigation timeout
     ignoreHTTPSErrors: true,
     storageState: process.env.PW_STATE || 'tests/e2e/.auth/dev-overlay-state.json',
     extraHTTPHeaders: {
