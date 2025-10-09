@@ -8,12 +8,12 @@
       name="description"
       content="Archive of completed projects by Leo Klemet — AI Engineer & SWE"
     />
-    <link rel="canonical" href="https://leok974.github.io/leo-portfolio/completed.html" />
-    <meta property="og:type" content="website" />
-    <meta
-      property="og:title"
-      content="Completed Projects — Leo Klemet"
+    <link
+      rel="canonical"
+      href="https://leok974.github.io/leo-portfolio/completed.html"
     />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Completed Projects — Leo Klemet" />
     <meta
       property="og:description"
       content="A curated archive of finished work. Recently completed first."
@@ -29,11 +29,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#0f172a" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link
-      rel="icon"
-      href="/leo-avatar-sm.png"
-      type="image/png"
-    />
+    <link rel="icon" href="/leo-avatar-sm.png" type="image/png" />
     <link rel="apple-touch-icon" href="/leo-avatar-sm.png" />
     <link
       rel="preload"
@@ -106,16 +102,28 @@
     </header>
 
     <main id="main" tabindex="-1">
-      <section class="container" style="padding-top: 6rem; padding-bottom: 4rem;">
+      <section
+        class="container"
+        style="padding-top: 6rem; padding-bottom: 4rem"
+      >
         <div class="section-head">
           <h1 class="section-title text-shadow-sm">Completed Projects</h1>
-          <p class="muted" style="max-width: 60ch; margin: 0 auto;">
+          <p class="muted" style="max-width: 60ch; margin: 0 auto">
             A curated archive of finished work. Recently completed first.
           </p>
         </div>
 
-        <div id="completed-grid" class="grid" aria-live="polite" style="margin-top: 3rem;"></div>
-        <div id="empty-message" class="muted" style="text-align: center; padding: 3rem 1rem; display: none;">
+        <div
+          id="completed-grid"
+          class="grid"
+          aria-live="polite"
+          style="margin-top: 3rem"
+        ></div>
+        <div
+          id="empty-message"
+          class="muted"
+          style="text-align: center; padding: 3rem 1rem; display: none"
+        >
           No completed projects yet. Check back soon!
         </div>
       </section>
@@ -125,88 +133,108 @@
       <div class="container">
         <p>&copy; 2025 Leo Klemet. All rights reserved.</p>
         <nav aria-label="Footer">
-          <a href="/">Home</a> ·
-          <a href="/completed.html">Completed</a> ·
+          <a href="/">Home</a> · <a href="/completed.html">Completed</a> ·
           <a href="/#contact">Contact</a> ·
-          <a href="https://github.com/leok974" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://github.com/leok974" target="_blank" rel="noopener"
+            >GitHub</a
+          >
         </nav>
       </div>
     </footer>
 
     <script type="module">
       // Theme management (copied from main site)
-      const themeToggle = document.getElementById('themeToggle');
-      const themeSwitch = document.getElementById('themeSwitch');
+      const themeToggle = document.getElementById("themeToggle");
+      const themeSwitch = document.getElementById("themeSwitch");
       const root = document.documentElement;
 
       // Load saved theme or default to dark
-      const savedTheme = localStorage.getItem('theme') || 'dark';
-      root.setAttribute('data-theme', savedTheme);
-      themeSwitch.checked = savedTheme === 'light';
-      themeToggle.setAttribute('aria-pressed', savedTheme === 'light' ? 'true' : 'false');
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      root.setAttribute("data-theme", savedTheme);
+      themeSwitch.checked = savedTheme === "light";
+      themeToggle.setAttribute(
+        "aria-pressed",
+        savedTheme === "light" ? "true" : "false",
+      );
 
-      themeToggle.addEventListener('click', () => {
-        const newTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        root.setAttribute('data-theme', newTheme);
-        themeSwitch.checked = newTheme === 'light';
-        themeToggle.setAttribute('aria-pressed', newTheme === 'light' ? 'true' : 'false');
-        localStorage.setItem('theme', newTheme);
+      themeToggle.addEventListener("click", () => {
+        const newTheme =
+          root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        root.setAttribute("data-theme", newTheme);
+        themeSwitch.checked = newTheme === "light";
+        themeToggle.setAttribute(
+          "aria-pressed",
+          newTheme === "light" ? "true" : "false",
+        );
+        localStorage.setItem("theme", newTheme);
       });
 
       // Load and display completed projects
       async function loadProjects() {
         try {
-          const res = await fetch('projects.json', { cache: 'no-store' });
+          const res = await fetch("projects.json", { cache: "no-store" });
           const data = await res.json();
 
           // Convert object to array and filter for completed projects
           const all = Object.entries(data).map(([slug, project]) => ({
             ...project,
-            slug: project.slug || slug
+            slug: project.slug || slug,
           }));
 
           const completed = all
-            .filter(p => (p.status || 'in-progress') === 'completed')
-            .sort((a, b) => (b.date_completed || '').localeCompare(a.date_completed || ''));
+            .filter((p) => (p.status || "in-progress") === "completed")
+            .sort((a, b) =>
+              (b.date_completed || "").localeCompare(a.date_completed || ""),
+            );
 
-          const grid = document.getElementById('completed-grid');
-          const emptyMessage = document.getElementById('empty-message');
+          const grid = document.getElementById("completed-grid");
+          const emptyMessage = document.getElementById("empty-message");
 
           if (completed.length === 0) {
-            emptyMessage.style.display = 'block';
+            emptyMessage.style.display = "block";
             return;
           }
 
-          grid.innerHTML = completed.map(cardHTML).join('');
+          grid.innerHTML = completed.map(cardHTML).join("");
 
           // Add click handlers for cards
-          grid.querySelectorAll('.card-click').forEach(card => {
-            card.addEventListener('click', (e) => {
-              if (e.target.tagName === 'A') return; // Don't interfere with link clicks
-              const link = card.querySelector('.card-actions a');
+          grid.querySelectorAll(".card-click").forEach((card) => {
+            card.addEventListener("click", (e) => {
+              if (e.target.tagName === "A") return; // Don't interfere with link clicks
+              const link = card.querySelector(".card-actions a");
               if (link) link.click();
             });
 
-            card.addEventListener('keydown', (e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
+            card.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                const link = card.querySelector('.card-actions a');
+                const link = card.querySelector(".card-actions a");
                 if (link) link.click();
               }
             });
           });
         } catch (error) {
-          console.error('Failed to load projects:', error);
-          document.getElementById('empty-message').style.display = 'block';
-          document.getElementById('empty-message').textContent = 'Failed to load projects. Please try again later.';
+          console.error("Failed to load projects:", error);
+          document.getElementById("empty-message").style.display = "block";
+          document.getElementById("empty-message").textContent =
+            "Failed to load projects. Please try again later.";
         }
       }
 
       function cardHTML(p) {
-        const poster = p.thumbnail || (p.images && p.images[0] && p.images[0].src) || 'assets/optimized/hero-placeholder-sm.webp';
+        const poster =
+          p.thumbnail ||
+          (p.images && p.images[0] && p.images[0].src) ||
+          "assets/optimized/hero-placeholder-sm.webp";
         const link = `projects/${p.slug}.html`;
         const tags = Array.isArray(p.tags) ? p.tags : [];
-        const dateCompleted = p.date_completed ? new Date(p.date_completed).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+        const dateCompleted = p.date_completed
+          ? new Date(p.date_completed).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })
+          : "";
 
         return `
           <article class="card card-click hover-glow shadow-soft" data-slug="${p.slug}" role="link" tabindex="0">
@@ -215,15 +243,15 @@
             </div>
             <div class="card-body">
               <h3 class="card-title">${p.title}</h3>
-              ${dateCompleted ? `<p class="muted" style="font-size: 0.85rem; margin-top: -0.5rem; margin-bottom: 0.75rem;">Completed: ${dateCompleted}</p>` : ''}
-              <p class="muted">${p.description || p.solution || ''}</p>
+              ${dateCompleted ? `<p class="muted" style="font-size: 0.85rem; margin-top: -0.5rem; margin-bottom: 0.75rem;">Completed: ${dateCompleted}</p>` : ""}
+              <p class="muted">${p.description || p.solution || ""}</p>
               <div class="tags">
-                ${tags.map(t => `<span class="tag">${t}</span>`).join('')}
+                ${tags.map((t) => `<span class="tag">${t}</span>`).join("")}
               </div>
               <div class="card-actions">
                 <a class="btn" href="${link}">Case Study</a>
-                ${p.repo ? `<a class="btn" href="${p.repo}" target="_blank" rel="noopener">GitHub</a>` : ''}
-                ${p.demo ? `<a class="btn" href="${p.demo}" target="_blank" rel="noopener">Live</a>` : ''}
+                ${p.repo ? `<a class="btn" href="${p.repo}" target="_blank" rel="noopener">GitHub</a>` : ""}
+                ${p.demo ? `<a class="btn" href="${p.demo}" target="_blank" rel="noopener">Live</a>` : ""}
               </div>
             </div>
           </article>
@@ -232,5 +260,8 @@
 
       loadProjects();
     </script>
+
+    <!-- E2E Test Marker: Universal page-ready indicator -->
+    <div data-testid="page-ready" hidden></div>
   </body>
 </html>

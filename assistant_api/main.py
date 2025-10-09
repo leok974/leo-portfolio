@@ -148,6 +148,13 @@ app.include_router(resume_public.router)
 from assistant_api.routers import dev_overlay
 app.include_router(dev_overlay.router)
 
+# Test-only routes (Phase 51.0 - E2E Test Support)
+try:
+    from assistant_api.routers import test_mocks
+    app.include_router(test_mocks.router)
+except Exception:
+    pass
+
 # Phase 50.4 — SEO & OG Intelligence routes
 try:
     from assistant_api.routers import seo as seo_router

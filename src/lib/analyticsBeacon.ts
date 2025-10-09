@@ -34,6 +34,14 @@ export function sendAnalyticsBeacon(url: string, payload: any): boolean | Promis
 export function sendBeaconSafe(url: string, payload: any): boolean | Promise<Response> {
   // In E2E mode, short-circuit to avoid network delays
   if (import.meta.env?.VITE_E2E === '1') {
+    // Emit DOM event for deterministic test waiting
+    try {
+      window.dispatchEvent(new CustomEvent('analytics:beacon', { 
+        detail: { url, payload } 
+      }));
+    } catch {
+      // Ignore errors if window is unavailable
+    }
     console.debug('[E2E] analytics beacon suppressed → OK', { url, type: payload?.type });
     return true;
   }

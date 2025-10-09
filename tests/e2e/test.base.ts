@@ -7,6 +7,7 @@
  * - E2E mode detection
  */
 import { test as base, expect as baseExpect, request as baseRequest } from '@playwright/test';
+import { installApiMocks } from './fixtures/api-mocks';
 
 // Apply fixtures to all tests automatically
 base.beforeEach(async ({ page }) => {
@@ -20,6 +21,9 @@ base.beforeEach(async ({ page }) => {
     localStorage.setItem('consent.analytics', 'true');
     localStorage.setItem('consent.calendly', 'true');
   });
+
+  // Install API mocks for all backend endpoints
+  await installApiMocks(page);
 
   // Disable animations - must happen AFTER page navigation
   page.on('load', async () => {
@@ -38,43 +42,6 @@ base.beforeEach(async ({ page }) => {
       // Ignore errors if page is closing
     });
   });
-
-  // Stub Ollama/LLM calls (to prevent 404s when model not available)
-  await page.route('**/v1/chat/completions', route =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        id: 'test-completion',
-        object: 'chat.completion',
-        created: Date.now(),
-        model: 'gpt-oss:20b',
-        choices: [{
-          index: 0,
-          message: {
-            role: 'assistant',
-            content: '**Test Insight**: All metrics within normal range. No action needed.'
-          },
-          finish_reason: 'stop'
-        }]
-      })
-    })
-  );
-
-  // Stub analytics beacon calls
-  await page.route('**/analytics/beacon', route =>
-    route.fulfill({ status: 204, body: '' })
-  );
-
-  // Stub agent metrics ingest
-  await page.route('**/agent/metrics/ingest', route =>
-    route.fulfill({ status: 204, body: '' })
-  );
-
-  // Stub external analytics services (if any)
-  await page.route('**/collect', route =>
-    route.fulfill({ status: 200, body: '{}' })
-  );
 });
 
 export const test = base;
