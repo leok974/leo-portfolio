@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import List, Dict, Any
 
 
@@ -11,10 +11,10 @@ class AnalyticsStore:
         self.weights_path = self.dir / "weights.json"
 
     def append_jsonl(self, events: List[Dict[str, Any]]):
-        fname = self.dir / f"events-{datetime.utcnow():%Y%m%d}.jsonl"
+        fname = self.dir / f"events-{datetime.now(UTC):%Y%m%d}.jsonl"
         with fname.open("a", encoding="utf-8") as f:
             for e in events:
-                f.write(json.dumps(e, separators=(",", ":")) + "\n")
+                f.write(json.dumps(e, separators=(",", ":"), default=str) + "\n")
 
     def load_weights(self) -> Dict[str, Any]:
         if self.weights_path.exists():

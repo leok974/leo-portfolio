@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Dict, Any, List
 import random
 
@@ -25,7 +25,7 @@ def analyze(
     counts_click = defaultdict(int)
     dwell_ms = defaultdict(int)
 
-    cutoff = datetime.utcnow() - timedelta(days=14)
+    cutoff = datetime.now(UTC) - timedelta(days=14)
     for e in events:
         ts = e["ts"]
         if isinstance(ts, str):
@@ -59,7 +59,7 @@ def analyze(
         new_sections[s] = {"weight": decay * ema + (1 - decay) * 0.5}
 
     return {
-        "updated_at": datetime.utcnow().isoformat() + "Z",
+        "updated_at": datetime.now(UTC).isoformat(),
         "sections": new_sections,
     }
 
