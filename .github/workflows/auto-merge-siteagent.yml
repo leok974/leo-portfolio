@@ -29,34 +29,34 @@ jobs:
         with:
           script: |
             const pr = context.payload.pull_request;
-            
+
             // Get check runs for the PR head SHA
             const { data: checks } = await github.rest.checks.listForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: pr.head.sha
             });
-            
+
             // Check if all check runs passed (or were skipped/neutral)
             const allPassed = checks.check_runs.every(cr => {
               const conclusion = cr.conclusion || '';
               return ['success', 'neutral', 'skipped'].includes(conclusion);
             });
-            
+
             // Also check status checks (older style)
             const { data: statuses } = await github.rest.repos.getCombinedStatusForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: pr.head.sha
             });
-            
+
             const statusPassed = statuses.state === 'success' || statuses.statuses.length === 0;
-            
+
             if (!allPassed || !statusPassed) {
               core.setFailed('❌ Not all checks passed; skipping automerge.');
               return;
             }
-            
+
             core.info('✅ All checks passed, proceeding with automerge.');
 
       - name: Squash merge PR
@@ -65,7 +65,7 @@ jobs:
         with:
           script: |
             const pr = context.payload.pull_request;
-            
+
             try {
               await github.rest.pulls.merge({
                 owner: context.repo.owner,
@@ -75,9 +75,9 @@ jobs:
                 commit_title: `${pr.title} (#${pr.number})`,
                 commit_message: pr.body || 'Auto-merged by SiteAgent'
               });
-              
+
               core.info(`✅ Auto-merged PR #${pr.number} via squash.`);
-              
+
               // Add a comment to the PR
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
@@ -85,10 +85,10 @@ jobs:
                 issue_number: pr.number,
                 body: '🤖 **Auto-merged** by SiteAgent workflow after all checks passed.'
               });
-              
+
             } catch (error) {
               core.warning(`Could not auto-merge: ${error.message}`);
-              
+
               // If merge failed, add a comment explaining why
               await github.rest.issues.createComment({
                 owner: context.repo.owner,

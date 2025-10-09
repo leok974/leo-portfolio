@@ -347,14 +347,14 @@ Invoke-RestMethod `
   labels?: string[];            // Labels (default: ["auto", "siteagent"])
   base?: string;                // Base branch (default: "main")
   commit_message?: string;      // Commit message (default: auto-generated)
-  
+
   // Behavior flags
   dry_run?: boolean;            // Preview mode (default: false)
   use_llm?: boolean;            // Use LLM for title/body (default: false)
   attach_insights?: boolean;    // Append analytics insights (default: true)
   single_commit?: boolean;      // Rolling single commit (default: true)
   force_with_lease?: boolean;   // Safe force push (default: true)
-  
+
   // Category selection
   category?: string;            // Explicit category (seo/content/og/deps/misc)
 }
@@ -371,7 +371,7 @@ Invoke-RestMethod `
   diff?: string;            // Git diff summary
   message?: string;         // Human-readable status message
   open_pr?: string;         // Existing PR URL (for noop status)
-  
+
   // Dry-run only
   suggested_title?: string;
   suggested_body?: string;
@@ -526,12 +526,12 @@ All workflows use concurrency groups to prevent race conditions.
 
 SiteAgent's branch hygiene system provides:
 
-✅ **Clean repository**: One branch per category, no proliferation  
-✅ **Easy reviews**: Single-commit rolling branches  
-✅ **Automatic cleanup**: Merged and stale branches deleted  
-✅ **Safe operations**: Concurrency guards and force-with-lease  
-✅ **Flexible control**: Categories, drafts, auto-merge options  
-✅ **Comprehensive API**: Full control via REST endpoints  
+✅ **Clean repository**: One branch per category, no proliferation
+✅ **Easy reviews**: Single-commit rolling branches
+✅ **Automatic cleanup**: Merged and stale branches deleted
+✅ **Safe operations**: Concurrency guards and force-with-lease
+✅ **Flexible control**: Categories, drafts, auto-merge options
+✅ **Comprehensive API**: Full control via REST endpoints
 
 For more information, see:
 - [Agent Act API](../assistant_api/routers/agent_act.py)

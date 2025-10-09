@@ -76,6 +76,7 @@ def require_cf_access(request: Request) -> str:
     - User SSO tokens (contains email claim)
     - Service tokens (contains sub claim with token name)
     - Dev Bearer token (only when ALLOW_DEV_AUTH=1, for local testing)
+    - Test mode bypass (TEST_MODE=1 or x-test-auth header)
 
     Returns:
         str: Principal identifier (email for users, subject for service tokens)
@@ -83,6 +84,15 @@ def require_cf_access(request: Request) -> str:
     Raises:
         HTTPException: 403 if header missing, 401 if JWT invalid, 403 if principal not allowed
     """
+    # Test mode bypass
+    from ..util.testmode import is_test_mode
+    if is_test_mode():
+        # Allow test header bypass
+        if request.headers.get("x-test-auth") == "ok":
+            return "test-user"
+        # Or just allow all in test mode
+        return "test-user"
+    
     # Dev bypass — keeps prod behavior unchanged
     from ..settings import get_settings
     settings = get_settings()

@@ -456,11 +456,11 @@ def create_pr(payload: PRCreateInput) -> dict:
     try:
         safe_title = title.replace('"', '\\"')
         safe_body = body.replace('"', '\\"').replace('\n', '\\n')
-        
+
         # Check if 'draft' label is present to open PR as draft
         is_draft = any(lbl.lower() == "draft" for lbl in labels)
         draft_flag = "--draft" if is_draft else ""
-        
+
         pr_url = _run(
             f'gh pr create --repo {repo} --base {payload.base} --head {branch} '
             f'--title "{safe_title}" --body "{safe_body}" {draft_flag}'.strip(),

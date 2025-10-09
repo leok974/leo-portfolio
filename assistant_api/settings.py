@@ -23,6 +23,8 @@ def _split_env_list(val: str) -> list[str]:
 
 @lru_cache(maxsize=1)
 def get_settings() -> Dict[str, Any]:
+    from .util.testmode import is_test_mode
+    
     raw_origins = os.getenv("ALLOWED_ORIGINS", "")
     origins_tokens = _split_env_list(raw_origins)
 
@@ -59,6 +61,16 @@ def get_settings() -> Dict[str, Any]:
             "http://localhost:5530",
             "http://127.0.0.1:5530",
         ]
+    
+    # RAG_DB: Use in-memory DB for tests if not explicitly set
+    rag_db = os.getenv("RAG_DB")
+    if not rag_db and is_test_mode():
+        import tempfile
+        tf = tempfile.NamedTemporaryFile(prefix="ragdb-test-", suffix=".sqlite", delete=False)
+        rag_db = tf.name
+        tf.close()
+    elif not rag_db:
+        rag_db = "./data/rag.sqlite"
 
     return {
         "raw_env": raw_origins,
@@ -66,7 +78,7 @@ def get_settings() -> Dict[str, Any]:
         "allowed_origins": origins,
         "derived_from_domain": derived,
         "domain_env": domain,
-        "RAG_DB": os.getenv("RAG_DB", "./data/rag.sqlite"),
+        "RAG_DB": rag_db,
         "ARTIFACTS_DIR": os.getenv("ARTIFACTS_DIR", "./agent_artifacts"),
         "WEB_ROOT": os.getenv("WEB_ROOT", "./dist"),
         "BACKEND_URL": os.getenv("BACKEND_URL", "http://127.0.0.1:8001"),
