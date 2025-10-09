@@ -16,6 +16,18 @@
   - Settings: `ANALYTICS_ENABLED`, `ANALYTICS_ORIGIN_ALLOWLIST`, `LEARNING_EPSILON`, `LEARNING_DECAY`, `LEARNING_EMA_ALPHA`, `LAYOUT_SECTIONS_DEFAULT`, `ANALYTICS_DIR`
   - Backend test (`tests/test_metrics_learning.py`) and E2E tests (`tests/e2e/behavior-analytics.spec.ts`, `tests/e2e/privileged-metrics.spec.ts`)
   - Documentation updates: README, API.md, SECURITY.md, DEVELOPMENT.md
+- **Advanced Analytics Enhancements**:
+  - **Geo Enrichment**: IP anonymization (IPv4 /24, IPv6 /48) + optional GeoIP country lookup via MaxMind DB
+  - **Export Endpoints**:
+    - `GET /agent/metrics/timeseries?metric=ctr&days=30&section=X` - Daily aggregation for time series charts
+    - `GET /agent/metrics/export.csv` - CSV download of 14-day summary
+    - `GET /agent/metrics/export.pdf` - PDF report with ReportLab (graceful 501 if not installed)
+    - `GET /agent/metrics/ab?section=X` - A/B variant comparison within section
+  - **A/B Testing Support**: Frontend captures `data-variant` attribute, backend aggregates by variant
+  - **Email Notifications**: Weekly SendGrid email summary (Mondays 08:00 ET) via `behavior-metrics-email.yml` workflow
+  - **Dashboard UI**: CTR trend chart (canvas), export buttons, section selector dropdown
+  - **New Settings**: `GEOIP_DB_PATH`, `LOG_IP_ENABLED`, `METRICS_EXPORT_MAX_DAYS`, `EMAIL_FROM`, `EMAIL_TO`, `SENDGRID_API_KEY`
+  - **Model Extensions**: `variant`, `anon_ip_prefix`, `country` fields in `MetricEvent`
 
 ## [0.2.3] - 2025-10-08
 
