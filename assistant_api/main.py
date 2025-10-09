@@ -123,6 +123,29 @@ app.include_router(agent.router)
 from assistant_api.routers import agent_public
 app.include_router(agent_public.router)
 
+# A/B testing routes (for layout optimization)
+from assistant_api.routers import ab
+app.include_router(ab.router)
+
+# Layout weights management routes (for interactive weight tuning)
+from assistant_api.routers import layout_weights
+app.include_router(layout_weights.router)
+
+# Resume public routes (no auth required)
+from assistant_api.routers import resume_public
+app.include_router(resume_public.router)
+
+# Dev overlay routes (for enabling/disabling admin UI via cookie)
+from assistant_api.routers import dev_overlay
+app.include_router(dev_overlay.router)
+
+# Phase 50.4 — SEO & OG Intelligence routes
+try:
+    from assistant_api.routers import seo as seo_router
+    app.include_router(seo_router.router)
+except Exception as e:  # optional soft-fail in dev
+    print("[warn] seo router not loaded:", e)
+
 # Ultra-fast ping for UI hydration fallback (/api/ping)
 _ping_router = APIRouter()
 

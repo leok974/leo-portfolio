@@ -1,0 +1,84 @@
+{
+  "version": 2,
+  "preset": "recruiter",
+  "generated_at": 1759892507,
+  "order": [
+    "ledgermind",
+    "datapipe-ai",
+    "clarity",
+    "dermaai",
+    "pixo-banana-suite"
+  ],
+  "sections": {
+    "featured": ["ledgermind", "datapipe-ai", "clarity", "dermaai"],
+    "more": ["pixo-banana-suite"]
+  },
+  "explain": {
+    "ledgermind": {
+      "score": 0.265,
+      "why": [
+        "freshness=0.50",
+        "signal=0.00",
+        "fit=0.38",
+        "media=0.60",
+        "matches ai:rag",
+        "matches ai:finance",
+        "matches ai:agent"
+      ],
+      "parts": {
+        "freshness": 0.5,
+        "signal": 0.0,
+        "fit": 0.375,
+        "media": 0.6
+      }
+    },
+    "datapipe-ai": {
+      "score": 0.265,
+      "why": [
+        "freshness=0.50",
+        "signal=0.00",
+        "fit=0.38",
+        "media=0.60",
+        "matches ai:data",
+        "matches ai:rag",
+        "matches ai:analytics"
+      ],
+      "parts": {
+        "freshness": 0.5,
+        "signal": 0.0,
+        "fit": 0.375,
+        "media": 0.6
+      }
+    },
+    "clarity": {
+      "score": 0.19,
+      "why": ["freshness=0.50", "signal=0.00", "fit=0.00", "media=0.60"],
+      "parts": {
+        "freshness": 0.5,
+        "signal": 0.0,
+        "fit": 0.0,
+        "media": 0.6
+      }
+    },
+    "dermaai": {
+      "score": 0.19,
+      "why": ["freshness=0.50", "signal=0.00", "fit=0.00", "media=0.60"],
+      "parts": {
+        "freshness": 0.5,
+        "signal": 0.0,
+        "fit": 0.0,
+        "media": 0.6
+      }
+    },
+    "pixo-banana-suite": {
+      "score": 0.19,
+      "why": ["freshness=0.50", "signal=0.00", "fit=0.00", "media=0.60"],
+      "parts": {
+        "freshness": 0.5,
+        "signal": 0.0,
+        "fit": 0.0,
+        "media": 0.6
+      }
+    }
+  }
+}

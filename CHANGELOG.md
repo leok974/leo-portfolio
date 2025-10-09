@@ -1,5 +1,176 @@
 # Changelog
 
+## [Unreleased] - 2025-01-25
+
+### Analytics Dashboard, Adaptive Autotuning, and Scheduler Extensions (Phase 50.3 🎯📊🤖)
+- **AB Analytics Dashboard**: Visual CTR insights with Recharts
+  - Event storage: `ab_store.py` with JSONL persistence (`data/ab_events.jsonl`)
+  - Daily CTR aggregation: `summary(from_day, to_day)` with date filtering
+  - API endpoint: `GET /agent/ab/summary?from=YYYY-MM-DD&to=YYYY-MM-DD`
+  - Frontend component: `ABAnalyticsDashboard.tsx` (Recharts line chart)
+  - Features: Daily CTR trends, overall stats cards, winner display, date filters, refresh button
+  - Responsive design: Grid layout, mobile-friendly inputs, 100% width chart
+- **Adaptive Agentic Feedback Loop**: AI-driven weight optimization
+  - Autotuning service: `weights_autotune.py` with learning rate alpha
+  - Algorithm: `new_weight = max(0, base + alpha * hint)` then normalize to 1.0
+  - API endpoint: `POST /agent/autotune?alpha=0.5` (default alpha: 0.5)
+  - Frontend component: `AutotuneButton.tsx` with loading state and feedback
+  - Safety: Non-negative weights, gradual updates controlled by alpha
+  - Integration: Dispatches `siteagent:layout:updated` event to refresh admin badge
+- **Scheduler Extensions**: YAML policy and manual triggers
+  - YAML configuration: `data/schedule.policy.yml`
+  - Settings: `nightly_time: "02:30"`, weekday/weekend/holidays presets, custom holiday list
+  - Enhanced `scheduler.py`: `pick_preset_for_day(date)` for day-type selection
+  - Manual trigger: `POST /agent/run_now?preset=X` for immediate optimization
+  - Audit trail: `agent_events.py` with JSONL logging (`data/agent_events.jsonl`)
+  - API endpoint: `GET /agent/events?limit=50` for event history
+  - Event types: `scheduler_run`, `manual_optimize`, `autotune`
+- **Test Coverage**: 16 new tests (48 total)
+  - Backend: 8 tests (all passing in 0.10s)
+    - `test_ab_summary.py` (4 tests): Event logging, daily CTR, date filtering, empty state
+    - `test_autotune.py` (4 tests): Normalization, alpha, non-negative, zero alpha
+  - E2E: 8 tests created (ab-dashboard.spec.ts, autotune.spec.ts)
+    - Dashboard: Render, date filters, refresh button, chart display
+    - Autotune: Render, trigger request, error handling, event dispatch
+- **Dependencies**: Recharts (3.2.1) installed, PyYAML (6.0.2) already present
+- **Architecture**:
+  - New files: `ab_store.py`, `agent_events.py`, `weights_autotune.py`, `schedule.policy.yml`
+  - Frontend: `ABAnalyticsDashboard.tsx`, `AutotuneButton.tsx` (integrated into `render-admin.tsx`)
+  - Enhanced: `scheduler.py` (YAML parsing), `ab.py` (/summary), `agent_public.py` (3 endpoints)
+  - All dev/admin-gated: No public exposure of analytics or autotuning
+- **Branch**: `PHASE-50.3` (commit: pending)
+
+### Layout Optimization Advanced Features (Phase 50.2 🎯🔬)
+- **Sticky A/B Assignment**: Deterministic bucketing for consistent user experience
+  - SHA1-based bucketing: `bucket_for(visitor_id)` → deterministic 50/50 split
+  - Accept `visitor_id` query param and `X-Visitor-Id` header in `/agent/ab/assign`
+  - Ensures same visitor always gets same bucket across sessions
+  - Frontend integration: `crypto.randomUUID()` stored in localStorage + cookie
+- **Nightly Scheduler**: Automated layout optimization
+  - Async scheduler running at 02:30 daily
+  - Weekday (Mon-Fri) → `recruiter` preset (high signal/media)
+  - Weekend (Sat-Sun) → `hiring_manager` preset (high fit/freshness)
+  - Guard: `SCHEDULER_ENABLED=1` environment variable
+  - Integrated into FastAPI lifespan context
+  - Error handling: 1-hour retry delay on failure
+- **Overlay Weight Editor**: Interactive weight tuning with approval workflow
+  - Weight management service: `layout_weights.py`
+  - Active/proposed weight storage: `data/layout_weights.{active,proposed}.json`
+  - Workflow: Save proposal → Review → Approve → Activate
+  - API endpoints:
+    - `GET /agent/layout/weights`: Get active and proposed weights
+    - `POST /agent/layout/weights/propose`: Save proposed weights
+    - `POST /agent/layout/weights/approve`: Activate proposed weights
+    - `POST /agent/layout/weights/clear`: Clear proposal without activating
+  - Weight precedence in `run_layout_optimize`: payload.weights > active > preset
+  - Frontend ready: Sliders with normalization + save/approve/optimize buttons
+- **Test Coverage**: 10 new tests (32 total, all passing in 0.23s)
+  - `test_ab_sticky.py` (3 tests): Deterministic bucketing, visitor consistency
+  - `test_scheduler_pick.py` (3 tests): Next run time calculation (before/after/at 02:30)
+  - `test_weights_editor.py` (4 tests): Propose, approve, clear, error handling
+  - All existing tests still passing (22 tests)
+- **Architecture**:
+  - New files: `scheduler.py` (82 lines), `layout_weights.py` (82 lines), `layout_weights.py` router (60 lines)
+  - Modified: `layout_ab.py` (SHA1), `ab.py` (visitor_id), `layout_opt.py` (active weights), `main.py` (mount), `lifespan.py` (scheduler)
+  - Breaking changes: `assign_bucket(visitor_id)` now uses SHA1 instead of `hash()`
+- **Branch**: `LINKEDIN-OPTIMIZED` (commit: `b5b534a`)
+
+### Layout Optimization Extensions (Phase 50.1 🎯✨)
+- **Preset System**: Audience-specific optimizations
+  - `default`: Balanced weights (35/35/20/10), 3 featured
+  - `recruiter`: High signal/media (45/15), 4 featured - emphasize popularity
+  - `hiring_manager`: High fit/freshness (25/40), 3 featured - emphasize relevance
+  - `select_preset(name)` function for dynamic preset selection
+- **Layout Sections (v2 Format)**: Featured/more split
+  - `sections.featured`: Top N projects for above-the-fold hero display
+  - `sections.more`: Remaining projects for below-the-fold grid
+  - Backward compatible: `order` field preserved for legacy readers
+  - Metadata: `preset` and `version: 2` tracked in output
+- **A/B Testing Infrastructure**: Data-driven weight optimization
+  - `assign_bucket(visitor_id)`: Consistent bucket assignment (A or B)
+  - `record_event(bucket, event)`: Track views and clicks
+  - `suggest_weights()`: CTR analysis with weight adjustment hints
+  - State persistence: `data/layout_ab_state.json`
+  - API endpoints: `/agent/ab/assign`, `/agent/ab/event`, `/agent/ab/suggest`, `/agent/ab/reset`
+- **PR Automation**: GitHub integration for layout updates
+  - `layout.apply` task: Commit layout to feature branch
+  - `pr.create` task: Open GitHub PR via API
+  - Environment vars: `GITHUB_TOKEN`, `GITHUB_REPO`
+  - Git operations: branch creation, commit, push, PR creation
+- **Agent API Extensions**: Task-based execution
+  - `ActReq` model: Support both `command` (NL) and `task` + `payload` (direct)
+  - Direct task execution: `{task: "layout.optimize", payload: {preset: "recruiter"}}`
+  - Natural language still supported: `{command: "optimize layout"}`
+- **Test Coverage**: 20 new tests (24 total, all passing in 0.17s)
+  - `test_layout_sections.py` (9 tests): Preset validation, section splitting
+  - `test_layout_ab.py` (11 tests): Bucket assignment, event tracking, CTR
+  - Updated `test_layout_optimize.py` (4 tests): Weights parameter, v2 format
+- **Architecture**:
+  - New files: `layout_ab.py`, `pr_utils.py`, `ab.py` router
+  - Modified: `layout_opt.py` (presets), `agent_public.py` (tasks), `main.py` (mount)
+  - Breaking changes: `score_projects(weights)`, `propose_layout(featured_count, preset_name)`
+- **Branch**: `LINKEDIN-OPTIMIZED` (commit: `be4e453`)
+
+### Layout Optimization System (Phase 50 🎯)
+- **Multi-Factor Scoring Algorithm**: Intelligent project ranking
+  - Freshness (35%): Exponential decay, 30-day half-life
+  - Signal (35%): Stars/forks/views with log compression
+  - Fit (20%): Role-specific keyword matching (ai/ml/swe)
+  - Media (10%): Thumbnail + OG image quality
+- **Task Integration**: `layout.optimize` registered in agent system
+  - Natural language: "optimize layout [for roles]"
+  - Agent endpoint: `POST /agent/act` with command
+  - Automatic artifact generation + git diff
+- **Generated Output**: `assets/layout.json`
+  - Ordered project slugs (sorted by score)
+  - Detailed scoring explanations with rationale
+  - Version + timestamp metadata
+- **Supporting Services**: New utility modules
+  - `artifacts.py`: Timestamped JSON artifact writing
+  - `git_utils.py`: Git diff generation for changes
+  - `text.py`: Slugify for URL-safe names
+- **Data Structure Handling**: Flexible input parsing
+  - Handles dict format (slug->project mapping)
+  - Handles array format (project list)
+  - Graceful degradation for missing fields
+- **Test Coverage**: 4 new tests (all passing in 0.03s)
+  - Full scoring workflow validation
+  - Empty projects edge case
+  - Role-specific keyword matching
+  - Freshness decay calculation
+- **Bug Fixes**:
+  - Fixed duplicate return in `agent_public.py`
+  - Added projects.json dict-to-list normalization
+- **Branch**: `LINKEDIN-OPTIMIZED` (commit: `3e525a5`)
+
+### LinkedIn Resume Generator (Phase 49 📄)
+- **Public Resume Endpoints**: No authentication required
+  - `GET /resume/generate.md`: LinkedIn-optimized markdown resume
+  - `GET /resume/generate.json`: Structured JSON + markdown
+  - Auto-download with timestamped filename: `resume-2025-01-25.md`
+- **Dual Content Loading**: Resilient data sourcing
+  - Primary: `projects.json` (structured data)
+  - Fallback: `index.html` (regex extraction from data attributes)
+  - Graceful degradation when structured data unavailable
+- **Skills Extraction**: Union strategy
+  - Extracts unique tags from all project `tags` fields
+  - Adds core stack keywords (AI Engineering, FastAPI, Docker, etc.)
+  - Alphabetically sorted, deduplicated
+- **Featured Project Prioritization**: Rank-based ordering
+  - Featured: SiteAgent, Derma AI, DataPipe AI, LedgerMind (appear first)
+  - Configurable via `featured_order` array
+- **Agent Tools UI**: New "Resume" tab
+  - "Generate Markdown" button → Auto-downloads `.md` file
+  - "View JSON" button → Shows structured data in preview
+  - Status indicator (Generating… / Done / Failed)
+- **Test Coverage**: 5 new tests (all passing in 0.47s)
+  - 404 handling (no content)
+  - JSON structure validation
+  - Featured project ordering
+  - Markdown generation with projects
+- **Branch**: `LINKEDIN-OPTIMIZED` (commit: `be28dc5`)
+- **Documentation**: PHASE_49_RESUME_GENERATOR.md (complete specification)
+
 ## [Unreleased] - 2025-01-20
 
 ### Media Management & Link Suggestion Tasks (Phase 44 📸)

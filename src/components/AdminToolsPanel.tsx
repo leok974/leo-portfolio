@@ -2,6 +2,9 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import SeoJsonLdPanel from "./SeoJsonLdPanel";
+import SerpLatest from "./SerpLatest";
+import SerpRemediate from "./SerpRemediate";
 
 interface ToolsList {
   ok: boolean;
@@ -134,7 +137,7 @@ export function AdminToolsPanel({ base = "" }: { base?: string }) {
   }
 
   return (
-    <div className="pointer-events-auto flex w-[360px] flex-col gap-2 rounded-xl border border-slate-200/70 bg-white/90 p-3 shadow-lg backdrop-blur dark:border-slate-700/70 dark:bg-slate-900/80">
+    <div data-testid="admin-tools-panel" className="pointer-events-auto flex w-[360px] max-h-[80vh] flex-col gap-2 rounded-xl border border-slate-200/70 bg-white/90 p-3 shadow-lg backdrop-blur dark:border-slate-700/70 dark:bg-slate-900/80 overflow-y-auto">
       <div className="flex items-center gap-2">
         <Badge variant="outline" className="text-xs">Admin</Badge>
         <span className="text-xs text-slate-600 dark:text-slate-300">Tools</span>
@@ -298,6 +301,21 @@ export function AdminToolsPanel({ base = "" }: { base?: string }) {
           </pre>
         )}
       </div>
+
+      {/* === SEO: JSON-LD Panel === */}
+      <section aria-labelledby="seo-jsonld-title" data-testid="admin-seo-section" className="mt-6">
+        <h2 id="seo-jsonld-title" className="text-xl font-semibold mb-3">SEO</h2>
+        <SeoJsonLdPanel />
+      </section>
+
+      {/* === SEO: SERP & Indexing === */}
+      <section aria-labelledby="seo-serp-title" className="mt-4">
+        <h2 id="seo-serp-title" className="text-xl font-semibold mb-2">Indexing & SERP</h2>
+        <div className="grid gap-3">
+          <SerpLatest />
+          <SerpRemediate />
+        </div>
+      </section>
     </div>
   );
 }

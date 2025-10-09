@@ -77,6 +77,8 @@ async def lifespan(app) -> AsyncIterator[None]:  # type: ignore[override]
     stopper = asyncio.Event()
     hold_task = asyncio.create_task(_hold_open(stopper))
     poll_task: asyncio.Task | None = None
+    scheduler_task: asyncio.Task | None = None
+
     # Optional: create analytics SQL views if persistence enabled
     try:
         from .settings import ANALYTICS_PERSIST
@@ -87,12 +89,22 @@ async def lifespan(app) -> AsyncIterator[None]:  # type: ignore[override]
             ensure_views(con)
     except Exception:
         pass
+
     # SAFE_LIFESPAN: skip model probing entirely on startup (CI/dev safety)
     safe = os.getenv("SAFE_LIFESPAN", "0") in ("1", "true", "True")
     if safe:
         _log("startup: SAFE_LIFESPAN=1, skipping model probe")
     else:
         poll_task = asyncio.create_task(_poll_primary_models(stopper))
+
+    # Start scheduler if enabled
+    try:
+        from .services.scheduler import scheduler_loop
+        scheduler_task = asyncio.create_task(scheduler_loop())
+        _log("startup: scheduler task created")
+    except Exception as exc:
+        _log(f"startup: scheduler initialization error: {exc!r}")
+
     try:
         _log("startup: ready (loop held)")
         yield
@@ -103,6 +115,8 @@ async def lifespan(app) -> AsyncIterator[None]:  # type: ignore[override]
         tasks: list[asyncio.Task] = [hold_task]
         if poll_task is not None:
             tasks.append(poll_task)
+        if scheduler_task is not None:
+            tasks.append(scheduler_task)
         for t in tasks:
             if not t.done():
                 t.cancel()

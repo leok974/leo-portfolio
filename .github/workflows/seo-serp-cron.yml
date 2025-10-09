@@ -1,0 +1,172 @@
+name: SEO SERP Nightly
+
+on:
+  schedule:
+    - cron: "0 7 * * *"  # 07:00 UTC ~ 03:00-04:00 ET depending on DST
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  serp:
+    runs-on: ubuntu-latest
+    env:
+      GSC_PROPERTY: ${{ secrets.GSC_PROPERTY }}
+      GSC_SA_JSON: ${{ secrets.GSC_SA_JSON }}
+      PORT: "8001"
+      ANOMALY_THRESHOLD: "2"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install backend deps
+        run: |
+          python -m pip install -U pip
+          pip install -r assistant_api/requirements.txt google-api-python-client google-auth
+      - name: Launch backend
+        run: |
+          python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port $PORT --log-level warning &
+          echo $! > uvicorn.pid
+          for i in {1..30}; do
+            curl -fsS "http://127.0.0.1:${PORT}/ready" && break || true
+            sleep 1
+          done
+      - name: Fetch (yesterday → today) and write artifacts
+        run: |
+          START="$(date -u -d 'yesterday' +%F)"
+          END="$(date -u +%F)"
+          BODY=$(jq -nc --arg s "$START" --arg e "$END" --arg prop "${GSC_PROPERTY:-}" '{start_date:$s,end_date:$e,property_url:$prop,limit:200,dry_run:false}')
+          curl -fsS -X POST "http://127.0.0.1:${PORT}/agent/seo/serp/fetch" -H 'Content-Type: application/json' -d "$BODY" | jq '.report'
+      - name: Summarize latest report
+        run: |
+          curl -fsS "http://127.0.0.1:${PORT}/agent/seo/serp/report" | tee serp-latest.json | jq '.analysis.anomalies | length as $n | "Anomalies: \($n)"'
+      - name: Create/Update GitHub Issue on anomalies
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          THRESHOLD: ${{ env.ANOMALY_THRESHOLD }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const core = require('@actions/core');
+            const path = 'serp-latest.json';
+            if (!fs.existsSync(path)) {
+              core.info('No serp-latest.json found; skipping issue creation.');
+              return;
+            }
+            const data = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const anomalies = (data.analysis && Array.isArray(data.analysis.anomalies)) ? data.analysis.anomalies : [];
+            const threshold = parseInt(process.env.THRESHOLD || '1', 10);
+            const day = data.day || new Date().toISOString().slice(0,10);
+            if (anomalies.length < threshold) {
+              core.info(`Anomalies ${anomalies.length} below threshold ${threshold} — no issue.`);
+              return;
+            }
+            // Ensure labels (best-effort; ignore failures)
+            const wantLabels = ['seo','serp','automated'];
+            for (const name of wantLabels) {
+              try {
+                await github.rest.issues.getLabel({ owner: context.repo.owner, repo: context.repo.repo, name });
+              } catch {
+                try {
+                  await github.rest.issues.createLabel({ owner: context.repo.owner, repo: context.repo.repo, name, color: '0e8a16' });
+                } catch {}
+              }
+            }
+            const title = `SEO: SERP anomalies ${day} (${anomalies.length})`;
+            // Try to find an existing open issue for today
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100
+            });
+            let existing = openIssues.find(i => i.title.startsWith(`SEO: SERP anomalies ${day}`));
+            // Build Markdown table (limit 10)
+            const rows = anomalies.slice(0,10).map(a => {
+              const reasons = Array.isArray(a.reasons) ? a.reasons.join('; ') : '';
+              const sugg = Array.isArray(a.suggestions) ? a.suggestions.join('; ') : '';
+              return `| ${a.page} | ${a.impressions ?? ''} | ${a.ctr ?? ''} | ${a.position ?? ''} | ${reasons} | ${sugg} |`;
+            }).join('\n');
+            const median = data.analysis?.median_ctr ?? 0;
+            const body = `## SERP Anomalies — ${day}
+
+**Median CTR:** ${median}
+
+**Total anomalies:** ${anomalies.length} (threshold: ${threshold})
+
+| Page | Impressions | CTR | Position | Reasons | Suggestions |
+|---|---:|---:|---:|---|---|
+${rows}
+
+**Artifacts:** \`agent/artifacts/seo-serp/${day}\`
+
+> This issue was auto-filed by the SEO SERP Nightly workflow.`;
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: existing.number, title, body, labels: wantLabels
+              });
+              core.info(`Updated existing issue #${existing.number}`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo, title, body, labels: wantLabels
+              });
+              core.info(`Created issue #${created.data.number}`);
+            }
+      - name: Plan remediation (dry-run)
+        run: |
+          curl -fsS -X POST "http://127.0.0.1:${PORT}/agent/seo/serp/remediate" \
+            -H 'Content-Type: application/json' \
+            -d '{"limit":10,"dry_run":true}' | tee serp-remediate.json | jq '.count'
+      - name: Attach remediation plan as issue comment (if anomalies above threshold)
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const core = require('@actions/core');
+            const latestPath = 'serp-latest.json';
+            const planPath = 'serp-remediate.json';
+            if (!fs.existsSync(latestPath) || !fs.existsSync(planPath)) {
+              core.info('No latest or plan file; skipping.');
+              return;
+            }
+            const latest = JSON.parse(fs.readFileSync(latestPath,'utf8'));
+            const plan = JSON.parse(fs.readFileSync(planPath,'utf8'));
+            const anomalies = (latest.analysis && Array.isArray(latest.analysis.anomalies)) ? latest.analysis.anomalies : [];
+            const day = latest.day || new Date().toISOString().slice(0,10);
+            if (!anomalies.length) { core.info('No anomalies; nothing to comment.'); return; }
+            // find today's anomaly issue
+            const prefix = `SEO: SERP anomalies ${day}`;
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100
+            });
+            const issue = openIssues.find(i => i.title.startsWith(prefix));
+            if (!issue) { core.info(`No open issue matching "${prefix}"`); return; }
+            const items = (plan.plan || []).slice(0, 10).map(p => `- **${p.url}** — ${p.reason || ''}${p.suggestions?.length ? ` _(suggestions: ${p.suggestions.join('; ')})_` : ''}`).join('\n');
+            const body = `### Remediation plan
+
+**Planned actions:** ${plan.count}
+
+${items || '_No actions planned._'}
+
+Artifacts: \`${plan.artifacts?.actions || 'N/A'}\``;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, body
+            });
+            core.info(`Commented remediation plan on #${issue.number}`);
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-serp-latest
+          path: |
+            agent/artifacts/seo-serp/**
+            serp-latest.json
+            serp-remediate.json
+          if-no-files-found: warn
+      - name: Stop backend
+        if: always()
+        run: |
+          if [ -f uvicorn.pid ]; then kill $(cat uvicorn.pid) || true; fi

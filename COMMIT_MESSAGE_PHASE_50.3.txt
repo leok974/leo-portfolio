@@ -1,0 +1,71 @@
+feat(phase-50.3): Analytics dashboard, adaptive autotuning, scheduler extensions
+
+Phase 50.3 delivers three major agent enhancements:
+
+1. **AB Analytics Dashboard** (Visual CTR insights with Recharts)
+   - Event storage: ab_store.py with JSONL persistence
+   - Daily CTR aggregation with date filtering
+   - API: GET /agent/ab/summary?from=YYYY-MM-DD&to=YYYY-MM-DD
+   - Frontend: ABAnalyticsDashboard.tsx with line chart, stats cards, winner display
+   - Features: Date range filters, refresh button, responsive design
+
+2. **Adaptive Agentic Feedback Loop** (AI-driven weight optimization)
+   - Autotuning service: weights_autotune.py with learning rate alpha
+   - Algorithm: new_weight = max(0, base + alpha * hint) then normalize
+   - API: POST /agent/autotune?alpha=0.5 (default alpha: 0.5)
+   - Frontend: AutotuneButton.tsx with loading state, success/error feedback
+   - Safety: Non-negative weights, gradual updates, normalized to 1.0
+   - Integration: Dispatches siteagent:layout:updated event
+
+3. **Scheduler Extensions** (YAML policy, manual triggers, audit trail)
+   - YAML config: data/schedule.policy.yml (nightly_time, presets, holidays)
+   - Enhanced scheduler.py: pick_preset_for_day(date) for day-type selection
+   - Manual trigger: POST /agent/run_now?preset=X
+   - Audit trail: agent_events.py with JSONL logging
+   - API: GET /agent/events?limit=50 for event history
+
+**Backend Files Created (7):**
+- assistant_api/services/ab_store.py (140 lines)
+- assistant_api/services/agent_events.py (60 lines)
+- assistant_api/services/weights_autotune.py (105 lines)
+- data/schedule.policy.yml (25 lines)
+
+**Backend Files Enhanced (3):**
+- assistant_api/services/scheduler.py (YAML parsing, day-type presets)
+- assistant_api/routers/ab.py (/summary endpoint)
+- assistant_api/routers/agent_public.py (3 new endpoints)
+
+**Frontend Files Created (2):**
+- src/components/ABAnalyticsDashboard.tsx (220 lines)
+- src/components/AutotuneButton.tsx (75 lines)
+
+**Frontend Files Enhanced (1):**
+- src/components/render-admin.tsx (integrated new components)
+
+**Test Files Created (4):**
+- tests/test_ab_summary.py (4 tests)
+- tests/test_autotune.py (4 tests)
+- tests/e2e/ab-dashboard.spec.ts (4 tests)
+- tests/e2e/autotune.spec.ts (4 tests)
+
+**Test Results:**
+- Backend: 8/8 passing (0.10s)
+- Frontend: Build successful, E2E tests ready
+- Total: 48 tests (16 new + 32 existing)
+
+**Dependencies:**
+- recharts (3.2.1) installed for analytics dashboard
+- PyYAML (6.0.2) already present for YAML config
+
+**Architecture:**
+- All features dev/admin-gated
+- JSONL storage for events/logs (no DB required)
+- Seamless Phase 50.2 integration (badge refresh, toast notifications)
+
+**Documentation:**
+- PHASE_50.3_COMPLETE.md (comprehensive guide)
+- CHANGELOG.md updated
+- All functions documented with docstrings
+
+Closes: Phase 50.3
+Status: Ready for deployment 🚀

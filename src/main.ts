@@ -41,6 +41,19 @@ import { enhanceCTAs } from './lib/enhance-ctas';
 })();
 
 // -----------------------------
+// AB TESTING TRACKING
+// -----------------------------
+(async () => {
+  try {
+    const { getBucket, fireAbEvent } = await import('./lib/ab');
+    await getBucket();           // Assign sticky bucket
+    await fireAbEvent("view");   // Record page view
+  } catch (err) {
+    console.warn('[AB] Failed to initialize tracking:', err);
+  }
+})();
+
+// -----------------------------
 // ENHANCE CTAs WITH LUCIDE ICONS
 // -----------------------------
 (() => {
@@ -244,17 +257,39 @@ function initializeProjectModals() {
 document.addEventListener('DOMContentLoaded', async () => {
   await loadProjectData();
   initializeProjectModals();
+
+  // Import AB tracking
+  const { fireAbEvent } = await import('./lib/ab').catch(() => ({
+    fireAbEvent: async () => { /* noop */ }
+  }));
+
   // card navigation
   document.querySelectorAll<HTMLElement>('.card-click').forEach(card => {
-    card.addEventListener('click', (e) => {
+    card.addEventListener('click', async (e) => {
       const tag = (e.target as HTMLElement).tagName.toLowerCase();
       if (['a', 'button'].includes(tag)) return;
+
+      // Fire AB click event
+      try {
+        await fireAbEvent("click");
+      } catch {
+        // Ignore errors
+      }
+
       const slug = card.getAttribute('data-slug');
       if (slug) window.location.href = `projects/${slug}.html`;
     });
-    card.addEventListener('keydown', (e: KeyboardEvent) => {
+    card.addEventListener('keydown', async (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
+
+        // Fire AB click event
+        try {
+          await fireAbEvent("click");
+        } catch {
+          // Ignore errors
+        }
+
         const slug = card.getAttribute('data-slug');
         if (slug) window.location.href = `projects/${slug}.html`;
       }

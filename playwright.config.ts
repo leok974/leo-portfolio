@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 // Assumptions / overrides via env
 const isCI = !!process.env.CI;
 const workers = process.env.PW_WORKERS ? Number(process.env.PW_WORKERS) : undefined;
-const baseURL = process.env.BASE_URL ?? process.env.BASE ?? process.env.PROD_BASE ?? 'http://127.0.0.1:8080';
+const baseURL = process.env.BASE_URL ?? process.env.BASE ?? process.env.PROD_BASE ?? 'http://127.0.0.1:5173';
 
 // Reporter: line locally; html + line in CI (keeps local output light)
 const reporter = (isCI ? [['html'], ['line']] : [['line']]) as any;
@@ -34,9 +34,24 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
   },
   projects: [
+    // Setup project that creates auth state for dev overlay tests
+    {
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
+    },
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      dependencies: [], // Don't depend on setup by default
+    },
+    {
+      name: 'chromium-dev-overlay',
+      testMatch: /(dev-overlay\.(session|expiry)\.spec\.ts|seo-pr-(persist|disabled-when-no-diff|copy-toast|localstorage-persist|storage-badge)\.spec\.ts)/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: path.resolve(__dirname, 'playwright/.auth/dev-overlay.json'),
+      },
+      dependencies: ['setup'], // Run setup first
     },
     {
       name: 'chromium-ui-polish',
@@ -48,9 +63,13 @@ export default defineConfig({
     },
   ],
   webServer: process.env.PW_SKIP_WS ? undefined : {
-    command: process.env.WS_CMD ?? (process.env.USE_DEV ? 'pnpm run dev' : 'pnpm run preview'),
-    url: baseURL,
+    // Use dev server (not preview) - has proxy for /agent/* -> backend
+    // No build needed for E2E - dev serves from source with proxy
+    command: 'pnpm exec vite --port 5173 --strictPort --host',
+    url: 'http://localhost:5173',
     reuseExistingServer: true,
-    timeout: 60_000,
+    timeout: 120_000,
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
 });
