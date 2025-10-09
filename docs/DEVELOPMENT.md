@@ -248,6 +248,92 @@ When the **backend** is started with `SEO_LLM_ENABLED=0`, the `seo.tune` task au
   - CI environments without API keys
   - Fast smoke tests
 
+---
+
+## SEO Intelligence Scripts (Phase 50.9)
+
+Automated nightly reports for SEO health and analytics monitoring.
+
+### Available Scripts
+
+#### 1. `scripts/seo-intel.mjs` - Intelligence Scanner
+Probes frontend and backend endpoints to generate comprehensive reports.
+
+**Usage**:
+```bash
+# Local run with default URLs
+node scripts/seo-intel.mjs
+
+# Custom URLs
+node scripts/seo-intel.mjs --base http://localhost:5173 --backend http://localhost:8001
+
+# Custom output paths
+node scripts/seo-intel.mjs --out reports/custom.json --md reports/custom.md
+```
+
+**What it checks**:
+- Frontend: Title, meta description, Open Graph tags, canonical URLs, JSON-LD
+- Backend: Health endpoints (/ready, /api/metrics/behavior)
+- Assets: WebP optimization ratios
+- Privacy: privacy.html compliance, retention policy, opt-out instructions
+
+**Output**:
+- `reports/summary.json` - Machine-readable results
+- `reports/summary.md` - Human-readable markdown report
+
+#### 2. `scripts/seo-pr-body.mjs` - PR Body Generator
+Generates formatted PR descriptions from intelligence reports.
+
+**Usage**:
+```bash
+# Generate PR body from summary
+node scripts/seo-pr-body.mjs --summary reports/summary.json > reports/PR_BODY.md
+
+# Or use default path
+node scripts/seo-pr-body.mjs > pr-body.md
+```
+
+#### 3. `scripts/seo-autofix.mjs` - Safe Autofixes
+Applies conservative, safe fixes for common SEO issues.
+
+**Usage**:
+```bash
+# Dry run (default) - shows what would be fixed
+node scripts/seo-autofix.mjs
+
+# Apply fixes
+node scripts/seo-autofix.mjs --apply
+
+# Custom base URL
+node scripts/seo-autofix.mjs --base http://localhost:5173 --apply
+```
+
+**Safe fixes applied**:
+- Missing `<meta name="description">` tags
+- Missing viewport meta tag
+- Missing canonical URL
+- Missing `robots.txt`
+- Missing `.gitignore` patterns for reports/
+
+**⚠️ Important**: Only run with `--apply` when you've reviewed the dry-run output.
+
+### Integration with Nightly Workflow
+
+These scripts are automatically run by `.github/workflows/seo-intel-nightly.yml`:
+- Runs daily at 02:30 ET (06:30 UTC)
+- Creates auto-PR with findings
+- Uploads artifacts for review
+- Optionally applies safe fixes when `AUTO_FIX=true`
+
+**Local simulation**:
+```bash
+# Run the full nightly sequence locally
+mkdir -p reports
+node scripts/seo-intel.mjs --base http://localhost:5173 --out reports/summary.json --md reports/summary.md
+node scripts/seo-pr-body.mjs --summary reports/summary.json > reports/PR_BODY.md
+cat reports/PR_BODY.md
+```
+
 **Important**: The environment variable must be set when **starting the backend**, not just in the test runner.
 
 ```bash
@@ -1580,6 +1666,115 @@ const json = await waitForArtifact(
 - It executes `scripts/analyze_behavior.py` which reads JSONL in `./data/analytics/`, updates `weights.json` if needed, and commits changes back to the repo.
 - View your current metrics at `/agent/metrics/dashboard` (requires privileged access).
 
+### Weekly Retention & Compression
+
+Rotate and prune analytics logs:
+
+1. **Configure** (optional overrides):
+   - `ANALYTICS_RETENTION_DAYS` (default 90)
+   - `ANALYTICS_GZIP_AFTER_DAYS` (default 7)
+
+2. **Run locally**:
+   ```bash
+   python scripts/analytics_retention.py
+   ```
+
+3. **CI**:
+   - Workflow `analytics-retention-weekly.yml` runs every Sunday and commits gzip/prune changes if files are tracked.
+
+4. **Server cron** (example):
+   ```cron
+   17 3 * * 0 /usr/bin/env ANALYTICS_RETENTION_DAYS=90 ANALYTICS_GZIP_AFTER_DAYS=7 \
+      /path/to/venv/bin/python /srv/app/scripts/analytics_retention.py >> /var/log/analytics_retention.log 2>&1
+   ```
+
+### On-Demand Retention (Guarded)
+
+Manually trigger retention operations via API:
+
+**Endpoint**: `POST /agent/metrics/retention/run`
+
+**Authentication**: Requires dev token (same as metrics dashboard)
+
+**Response**:
+```json
+{
+  "ok": true,
+  "scanned": 15,
+  "compressed": 2,
+  "removed": 1,
+  "dir": "/path/to/analytics"
+}
+```
+
+**Usage**:
+```bash
+# With token in environment
+curl -X POST \
+  -H "Authorization: Bearer $METRICS_DEV_TOKEN" \
+  http://127.0.0.1:8001/agent/metrics/retention/run
+
+# Or with query parameter
+curl -X POST \
+  "http://127.0.0.1:8001/agent/metrics/retention/run?dev=your-token-here"
+```
+
+**Behavior**:
+- Uses same logic as scheduled weekly script
+- Compresses files older than `ANALYTICS_GZIP_AFTER_DAYS`
+- Removes files older than `ANALYTICS_RETENTION_DAYS`
+- Returns stats for monitoring/logging
+
+### Debugging Telemetry (Guarded)
+
+**GET `/agent/metrics/debug`** returns effective telemetry config (no secrets) and a quick snapshot of analytics files.
+
+**Authentication**: Requires dev token (same as metrics dashboard)
+
+**Response Example**:
+```json
+{
+  "settings": {
+    "ANALYTICS_DIR": "./data/analytics",
+    "ANALYTICS_RETENTION_DAYS": 90,
+    "ANALYTICS_GZIP_AFTER_DAYS": 7,
+    "LOG_IP_ENABLED": true,
+    "GEOIP_DB_PATH_set": true,
+    "GEOIP_DB_EXISTS": true,
+    "METRICS_ALLOW_LOCALHOST": true,
+    "LEARNING_EPSILON": 0.1,
+    "LEARNING_DECAY": 0.98,
+    "LEARNING_EMA_ALPHA": 0.3
+  },
+  "analytics": {
+    "dir_exists": true,
+    "file_count": 15,
+    "latest_files": ["events-20251006.jsonl.gz", "events-20251007.jsonl.gz", "events-20251008.jsonl"]
+  },
+  "time": "2025-10-08T23:50:15.123456Z",
+  "pid": 12345
+}
+```
+
+**Usage**:
+```bash
+curl -H "Authorization: Bearer $METRICS_DEV_TOKEN" \
+  http://127.0.0.1:8001/agent/metrics/debug | jq
+```
+
+**Startup Logging**: On API boot, a safe startup line logs key telemetry settings:
+```
+INFO: [telemetry] dir=./data/analytics retention_days=90 gzip_after_days=7
+      log_ip_enabled=True geoip_db_set=True geoip_db_exists=True
+      epsilon=0.100 decay=0.980 ema_alpha=0.300 allow_localhost=True
+```
+
+**UI Integration**: The Privileged Metrics panel includes a Debug Status viewer with:
+- **Pretty-printed JSON** from the debug endpoint
+- **Refresh button** to reload current telemetry config
+- **Copy JSON button** to copy the full debug output to clipboard
+- Automatic loading on panel mount
+
 ### Privileged Panel Access
 
 The Behavior Metrics dashboard is embedded under the privileged Admin panel.
@@ -1639,7 +1834,7 @@ To enable country-level geo enrichment with IP anonymization:
    # PowerShell (Windows/Linux/Mac)
    ./scripts/download-geoip.ps1 -LicenseKey "YOUR_LICENSE_KEY_HERE"
    ```
-   
+
    Or manually:
    ```bash
    # Linux/Mac

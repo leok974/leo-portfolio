@@ -42,7 +42,7 @@ def ensure_dev_access(req: Request, settings: dict):
     if not expected:
         # Server not configured; treat as forbidden but with explicit reason.
         raise HTTPException(status_code=403, detail="metrics_dev_token_not_set")
-    
+
     # Try to read a provided token
     provided = None
     auth = req.headers.get("authorization", "")
@@ -51,7 +51,7 @@ def ensure_dev_access(req: Request, settings: dict):
     provided = provided or req.headers.get("x-dev-token")
     provided = provided or req.query_params.get("dev")
     provided = provided or req.cookies.get("dev_token")
-    
+
     if not provided:
         # No credentials presented
         raise HTTPException(status_code=401, detail="dev_token_required")

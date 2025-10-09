@@ -1,45 +1,71 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Gallery · Creative Workflows</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="/assets/css/gallery.css" rel="stylesheet" />
-  <script defer src="/assets/js/consent.js"></script>
-  <script defer src="/assets/js/gallery.js"></script>
-  <script defer src="/assets/js/gallery-schema.js"></script>
-</head>
-<body>
-  <header class="wrap">
-    <h1>Gallery</h1>
-    <p class="lead">Videos, breakdowns, and workflows (ComfyUI, Blender, and more).</p>
-  </header>
+  <head>
+    <meta charset="utf-8" />
+    <title>Gallery · Creative Workflows</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="/assets/css/gallery.css" rel="stylesheet" />
+    <script defer="" src="/assets/js/consent.js"></script>
+    <script defer="" src="/assets/js/gallery.js"></script>
+    <script defer="" src="/assets/js/gallery-schema.js"></script>
+    <link rel="canonical" href="http://localhost:5173" />
+    <meta name="description" content="Gallery — overview and key links." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="http://localhost:5173" />
+    <meta property="og:title" content="Gallery · Creative Workflows" />
+    <meta
+      property="og:description"
+      content="Gallery — overview and key links."
+    />
+    <meta
+      property="og:image"
+      content="http://localhost:5173/og/site-default.jpg"
+    />
+  </head>
+  <body>
+    <header class="wrap">
+      <h1>Gallery</h1>
+      <p class="lead">
+        Videos, breakdowns, and workflows (ComfyUI, Blender, and more).
+      </p>
+    </header>
 
-  <main class="wrap">
-    <section id="filters" class="filters" aria-label="Filters">
-      <input id="search" class="search" type="search" placeholder="Search title, tags, tools…" />
-      <div id="tagBar" class="tags" role="toolbar" aria-label="Filter by tool"></div>
-    </section>
+    <main class="wrap">
+      <section id="filters" class="filters" aria-label="Filters">
+        <input
+          id="search"
+          class="search"
+          type="search"
+          placeholder="Search title, tags, tools…"
+        />
+        <div
+          id="tagBar"
+          class="tags"
+          role="toolbar"
+          aria-label="Filter by tool"
+        ></div>
+      </section>
 
-    <section id="galleryGrid" class="grid" aria-live="polite"></section>
-  </main>
+      <section id="galleryGrid" class="grid" aria-live="polite"></section>
+    </main>
 
-  <footer class="wrap small">
-    <a href="/">← Home</a> · <a href="/privacy.html">Privacy</a>
-  </footer>
+    <footer class="wrap small">
+      <a href="/">← Home</a> · <a href="/privacy.html">Privacy</a>
+    </footer>
 
-  <template id="card-tpl">
-    <article class="card" data-testid="gallery-card">
-      <div class="media"></div>
-      <div class="body">
-        <h3 class="title"></h3>
-        <div class="meta"></div>
-        <details class="workflow">
-          <summary>Workflow</summary>
-          <ol class="steps"></ol>
-        </details>
-      </div>
-    </article>
-  </template>
-</body>
+    <template id="card-tpl">
+      <article class="card" data-testid="gallery-card">
+        <div class="media"></div>
+        <div class="body">
+          <h3 class="title"></h3>
+          <div class="meta"></div>
+          <details class="workflow">
+            <summary>Workflow</summary>
+            <ol class="steps"></ol>
+          </details>
+        </div>
+      </article>
+    </template>
+  </body>
 </html>

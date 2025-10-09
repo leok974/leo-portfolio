@@ -1,0 +1,65 @@
+name: e2e-keywords-mock
+on:
+  push:
+    branches: [ main, LINKEDIN-OPTIMIZED ]
+  pull_request:
+    branches: [ main, LINKEDIN-OPTIMIZED ]
+
+jobs:
+  mock-e2e-keywords:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install PNPM
+        run: npm i -g pnpm@9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r assistant_api/requirements.txt
+
+      - name: Start backend
+        run: |
+          python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 &
+          sleep 5
+        env:
+          ALLOW_TEST_ROUTES: "1"
+          SEO_LLM_ENABLED: "0"
+          ALLOW_DEV_AUTH: "1"
+
+      - name: Run mock keywords E2E tests
+        env:
+          ALLOW_TEST_ROUTES: "1"
+          SEO_LLM_ENABLED: "0"
+          UI_URL: "http://localhost:5173"
+          BACKEND_URL: "http://127.0.0.1:8001"
+        run: |
+          npx playwright test tests/e2e/seo-keywords.mock.spec.ts tests/e2e/seo-keywords.fallback.spec.ts --project=chromium --reporter=line || \
+          npx playwright test seo-keywords.mock seo-keywords.fallback --project=chromium --reporter=line
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-keywords-mock
+          path: test-results/
+          retention-days: 7

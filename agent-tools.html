@@ -131,6 +131,15 @@
       .err {
         color: #ff9d9d;
       }
+      .log {
+        background: rgba(127, 127, 127, 0.1);
+        padding: 0.75rem;
+        border-radius: 8px;
+        max-height: 240px;
+        overflow: auto;
+        font-size: 12px;
+        line-height: 1.4;
+      }
     </style>
   </head>
   <body>
@@ -187,6 +196,14 @@
               data-tab="resume"
             >
               Resume
+            </button>
+            <button
+              class="tab"
+              role="tab"
+              aria-selected="false"
+              data-tab="seo-analytics"
+            >
+              SEO Analytics
             </button>
           </nav>
         </div>
@@ -420,6 +437,76 @@ Click "Generate Markdown" to create your resume</pre
           </div>
         </div>
       </section>
+
+      <!-- SEO Analytics -->
+      <section
+        id="panel-seo-analytics"
+        data-testid="seo-analytics-panel"
+        role="tabpanel"
+        aria-labelledby="tab-seo-analytics"
+        hidden
+      >
+        <div class="card">
+          <h2>SEO · Analytics Loop</h2>
+          <p class="hint">
+            Ingest CTR data from Search Console, run AI-powered metadata
+            optimization, and review generated artifacts.
+          </p>
+
+          <div class="row">
+            <label for="seo-auth">Auth (Bearer)</label>
+            <input
+              id="seo-auth"
+              type="text"
+              placeholder="dev"
+              value="dev"
+              style="max-width: 300px"
+            />
+            <small class="hint"
+              >Used for /agent/* routes in dev. Leave empty if cookie/Access
+              already grants auth.</small
+            >
+          </div>
+
+          <div class="row">
+            <label>Upload Search Console JSON or CSV</label>
+            <input
+              data-testid="analytics-upload"
+              id="analytics-upload"
+              type="file"
+              accept="application/json,.json,.csv,text/csv"
+              style="max-width: 400px"
+            />
+            <button
+              data-testid="analytics-ingest-btn"
+              id="analytics-ingest-btn"
+              disabled
+            >
+              Ingest
+            </button>
+          </div>
+
+          <div class="row">
+            <button data-testid="seo-tune-run-btn" id="seo-tune-run-btn">
+              Run Tune
+            </button>
+            <a
+              data-testid="seo-tune-artifact-link"
+              id="seo-tune-artifact-link"
+              href="/agent/artifacts/seo-tune.md"
+              target="_blank"
+              rel="noopener"
+              style="display: inline-block; padding: 8px 12px"
+              >Open Latest Artifact</a
+            >
+          </div>
+
+          <div class="card" style="margin-top: 12px">
+            <h3>Activity Log</h3>
+            <pre id="seo-analytics-log" class="mono log"></pre>
+          </div>
+        </div>
+      </section>
     </main>
 
     <script>
@@ -433,6 +520,7 @@ Click "Generate Markdown" to create your resume</pre
           branding: document.getElementById("panel-branding"),
           nightly: document.getElementById("panel-nightly"),
           resume: document.getElementById("panel-resume"),
+          "seo-analytics": document.getElementById("panel-seo-analytics"),
         };
         tabs.forEach((t) =>
           t.addEventListener("click", () => {
@@ -657,5 +745,8 @@ Click "Generate Markdown" to create your resume</pre
         };
       })();
     </script>
+
+    <!-- SEO Analytics panel logic -->
+    <script src="/assets/js/seo-analytics.js" defer></script>
   </body>
 </html>

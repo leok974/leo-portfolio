@@ -4,6 +4,7 @@ from pathlib import Path
 import json
 import csv
 import io
+import os
 from collections import defaultdict
 from datetime import datetime, timedelta, UTC
 import ipaddress
@@ -12,12 +13,9 @@ from ..settings import get_settings
 from ..models.metrics import MetricIngestRequest
 from ..services.analytics_store import AnalyticsStore
 from ..services.behavior_learning import analyze, order_sections
+from ..services.geo import anonymize_prefix, lookup_country
+from ..services.retention import run_retention
 from ..security.dev_access import ensure_dev_access
-
-try:
-    import geoip2.database  # optional
-except Exception:
-    geoip2 = None
 
 try:
     from reportlab.lib.pagesizes import letter
@@ -26,6 +24,21 @@ except Exception:
     canvas = None
 
 router = APIRouter(prefix="/agent", tags=["agent"])
+
+
+@router.get("/metrics/geoip-status")
+async def geoip_status(request: Request):
+    """Debug endpoint to check GeoIP configuration (guarded)"""
+    settings = get_settings()
+    ensure_dev_access(request, settings)
+    from ..services.geo import geoip2, get_geo_reader
+    return {
+        "LOG_IP_ENABLED": settings["LOG_IP_ENABLED"],
+        "GEOIP_DB_PATH": settings["GEOIP_DB_PATH"],
+        "geoip2_available": geoip2 is not None,
+        "reader_cached": get_geo_reader(settings["GEOIP_DB_PATH"]) is not None,
+        "db_exists": Path(settings["GEOIP_DB_PATH"]).exists() if settings["GEOIP_DB_PATH"] else False,
+    }
 
 
 def get_store():
@@ -48,49 +61,32 @@ async def ingest(
         raise HTTPException(status_code=403, detail="origin_not_allowed")
 
     evs = []
-    # Optional geo/anon IP enrichment
-    reader = None
-    if settings["LOG_IP_ENABLED"] and settings["GEOIP_DB_PATH"] and geoip2:
-        try:
-            reader = geoip2.database.Reader(settings["GEOIP_DB_PATH"])
-        except Exception:
-            reader = None
-
+    # Determine client IP (prefer Forwarded/X-Forwarded-For)
     client_ip = req.client.host if req.client else None
+    fwd = req.headers.get("forwarded")
+    if fwd and "for=" in fwd:
+        try:
+            # Forwarded: for=1.2.3.4 or for="[2001:db8::1]"
+            part = [p for p in fwd.split(";")[0].split(",")[0].split() if p.lower().startswith("for=")][0]
+            v = part.split("=",1)[1].strip().strip('"').strip("[]")
+            client_ip = v or client_ip
+        except Exception:
+            pass
     xff = req.headers.get("x-forwarded-for")
     if xff:
         client_ip = xff.split(",")[0].strip() or client_ip
 
-    def anonymize_ip(ip: str | None) -> tuple[str | None, str | None]:
-        if not ip:
-            return (None, None)
-        try:
-            ipobj = ipaddress.ip_address(ip)
-            if ipobj.version == 4:
-                # /24
-                parts = ip.split(".")
-                return (".".join(parts[:3]) + ".0/24", None)
-            else:
-                # /48
-                hextets = ip.split(":")
-                return (":".join(hextets[:3]) + "::/48", None)
-        except Exception:
-            return (None, None)
-
-    anon_prefix, _ = anonymize_ip(client_ip) if settings["LOG_IP_ENABLED"] else (None, None)
-    country = None
-    if reader and client_ip:
-        try:
-            country = reader.country(client_ip).country.iso_code
-        except Exception:
-            country = None
+    anon_prefix = anonymize_prefix(client_ip) if settings["LOG_IP_ENABLED"] else None
+    country = lookup_country(client_ip, settings["GEOIP_DB_PATH"]) if settings["LOG_IP_ENABLED"] else None
 
     for e in payload.events:
         d = e.model_dump()
         if settings["LOG_IP_ENABLED"]:
-            d.setdefault("anon_ip_prefix", anon_prefix)
-            if country:
-                d.setdefault("country", country)
+            # Overwrite explicit None fields from the model
+            if anon_prefix is not None:
+                d["anon_ip_prefix"] = anon_prefix
+            if country is not None:
+                d["country"] = country
         evs.append(d)
 
     store.append_jsonl(evs)
@@ -205,6 +201,81 @@ async def metrics_summary(store: AnalyticsStore = Depends(get_store)):
         "updated": datetime.now(UTC).isoformat(),
         "rows": rows,
     }
+
+
+@router.get("/metrics/countries")
+async def metrics_countries(days: int = 14, top: int = 10,
+                            store: AnalyticsStore = Depends(get_store)):
+    """Top countries by events (14d by default)."""
+    settings = get_settings()
+    days = max(1, min(days, settings["METRICS_EXPORT_MAX_DAYS"]))
+    files = sorted(Path(store.dir).glob("events-*.jsonl"))[-days:]
+    counts = defaultdict(int)
+    for p in files:
+        with p.open() as f:
+            for line in f:
+                try:
+                    e = json.loads(line)
+                except:
+                    continue
+                ctry = e.get("country")
+                if ctry:
+                    counts[ctry] += 1
+    rows = [{"country": k, "events": v} for k, v in counts.items()]
+    rows.sort(key=lambda r: -r["events"])
+    return {"updated": datetime.now(UTC).isoformat(), "rows": rows[:max(1, top)]}
+
+
+@router.post("/metrics/retention/run")
+async def metrics_retention_run(request: Request, settings=Depends(get_settings)):
+    """
+    Manually trigger analytics retention (gzip + prune). Guarded by dev token.
+    Returns stats { scanned, compressed, removed, dir }.
+    """
+    ensure_dev_access(request, settings)
+    stats = run_retention(settings)
+    return {"ok": True, **stats}
+
+
+@router.get("/metrics/debug")
+async def metrics_debug(request: Request, store: AnalyticsStore = Depends(lambda: AnalyticsStore(get_settings()["ANALYTICS_DIR"]))):
+    """
+    Guarded debug status for telemetry. Does NOT expose secrets.
+    """
+    settings = get_settings()
+    ensure_dev_access(request, settings)
+
+    geo_db = settings.get("GEOIP_DB_PATH")
+    geo_exists = bool(geo_db and Path(geo_db).exists())
+    files = sorted(Path(store.dir).glob("events-*.jsonl*"))
+    latest = files[-3:] if files else []
+
+    status = {
+        "settings": {
+            # analytics basics
+            "ANALYTICS_DIR": settings["ANALYTICS_DIR"],
+            "ANALYTICS_RETENTION_DAYS": settings["ANALYTICS_RETENTION_DAYS"],
+            "ANALYTICS_GZIP_AFTER_DAYS": settings["ANALYTICS_GZIP_AFTER_DAYS"],
+            # geo/ip
+            "LOG_IP_ENABLED": settings["LOG_IP_ENABLED"],
+            "GEOIP_DB_PATH_set": bool(settings.get("GEOIP_DB_PATH")),
+            "GEOIP_DB_EXISTS": geo_exists,
+            # guard
+            "METRICS_ALLOW_LOCALHOST": settings.get("METRICS_ALLOW_LOCALHOST", True),
+            # learning knobs
+            "LEARNING_EPSILON": settings["LEARNING_EPSILON"],
+            "LEARNING_DECAY": settings["LEARNING_DECAY"],
+            "LEARNING_EMA_ALPHA": settings["LEARNING_EMA_ALPHA"],
+        },
+        "analytics": {
+            "dir_exists": Path(store.dir).exists(),
+            "file_count": len(files),
+            "latest_files": [p.name for p in latest],
+        },
+        "time": datetime.utcnow().isoformat() + "Z",
+        "pid": os.getpid(),
+    }
+    return status
 
 
 @router.get("/metrics/timeseries")
@@ -394,7 +465,7 @@ async def metrics_dashboard(
     Localhost (127.0.0.1) is allowed without token when METRICS_ALLOW_LOCALHOST=true.
     """
     settings = get_settings()
-    
+
     # Enforce dev access, but render a friendly HTML on 401/403
     try:
         ensure_dev_access(request, settings)

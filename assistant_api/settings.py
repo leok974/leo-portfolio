@@ -112,6 +112,10 @@ def get_settings() -> Dict[str, Any]:
         "LEARNING_EMA_ALPHA": float(os.getenv("LEARNING_EMA_ALPHA", "0.30")),
         "LAYOUT_SECTIONS_DEFAULT": _split_env_list(os.getenv("LAYOUT_SECTIONS_DEFAULT", "hero,projects,skills,about,contact")),
         "ANALYTICS_DIR": os.getenv("ANALYTICS_DIR", "./data/analytics"),
+        # --- Analytics retention/archival ---
+        "ANALYTICS_RETENTION_DAYS": int(os.getenv("ANALYTICS_RETENTION_DAYS", "90")),  # delete events older than this
+        "ANALYTICS_GZIP_AFTER_DAYS": int(os.getenv("ANALYTICS_GZIP_AFTER_DAYS", "7")),  # gzip raw jsonl after this age
+        "ANALYTICS_ARCHIVE_DIR": os.getenv("ANALYTICS_ARCHIVE_DIR", "./data/analytics/archive"),  # optional future use
         # --- Dev/Privileged access for metrics dashboard ---
         "METRICS_DEV_TOKEN": os.getenv("METRICS_DEV_TOKEN"),  # set a long random string in prod
         "METRICS_ALLOW_LOCALHOST": os.getenv("METRICS_ALLOW_LOCALHOST", "1") in {"1", "true", "TRUE", "yes", "on"},  # allow 127.0.0.1 without token during local dev
@@ -138,5 +142,13 @@ settings = SettingsProxy()
 
 # Analytics flags (feature toggles)
 ANALYTICS_ENABLED: bool = os.getenv("ANALYTICS_ENABLED", "1") == "1"
-ANALYTICS_PERSIST: bool = os.getenv("ANALYTICS_PERSIST", "0") == "1"
+ANALYTICS_PERSIST: bool = os.getenv("ANALYTICS_PERSIST", "0") == "0"
 ANALYTICS_RESPECT_DNT: bool = os.getenv("ANALYTICS_RESPECT_DNT", "1") == "1"
+
+
+def reset_settings_cache() -> None:
+    """Call from tests after monkeypatching env to ensure fresh Settings."""
+    try:
+        get_settings.cache_clear()
+    except Exception:
+        pass

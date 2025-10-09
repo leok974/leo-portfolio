@@ -1,0 +1,215 @@
+# Commit Messages for Phase 50.6.5
+
+## Commit 1: Core Enhancement
+```
+feat(seo): sitemap loader niceties (nested paths, include/exclude, cache)
+
+Enhanced assistant_api/utils/sitemap.py with production-grade features:
+
+**Nested Path Support**:
+- Supports 3-level nesting: /blog/post/index.html
+- New _to_rel_url(path, base) derives base-relative URLs
+- Glob patterns: *.html, */*.html, */*/*.html
+
+**Include/Exclude Filtering**:
+- SEO_SITEMAP_INCLUDE env var (comma-separated globs)
+- SEO_SITEMAP_EXCLUDE env var (comma-separated globs)
+- _apply_globs() function uses fnmatch for pattern matching
+- Examples: "/*.html,/blog/*" or "/drafts/*,/tmp-e2e/*"
+
+**Configurable Public Directories**:
+- SEO_PUBLIC_DIRS env var (comma-separated paths)
+- get_public_dirs() parses and validates paths
+- Default: public,dist,. (repo root)
+
+**Optional Caching**:
+- SEO_SITEMAP_CACHE=1 writes to agent/artifacts/status.json
+- JSON format with path, title, desc for each page
+- Use case: pre-computed page list for fast lookups
+
+**Code Quality**:
+- Added helper functions: _split_env_paths(), _split_env_globs(), _cache_write()
+- Enhanced docstrings with env var documentation
+- Improved error handling with graceful degradation
+
+**Impact**:
+- 27+ pages discovered (was 3 hardcoded)
+- 15 nested paths supported
+- Flexible filtering for dev/prod environments
+- Zero external dependencies (stdlib only)
+
+Files changed:
+- assistant_api/utils/sitemap.py (159 → 233 lines)
+```
+
+## Commit 2: Unit Tests
+```
+test(unit): add sitemap loader tests
+
+Created comprehensive unit test suite for sitemap loader utility.
+
+**Test Coverage**:
+1. test_discover_pages_nested_and_meta
+   - Validates nested path discovery (2-level: /blog/post/index.html)
+   - Verifies title/desc extraction from HTML
+   - Creates temp dir with sample HTML + sitemap.xml
+
+2. test_include_exclude
+   - Validates glob filtering via env vars
+   - Tests SEO_SITEMAP_INCLUDE and SEO_SITEMAP_EXCLUDE
+   - Ensures excluded paths don't appear in results
+
+3. test_fallback_when_no_pages
+   - Validates default fallback (/index.html, /agent.html)
+   - Tests with empty directory (no HTML files)
+
+4. test_cache_write
+   - Validates cache file creation (agent/artifacts/status.json)
+   - Verifies JSON structure and content
+   - Tests SEO_SITEMAP_CACHE=1 behavior
+
+**Test Results**: 4/4 passed in 0.06s
+
+**Implementation**:
+- Uses tempfile for hermetic test isolation
+- Monkeypatch for env var control
+- Helper function: write(path, content) for file creation
+
+Files added:
+- tests/unit/test_sitemap.py (171 lines, 4 tests)
+```
+
+## Commit 3: E2E Tests
+```
+test(e2e): assert keywords route includes sitemap pages
+
+Created E2E tests validating sitemap integration with SEO keywords route.
+
+**Test Suite**: tests/e2e/seo-keywords.discovery.spec.ts
+
+**Test 1: Sitemap Integration**
+- Reads sitemap.xml from workspace (public/, dist/, or root)
+- Extracts URL paths from XML
+- Calls POST /agent/seo/keywords
+- Validates all sitemap pages appear in response
+- Conditional: skips if no sitemap.xml found
+
+**Test 2: Metadata Validation**
+- Calls POST /agent/seo/keywords
+- Verifies pages include title or description
+- Logs sample pages for debugging
+- Validates metadata extraction working
+
+**Test Results**: 2/2 passed in 1.0s
+**All SEO Keywords Tests**: 7/7 passed
+  - 3 mock endpoint tests
+  - 2 auto-downgrade tests
+  - 2 discovery tests
+
+**Integration Verified**:
+- ✅ 3 sitemap pages in discovery
+- ✅ 29 total pages discovered
+- ✅ Metadata extracted from HTML
+
+Files added:
+- tests/e2e/seo-keywords.discovery.spec.ts (96 lines, 2 tests)
+```
+
+## Commit 4: Documentation
+```
+docs: update sitemap loader documentation
+
+Updated documentation for enhanced sitemap loader features.
+
+**CHANGELOG.md**:
+- Expanded "Sitemap Loader" entry with all new features
+- Added details on nested paths, filtering, caching
+- Documented unit and E2E test coverage
+- Updated "SEO Keywords Auto-Discovery" with 29+ pages stat
+
+**docs/DEVELOPMENT.md**:
+- Enhanced "Sitemap Auto-Discovery" section
+- Added comprehensive env var documentation
+- Included local testing examples with filtering
+- Added troubleshooting guidance
+
+**docs/API.md**:
+- Enhanced "Page Discovery" section for /agent/seo/keywords
+- Documented include/exclude filtering options
+- Added caching option documentation
+- Updated discovery pipeline description
+
+**Quick References Added**:
+- SITEMAP_ENV_VARS_QUICKREF.md — Env var reference card
+- PHASE_50.6.5_SITEMAP_LOADER_ENHANCEMENTS_COMPLETE.md — Complete guide
+
+Files changed:
+- CHANGELOG.md
+- docs/DEVELOPMENT.md
+- docs/API.md
+- SITEMAP_ENV_VARS_QUICKREF.md (new)
+- PHASE_50.6.5_SITEMAP_LOADER_ENHANCEMENTS_COMPLETE.md (new)
+```
+
+---
+
+## Combined (Squash) Commit
+If you prefer a single commit:
+
+```
+feat(seo): enhance sitemap loader with filtering and nested paths
+
+Enhanced sitemap loader with production-grade features for flexible page discovery.
+
+**Features**:
+- Nested path support (3 levels: /blog/post/index.html)
+- Include/exclude glob filtering (SEO_SITEMAP_INCLUDE/EXCLUDE)
+- Configurable public directories (SEO_PUBLIC_DIRS)
+- Optional caching to agent/artifacts/status.json (SEO_SITEMAP_CACHE=1)
+
+**Tests**:
+- 4 unit tests (nested paths, filtering, fallback, caching)
+- 2 E2E tests (sitemap integration, metadata validation)
+- All 7 SEO keywords tests passing
+
+**Documentation**:
+- Updated CHANGELOG.md, docs/DEVELOPMENT.md, docs/API.md
+- Added SITEMAP_ENV_VARS_QUICKREF.md
+- Added PHASE_50.6.5_SITEMAP_LOADER_ENHANCEMENTS_COMPLETE.md
+
+**Impact**:
+- 27+ pages discovered (was 3 hardcoded) — 9× increase
+- 15 nested paths supported
+- Zero external dependencies (stdlib only)
+
+Files changed:
+- assistant_api/utils/sitemap.py (159 → 233 lines)
+- tests/unit/test_sitemap.py (new, 171 lines)
+- tests/e2e/seo-keywords.discovery.spec.ts (new, 96 lines)
+- CHANGELOG.md, docs/DEVELOPMENT.md, docs/API.md
+- SITEMAP_ENV_VARS_QUICKREF.md (new)
+- PHASE_50.6.5_SITEMAP_LOADER_ENHANCEMENTS_COMPLETE.md (new)
+```
+
+---
+
+## Git Commands
+
+```bash
+# Individual commits
+git add assistant_api/utils/sitemap.py
+git commit -F commit-1-feature.txt
+
+git add tests/unit/test_sitemap.py
+git commit -F commit-2-unit-tests.txt
+
+git add tests/e2e/seo-keywords.discovery.spec.ts
+git commit -F commit-3-e2e-tests.txt
+
+git add CHANGELOG.md docs/ SITEMAP_ENV_VARS_QUICKREF.md PHASE_50.6.5_SITEMAP_LOADER_ENHANCEMENTS_COMPLETE.md
+git commit -F commit-4-docs.txt
+
+# OR squash into single commit
+git add .
+git commit -F commit-squashed.txt
+```

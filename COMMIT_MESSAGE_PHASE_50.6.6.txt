@@ -1,0 +1,188 @@
+# Commit Message for Phase 50.6.6
+
+## Single Commit (Recommended)
+
+```
+feat(status): add pages discovery endpoint + dev overlay panel
+
+Implemented /agent/status/pages endpoint with caching and integrity checksums,
+plus a Dev Overlay panel for UI visualization of discovered pages.
+
+**Backend** (`assistant_api/routers/status_pages.py`):
+- GET /agent/status/pages returns discovered pages with metadata
+- Caching via agent/artifacts/status.json (read or generate)
+- SHA-256 integrity checksums for validation
+- Response: {ok, generated_at, count, integrity, pages[]}
+- Wired into main.py with error handling
+
+**Frontend** (`src/features/dev/DevPagesPanel.tsx`):
+- React component for dev overlay integration
+- Real-time filtering by path, title, description
+- Copy JSON export to clipboard
+- Table view with three columns (path, title, desc)
+- Integrity display showing SHA-256 checksum
+- Loading states and error handling
+
+**E2E Tests** (`tests/e2e/status-pages.api.spec.ts`):
+- 3 tests validating API structure, metadata, cache consistency
+- All tests passing in 978ms
+- Verifies 29 pages discovered, 25 with titles, 12 with descriptions
+
+**Documentation**:
+- docs/DEVELOPMENT.md: Added Dev Overlay section with usage examples
+- docs/API.md: Added GET /agent/status/pages endpoint documentation
+- CHANGELOG.md: Added Status Pages Router entry
+
+**Impact**:
+- Provides REST API for discovered pages (cached or on-demand)
+- UI visualization with filtering and export capabilities
+- Integrity validation via SHA-256 checksums
+- Complete test coverage (3/3 passing)
+
+Files changed:
+- assistant_api/routers/status_pages.py (new, 89 lines)
+- assistant_api/main.py (wired router)
+- src/features/dev/DevPagesPanel.tsx (new, 161 lines)
+- tests/e2e/status-pages.api.spec.ts (new, 88 lines, 3 tests)
+- docs/DEVELOPMENT.md, docs/API.md, CHANGELOG.md
+- PHASE_50.6.6_STATUS_PAGES_COMPLETE.md (new)
+```
+
+---
+
+## Alternative: Split Commits
+
+### Commit 1: Backend
+```
+feat(status): add /agent/status/pages endpoint with caching
+
+Implemented status pages router providing cached or on-demand page discovery.
+
+**Features**:
+- GET /agent/status/pages endpoint
+- Caching via agent/artifacts/status.json
+- SHA-256 integrity checksums
+- Fallback to on-demand discovery
+- Response: {ok, generated_at, count, integrity, pages[]}
+
+**Implementation**:
+- assistant_api/routers/status_pages.py (89 lines)
+- Wired into main.py with try/except error handling
+- Uses discover_pages() from sitemap loader
+
+Files changed:
+- assistant_api/routers/status_pages.py (new)
+- assistant_api/main.py
+```
+
+### Commit 2: Frontend
+```
+feat(ui): add Dev Pages Panel for discovery visualization
+
+Created React component for dev overlay showing discovered pages.
+
+**Features**:
+- Real-time filtering by path, title, description
+- Copy JSON export to clipboard
+- Table view with metadata columns
+- Integrity display (SHA-256)
+- Loading states and error handling
+
+**Styling**:
+- Tailwind CSS with zinc color scheme
+- Rounded corners, hover effects
+- Responsive table layout
+
+**Integration**:
+- Ready for shadcn Tabs or standalone use
+- Fetches from /agent/status/pages endpoint
+
+Files changed:
+- src/features/dev/DevPagesPanel.tsx (new, 161 lines)
+```
+
+### Commit 3: Tests & Docs
+```
+test(e2e): add status pages API tests
+
+Created comprehensive E2E test suite for status pages endpoint.
+
+**Tests** (tests/e2e/status-pages.api.spec.ts):
+1. API structure validation (ok, integrity, pages)
+2. Metadata extraction (titles, descriptions)
+3. Cache consistency (deterministic checksums)
+
+**Results**: 3/3 passed in 978ms
+
+**Verification**:
+- 29 pages discovered
+- 25 with titles, 12 with descriptions
+- SHA-256 integrity consistent across requests
+
+Files changed:
+- tests/e2e/status-pages.api.spec.ts (new, 88 lines)
+```
+
+### Commit 4: Documentation
+```
+docs: update for status pages endpoint + dev overlay
+
+**docs/DEVELOPMENT.md**:
+- Added "Dev Overlay — Discovered Pages" section
+- Backend endpoint documentation
+- Frontend panel features
+- Environment variables reference
+- Local usage examples
+
+**docs/API.md**:
+- Added GET /agent/status/pages endpoint
+- Request/response documentation
+- Behavior explanation
+- Use cases
+
+**CHANGELOG.md**:
+- Added Status Pages Router entry
+- Documented endpoint, caching, integrity
+- Listed Dev Overlay panel features
+
+Files changed:
+- docs/DEVELOPMENT.md, docs/API.md, CHANGELOG.md
+- PHASE_50.6.6_STATUS_PAGES_COMPLETE.md (new)
+```
+
+---
+
+## Git Commands
+
+### Single Commit
+```bash
+git add assistant_api/routers/status_pages.py
+git add assistant_api/main.py
+git add src/features/dev/DevPagesPanel.tsx
+git add tests/e2e/status-pages.api.spec.ts
+git add docs/DEVELOPMENT.md docs/API.md CHANGELOG.md
+git add PHASE_50.6.6_STATUS_PAGES_COMPLETE.md
+
+git commit -m "feat(status): add pages discovery endpoint + dev overlay panel
+
+<paste commit message above>"
+```
+
+### Split Commits
+```bash
+# Backend
+git add assistant_api/routers/status_pages.py assistant_api/main.py
+git commit -F commit-1-backend.txt
+
+# Frontend
+git add src/features/dev/DevPagesPanel.tsx
+git commit -F commit-2-frontend.txt
+
+# Tests
+git add tests/e2e/status-pages.api.spec.ts
+git commit -F commit-3-tests.txt
+
+# Docs
+git add docs/ PHASE_50.6.6_STATUS_PAGES_COMPLETE.md
+git commit -F commit-4-docs.txt
+```

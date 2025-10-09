@@ -18,7 +18,7 @@ test.describe("Privileged Metrics Panel", () => {
     // Check if iframe is not present initially (or restricted message is shown)
     const iframeCount = await page.locator('iframe[title="Behavior Metrics"]').count();
     const restrictedMsg = await page.locator('text=Restricted').count();
-    
+
     // Either no iframe OR restricted message should be shown
     expect(iframeCount === 0 || restrictedMsg > 0).toBeTruthy();
 

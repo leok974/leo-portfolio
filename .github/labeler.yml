@@ -1,0 +1,14 @@
+# Apply labels automatically based on files in the PR.
+seo-meta:
+  - changed-files:
+      - any-glob-to-any-file: agent/artifacts/seo-meta-apply/**
+  - changed-files:
+      - any-glob-to-any-file: agent/artifacts/seo-meta/**
+html:
+  - changed-files:
+      - any-glob-to-any-file: public/**/*.html
+      - any-glob-to-any-file: dist/**/*.html
+automation:
+  - changed-files:
+      - any-glob-to-any-file: .github/workflows/**
+      - any-glob-to-any-file: scripts/**

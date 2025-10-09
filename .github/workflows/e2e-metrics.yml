@@ -1,0 +1,145 @@
+name: E2E – Metrics
+on:
+  push:
+    branches: [ main, LINKEDIN-OPTIMIZED ]
+    paths:
+      - 'assistant_api/routers/metrics_behavior.py'
+      - 'assistant_api/models/metrics.py'
+      - 'tests/e2e/metrics-behavior.spec.ts'
+      - '.github/workflows/e2e-metrics.yml'
+  pull_request:
+    paths:
+      - 'assistant_api/routers/metrics_behavior.py'
+      - 'assistant_api/models/metrics.py'
+      - 'tests/e2e/metrics-behavior.spec.ts'
+  workflow_dispatch:
+
+jobs:
+  api-health-and-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r assistant_api/requirements.txt
+
+      - name: Start backend
+        run: |
+          nohup python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 > backend.log 2>&1 &
+          echo $! > backend.pid
+
+      - name: Wait for backend
+        run: |
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:8001/ready >/dev/null 2>&1; then
+              echo "✅ Backend is ready"
+              exit 0
+            fi
+            echo "Waiting for backend... (attempt $i/40)"
+            sleep 3
+          done
+          echo "❌ Backend failed to become ready"
+          cat backend.log
+          exit 1
+
+      - name: Health check - POST event and GET snapshot
+        run: |
+          echo "Testing POST /api/metrics/event..."
+          curl -fsS -X POST http://127.0.0.1:8001/api/metrics/event \
+            -H 'Content-Type: application/json' \
+            -d '{"visitor_id":"ci","event":"page_view","timestamp":"2025-01-01T00:00:00Z","metadata":{"path":"/"}}'
+
+          echo ""
+          echo "Testing GET /api/metrics/behavior..."
+          curl -fsS http://127.0.0.1:8001/api/metrics/behavior?limit=5 | jq . | head -n 60
+
+      - name: Health check - behavior endpoint
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" http://127.0.0.1:8001/api/metrics/behavior?limit=10)
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Health check failed with status $HTTP_CODE"
+            exit 1
+          fi
+          echo "✅ Health check passed"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Run metrics E2E tests
+        env:
+          BASE_URL: http://127.0.0.1:8001
+          PW_SKIP_WS: "1"
+        run: |
+          npx playwright test tests/e2e/metrics-behavior.spec.ts --project=chromium
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-metrics
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload backend logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-logs
+          path: backend.log
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        run: |
+          if [ -f backend.pid ]; then
+            kill $(cat backend.pid) || true
+          fi
+
+  lint-and-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pip-audit
+
+      - name: Run ruff
+        run: ruff check assistant_api/
+
+      - name: Run pip-audit
+        continue-on-error: true
+        run: |
+          pip install -r assistant_api/requirements.txt
+          pip-audit || echo "⚠️ pip-audit found issues (non-blocking)"

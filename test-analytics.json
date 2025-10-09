@@ -1,0 +1,4 @@
+{
+  "source": "search_console",
+  "rows": [{ "url": "/test", "impressions": 1000, "clicks": 5 }]
+}

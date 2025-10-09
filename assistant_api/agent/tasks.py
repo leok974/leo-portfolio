@@ -713,3 +713,44 @@ def layout_optimize(run_id, params):
     except Exception as e:
         emit(run_id, "error", "layout.optimize.failed", {"error": str(e)})
         raise
+
+
+@task("seo.tune")
+def seo_tune(run_id, params):
+    """
+    Analyze CTR data and generate SEO metadata improvements.
+    Creates seo-tune.json and seo-tune.md artifacts with recommended title/description changes.
+
+    Params:
+        threshold: CTR threshold (default from settings)
+
+    Note: Auto-downgrades to mock when SEO_LLM_ENABLED=0 for seamless local/CI testing.
+    """
+    from ..settings import get_settings
+    settings = get_settings()
+
+    # Auto-downgrade to mock when LLM disabled
+    if not settings.get("SEO_LLM_ENABLED"):
+        emit(run_id, "info", "seo.tune.auto_mock", {"reason": "SEO_LLM_ENABLED=0"})
+        from ..routers.agent_run_mock import run_mock_plan, require_cf_access
+        # Use mock implementation (will write deterministic artifacts)
+        try:
+            result = run_mock_plan(body=params, principal="agent-task")
+            emit(run_id, "info", "seo.tune.mock_done", {"count": result.get("count")})
+            return result
+        except Exception as e:
+            emit(run_id, "error", "seo.tune.mock_failed", {"error": str(e)})
+            raise
+
+    # Full LLM path
+    from ..tasks.seo_tune import run as run_seo_tune
+
+    emit(run_id, "info", "seo.tune.start", {"params": params})
+    try:
+        threshold = params.get("threshold") if params else None
+        result = run_seo_tune(threshold=threshold)
+        emit(run_id, "info", "seo.tune.done", {"count": result.get("count")})
+        return result
+    except Exception as e:
+        emit(run_id, "error", "seo.tune.failed", {"error": str(e)})
+        raise

@@ -3,6 +3,117 @@
 ## [Unreleased]
 
 ### Added
+- **SEO Intelligence & Nightly Auto-PR (Phase 50.9)**:
+  - **Nightly Workflow** (`.github/workflows/seo-intel-nightly.yml`):
+    - Automated daily runs at 02:30 ET (06:30 UTC)
+    - Creates auto-PR with SEO health findings
+    - Uploads artifacts (JSON/MD reports) for review
+    - Optional safe autofixes (guarded by `AUTO_FIX=true`)
+    - Uses GitHub Actions variables: `BASE_URL`, `BACKEND_URL`
+  - **SEO Intelligence Scanner** (`scripts/seo-intel.mjs`):
+    - **Frontend checks**: Title length, meta description, Open Graph tags, canonical URLs, JSON-LD structured data
+    - **Backend checks**: Health endpoints (/ready), metrics health, behavior snapshot
+    - **Asset checks**: WebP optimization ratios
+    - **Privacy checks**: privacy.html accessibility, data collection explanations, retention policy, opt-out instructions
+    - **Output**: `reports/summary.json` (machine-readable), `reports/summary.md` (human-readable)
+    - **Exit codes**: Non-zero if any checks fail (CI integration)
+  - **PR Body Generator** (`scripts/seo-pr-body.mjs`):
+    - Auto-generates formatted PR descriptions from intelligence reports
+    - Groups checks by category (Frontend, Backend, Assets, Privacy)
+    - Includes pass/fail summary with percentages
+    - Provides action items for failed checks
+    - Adds changelog stub for easy integration
+  - **Safe Autofix Script** (`scripts/seo-autofix.mjs`):
+    - **Enhanced with Cheerio HTML parser** for robust DOM manipulation
+    - **Smart scanning**: Discovers HTML files in index.html, public/, src/pages/, apps/web/
+    - **Comprehensive fixes**:
+      - Meta description (derived from H1 or neutral fallback)
+      - Canonical URL (from BASE_URL)
+      - Open Graph tags (type, url, title, description, image)
+      - Twitter Card (summary_large_image)
+      - Image alt text (humanized from filename)
+      - Viewport meta tag
+    - **Framework-aware**: Detects React/Next.js shells and applies conservative fixes
+    - **Idempotent**: Only writes when changes needed
+    - **Modes**: Dry-run (default), apply (--apply), auto (AUTO_FIX env)
+    - **Output**: JSON to stdout with scanned/changed/wrote stats
+    - **Exit codes**: 0=no changes, 3=changes in dry-run (CI integration)
+    - **E2E tests**: `tests/e2e/seo-autofix.spec.ts` validates canonical, OG tags, alt text
+    - **Dependency**: Requires `cheerio` package
+  - **Autofix Report Generator** (`scripts/seo-autofix-report.mjs`):
+    - Parses autofix JSON output and generates concise Markdown summary
+    - Lists files needing fixes with dry-run notes
+    - Shows scan statistics (scanned, changed, wrote)
+    - **Usage**: `--in=file.json` or pipe from stdin
+    - **Integration**: Auto-posts to PR comments in workflow
+    - **Manual use**: `gh pr comment <PR_NUM> --body-file reports/seo-autofix.md`
+  - **Playwright Summary Generator** (`scripts/playwright-summary.mjs`):
+    - Parses Playwright JSON reporter output
+    - Generates compact stats with pass/fail percentage
+    - **Output modes**: Markdown (default), JSON (`--json`)
+    - **Markdown features**: Color chips (🟢/🟡/🔴), emoji indicators, metrics table
+    - **Integration**: Auto-posts to PR comments, included in PR body badges
+    - **Usage**: `--in=file.json --out=file.md` or stdout
+  - **Enhanced PR Body Generator** (`scripts/seo-pr-body.mjs`):
+    - Now accepts `--playwright` parameter for test results
+    - Badge line includes Playwright pass percentage
+    - Dedicated Playwright section with test metrics
+    - Supports optional autofix and Playwright integration
+  - **Documentation Updates**:
+    - README.md: New "Nightly SEO & Analytics" section with local run instructions
+    - docs/DEVELOPMENT.md: Comprehensive scripts documentation with usage examples
+    - .gitignore: Added `reports/` directory (keeps `.gitkeep`)
+
+---
+
+## [0.2.1] - 2025-01-09
+
+### Added
+- **Behavior Metrics API (Phase 50.8)**:
+  - **Backend API:**
+    - **POST** `/api/metrics/event` — Ingest anonymized behavior events with visitor_id, event name, timestamp, and metadata
+    - **GET** `/api/metrics/behavior` — Snapshot of recent events with aggregated counts (limit query param)
+    - **GET** `/api/metrics/behavior/health` — Lightweight health check for metrics subsystem
+    - **Architecture**: In-memory ring buffer (default 500 events) + JSONL persistent sink (`./data/metrics.jsonl`)
+    - **Models**: `BehaviorEvent`, `EventIngestResult`, `BehaviorAggBucket`, `BehaviorSnapshot` with Pydantic v2 validation
+    - **Configuration**: `METRICS_RING_CAPACITY` (ring size), `METRICS_JSONL` (sink path)
+  - **Frontend Integration:**
+    - **Metrics Library** (`src/lib/metrics.ts`): `getVisitorId()`, `sendEvent()`, `fetchSnapshot()` utilities
+    - **Debug Panel** (`src/components/BehaviorMetricsDebugPanel.tsx`): Live snapshot viewer with demo events and refresh
+    - **Auto-Beacons Hook** (`src/lib/useAutoBeacons.ts`): Automatic page_view and link_click tracking
+    - **Configuration**: `VITE_API_BASE_URL` for backend endpoint
+    - **Features**: Persistent visitor ID in localStorage, non-blocking async tracking, CORS-ready
+  - **Privilege Guard System:**
+    - **Dev Guard Utilities** (`src/lib/devGuard.ts`): Dual guard system with cookie-based and localStorage-based privilege checking
+      - Sync functions: `isDevUIEnabled()`, `enableDevUI()`, `disableDevUI()`, `syncDevFlagFromQuery()`
+      - Query string support: `?dev=1` to enable, `?dev=0` to disable
+    - **Conditional Wrapper** (`src/components/PrivilegedOnly.tsx`): Renders children only if dev flag enabled
+    - **Navbar Badge** (`src/components/MetricsBadge.tsx`): Live metrics counter with 5-second polling
+      - Shows total events + top event type
+      - Visibility toggles with dev flag (re-checks every 1 second)
+    - **Integration**: MetricsBadge mounted in navbar, BehaviorMetricsDebugPanel wrapped with PrivilegedOnly
+    - **Initialization**: `syncDevFlagFromQuery()` called in main.ts for query string support
+  - **Testing:**
+    - Backend E2E tests: Playwright tests for event ingestion, snapshot queries, and health endpoint
+    - All tests passing (2/2) with PW_SKIP_WS mode
+  - **CI/CD Integration:**
+    - Added `metrics-behavior.spec.ts` to CI Playwright matrix (`ci.yml`)
+    - Added metrics health check to staging backend tests (`backend-tests.yml`)
+    - Added metrics health check to production smoke tests (`public-smoke.yml`) - runs every 30 minutes
+    - Verified existing ruff linting and pip-audit security scanning
+    - Dedicated E2E metrics workflow (`e2e-metrics.yml`) with health checks and lint/audit
+  - **Operations & Scaling (Phase 50.8 Follow-ups):**
+    - **JSONL Rotation:** `scripts/metrics_rotate.py` with gzip + retention (configurable)
+    - **Docker Compose Sidecar:** `metrics-rotator` service for automated maintenance
+    - **Client Sampling:** `VITE_METRICS_SAMPLE_RATE` environment variable (0.0 to 1.0)
+    - **Server Sampling:** `METRICS_SAMPLE_RATE` environment variable for backend sampling
+    - **Nginx Rate Limiting:** 5 req/s with burst=10 for `/api/metrics/event` endpoint
+    - **Privacy Documentation:** Privacy section in README.md, existing privacy.html covers data practices
+  - **Documentation**:
+    - API reference (`docs/API.md`),
+    - README sections (backend + frontend + privilege UI + privacy),
+    - Complete implementation guides (`PHASE_50.8_BEHAVIOR_METRICS_COMPLETE.md`, `PHASE_50.8_FRONTEND_COMPLETE.md`, `PHASE_50.8_PRIVILEGE_GUARD_COMPLETE.md`, `PHASE_50.8_CI_TOUCHUPS.md`)
+  - **Use Cases**: A/B testing, feature adoption tracking, funnel analysis, performance monitoring
 - **Metrics Dashboard Unlock UX**:
   - Friendly HTML unlock screens for authentication failures (instead of JSON errors)
   - Split HTTP status codes: 401 (no token) vs 403 (wrong token/server misconfigured)
@@ -20,6 +131,8 @@
   - `public/metrics.html` lightweight dashboard (no extra deps)
   - `BehaviorMetricsPanel` React component for privileged Admin panel
   - Nightly GitHub Action (`behavior-learning-nightly.yml`) to auto-update `data/analytics/weights.json`
+  - **Weekly retention**: gzip after N days, prune after M days (`scripts/analytics_retention.py` + `analytics-retention-weekly.yml` workflow)
+    - **On-demand retention**: POST `/agent/metrics/retention/run` (guarded) for manual gzip + prune operations
   - `scripts/analyze_behavior.py` for CLI/CI weight computation
   - Settings: `ANALYTICS_ENABLED`, `ANALYTICS_ORIGIN_ALLOWLIST`, `LEARNING_EPSILON`, `LEARNING_DECAY`, `LEARNING_EMA_ALPHA`, `LAYOUT_SECTIONS_DEFAULT`, `ANALYTICS_DIR`
   - Backend test (`tests/test_metrics_learning.py`) and E2E tests (`tests/e2e/behavior-analytics.spec.ts`, `tests/e2e/privileged-metrics.spec.ts`)

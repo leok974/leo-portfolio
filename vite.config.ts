@@ -14,7 +14,11 @@ export default defineConfig({
     proxy: {
       // Forward all /agent/* requests to FastAPI backend
       // This fixes 404s in E2E tests when dev server runs on :5173
-      '/agent': 'http://127.0.0.1:8001',
+      '/agent': {
+        target: 'http://127.0.0.1:8001',
+        changeOrigin: false,
+        secure: false,
+      },
     },
   },
   build: {

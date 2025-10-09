@@ -163,6 +163,85 @@ Response also includes a minimal stage metrics snapshot for quick diagnostics:
 ```
 ### GET /status/cors
 ### GET /api/metrics
+
+## Behavior Metrics (Phase 50.8)
+
+### POST /api/metrics/event
+Ingest a single anonymized behavior event.
+
+Request:
+```json
+{
+  "visitor_id": "abc123",
+  "event": "page_view",
+  "timestamp": "2025-10-09T12:34:56Z",
+  "metadata": { "path": "/" }
+}
+```
+
+Response (202 Accepted):
+```json
+{
+  "ok": true,
+  "stored": 1,
+  "file": "./data/metrics.jsonl"
+}
+```
+
+Notes:
+- `visitor_id`: Anonymous sticky ID (hash), 6-64 characters
+- `event`: Event name (e.g., "page_view", "link_click"), 1-64 characters
+- `timestamp`: ISO 8601 datetime (defaults to server time if omitted)
+- `metadata`: Optional key-value pairs for event context
+- `user_agent`: Automatically captured from request header if not provided
+- Events are appended to JSONL sink (configurable via `METRICS_JSONL` env var)
+- Also stored in in-memory ring buffer (capacity: `METRICS_RING_CAPACITY`, default 500)
+
+### GET /api/metrics/behavior
+Returns a snapshot of recent events from the ring buffer with aggregated counts.
+
+Query parameters:
+- `limit`: Number of recent events to include (default: 50, max: ring capacity)
+
+Response:
+```json
+{
+  "total": 123,
+  "by_event": [
+    { "event": "page_view", "count": 80 },
+    { "event": "link_click", "count": 43 }
+  ],
+  "last_events": [
+    {
+      "visitor_id": "abc123",
+      "event": "page_view",
+      "timestamp": "2025-10-09T12:34:56Z",
+      "metadata": { "path": "/" },
+      "user_agent": "Mozilla/5.0..."
+    }
+  ],
+  "file_size_bytes": 4096
+}
+```
+
+Notes:
+- `total`: Total number of events in ring buffer
+- `by_event`: Aggregated counts by event type
+- `last_events`: Most recent events (newest first)
+- `file_size_bytes`: Size of JSONL sink file (null if file doesn't exist)
+
+### GET /api/metrics/behavior/health
+Lightweight health check for the metrics subsystem.
+
+Response:
+```json
+{
+  "ok": true,
+  "ring_capacity": 500,
+  "sink_exists": true
+}
+```
+
 ## Tools API
 
 ### GET /api/tools

@@ -222,7 +222,9 @@ async def get_artifact(filename: str):
     """
     Serve individual artifact files (diffs, markdown, etc).
     """
-    base = Path("./assets/data")
+    from ..settings import get_settings
+    settings = get_settings()
+    base = Path(settings["ARTIFACTS_DIR"])
     # Sanitize filename to prevent directory traversal
     safe_name = filename.replace("..", "").replace("/", "").replace("\\", "")
     file_path = base / safe_name

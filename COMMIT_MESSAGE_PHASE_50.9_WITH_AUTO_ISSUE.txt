@@ -1,0 +1,194 @@
+Phase 50.9: SEO SERP feedback loop + Auto-Issue Filing ✅
+
+Implemented comprehensive Indexing & SERP monitoring system with automatic GitHub Issue creation for anomaly alerts.
+
+## Core Features
+
+### FastAPI Router `/agent/seo/serp/*`
+- **POST /fetch**: Fetches GSC data (or mock) with artifact persistence
+- **POST /analyze**: Detects CTR anomalies with actionable suggestions
+- **GET /report**: Returns latest SERP analysis for UI/API
+- **POST /ping-sitemaps**: Notifies search engines of sitemap updates
+- **POST /mock/populate** (dev-only): Generates test data for E2E
+
+### Nightly GitHub Actions + Auto-Issue Filing
+**File**: `.github/workflows/seo-serp-cron.yml`
+- Runs daily at 07:00 UTC (03:00-04:00 ET)
+- Fetches yesterday → today GSC data (or mock fallback)
+- Analyzes for CTR anomalies and performance regressions
+- **NEW**: Auto-files GitHub Issues when anomalies ≥ threshold (default: 2)
+  - Issue title: `SEO: SERP anomalies YYYY-MM-DD (N)`
+  - Markdown table with top 10 anomalies (URL, impressions, CTR, position, reasons, suggestions)
+  - Auto-labels: `seo`, `serp`, `automated`
+  - Updates existing issue if one exists for same day (no duplicates)
+  - Idempotent: safe to re-run multiple times
+- Uploads artifacts for trending analysis
+- Badge in README.md
+
+**Permissions**: `contents: read`, `issues: write`
+
+**Configuration**:
+- `GSC_PROPERTY`: Full property URL (optional - falls back to mock)
+- `GSC_SA_JSON`: Service account JSON string (optional)
+- `ANOMALY_THRESHOLD`: Min anomalies to trigger issue (default: 2)
+
+### Admin Tools UI Integration
+**New Component**: `src/components/SerpLatest.tsx`
+- Displays latest report day and median CTR
+- Shows top 5 anomalies with clickable URLs
+- Real-time fetch from `/agent/seo/serp/report`
+- Integrated into AdminToolsPanel → "Indexing & SERP" section
+
+### E2E Tests
+**File**: `tests/e2e/seo-serp.api.spec.ts`
+- Tests mock populate → report → anomaly detection
+- Gracefully skips when dev routes disabled (production-safe)
+- Works without real GSC credentials
+
+## Auto-Issue Filing Details
+
+### Workflow Logic
+1. After SERP analysis, check anomaly count in `serp-latest.json`
+2. If count ≥ `ANOMALY_THRESHOLD`, proceed to issue creation
+3. Ensure labels exist (create if missing): `seo`, `serp`, `automated`
+4. Search for existing open issue with title: `SEO: SERP anomalies YYYY-MM-DD`
+5. If found: Update existing issue with new data
+6. If not found: Create new issue
+7. Uses `actions/github-script@v7` with GitHub REST API
+
+### Example Issue
+```markdown
+## SERP Anomalies — 2025-10-08
+
+**Median CTR:** 0.147
+
+**Total anomalies:** 3 (threshold: 2)
+
+| Page | Impressions | CTR | Position | Reasons | Suggestions |
+|---|---:|---:|---:|---|---|
+| https://example.com/projects/terminality | 500 | 0.004 | 35.0 | ctr<0.5×median | Run seo.rewrite on H1/description.; ... |
+
+**Artifacts:** `agent/artifacts/seo-serp/2025-10-08`
+
+> This issue was auto-filed by the SEO SERP Nightly workflow.
+```
+
+### Key Features
+- **Idempotent**: Updates existing issue, no duplicates
+- **Smart Labeling**: Auto-creates labels if missing (best-effort)
+- **Graceful Fallback**: Skips if no report file exists
+- **Table Formatting**: Top 10 anomalies with full context
+- **Always Runs**: `if: always()` ensures issue step executes even if previous steps fail
+
+## Anomaly Detection Algorithm
+
+1. **Filter**: Pages with >= 50 impressions (configurable)
+2. **Median CTR**: Calculate across filtered pages
+3. **Flag Low CTR**: Pages with CTR < 0.5 × median (configurable)
+4. **Compare Previous**: Load previous day's data, detect CTR drops
+5. **Suggestions**: Return actionable recommendations:
+   - "Run seo.rewrite on H1/description."
+   - "Validate JSON-LD types for this route."
+   - "Check internal links/anchor text."
+   - "Consider new thumbnail/OG image test."
+
+## Documentation
+
+### API Reference
+Updated `docs/API.md` with comprehensive SERP endpoint docs (200+ lines):
+- Request/response examples
+- Parameter descriptions
+- Behavior notes (mock vs real GSC)
+- Error handling
+
+### Guides & References
+- **Phase Completion**: `SEO_SERP_PHASE_50_9_COMPLETE.md` (500+ lines)
+- **Quick Reference**: `SEO_SERP_QUICKREF.md` (420+ lines)
+- **Auto-Issue Enhancement**: `SEO_SERP_AUTO_ISSUE_ENHANCEMENT.md` (NEW - 320+ lines)
+- **CHANGELOG**: Updated v0.2.3 entry with auto-issue feature
+
+### README Badge
+```markdown
+[![SEO SERP Nightly](https://github.com/leok974/leo-portfolio/actions/workflows/seo-serp-cron.yml/badge.svg)](...)
+```
+
+## Files Modified
+
+**Total**: 13 files (7 new, 6 modified)
+
+### New Files
+1. `assistant_api/routers/seo_serp.py` (315 lines)
+2. `.github/workflows/seo-serp-cron.yml` (130 lines)
+3. `tests/e2e/seo-serp.api.spec.ts` (18 lines)
+4. `src/components/SerpLatest.tsx` (45 lines)
+5. `SEO_SERP_PHASE_50_9_COMPLETE.md` (500+ lines)
+6. `SEO_SERP_QUICKREF.md` (420+ lines)
+7. `SEO_SERP_AUTO_ISSUE_ENHANCEMENT.md` (320+ lines)
+
+### Modified Files
+8. `assistant_api/main.py` (router import)
+9. `assistant_api/settings.py` (GSC settings)
+10. `src/components/AdminToolsPanel.tsx` (SERP section)
+11. `README.md` (badge)
+12. `docs/API.md` (SERP endpoints)
+13. `CHANGELOG.md` (v0.2.3 auto-issue entry)
+
+## Testing Status
+
+✅ **E2E Test**: Mock populate + report + anomaly detection verified
+✅ **Backend**: Router loads successfully, all endpoints accessible
+✅ **Frontend**: SerpLatest component integrated in Admin Tools
+✅ **GitHub Action**: Workflow syntax valid, auto-issue logic tested
+✅ **Documentation**: API docs, guides, quick ref, enhancement doc complete
+
+## Quick Start (Local Dev)
+
+```bash
+# 1. Start backend
+uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001
+
+# 2. Populate mock data (creates anomalies)
+curl -X POST http://127.0.0.1:8001/agent/seo/serp/mock/populate \
+  -H "Content-Type: application/json" -d '{"days": 2}'
+
+# 3. View report
+curl http://127.0.0.1:8001/agent/seo/serp/report | jq .
+
+# 4. Run E2E test
+npx playwright test tests/e2e/seo-serp.api.spec.ts --project=chromium
+
+# 5. Test workflow locally (requires act or GitHub Actions runner)
+gh workflow run seo-serp-cron.yml
+```
+
+## Benefits
+
+### Proactive SEO Monitoring
+- Daily GSC data analysis without manual checking
+- Immediate alerts via GitHub Issues
+- Actionable suggestions for every anomaly
+- Historical tracking of performance issues
+
+### CI/CD Integration
+- Mock fallback allows testing without credentials
+- Artifacts preserved for trending analysis
+- Auto-labeled issues for easy filtering
+- Updates existing issues (no spam)
+
+### Developer Experience
+- Clean Admin Tools UI for quick checks
+- Comprehensive API documentation
+- E2E tests verify functionality
+- Quick reference guides for common tasks
+
+---
+
+**Phase 50.9 Complete! 🎉**
+
+The SEO SERP feedback loop is fully integrated and production-ready with automatic issue filing, providing:
+- Daily GSC monitoring via GitHub Actions
+- Real-time anomaly insights in Admin Tools UI
+- Proactive GitHub Issue alerts with actionable recommendations
+- CI/CD friendly mock fallback for testing without credentials
+- Idempotent workflow design (safe to re-run)
+- Comprehensive documentation and guides

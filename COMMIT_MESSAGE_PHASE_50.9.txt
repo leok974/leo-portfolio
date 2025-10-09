@@ -1,0 +1,151 @@
+Phase 50.9: SEO SERP feedback loop — Complete ✅
+
+Implemented comprehensive Indexing & SERP monitoring system with:
+- FastAPI router `/agent/seo/serp/*` (fetch, analyze, report, ping-sitemaps, mock)
+- Google Search Console integration with mock fallback for CI-friendly testing
+- Nightly GitHub Actions workflow (07:00 UTC) with artifact persistence
+- Admin Tools UI integration showing latest anomalies with actionable suggestions
+- E2E test verifying mock populate → report → anomaly detection
+
+## New Router Endpoints
+
+### POST /agent/seo/serp/fetch
+Fetches GSC data (or mock) for date range, writes artifacts to `agent/artifacts/seo-serp/`
+- Real GSC integration when `GSC_PROPERTY` + `GSC_SA_JSON` configured
+- Mock fallback for testing without credentials (stable test data)
+- Returns rows, report metadata, artifact paths
+
+### POST /agent/seo/serp/analyze
+Analyzes SERP data for CTR anomalies and performance issues
+- Calculates median CTR, flags pages < 0.5× median (configurable)
+- Compares with previous day to detect CTR drops
+- Returns anomalies with reasons + actionable suggestions:
+  * "Run seo.rewrite on H1/description"
+  * "Validate JSON-LD types for this route"
+  * "Check internal links/anchor text"
+  * "Consider new thumbnail/OG image test"
+
+### GET /agent/seo/serp/report?day=YYYY-MM-DD
+Returns latest (or specific day's) SERP analysis with anomalies
+- Used by Admin Tools UI component
+- Includes summary, count, full anomaly analysis
+
+### POST /agent/seo/serp/ping-sitemaps
+Pings Google/Bing to notify of sitemap updates
+- Safe by default: `dry_run: true` (only returns URLs)
+- When `dry_run: false`, fires HTTP requests to search engines
+
+### POST /agent/seo/serp/mock/populate (Dev-only)
+Generates mock SERP artifacts for testing
+- Guarded by `ALLOW_DEV_ROUTES=1`
+- Creates stable test data with one low-CTR anomaly
+- Used by E2E tests to verify anomaly detection
+
+## Nightly GitHub Actions
+
+**File**: `.github/workflows/seo-serp-cron.yml`
+**Schedule**: Daily at 07:00 UTC (03:00-04:00 ET)
+**Steps**:
+1. Fetch yesterday → today GSC data (or mock if credentials missing)
+2. Generate latest report with anomaly analysis
+3. Upload artifacts (JSONL + summary + report JSON)
+
+**Behavior**:
+- ✅ With credentials (`GSC_PROPERTY`, `GSC_SA_JSON`): Fetches real GSC data
+- ✅ Without credentials: Uses mock data, still produces artifacts (CI-friendly)
+- Badge shows workflow status in README.md
+
+## Admin Tools Integration
+
+**New Component**: `src/components/SerpLatest.tsx`
+- Displays latest report day and median CTR
+- Shows top 5 anomalies with clickable URLs
+- Real-time fetch from `/agent/seo/serp/report`
+- Graceful fallback: "No SERP report yet."
+
+**Location**: Admin Tools panel → "Indexing & SERP" section
+
+## E2E Test
+
+**File**: `tests/e2e/seo-serp.api.spec.ts`
+- Tests mock populate → report → verify anomaly detection
+- Skips gracefully when `ALLOW_DEV_ROUTES=0` (production)
+- Works without real GSC credentials
+
+## Configuration
+
+**Settings** (in `assistant_api/settings.py`):
+```python
+SERP_ARTIFACTS_DIR = "seo-serp"
+GSC_PROPERTY = ""        # e.g., "https://leok974.github.io/leo-portfolio/"
+GSC_SA_JSON = ""         # Service account JSON string
+GSC_SA_FILE = ""         # Or path to SA JSON file
+```
+
+**Optional Production Setup**:
+1. Create GSC service account with Search Console access
+2. Add repo secrets: `GSC_PROPERTY`, `GSC_SA_JSON`
+3. Nightly workflow will fetch real data and analyze
+
+## Documentation
+
+- Added comprehensive SERP endpoint docs to `docs/API.md` (200+ lines)
+- Updated README.md with SEO SERP Nightly badge
+- Added CHANGELOG entry for v0.2.3 (Phase 50.9)
+- Created `SEO_SERP_PHASE_50_9_COMPLETE.md` (full implementation summary)
+- Created `SEO_SERP_QUICKREF.md` (quick reference guide)
+
+## Files Modified
+
+**Total**: 12 files (5 new, 7 modified)
+
+### New Files
+1. `assistant_api/routers/seo_serp.py` (315 lines)
+2. `.github/workflows/seo-serp-cron.yml` (54 lines)
+3. `tests/e2e/seo-serp.api.spec.ts` (18 lines)
+4. `src/components/SerpLatest.tsx` (45 lines)
+5. `SEO_SERP_PHASE_50_9_COMPLETE.md` (400+ lines)
+6. `SEO_SERP_QUICKREF.md` (350+ lines)
+
+### Modified Files
+7. `assistant_api/main.py` (added router import)
+8. `assistant_api/settings.py` (added GSC settings)
+9. `src/components/AdminToolsPanel.tsx` (added SERP section)
+10. `README.md` (added badge)
+11. `docs/API.md` (added SERP documentation)
+12. `CHANGELOG.md` (added v0.2.3 entry)
+
+## Testing Status
+
+✅ **E2E Test**: Mock populate + report + anomaly detection verified
+✅ **Backend**: Router loads successfully, all endpoints accessible
+✅ **Frontend**: SerpLatest component integrated in Admin Tools
+✅ **GitHub Action**: Workflow syntax valid, ready to run
+✅ **Documentation**: API docs, CHANGELOG, completion summary, quick ref
+
+## Quick Start (Local Dev)
+
+```bash
+# 1. Start backend
+uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001
+
+# 2. Populate mock data
+curl -X POST http://127.0.0.1:8001/agent/seo/serp/mock/populate \
+  -H "Content-Type: application/json" -d '{"days": 2}'
+
+# 3. View report
+curl http://127.0.0.1:8001/agent/seo/serp/report | jq .
+
+# 4. Run E2E test
+npx playwright test tests/e2e/seo-serp.api.spec.ts --project=chromium
+```
+
+---
+
+**Phase 50.9 Complete! 🎉**
+
+The SEO SERP feedback loop is fully integrated and production-ready, providing:
+- Daily GSC monitoring via GitHub Actions
+- Real-time anomaly insights in Admin Tools UI
+- Actionable recommendations for underperforming pages
+- CI/CD friendly mock fallback for testing without credentials

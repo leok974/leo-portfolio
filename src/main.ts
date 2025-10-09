@@ -14,6 +14,13 @@ import { createRoot } from 'react-dom/client';
 import * as React from 'react';
 import Toasts from './components/Toasts';
 import { enhanceCTAs } from './lib/enhance-ctas';
+import { syncDevFlagFromQuery } from './lib/devGuard';
+import MetricsBadge from './components/MetricsBadge';
+
+// -----------------------------
+// DEV FLAG SYNC (Phase 50.8)
+// -----------------------------
+syncDevFlagFromQuery();
 
 // -----------------------------
 // SMOOTH SCROLLING (LENIS)
@@ -37,6 +44,19 @@ import { enhanceCTAs } from './lib/enhance-ctas';
     toastContainer.id = 'toast-container';
     document.body.appendChild(toastContainer);
     createRoot(toastContainer).render(React.createElement(Toasts));
+  }
+})();
+
+// -----------------------------
+// METRICS BADGE (Phase 50.8)
+// -----------------------------
+(() => {
+  const navRight = document.querySelector('.nav-right');
+  if (navRight) {
+    const badgeContainer = document.createElement('div');
+    badgeContainer.id = 'metrics-badge-container';
+    navRight.appendChild(badgeContainer);
+    createRoot(badgeContainer).render(React.createElement(MetricsBadge));
   }
 })();
 

@@ -21,7 +21,7 @@ export default defineConfig({
   retries: isCI ? 2 : 0, // 2 retries in CI for flaky network/timing issues
   timeout: 30_000,
   expect: { timeout: 3_000 },
-  globalSetup: path.resolve(__dirname, 'tests/e2e/global-setup.ts'),
+  globalSetup: path.resolve(__dirname, 'tests/e2e/setup/dev-overlay.ui.setup.ts'),
   reporter,
   use: {
     headless: true,
@@ -32,6 +32,12 @@ export default defineConfig({
     actionTimeout: 10_000,
     navigationTimeout: 15_000, // Can override lower for @ui-polish tests
     ignoreHTTPSErrors: true,
+    storageState: process.env.PW_STATE || 'tests/e2e/.auth/dev-overlay-state.json',
+    extraHTTPHeaders: {
+      // All APIRequestContext calls will include this header
+      // Enables dev auth for /agent/* routes in tests
+      'Authorization': 'Bearer dev',
+    },
   },
   projects: [
     // Setup project that creates auth state for dev overlay tests

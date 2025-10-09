@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { isPrivilegedUIEnabled } from "@/lib/devGuard";
+import MetricsDebugPanel from "./MetricsDebugPanel";
+import BehaviorMetricsDebugPanel from "./BehaviorMetricsDebugPanel";
+import PrivilegedOnly from "./PrivilegedOnly";
 
 export default function BehaviorMetricsPanel() {
   const [enabled, setEnabled] = useState(false);
@@ -36,13 +39,22 @@ export default function BehaviorMetricsPanel() {
   return (
     <div className="rounded-2xl overflow-hidden border border-neutral-800/40 shadow-sm">
       <GuardedIframe />
+      {/* Debug panels */}
+      <div className="border-t border-neutral-800/40">
+        <MetricsDebugPanel />
+      </div>
+      <PrivilegedOnly>
+        <div className="border-t border-neutral-800/40">
+          <BehaviorMetricsDebugPanel />
+        </div>
+      </PrivilegedOnly>
     </div>
   );
 }
 
 function GuardedIframe() {
   const [src, setSrc] = React.useState("/agent/metrics/dashboard");
-  
+
   React.useEffect(() => {
     try {
       const token = localStorage.getItem("dev:token");
@@ -51,7 +63,7 @@ function GuardedIframe() {
       }
     } catch {}
   }, []);
-  
+
   return (
     <iframe
       src={src}

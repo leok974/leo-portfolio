@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Response, Request
 import asyncio, httpx
 import os, re, sys, subprocess
+import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
 from pydantic import BaseModel
@@ -110,6 +111,10 @@ app.include_router(rag_projects.router)
 app.include_router(llm_health_router)
 app.include_router(ready_router)
 app.include_router(analytics_router)
+
+# Behavior metrics routes (Phase 50.8)
+from assistant_api.routers import metrics_behavior
+app.include_router(metrics_behavior.router)
 
 # Gallery and uploads routes (now consolidated under /api/admin)
 from assistant_api.routers import admin

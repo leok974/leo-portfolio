@@ -100,6 +100,10 @@
           >
         </div>
       </div>
+      <div class="card">
+        <div class="muted">Top Countries (events)</div>
+        <ol id="countries"></ol>
+      </div>
     </div>
     <div class="card" style="margin: 16px 0">
       <div class="row" style="justify-content: space-between">
@@ -159,6 +163,8 @@
         // Wire export links
         $("#dlCsv").href = API + "/metrics/export.csv";
         $("#dlPdf").href = API + "/metrics/export.pdf";
+
+        await loadCountries();
 
         // Populate section selector
         const sel = $("#sectionSel");
@@ -288,6 +294,18 @@
       load().catch((e) => {
         $("#meta").textContent = "Failed to load metrics: " + e;
       });
+
+      async function loadCountries() {
+        const r = await fetch(API + "/metrics/countries?days=14&top=10");
+        const { rows } = await r.json();
+        const max = Math.max(1, ...rows.map((x) => x.events));
+        $("#countries").innerHTML = rows
+          .map((x) => {
+            const pct = x.events / max;
+            return `<li class="row"><span class="pill">${x.country}</span><progress max="1" value="${pct}"></progress> ${x.events}</li>`;
+          })
+          .join("");
+      }
     </script>
   </body>
 </html>

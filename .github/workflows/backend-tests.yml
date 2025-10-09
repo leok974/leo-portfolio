@@ -27,6 +27,20 @@ jobs:
       - name: Preflight wait for nginx (_up)
         run: node scripts/wait-http.mjs http://127.0.0.1:8080/_up --timeout=180000 --interval=1000
 
+      - name: Health check - Metrics Behavior API (Phase 50.8)
+        run: |
+          echo "Testing /api/metrics/behavior endpoint..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" http://127.0.0.1:8080/api/metrics/behavior?limit=10)
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response Body: $BODY"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Metrics behavior endpoint failed with status $HTTP_CODE"
+            exit 1
+          fi
+          echo "✅ Metrics behavior endpoint healthy"
+
       - name: Run strict backend tests
         env:
           BACKEND_REQUIRED: "1"

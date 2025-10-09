@@ -1,7 +1,7 @@
 # 🚀 READY TO RUN - E2E Test Suite
 
-**Last Commit:** 4d2a80e  
-**Status:** All hardening complete ✅  
+**Last Commit:** 4d2a80e
+**Status:** All hardening complete ✅
 **Action:** Execute command below 👇
 
 ---

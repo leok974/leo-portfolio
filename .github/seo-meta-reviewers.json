@@ -1,0 +1,21 @@
+{
+  "rules": [
+    { "glob": "/index.html", "reviewers": ["leok974"] },
+    {
+      "glob": "/blog/**",
+      "reviewers": ["alice"],
+      "team_reviewers": ["content"]
+    },
+    { "glob": "/agent/**", "team_reviewers": ["platform"] },
+    { "glob": "/projects/**", "team_reviewers": ["web"] },
+    {
+      "glob": "/brand/**",
+      "limits": { "title_max": 70, "desc_max": 165 },
+      "team_reviewers": ["brand"]
+    }
+  ],
+  "defaults": {
+    "team_reviewers": ["web"],
+    "limits": { "title_max": 60, "desc_max": 155 }
+  }
+}

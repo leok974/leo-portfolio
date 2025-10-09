@@ -1,0 +1,7 @@
+{
+  "jsonld": {
+    "@type": "WebPage",
+    "url": "https://example.com",
+    "name": "Test"
+  }
+}

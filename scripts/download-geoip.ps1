@@ -64,16 +64,16 @@ Write-Host "[3/4] Extracting .mmdb file..." -ForegroundColor Yellow
 if (Get-Command tar -ErrorAction SilentlyContinue) {
     # Extract to temp location
     tar -xzf $tarFile -C $geoDir
-    
+
     # Find the .mmdb file (MaxMind extracts to GeoLite2-Country_YYYYMMDD/ subdirectory)
     $mmdbFile = Get-ChildItem -Path $geoDir -Recurse -Filter "*.mmdb" | Select-Object -First 1
-    
+
     if ($mmdbFile) {
         # Move to expected location
         $targetPath = "$geoDir/GeoLite2-Country.mmdb"
         Move-Item -Path $mmdbFile.FullName -Destination $targetPath -Force
         Write-Host "      Extracted: $targetPath" -ForegroundColor Green
-        
+
         # Clean up extracted directory
         Get-ChildItem -Path $geoDir -Directory | Remove-Item -Recurse -Force
     } else {

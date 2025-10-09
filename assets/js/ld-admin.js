@@ -88,9 +88,9 @@
       ta.value = JSON.stringify(data.jsonld, null, 2);
       // @ts-ignore - Element exists in DOM
       msg.textContent = `Generated ${data.jsonld.length} object(s). Errors: ${data.report.errors.length}, Warnings: ${data.report.warnings.length}`;
-    }catch(e){ 
+    }catch(e){
       // @ts-ignore - Error has message
-      msg.textContent = `Failed: ${e.message}`; 
+      msg.textContent = `Failed: ${e.message}`;
     }
   });
 
@@ -107,9 +107,9 @@
       res.textContent = `Count: ${rep.count} | Errors: ${rep.errors.length} | Warnings: ${rep.warnings.length}`;
       // @ts-ignore - Element exists in DOM
       msg.textContent = "Validated.";
-    }catch(e){ 
+    }catch(e){
       // @ts-ignore - Error has message
-      msg.textContent = `Failed: ${e.message}`; 
+      msg.textContent = `Failed: ${e.message}`;
     }
   });
 
