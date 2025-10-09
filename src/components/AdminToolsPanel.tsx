@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import SeoJsonLdPanel from "./SeoJsonLdPanel";
 import SerpLatest from "./SerpLatest";
 import SerpRemediate from "./SerpRemediate";
+import BehaviorMetricsPanel from "./BehaviorMetricsPanel";
 
 interface ToolsList {
   ok: boolean;
@@ -315,6 +316,19 @@ export function AdminToolsPanel({ base = "" }: { base?: string }) {
           <SerpLatest />
           <SerpRemediate />
         </div>
+      </section>
+
+      {/* === Behavior Metrics (Privileged) === */}
+      <section aria-labelledby="behavior-metrics-title" className="mt-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 id="behavior-metrics-title" className="text-xl font-semibold">
+            Behavior Metrics
+          </h2>
+          <span className="text-xs text-neutral-500">
+            14-day views / clicks / CTR / dwell & learned weights
+          </span>
+        </div>
+        <BehaviorMetricsPanel />
       </section>
     </div>
   );

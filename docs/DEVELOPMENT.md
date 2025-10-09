@@ -1573,6 +1573,20 @@ const json = await waitForArtifact(
 - `LEARNING_EPSILON=0.10` (exploration rate)
 - `LEARNING_DECAY=0.98` (time decay factor)
 - `LEARNING_EMA_ALPHA=0.30` (smoothing factor)
+
+### Nightly Learning Job
+
+- GitHub Actions workflow `behavior-learning-nightly.yml` runs daily at ~02:30 ET.
+- It executes `scripts/analyze_behavior.py` which reads JSONL in `./data/analytics/`, updates `weights.json` if needed, and commits changes back to the repo.
+- View your current metrics at `/metrics.html` (requires privileged access).
+
+### Privileged Panel Access
+
+The Behavior Metrics dashboard is embedded under the privileged Admin panel.
+
+- The guard is checked via `isPrivilegedUIEnabled()` in `src/lib/devGuard.ts`.
+- To enable locally, use your existing unlock flow (e.g., calling `/agent/dev/enable` endpoint) as defined in `devGuard`.
+- When unlocked, **AdminToolsPanel** renders the **Behavior Metrics** section with an iframe to `/metrics.html`.
 - `LAYOUT_SECTIONS_DEFAULT="hero,projects,skills,about,contact"` (baseline ordering)
 - `ANALYTICS_DIR="./data/analytics"` (storage path)
 

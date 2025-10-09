@@ -108,6 +108,7 @@ A fast, modern, **framework-free** portfolio for **Leo Klemet — AI Engineer ·
   - Frontend tracker collects anonymous section-level signals (views, clicks, dwell).
   - Backend analyzes recent activity, updates per-section weights (EMA + time decay), and reorders sections with a small exploration rate.
   - Endpoints: `/agent/metrics/ingest`, `/agent/analyze/behavior`, `/agent/layout`.
+  - Dashboard: open `/metrics.html` to view 14-day views/clicks/CTR/dwell and current weights/order (privileged access required).
 
 > Built with **plain HTML, CSS (Grid/Flex), and vanilla JS**. Easy to extend into React/Vite/CMS later.
 

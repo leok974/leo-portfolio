@@ -6,10 +6,15 @@
 - **Telemetry + Behavior Learning System**:
   - `/agent/metrics/ingest` endpoint for anonymous section analytics
   - `/agent/analyze/behavior` and `/agent/layout` for learned ordering
+  - `/agent/metrics/summary` for dashboard aggregation (14-day views/clicks/CTR/dwell/weights)
   - Frontend tracker (`src/lib/behavior-tracker.js`) with IntersectionObserver
   - Runtime layout reordering (`src/lib/apply-learned-layout.js`)
+  - `public/metrics.html` lightweight dashboard (no extra deps)
+  - `BehaviorMetricsPanel` React component for privileged Admin panel
+  - Nightly GitHub Action (`behavior-learning-nightly.yml`) to auto-update `data/analytics/weights.json`
+  - `scripts/analyze_behavior.py` for CLI/CI weight computation
   - Settings: `ANALYTICS_ENABLED`, `ANALYTICS_ORIGIN_ALLOWLIST`, `LEARNING_EPSILON`, `LEARNING_DECAY`, `LEARNING_EMA_ALPHA`, `LAYOUT_SECTIONS_DEFAULT`, `ANALYTICS_DIR`
-  - Backend test (`tests/test_metrics_learning.py`) and E2E test (`tests/e2e/behavior-analytics.spec.ts`)
+  - Backend test (`tests/test_metrics_learning.py`) and E2E tests (`tests/e2e/behavior-analytics.spec.ts`, `tests/e2e/privileged-metrics.spec.ts`)
   - Documentation updates: README, API.md, SECURITY.md, DEVELOPMENT.md
 
 ## [0.2.3] - 2025-10-08
