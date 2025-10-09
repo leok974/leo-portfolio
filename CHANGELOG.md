@@ -13,10 +13,11 @@
       - `collectors/trend_detector.py`: Detects anomalies using z-score analysis (threshold: ±2σ)
       - `rag/embedder_local.py`: Local embeddings via `intfloat/e5-base-v2` (SentenceTransformers)
       - `rag/query_engine.py`: SQLite vector store with cosine similarity search
-      - `summarizers/insight_llm.py`: AI insight generation using local Ollama (gpt-oss-20b compatible)
+      - `summarizers/insight_llm.py`: AI insight generation using local Ollama (fixed to use `gpt-oss:20b` model)
       - `summarizers/report_builder.py`: Markdown report generation with KPIs, trends, and insights
     - **Usage**: `python -m analytics.pipeline --window-days 7`
     - **Output**: `analytics/outputs/insight-summary.md`, `analytics/outputs/trend-report.json`
+    - **Model Configuration**: Defaults to `gpt-oss:20b` (13GB Ollama model), configurable via `OPENAI_MODEL` env var
   - **FastAPI Analytics Endpoint** (`assistant_api/routers/analytics_insights.py`):
     - `GET /analytics/latest`: Returns latest insight report (Markdown + JSON trend data)
     - `GET /analytics/health`: System health check (reports availability, RAG index status)
