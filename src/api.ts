@@ -153,8 +153,69 @@ export async function galleryAdd(payload: GalleryAddRequest): Promise<GalleryAdd
   return resp.json();
 }
 
+// PR Automation API helpers
+export interface PRCreateRequest {
+  branch?: string;
+  title?: string;
+  body?: string;
+  labels?: string[];
+  base?: string;
+  commit_message?: string;
+  dry_run?: boolean;
+  use_llm?: boolean;
+}
+
+export interface PRCreateResponse {
+  status: string;
+  branch?: string;
+  pr?: string;
+  labels?: string[];
+  diff?: string;
+  message?: string;
+}
+
+export async function approveAndOpenPR(options: {
+  labels?: string[];
+  use_llm?: boolean;
+  attach_insights?: boolean;
+  branch?: string;
+  title?: string;
+  body?: string;
+  dry_run?: boolean;
+}): Promise<PRCreateResponse> {
+  const payload: PRCreateRequest = {
+    labels: options.labels || ['auto', 'siteagent'],
+    use_llm: options.use_llm ?? false,
+    branch: options.branch,
+    title: options.title,
+    body: options.body,
+    dry_run: options.dry_run ?? false,
+  };
+
+  const csrfToken = getCsrfToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer dev'  // Dev auth for agent endpoints
+  };
+  if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+  const resp = await fetch(BASE + '/agent/artifacts/pr', {
+    method: 'POST',
+    credentials: 'include',
+    headers,
+    body: JSON.stringify(payload)
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`PR creation failed: ${resp.status} ${text}`);
+  }
+
+  return resp.json();
+}
+
 // Expose for legacy inline usage if needed
-(window as any).API = { base: BASE, http, status, statusWithFallback, chat, streamChat, uploadFile, galleryAdd };
+(window as any).API = { base: BASE, http, status, statusWithFallback, chat, streamChat, uploadFile, galleryAdd, approveAndOpenPR };
 
 export const API = (window as any).API as {
   base: string;
@@ -165,4 +226,5 @@ export const API = (window as any).API as {
   streamChat: typeof streamChat;
   uploadFile: typeof uploadFile;
   galleryAdd: typeof galleryAdd;
+  approveAndOpenPR: typeof approveAndOpenPR;
 };

@@ -5,6 +5,7 @@
  * Provides filtering and JSON export capabilities.
  */
 import React from "react";
+import { approveAndOpenPR } from "@/api";
 
 // Helper to copy text to clipboard
 const copy = (s: string) => navigator.clipboard.writeText(s);
@@ -152,6 +153,31 @@ export default function DevPagesPanel() {
       setCommitMsg(j?.applied ? "Changes applied ✔" : "No changes applied");
     } catch (e: any) {
       setCommitMsg(e?.message || "Commit failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const doAutoPR = async () => {
+    setBusy(true);
+    setCommitMsg(null);
+    try {
+      const result = await approveAndOpenPR({
+        labels: ['auto', 'seo'],
+        use_llm: true,
+        attach_insights: true
+      });
+      
+      if (result.pr) {
+        setCommitMsg(`✅ PR created: ${result.pr}`);
+        openInNewTab(result.pr);
+      } else if (result.branch) {
+        setCommitMsg(`✅ Branch created: ${result.branch}`);
+      } else {
+        setCommitMsg(`Status: ${result.status}`);
+      }
+    } catch (e: any) {
+      setCommitMsg(`❌ ${e?.message || "PR creation failed"}`);
     } finally {
       setBusy(false);
     }
@@ -389,6 +415,14 @@ export default function DevPagesPanel() {
                     className="px-3 py-2 rounded-xl border border-emerald-700 bg-emerald-900/30 hover:bg-emerald-900/50 text-sm disabled:opacity-50"
                   >
                     {busy ? "Working…" : "Approve & commit"}
+                  </button>
+                  <button
+                    onClick={doAutoPR}
+                    disabled={busy}
+                    className="px-3 py-2 rounded-xl border border-purple-700 bg-purple-900/30 hover:bg-purple-900/50 text-sm disabled:opacity-50"
+                    title="Create PR with AI-generated title/body and analytics insights"
+                  >
+                    {busy ? "Working…" : "Auto PR (LLM)"}
                   </button>
                   <button
                     onClick={openPRHelper}
