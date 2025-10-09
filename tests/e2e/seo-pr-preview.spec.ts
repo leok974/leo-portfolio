@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 /**
  * Phase 50.5 - SEO PR automation and preview smoke test.

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 /**
  * Test fixture: Deterministic project data for stable     // Should show 1 completed project (DermaAI)

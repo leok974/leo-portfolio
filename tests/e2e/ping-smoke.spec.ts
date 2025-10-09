@@ -1,4 +1,4 @@
-import { test, expect, request as pwRequest } from '@playwright/test';
+import { test, expect, request as pwRequest } from './test.base';
 import { BASE } from './helpers/env';
 
 test.describe('@backend quick ping', () => {

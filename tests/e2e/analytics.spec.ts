@@ -1,4 +1,4 @@
-import { test, expect, APIRequestContext } from '@playwright/test';
+import { test, expect, APIRequestContext } from './test.base';
 
 /** Parse a Prometheus exposition to a map keyed by label set (stringified) */
 function scrapeSeries(text: string, metricName: string) {

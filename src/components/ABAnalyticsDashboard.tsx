@@ -66,15 +66,15 @@ export const ABAnalyticsDashboard: React.FC = () => {
   }, []);
 
   if (loading && !data) {
-    return <div className="p-4 text-sm text-gray-500">Loading AB analytics...</div>;
+    return <div data-testid="ab-analytics-dashboard" className="p-4 text-sm text-gray-500">Loading AB analytics...</div>;
   }
 
   if (error) {
-    return <div className="p-4 text-sm text-red-600">Error: {error}</div>;
+    return <div data-testid="ab-analytics-dashboard" className="p-4 text-sm text-red-600">Error: {error}</div>;
   }
 
   if (!data) {
-    return <div className="p-4 text-sm text-gray-500">No data available</div>;
+    return <div data-testid="ab-analytics-dashboard" className="p-4 text-sm text-gray-500">No data available</div>;
   }
 
   const winner =
@@ -85,7 +85,7 @@ export const ABAnalyticsDashboard: React.FC = () => {
         : "Tie";
 
   return (
-    <div className="space-y-6 p-4">
+    <div data-testid="ab-analytics-dashboard" className="space-y-6 p-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">A/B Test Analytics</h2>
         <button

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 import { waitForPrimary } from './lib/wait-primary';
 import { snapSummary } from './lib/snap-summary';
 

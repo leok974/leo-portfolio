@@ -1,4 +1,4 @@
-import { test, expect, request } from '@playwright/test';
+import { test, expect, request } from './test.base';
 import { BASE, REQUIRE_STATUS_PILL_STRICT } from './helpers/env';
 
 test('status pill reflects live status', async ({ page }) => {

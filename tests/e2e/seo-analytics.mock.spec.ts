@@ -1,4 +1,4 @@
-import { test, expect, request as PWRequest } from '@playwright/test';
+import { test, expect, request as PWRequest } from './test.base';
 import { waitForArtifact } from './helpers/waitForArtifact';
 
 const BE = process.env.BACKEND_URL || 'http://127.0.0.1:8001';

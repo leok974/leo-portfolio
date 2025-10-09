@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test.describe('@ui-polish Visual polish checks', () => {
   test('tw-animate-css utilities are available and animate', async ({ page, baseURL }) => {

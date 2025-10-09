@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 import { BASE, REQUIRE_CSS_200 } from './helpers/env';
 
 const STRICT = process.env.PLAYWRIGHT_STRICT_STREAM === '1';

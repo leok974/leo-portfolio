@@ -4,7 +4,7 @@
  * Verifies /agent/status/pages endpoint returns discovered pages
  * with integrity checksums.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 const BE = process.env.BE_URL || 'http://127.0.0.1:8001';
 

@@ -3,7 +3,7 @@
  *
  * Tests the /agent/seo/meta/suggest endpoint for generating SEO title/description.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://127.0.0.1:8001';
 

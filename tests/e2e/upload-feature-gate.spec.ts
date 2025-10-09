@@ -9,7 +9,7 @@
  * - Admin can upload regardless of feature flag
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test.describe('Upload Feature Gating @feature-gate', () => {
 

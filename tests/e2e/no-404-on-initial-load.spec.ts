@@ -1,4 +1,4 @@
-import { test, expect, request as playwrightRequest } from '@playwright/test';
+import { test, expect, request as playwrightRequest } from './test.base';
 import { BASE } from './helpers/env';
 
 // Helper to detect if backend is available (responds on /ready)

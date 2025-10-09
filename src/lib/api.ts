@@ -9,22 +9,22 @@ const DEFAULT_PREFIX = '/api';
  * API base URL - either from window override, env var, or default prefix.
  * This ensures API calls don't hit Vite's SPA fallback (which returns index.html).
  */
-export const API_BASE = 
-  (window as any).__API_BASE__ || 
-  import.meta.env?.VITE_BACKEND_BASE || 
+export const API_BASE =
+  (window as any).__API_BASE__ ||
+  import.meta.env?.VITE_BACKEND_BASE ||
   DEFAULT_PREFIX;
 
 /**
  * Make an API request with proper base URL and headers.
  * Use this instead of raw fetch() for API endpoints.
- * 
+ *
  * @example
  * const res = await api('/analytics/latest');
  * const data = await res.json();
  */
 export async function api(path: string, init?: RequestInit): Promise<Response> {
   const url = `${API_BASE}${path}`;
-  
+
   const res = await fetch(url, {
     headers: {
       'content-type': 'application/json',
@@ -32,7 +32,7 @@ export async function api(path: string, init?: RequestInit): Promise<Response> {
     },
     ...init,
   });
-  
+
   return res;
 }
 

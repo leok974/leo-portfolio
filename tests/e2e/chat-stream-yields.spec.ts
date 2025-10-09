@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 import { waitForPrimary } from './lib/wait-primary';
 
 const BASE_URL = process.env.BASE_URL || process.env.BASE || process.env.PROD_BASE || 'http://127.0.0.1:8080';

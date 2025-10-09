@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test.describe('SEO: OG Images @seo', () => {
   test('home page has absolute og:image URL', async ({ page, baseURL }) => {

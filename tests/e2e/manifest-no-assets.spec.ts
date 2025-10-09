@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 const BASE = process.env.BASE ?? 'http://localhost:8080';
 
 test.describe('@content manifest-no-assets', () => {

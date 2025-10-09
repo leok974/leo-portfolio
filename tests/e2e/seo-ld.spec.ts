@@ -4,7 +4,7 @@
  * Tests for JSON-LD structured data presence and validation on frontend pages.
  * Ensures WebSite, WebPage, BreadcrumbList and other schema.org types are correctly embedded.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 /**
  * Helpers

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 import { BASE } from './helpers/env';
 
 function lower(h: Record<string, string | string[] | undefined>) {

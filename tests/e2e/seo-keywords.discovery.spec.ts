@@ -4,7 +4,7 @@
  * Verifies that /agent/seo/keywords includes pages from sitemap.xml
  * when the sitemap exists in the workspace.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 import fs from 'fs';
 import path from 'path';
 

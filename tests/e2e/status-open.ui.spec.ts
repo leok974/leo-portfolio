@@ -6,7 +6,7 @@
  * Note: These tests require your dev overlay to be accessible.
  * Adjust selectors to match your app's structure.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test.describe('DevPagesPanel UI actions', () => {
   test('DevPagesPanel has Open/Copy actions', async ({ page }) => {

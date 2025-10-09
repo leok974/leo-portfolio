@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test('gallery renders and consent gate works @gallery', async ({ page }) => {
   await page.goto('/gallery.html');

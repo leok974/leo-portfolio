@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 import { BASE } from './helpers/env';
 
 // Validates that projects.json is served (not HTML fallback), parses, and contains expected keys

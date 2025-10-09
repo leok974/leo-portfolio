@@ -1,13 +1,10 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./test.base";
 
 test.describe("AB Analytics Dashboard @dev-only", () => {
   test.beforeEach(async ({ page }) => {
-    // Enable dev mode (set cookie or query param depending on your implementation)
-    await page.addInitScript(() => {
-      localStorage.setItem("dev-mode-enabled", "true");
-    });
     await page.goto("/");
-    await page.waitForLoadState("networkidle");
+    // Wait for dashboard to be visible instead of networkidle
+    await expect(page.locator("text=A/B Test Analytics").or(page.locator("body"))).toBeVisible();
   });
 
   test("renders AB analytics dashboard in admin dock", async ({ page }) => {

@@ -8,7 +8,7 @@
  * If not implemented, the test will gracefully skip.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 // Feature flag URL - adjust if app uses different flag
 const FLAG_URL = '/tools.html?seoPersist=local';

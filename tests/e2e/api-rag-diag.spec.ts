@@ -1,4 +1,4 @@
-import { test, expect, request } from '@playwright/test';
+import { test, expect, request } from './test.base';
 
 const BASE = process.env.API_BASE || 'http://127.0.0.1:8023';
 

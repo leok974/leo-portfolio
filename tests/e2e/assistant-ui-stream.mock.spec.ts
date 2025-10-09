@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 import { mockReady } from './lib/mock-ready';
 import { installFastUI } from './lib/fast-ui';
 

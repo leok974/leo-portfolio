@@ -6,7 +6,7 @@
  * Note: Requires DevPagesPanel to be integrated into your dev overlay.
  * Tests will skip gracefully if panel not found.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test.describe('DevPagesPanel Suggest Meta modal', () => {
   test('Suggest meta modal shows and displays suggestions', async ({ page }) => {

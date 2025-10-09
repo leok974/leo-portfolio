@@ -2,7 +2,7 @@
  * Analytics smoke tests for Phase 51.0
  * Ensures the new analytics endpoints are working correctly
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test.describe('Analytics API Endpoints', () => {
   test('analytics latest endpoint returns ok or pending', async ({ request }) => {

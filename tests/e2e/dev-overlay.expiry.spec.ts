@@ -6,7 +6,7 @@
  * prevent privileged UI access.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test.describe('Dev overlay expiry & security @e2e @dev-overlay', () => {
   test.use({ storageState: 'playwright/.auth/dev-overlay.json' });

@@ -4,7 +4,7 @@
  * Tests the Admin Tools JSON-LD panel (React component) or fallback (vanilla JS).
  * Gracefully skips if neither is available.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test.describe('@seo-ld UI panel', () => {
   test('panel loads and validates', async ({ page, baseURL }) => {

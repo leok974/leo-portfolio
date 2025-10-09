@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 test.setTimeout(130_000);
 import { waitForPrimary } from './lib/wait-primary';
 

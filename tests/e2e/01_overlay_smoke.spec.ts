@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 import { requireBackendOrSkip } from './_utils';
 
 test('maintenance overlay opens and lists actions', async ({ page, request }) => {

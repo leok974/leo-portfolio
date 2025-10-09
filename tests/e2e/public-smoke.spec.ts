@@ -1,4 +1,4 @@
-import { test, expect, type APIRequestContext } from '@playwright/test';
+import { test, expect, type APIRequestContext } from './test.base';
 
 const BASE = process.env.PUBLIC_URL || 'https://assistant.ledger-mind.org';
 

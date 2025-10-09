@@ -2,11 +2,11 @@
  * E2E Test: AB Toast Notifications
  * @tags @frontend @phase50.2 @toast @public
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./test.base";
 
 test.describe("AB Toast System (Public Site)", () => {
   test("should display toast notification on project card click", async ({ page }) => {
-    await page.goto("/", { waitUntil: "networkidle" });
+    await page.goto("/");
 
     // Wait for page to be interactive
     await page.waitForSelector('.card-click', { timeout: 5000 });
@@ -36,7 +36,7 @@ test.describe("AB Toast System (Public Site)", () => {
   });
 
   test("should track visitor ID in localStorage", async ({ page }) => {
-    await page.goto("/", { waitUntil: "networkidle" });
+    await page.goto("/");
 
     // Wait a moment for AB tracking to initialize
     await page.waitForTimeout(1000);
@@ -48,7 +48,7 @@ test.describe("AB Toast System (Public Site)", () => {
   });
 
   test("should initialize AB bucket on page load", async ({ page }) => {
-    await page.goto("/", { waitUntil: "networkidle" });
+    await page.goto("/");
 
     // Wait for AB tracking to initialize
     await page.waitForTimeout(1000);

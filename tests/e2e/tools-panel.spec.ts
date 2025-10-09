@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 // Minimal smoke for Tools panel UI: dry-run and run button presence
 // Assumes Admin dock is present on the page and AdminToolsPanel is mounted.
