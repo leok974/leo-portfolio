@@ -14,7 +14,7 @@ def require_api_key(
 ) -> bool:
     """
     Require valid API key for privileged endpoints.
-    
+
     Raises:
         401 if missing API key
         403 if invalid API key
@@ -24,7 +24,7 @@ def require_api_key(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing API key"
         )
-    
+
     # Check against environment variable
     expected_key = os.getenv("INTERNAL_API_KEY", "dev-key-change-in-prod")
     if x_api_key != expected_key:
@@ -32,7 +32,7 @@ def require_api_key(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid API key"
         )
-    
+
     return True
 
 
@@ -41,7 +41,7 @@ def require_dev_auth(
 ) -> bool:
     """
     Require dev auth (Bearer token) for dev overlay endpoints.
-    
+
     Raises:
         401 if missing authorization
         403 if invalid token
@@ -51,16 +51,16 @@ def require_dev_auth(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing authorization header"
         )
-    
+
     # Check for Bearer token
     if not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authorization format (expected 'Bearer <token>')"
         )
-    
+
     token = authorization.replace("Bearer ", "").strip()
-    
+
     # In dev/test, accept "dev" token; in prod, check against env
     expected_token = os.getenv("DEV_TOKEN", "dev")
     if token != expected_token:
@@ -68,5 +68,5 @@ def require_dev_auth(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid dev token"
         )
-    
+
     return True

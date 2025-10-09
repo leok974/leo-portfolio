@@ -7,10 +7,10 @@ import React from 'react';
 
 export default function WeightsEditorE2EStub() {
   return (
-    <div 
-      data-testid="weights-editor" 
-      style={{ 
-        padding: '8px', 
+    <div
+      data-testid="weights-editor"
+      style={{
+        padding: '8px',
         border: '1px dashed var(--muted, #ccc)',
         borderRadius: '4px',
         backgroundColor: 'var(--background, #f5f5f5)',

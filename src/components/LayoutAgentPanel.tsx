@@ -7,7 +7,7 @@ import { isE2E } from "@/lib/e2e";
 
 export function LayoutAgentPanel({ base = "" }: { base?: string }) {
   const EditorComponent = isE2E ? WeightsEditorE2EStub : WeightsEditor;
-  
+
   return (
     <div data-testid="layout-agent-panel" className="space-y-4">
       <div className="flex items-center justify-between">

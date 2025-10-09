@@ -2,8 +2,16 @@
  * Dev guard: Check if privileged/admin UI should be enabled.
  * Returns true if sa_dev cookie exists and validates.
  * Accepts either 'enabled' or 'allowed' from API (boolean or "1" for resilience).
+ * 
+ * E2E Mode: Always returns true to enable all privileged UI in tests.
  */
 export async function isPrivilegedUIEnabled(): Promise<boolean> {
+  // E2E mode: always enable privileged UI
+  if (import.meta.env?.VITE_E2E === '1') {
+    console.debug('[E2E] isPrivilegedUIEnabled() → true (forced)');
+    return true;
+  }
+  
   try {
     const res = await fetch("/agent/dev/status", { cache: "no-store" });
     if (!res.ok) return false;

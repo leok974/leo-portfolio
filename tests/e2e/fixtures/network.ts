@@ -1,11 +1,37 @@
 /**
  * Network fixtures for deterministic testing
  * Stubs external LLM and analytics calls to prevent flaky network issues
+ * Seeds localStorage with E2E-friendly flags
  */
 import { test as base } from '@playwright/test';
 
 export const test = base.extend({
   page: async ({ page }, use) => {
+    // Seed localStorage flags for E2E mode BEFORE navigating
+    await page.addInitScript(() => {
+      // Enable AB analytics in tests
+      localStorage.setItem('ab.analytics.enabled', 'true');
+      // Enable dev tools/privileged UI
+      localStorage.setItem('dev.tools.enabled', 'true');
+      // Consent flags (auto-granted in E2E)
+      localStorage.setItem('consent.analytics', 'true');
+      localStorage.setItem('consent.calendly', 'true');
+    });
+
+    // Disable animations for deterministic testing
+    await page.addStyleTag({
+      content: `
+        *,
+        *::before,
+        *::after {
+          transition-duration: 0s !important;
+          transition-delay: 0s !important;
+          animation-duration: 0s !important;
+          animation-delay: 0s !important;
+        }
+      `
+    });
+
     // Stub Ollama/LLM calls (to prevent 404s when model not available)
     await page.route('**/v1/chat/completions', route =>
       route.fulfill({

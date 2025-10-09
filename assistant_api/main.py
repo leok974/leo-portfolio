@@ -112,6 +112,10 @@ app.include_router(llm_health_router)
 app.include_router(ready_router)
 app.include_router(analytics_router)
 
+# Analytics events (Phase 51.0 - E2E Test Support)
+from assistant_api.routers import analytics_events
+app.include_router(analytics_events.router)
+
 # Behavior metrics routes (Phase 50.8)
 from assistant_api.routers import metrics_behavior
 app.include_router(metrics_behavior.router)
