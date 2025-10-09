@@ -324,7 +324,6 @@ def create_pr(payload: PRCreateInput) -> dict:
             # Try to load latest analytics insights for context
             insights = ""
             try:
-                from pathlib import Path
                 insight_file = Path("analytics/outputs/insight-summary.md")
                 if insight_file.exists():
                     insights = insight_file.read_text(encoding="utf-8")
