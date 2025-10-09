@@ -390,22 +390,86 @@ async def metrics_dashboard(
     - X-Dev-Token: <token>
     - ?dev=<token>
     - Cookie: dev_token=<token>
-    
+
     Localhost (127.0.0.1) is allowed without token when METRICS_ALLOW_LOCALHOST=true.
     """
     settings = get_settings()
-    ensure_dev_access(request, settings)
     
+    # Enforce dev access, but render a friendly HTML on 401/403
+    try:
+        ensure_dev_access(request, settings)
+    except HTTPException as e:
+        status = e.status_code
+        # Try to serve a themed HTML page; fallback to built-in template
+        fname = "metrics_401.html" if status == 401 else "metrics_403.html"
+        p = Path("admin_assets") / fname
+        if p.exists():
+            html = p.read_text(encoding="utf-8")
+        else:
+            # Built-in minimal unlock screen
+            reason = {
+                401: "A dev token is required to view this dashboard.",
+                403: "The provided dev token is invalid or the server is not configured.",
+            }[status if status in (401, 403) else 403]
+            html = f"""
+<!doctype html><html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Unlock Metrics Dashboard</title>
+<style>
+  body {{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 40px; color:#111; }}
+  .card {{ max-width: 560px; border: 1px solid #eee; border-radius: 12px; padding: 20px; }}
+  h1 {{ margin: 0 0 8px 0; }} .muted {{ color:#666; }} input,button {{ font: inherit; }}
+  input {{ width: 100%; padding: 10px 12px; border-radius: 10px; border:1px solid #ddd; }}
+  button {{ margin-top: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid #111; background:#111; color:#fff; cursor: pointer; }}
+  .tips {{ font-size: 12px; color:#666; line-height:1.4; margin-top: 12px; }}
+  .err {{ color:#b00020; margin-bottom: 8px; }}
+  code {{ background:#f6f6f6; padding:2px 6px; border-radius:6px; }}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Unlock Metrics</h1>
+    <div class="muted">{reason}</div>
+    <form id="unlock" onsubmit="return store(event)">
+      <label for="tok" class="muted" style="display:block; margin-top:12px;">Dev token</label>
+      <input id="tok" name="tok" type="password" autofocus placeholder="Paste dev token…" />
+      <button type="submit">Unlock</button>
+    </form>
+    <div class="tips">
+      You can also pass the token via <code>?dev=&lt;token&gt;</code>,
+      header <code>Authorization: Bearer &lt;token&gt;</code>, header <code>X-Dev-Token</code>, or cookie <code>dev_token</code>.
+    </div>
+    <div class="tips" style="margin-top:10px;">
+      Server env var: <code>METRICS_DEV_TOKEN</code>. Localhost bypass is controlled by <code>METRICS_ALLOW_LOCALHOST</code>.
+    </div>
+  </div>
+  <script>
+    function store(e){{
+      e.preventDefault();
+      var t = document.getElementById('tok').value.trim();
+      if(!t) return false;
+      try {{ localStorage.setItem('dev:token', t); }} catch {{}}
+      // set cookie (Lax, path=/) and reload with ?dev=
+      document.cookie = 'dev_token='+encodeURIComponent(t)+'; Path=/; SameSite=Lax';
+      var url = new URL(location.href);
+      url.searchParams.set('dev', t);
+      location.replace(url.toString());
+      return false;
+    }}
+  </script>
+</body></html>
+"""
+        return HTMLResponse(content=html, status_code=status, media_type="text/html; charset=utf-8")
+
     # Prefer repo path admin_assets/metrics.html; fallback to public/metrics.html if present
     candidates = [
         Path("admin_assets/metrics.html"),
-        Path("public/metrics.html"),
     ]
     for p in candidates:
         if p.exists():
             html = p.read_text(encoding="utf-8")
             return HTMLResponse(content=html, media_type="text/html; charset=utf-8")
-    
+
     # If file missing, emit a simple message (keeps route private)
     return HTMLResponse(
         content="<h1>Metrics Dashboard</h1><p>metrics.html not found. Make sure 'admin_assets/metrics.html' exists.</p>",

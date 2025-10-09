@@ -1611,6 +1611,7 @@ The metrics dashboard is protected by server-side authentication:
   ```javascript
   localStorage.setItem("dev:token", "your-dev-token-here");
   ```
+- If access is denied, a friendly unlock page (401/403) is shown with a field to paste the token; it stores to cookie + localStorage and reloads
 
 **Environment Variables**:
 - `METRICS_DEV_TOKEN` - Random token for dashboard access (required in production)

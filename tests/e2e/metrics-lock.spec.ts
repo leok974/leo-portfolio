@@ -26,7 +26,7 @@ test("dashboard is accessible from localhost without token (when METRICS_ALLOW_L
   }
 });
 
-test("dashboard requires token for non-localhost access", async ({
+test("dashboard shows unlock screen for non-localhost access without token", async ({
   request,
 }) => {
   // Simulate external request by using X-Forwarded-For
@@ -36,12 +36,13 @@ test("dashboard requires token for non-localhost access", async ({
     },
   });
 
-  // Should be forbidden without token
-  expect(res.status()).toBe(403);
-  const body = await res.json();
-  expect(["metrics_dev_token_not_set", "forbidden_dev_panel"]).toContain(
-    body.detail,
-  );
+  // Should return 401 (if METRICS_DEV_TOKEN set) or 403 (if not set) with unlock screen HTML
+  const status = res.status();
+  expect([401, 403]).toContain(status);
+  const ct = res.headers()["content-type"] || "";
+  expect(ct).toContain("text/html");
+  const body = await res.text();
+  expect(body).toContain("Unlock Metrics");
 });
 
 test("dashboard accepts valid token via query parameter", async ({
@@ -91,7 +92,7 @@ test("dashboard accepts valid token via Authorization header", async ({
   expect(ct).toContain("text/html");
 });
 
-test("dashboard rejects invalid token", async ({ request }) => {
+test("dashboard shows unlock screen with invalid token", async ({ request }) => {
   const res = await request.get(
     `${API}/agent/metrics/dashboard?dev=invalid-token-12345`,
     {
@@ -101,7 +102,10 @@ test("dashboard rejects invalid token", async ({ request }) => {
     },
   );
 
+  // Should return 403 with unlock screen HTML
   expect(res.status()).toBe(403);
-  const body = await res.json();
-  expect(body.detail).toBe("forbidden_dev_panel");
+  const ct = res.headers()["content-type"] || "";
+  expect(ct).toContain("text/html");
+  const body = await res.text();
+  expect(body).toContain("Invalid Token");
 });

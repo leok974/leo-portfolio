@@ -17,7 +17,7 @@ def _client_ip(req: Request) -> str | None:
 def ensure_dev_access(req: Request, settings: dict):
     """
     Enforce dev/privileged access to metrics dashboard.
-    
+
     Allows access if:
     1. Localhost AND METRICS_ALLOW_LOCALHOST=true (dev convenience)
     2. Valid METRICS_DEV_TOKEN provided via:
@@ -25,7 +25,7 @@ def ensure_dev_access(req: Request, settings: dict):
        - X-Dev-Token: <token>
        - ?dev=<token>
        - Cookie: dev_token=<token>
-    
+
     Raises HTTPException 403 if unauthorized.
     """
     # 1) Allow localhost in dev if enabled
@@ -36,30 +36,26 @@ def ensure_dev_access(req: Request, settings: dict):
                 return
         except Exception:
             pass
-    
+
     # 2) Require token otherwise
     expected = settings.get("METRICS_DEV_TOKEN")
     if not expected:
+        # Server not configured; treat as forbidden but with explicit reason.
         raise HTTPException(status_code=403, detail="metrics_dev_token_not_set")
     
-    # Check multiple sources for token
-    # Authorization: Bearer <token>
+    # Try to read a provided token
+    provided = None
     auth = req.headers.get("authorization", "")
     if auth.lower().startswith("bearer "):
-        token = auth.split(" ", 1)[1].strip()
-        if token == expected:
-            return
+        provided = auth.split(" ", 1)[1].strip()
+    provided = provided or req.headers.get("x-dev-token")
+    provided = provided or req.query_params.get("dev")
+    provided = provided or req.cookies.get("dev_token")
     
-    # X-Dev-Token header
-    if req.headers.get("x-dev-token") == expected:
-        return
-    
-    # Query parameter ?dev=<token>
-    if req.query_params.get("dev") == expected:
-        return
-    
-    # Cookie dev_token=<token>
-    if req.cookies.get("dev_token") == expected:
-        return
-    
-    raise HTTPException(status_code=403, detail="forbidden_dev_panel")
+    if not provided:
+        # No credentials presented
+        raise HTTPException(status_code=401, detail="dev_token_required")
+    if provided != expected:
+        # Wrong credentials
+        raise HTTPException(status_code=403, detail="dev_token_invalid")
+    return
