@@ -2,13 +2,18 @@
 
 Endpoint for creating GitHub PRs from artifacts in /agent/artifacts/**.
 Protected by SITEAGENT_ENABLE_WRITE=1 environment variable.
+
+Features:
+- Branch reuse per category (siteagent/seo, siteagent/content, etc.)
+- Updates existing PRs instead of creating duplicates
+- Single-commit rolling branches for clean history
 """
 from __future__ import annotations
 import os
 import json
 import subprocess
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 from fastapi import APIRouter, Body, Depends, HTTPException
 from pydantic import BaseModel
 
@@ -29,6 +34,10 @@ class PRCreateInput(BaseModel):
     commit_message: Optional[str] = None
     dry_run: bool = False
     use_llm: bool = False  # Enable LLM-generated title/body
+    attach_insights: bool = True  # Append analytics insights to PR body
+    category: Optional[str] = None  # Logical stream (seo/content/og/deps/misc)
+    single_commit: bool = True  # Keep branch as single rolling commit
+    force_with_lease: bool = True  # Safe force push when updating
 
 
 class PRCreateResponse(BaseModel):
@@ -130,6 +139,59 @@ def _collect_artifacts(root: Path = ARTIFACTS_DIR) -> list[Path]:
     return files
 
 
+def _category_from_labels(labels: list[str] | None) -> str:
+    """Extract category from labels, defaulting to 'misc'."""
+    labels = labels or []
+    known = ["seo", "og", "deps", "content", "misc"]
+    for c in known:
+        if c in labels:
+            return c
+    return "misc"
+
+
+def _branch_for_category(payload: PRCreateInput) -> str:
+    """Determine branch name from category or explicit branch."""
+    if payload.branch:
+        return payload.branch
+    cat = (payload.category or _category_from_labels(payload.labels)).strip().replace(" ", "-")
+    return f"siteagent/{cat or 'misc'}"
+
+
+def _find_open_pr_for_branch(repo: str, branch: str, token: str) -> Tuple[Optional[int], Optional[str]]:
+    """Find open PR with given head branch. Returns (pr_number, pr_url) or (None, None)."""
+    try:
+        env = {"GH_TOKEN": token}
+        out = _run(f'gh pr list --repo {repo} --state open --head "{branch}" --json number,url', env=env)
+        arr = json.loads(out)
+        if arr and len(arr) > 0:
+            return arr[0]["number"], arr[0]["url"]
+    except Exception:
+        pass
+    return None, None
+
+
+def _comment_on_pr(repo: str, pr_number: int, comment: str, token: str):
+    """Add a comment to an existing PR."""
+    try:
+        env = {"GH_TOKEN": token}
+        # Escape double quotes in comment
+        safe_comment = comment.replace('"', '\\"')
+        _run(f'gh pr comment {pr_number} --repo {repo} --body "{safe_comment}"', env=env)
+    except Exception:
+        pass
+
+
+def _read_insights_md() -> str:
+    """Read analytics insights markdown file if it exists."""
+    try:
+        insight_file = Path("analytics/outputs/insight-summary.md")
+        if insight_file.exists():
+            return insight_file.read_text(encoding="utf-8")
+    except Exception:
+        pass
+    return ""
+
+
 def _default_title_body(diff_summary: str) -> tuple[str, str]:
     """Generate default PR title and body from diff."""
     file_count = len([l for l in diff_summary.split("\n") if l.strip()])
@@ -216,28 +278,42 @@ def pr_alias(payload: PRCreateInput = Body(default=PRCreateInput())):
 
 def create_pr(payload: PRCreateInput) -> dict:
     """
-    Create a GitHub PR from artifacts in /agent/artifacts/**.
+    Create or update a GitHub PR from artifacts in /agent/artifacts/**.
 
-    Collects all files from /agent/artifacts/**, creates a new branch,
-    commits the artifacts, pushes to GitHub, and opens a PR.
+    Features:
+    - Branch reuse per category (siteagent/seo, siteagent/content, etc.)
+    - Updates existing PRs instead of creating duplicates
+    - Single-commit rolling branches for clean history
+    - Optional LLM-generated titles/bodies with analytics insights
 
     Protected by SITEAGENT_ENABLE_WRITE=1 environment variable.
 
     Returns:
-    - For dry_run=true: branch name and diff summary
-    - For dry_run=false: PR URL, branch name, labels, and diff summary
+    - For dry_run=true: branch name, diff summary, suggested title/body
+    - For dry_run=false: status (created/updated/noop), PR URL, branch, labels, diff
     """
     # Verify gh CLI is installed
     _ensure_gh()
 
-    # Only require token if not doing a dry-run
-    tok = None
-    repo = None
-    if not payload.dry_run:
-        tok = _require_token()
-        repo = _repo_slug()
+    # Get repo slug and token (required for non-dry-run)
+    repo = _repo_slug() if not payload.dry_run else None
+    tok = _require_token() if not payload.dry_run else None
+    env = {"GH_TOKEN": tok} if tok else {}
 
-    # Collect artifacts (fresh on every call)
+    # Determine branch from category or explicit name
+    branch = _branch_for_category(payload)
+
+    # Fetch latest and create/update branch from base
+    try:
+        _run("git fetch origin")
+        _run(f"git checkout -B {branch} origin/{payload.base}")
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to checkout branch {branch}: {str(e)}"
+        ) from e
+
+    # Collect and copy artifacts
     files = _collect_artifacts()
     if not files:
         raise HTTPException(
@@ -245,21 +321,9 @@ def create_pr(payload: PRCreateInput) -> dict:
             detail=f"No artifacts found in {ARTIFACTS_DIR}. Nothing to commit."
         )
 
-    # Create working branch
-    branch = payload.branch or f"siteagent/auto-{os.getpid()}"
-    try:
-        _run("git fetch origin")
-        _run(f"git checkout -B {branch} origin/{payload.base}")
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to create branch {branch}: {str(e)}"
-        ) from e
-
-    # Copy artifacts into repo root with same relative paths
     repo_root = Path(".").resolve()
     for f in files:
-        if not f.exists():  # skip anything that disappeared
+        if not f.exists():
             continue
         try:
             rel = f.relative_to(ARTIFACTS_DIR)
@@ -279,70 +343,119 @@ def create_pr(payload: PRCreateInput) -> dict:
     except Exception as e:
         diff_summary = f"(diff summary unavailable: {e})"
 
+    # Check if there are actually changes
     if not diff_summary:
+        # No changes - check if PR exists
+        if not payload.dry_run and tok and repo:
+            pr_num, pr_url = _find_open_pr_for_branch(repo, branch, tok)
+            return {
+                "status": "noop",
+                "message": "No changes to commit.",
+                "branch": branch,
+                "open_pr": pr_url
+            }
         return {
             "status": "noop",
             "message": "No changes to commit.",
             "branch": branch
         }
 
-    # Commit changes
-    commit_msg = payload.commit_message or "chore(siteagent): apply approved artifacts"
-    try:
-        # Escape quotes in commit message
-        safe_msg = commit_msg.replace('"', '\\"')
-        _run(f'git commit -m "{safe_msg}"')
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to commit changes: {str(e)}"
-        ) from e
+    # Generate PR title and body (LLM or default)
+    insights_md = _read_insights_md() if payload.attach_insights else ""
+    title = payload.title
+    body = payload.body
 
-    # Dry run: return without pushing
+    if not title or not body:
+        if payload.use_llm:
+            t, b = _llm_title_body(diff_summary, insights_md)
+        else:
+            t, b = _default_title_body(diff_summary)
+        title = title or t
+        body = body or b
+
+    # Append insights to body if requested
+    if payload.attach_insights and insights_md and insights_md not in (body or ""):
+        body += "\n\n---\n\n### Analytics Insight\n" + insights_md
+
+    # Dry run: return without pushing/PR
     if payload.dry_run:
         return {
             "status": "dry-run",
             "branch": branch,
-            "diff": diff_summary
+            "diff": diff_summary,
+            "suggested_title": title,
+            "suggested_body": body,
+            "labels": payload.labels or ["auto", "siteagent"]
         }
 
-    # Push branch
+    # Commit changes (single rolling commit or append)
+    commit_msg = payload.commit_message or f"chore(siteagent): update {branch.split('/', 1)[-1]}"
+    safe_msg = commit_msg.replace('"', '\\"')
+
+    if payload.single_commit:
+        # Reset to base, then create single squashed commit for clean history
+        try:
+            _run(f"git reset --soft origin/{payload.base}")
+            _run(f'git commit -m "{safe_msg}"')
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to create single commit: {str(e)}"
+            ) from e
+    else:
+        # Normal append commit
+        try:
+            _run(f'git commit -m "{safe_msg}"')
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to commit changes: {str(e)}"
+            ) from e
+
+    # Push branch (force-with-lease for single-commit, normal for append)
     try:
-        _run(f"git push -u origin {branch}")
+        push_flags = "--force-with-lease" if payload.single_commit and payload.force_with_lease else ""
+        _run(f"git push -u origin {branch} {push_flags}".strip(), env=env)
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"Failed to push branch {branch}: {str(e)}"
         ) from e
 
-    # Compose PR title and body
-    title = payload.title
-    body = payload.body
-    if not title or not body:
-        # Use LLM if requested and available, otherwise use default
-        if payload.use_llm:
-            # Try to load latest analytics insights for context
-            insights = ""
-            try:
-                insight_file = Path("analytics/outputs/insight-summary.md")
-                if insight_file.exists():
-                    insights = insight_file.read_text(encoding="utf-8")
-            except Exception:
-                pass
+    # Check if PR already exists for this branch
+    pr_num, pr_url = _find_open_pr_for_branch(repo, branch, tok)
 
-            default_title, default_body = _llm_title_body(diff_summary, insights)
-        else:
-            default_title, default_body = _default_title_body(diff_summary)
+    # Prepare labels
+    category = branch.split("/", 1)[-1] if "/" in branch else "misc"
+    labels = payload.labels or ["auto", "siteagent", category]
 
-        title = title or default_title
-        body = body or default_body
+    if pr_num:
+        # Update existing PR: add labels and comment with diff summary
+        try:
+            label_str = ",".join(labels)
+            _run(f'gh pr edit {pr_num} --repo {repo} --add-label "{label_str}"', env=env)
+        except Exception:
+            pass  # Labels may already exist
 
-    # Create PR with gh CLI
-    env = {"GH_TOKEN": tok}
+        try:
+            comment = f"🤖 SiteAgent updated branch **{branch}**\n\n```\n{diff_summary[:2000]}\n```"
+            _comment_on_pr(repo, pr_num, comment, tok)
+        except Exception:
+            pass  # Comment is nice-to-have
+
+        return {
+            "status": "updated",
+            "branch": branch,
+            "pr": pr_url,
+            "labels": labels,
+            "diff": diff_summary,
+            "message": f"Updated existing PR #{pr_num}"
+        }
+
+    # Create new PR
     try:
-        # Escape quotes in title and body
         safe_title = title.replace('"', '\\"')
-        safe_body = body.replace('"', '\\"')
+        safe_body = body.replace('"', '\\"').replace('\n', '\\n')
         pr_url = _run(
             f'gh pr create --repo {repo} --base {payload.base} --head {branch} '
             f'--title "{safe_title}" --body "{safe_body}"',
@@ -354,20 +467,18 @@ def create_pr(payload: PRCreateInput) -> dict:
             detail=f"Failed to create PR: {str(e)}"
         ) from e
 
-    # Apply labels
-    labels = payload.labels or ["auto", "siteagent"]
-    if labels:
-        try:
-            label_str = ",".join(labels)
-            _run(f'gh pr edit {pr_url} --add-label "{label_str}"', env=env)
-        except Exception as e:
-            # Non-fatal: PR was created successfully
-            print(f"[warn] Failed to apply labels: {e}")
+    # Add labels to new PR
+    try:
+        label_str = ",".join(labels)
+        _run(f'gh pr edit {pr_url} --add-label "{label_str}"', env=env)
+    except Exception:
+        pass  # Labels are nice-to-have
 
     return {
-        "status": "ok",
+        "status": "created",
         "branch": branch,
         "pr": pr_url,
         "labels": labels,
-        "diff": diff_summary
+        "diff": diff_summary,
+        "message": "Created new PR"
     }

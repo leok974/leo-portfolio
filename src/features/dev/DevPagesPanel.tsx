@@ -167,7 +167,7 @@ export default function DevPagesPanel() {
         use_llm: true,
         attach_insights: true
       });
-      
+
       if (result.pr) {
         setCommitMsg(`✅ PR created: ${result.pr}`);
         openInNewTab(result.pr);
