@@ -20,6 +20,10 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: siteagent-pr-backend-${{ github.event.inputs.branch }}
+  cancel-in-progress: false
+
 jobs:
   call-backend:
     runs-on: ubuntu-latest

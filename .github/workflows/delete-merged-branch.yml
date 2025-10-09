@@ -22,7 +22,7 @@ jobs:
           script: |
             const ref = 'heads/' + context.payload.pull_request.head.ref;
             console.log(`Deleting merged branch: ${ref}`);
-            
+
             try {
               await github.rest.git.deleteRef({
                 owner: context.repo.owner,

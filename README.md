@@ -29,6 +29,36 @@
 
 ---
 
+## 🧹 SiteAgent Branch Hygiene
+
+SiteAgent maintains a **clean repository** through intelligent branch reuse:
+
+- **One branch per category**: `siteagent/{seo|content|og|deps|misc}` (no proliferation)
+- **PR updates, not duplication**: Reuses existing open PRs instead of creating new ones
+- **Single-commit rolling branches**: Clean one-commit history per automation branch
+- **Auto-cleanup**: Merged branches deleted + nightly pruning of stale branches (>14 days)
+- **Concurrency guards**: Prevents race conditions across workflows
+
+**Quick Commands**:
+```bash
+# Dry-run (preview)
+curl -X POST http://127.0.0.1:8001/agent/artifacts/pr \
+  -H "Content-Type: application/json" \
+  -d '{"dry_run":true,"labels":["seo","auto"],"use_llm":true}' | jq
+
+# Create/update PR
+export SITEAGENT_ENABLE_WRITE=1 GITHUB_TOKEN="ghp_..."
+curl -X POST http://127.0.0.1:8001/agent/artifacts/pr \
+  -H "Content-Type: application/json" \
+  -d '{"labels":["seo","auto"],"use_llm":true}' | jq
+```
+
+**Status values**: `created`, `updated`, `noop`, `dry-run`
+
+📖 **Full Guide**: [`docs/SITEAGENT_BRANCH_HYGIENE.md`](docs/SITEAGENT_BRANCH_HYGIENE.md) — Comprehensive documentation with API reference, troubleshooting, and best practices.
+
+---
+
 ## Dev Overlay (Maintenance Panel)
 
 Open your site with `?dev=1` to force the maintenance overlay, e.g.:
