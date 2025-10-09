@@ -6,7 +6,7 @@
  * - Animation disabling
  * - E2E mode detection
  */
-import { test as base, expect as baseExpect } from '@playwright/test';
+import { test as base, expect as baseExpect, request as baseRequest } from '@playwright/test';
 
 // Apply fixtures to all tests automatically
 base.beforeEach(async ({ page }) => {
@@ -79,3 +79,4 @@ base.beforeEach(async ({ page }) => {
 
 export const test = base;
 export const expect = baseExpect;
+export const request = baseRequest;
