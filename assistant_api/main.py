@@ -228,6 +228,14 @@ try:
 except Exception as e:
     print("[warn] agent_metrics router not loaded:", e)
 
+# Phase 51.0 — Analytics insights (RAG-based nightly reports)
+if ANALYTICS_ENABLED:
+    try:
+        from assistant_api.routers import analytics_insights
+        app.include_router(analytics_insights.router)
+    except Exception as e:
+        print("[warn] analytics_insights router not loaded:", e)
+
 # Ultra-fast ping for UI hydration fallback (/api/ping)
 _ping_router = APIRouter()
 

@@ -1354,6 +1354,85 @@ curl -s "http://127.0.0.1:8001/agent/status/open?path=/blog/post/index.html" | j
 
 ---
 
+## Analytics Insights (Phase 51.0)
+
+### GET /analytics/latest
+**Purpose**: Retrieve the latest nightly analytics insight report.
+
+**Response** (when available):
+```json
+{
+  "status": "ok",
+  "markdown": "# Nightly Analytics — 2025-10-09\n\n## 📊 KPIs\n\n- **SEO Coverage %**: `91.67`\n- **Playwright Pass Rate %**: `95.56`\n- **Avg P95 Latency (ms)**: `687.4`\n- **Autofix Changes**: `0`\n\n## 📈 Trends\n\n✅ No significant anomalies detected (all metrics within 2σ).\n\n## 🧠 AI Insight\n\n...",
+  "trend": {
+    "window_days": 7,
+    "series": [...],
+    "anomalies": [...]
+  }
+}
+```
+
+**Response** (when pending):
+```json
+{
+  "status": "pending",
+  "message": "No analytics report available yet. Run: python -m analytics.pipeline"
+}
+```
+
+**Notes**:
+- Protected by `ANALYTICS_ENABLED` flag (defaults to enabled)
+- Report generated nightly at 02:30 UTC by GitHub Actions workflow
+- Includes AI-generated insights from local Ollama (gpt-oss-20b compatible)
+- RAG context from last 7 days of nightly data
+
+### GET /analytics/health
+**Purpose**: Check analytics system health and data availability.
+
+**Response**:
+```json
+{
+  "status": "healthy",
+  "reports": {
+    "insight_available": true,
+    "trend_available": true
+  },
+  "rag": {
+    "index_exists": true
+  },
+  "data": {
+    "daily_files_count": 7,
+    "latest_date": "2025-10-09"
+  }
+}
+```
+
+**Environment Variables** (Analytics):
+- `ANALYTICS_ENABLED`: Enable analytics endpoints (default: `true`)
+- `OPENAI_BASE_URL`: Ollama endpoint for insights (default: `http://127.0.0.1:11434/v1`)
+- `OPENAI_API_KEY`: API key for LLM (default: `not-needed` for Ollama)
+- `OPENAI_MODEL`: Model name for insights (default: `qwen2.5:7b-instruct-q4_K_M`)
+
+**Manual Pipeline Run**:
+```bash
+# Local development
+python -m analytics.pipeline --window-days 7
+
+# Custom date
+python -m analytics.pipeline --date 2025-10-09 --window-days 14
+```
+
+**Pipeline Components**:
+1. **Nightly Loader**: Merges JSON from `reports/seo/`, `reports/playwright/`, `reports/prometheus/`
+2. **KPI Extractor**: SEO coverage %, Playwright pass rate %, avg P95 latency, autofix changes
+3. **Trend Detector**: Z-score anomaly detection (threshold: ±2σ)
+4. **RAG Embedder**: Local `intfloat/e5-base-v2` embeddings
+5. **Vector Store**: SQLite with cosine similarity search
+6. **Insight LLM**: AI-generated insights using Ollama
+7. **Report Builder**: Markdown + JSON outputs
+
+---
+
 ## Errors
 Standard JSON error form:
 ```json
