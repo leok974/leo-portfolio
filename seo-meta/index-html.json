@@ -1,0 +1,22 @@
+{
+  "generated_at": "2025-10-08T19:31:09.786234+00:00",
+  "path": "/index.html",
+  "base": {
+    "title": "Leo Klemet \u2014 AI Engineer \u00b7 SWE \u00b7 Generative AI / 3D Artist & Creative Technologist",
+    "desc": "Leo Klemet \u2014 AI Engineer & SWE. Building agents, analytics, and cinematic creative pipelines: LedgerMind, DataPipe AI, Clarity Companion."
+  },
+  "keywords": [],
+  "suggestion": {
+    "title": "Leo Klemet \u2014 AI Engineer \u00b7 SWE \u00b7 Generative AI / 3D Artist\u2026",
+    "desc": "Leo Klemet \u2014 AI Engineer & SWE. Building agents, analytics, and cinematic creative pipelines: LedgerMind, DataPipe AI, Clarity Companion.",
+    "limits": {
+      "title_max": 60,
+      "desc_max": 155
+    }
+  },
+  "integrity": {
+    "algo": "sha256",
+    "value": "7e5c60ea0300a0cbaf8cbaf2077c6aa95eae885fd5fd27779378c66cd864f0c6",
+    "size": 622
+  }
+}

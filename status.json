@@ -1,0 +1,150 @@
+{
+  "generated_at": "2025-10-08T18:54:06.141876+00:00",
+  "pages": [
+    {
+      "path": "/gallery.html",
+      "title": "Gallery \u00b7 Creative Workflows",
+      "desc": null
+    },
+    {
+      "path": "/",
+      "title": null,
+      "desc": null
+    },
+    {
+      "path": "/tools.html",
+      "title": "Site Agent Tools - Admin Dashboard",
+      "desc": "Admin dashboard for site agent tools, A/B testing analytics, and layout optimization"
+    },
+    {
+      "path": "/og/template.html",
+      "title": "OG",
+      "desc": null
+    },
+    {
+      "path": "/tmp-e2e/index.html",
+      "title": null,
+      "desc": null
+    },
+    {
+      "path": "/index.html",
+      "title": "Leo Klemet \u2014 AI Engineer \u00b7 SWE \u00b7 Generative AI / 3D Artist & Creative Technologist",
+      "desc": "Leo Klemet \u2014 AI Engineer & SWE. Building agents, analytics, and cinematic creative pipelines: LedgerMind, DataPipe AI, Clarity Companion."
+    },
+    {
+      "path": "/agent-tools.html",
+      "title": "SiteAgent \u2014 Tools",
+      "desc": null
+    },
+    {
+      "path": "/agent.html",
+      "title": "The Agent Behind This Site \u2014 Vision Manifesto",
+      "desc": "A portfolio that maintains itself. How my local-first, access-guarded Agent keeps this site current\u2014securely and autonomously."
+    },
+    {
+      "path": "/book.html",
+      "title": "Book a call \u2014 Leo Klemet",
+      "desc": null
+    },
+    {
+      "path": "/completed.html",
+      "title": "Completed Projects \u2014 Leo Klemet",
+      "desc": "Archive of completed projects by Leo Klemet \u2014 AI Engineer & SWE"
+    },
+    {
+      "path": "/pages-redirect.html",
+      "title": "Redirecting\u2026",
+      "desc": null
+    },
+    {
+      "path": "/privacy.html",
+      "title": "Privacy settings \u2014 Leo Klemet",
+      "desc": null
+    },
+    {
+      "path": "/root.html",
+      "title": "Leo Klemet \u2014 AI Engineer \u00b7 SWE \u00b7 Generative AI / 3D Artist & Creative Technologist",
+      "desc": "Leo Klemet \u2014 AI Engineer & SWE. Building agents, analytics, and cinematic creative pipelines: LedgerMind, DataPipe AI, Clarity Companion."
+    },
+    {
+      "path": "/root2.html",
+      "title": "Leo Klemet \u2014 AI Engineer \u00b7 SWE \u00b7 Generative AI / 3D Artist & Creative Technologist",
+      "desc": "Leo Klemet \u2014 AI Engineer & SWE. Building agents, analytics, and cinematic creative pipelines: LedgerMind, DataPipe AI, Clarity Companion."
+    },
+    {
+      "path": "/root_playwright.html",
+      "title": "Leo Klemet \u2014 AI Engineer \u00b7 SWE \u00b7 Generative AI / 3D Artist & Creative Technologist",
+      "desc": "Leo Klemet \u2014 AI Engineer & SWE. Building agents, analytics, and cinematic creative pipelines: LedgerMind, DataPipe AI, Clarity Companion."
+    },
+    {
+      "path": "/.lighthouseci/lhr-1758674310081.html",
+      "title": "Lighthouse Report",
+      "desc": null
+    },
+    {
+      "path": "/.lighthouseci/lhr-1758674323113.html",
+      "title": "Lighthouse Report",
+      "desc": null
+    },
+    {
+      "path": "/.lighthouseci/lhr-1758674335853.html",
+      "title": "Lighthouse Report",
+      "desc": null
+    },
+    {
+      "path": "/playwright-report/index.html",
+      "title": "Playwright Test Report",
+      "desc": null
+    },
+    {
+      "path": "/projects/clarity.html",
+      "title": "Clarity Companion \u2014 Leo Klemet Portfolio",
+      "desc": "On\u2011device writing clarity assistant with strict coverage gates and localized UI."
+    },
+    {
+      "path": "/projects/datapipe-ai.html",
+      "title": "DataPipe AI \u2014 Leo Klemet Portfolio",
+      "desc": "AI-powered ops agent for GKE deployments with automated data pipeline management and intelligent monitoring."
+    },
+    {
+      "path": "/projects/dermaai.html",
+      "title": "DermaAI (SkinSight) \u2014 Leo Klemet Portfolio",
+      "desc": "Skin-condition assistant UI for educational dermatology UX exploration."
+    },
+    {
+      "path": "/projects/ledgermind.html",
+      "title": "LedgerMind \u2014 Leo Klemet Portfolio",
+      "desc": "Private-by-default finances with explainable ML suggestions and NL \u2192 SQL analytics."
+    },
+    {
+      "path": "/projects/pixo-banana-suite.html",
+      "title": "Pixo Banana Suite \u2014 Leo Klemet Portfolio",
+      "desc": "Pixel-art pose/animate toolkit for rapid game sprite generation."
+    },
+    {
+      "path": "/coverage/lcov-report/index.html",
+      "title": "Code coverage report for All files",
+      "desc": null
+    },
+    {
+      "path": "/node_modules/lazy-ass/index.html",
+      "title": "lazy-ass",
+      "desc": null
+    },
+    {
+      "path": "/node_modules/lru_map/example.html",
+      "title": "lru",
+      "desc": null
+    },
+    {
+      "path": "/node_modules/tslib/tslib.es6.html",
+      "title": null,
+      "desc": null
+    },
+    {
+      "path": "/node_modules/tslib/tslib.html",
+      "title": null,
+      "desc": null
+    }
+  ]
+}

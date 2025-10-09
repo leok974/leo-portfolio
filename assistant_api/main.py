@@ -128,6 +128,10 @@ app.include_router(agent.router)
 from assistant_api.routers import agent_public
 app.include_router(agent_public.router)
 
+# Agent actions (autonomous PR generator, etc.)
+from assistant_api.routers import agent_act
+app.include_router(agent_act.router)
+
 # A/B testing routes (for layout optimization)
 from assistant_api.routers import ab
 app.include_router(ab.router)
