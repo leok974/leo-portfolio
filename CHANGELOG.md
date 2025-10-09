@@ -3,6 +3,14 @@
 ## [Unreleased]
 
 ### Added
+- **Metrics Dashboard Unlock UX**:
+  - Friendly HTML unlock screens for authentication failures (instead of JSON errors)
+  - Split HTTP status codes: 401 (no token) vs 403 (wrong token/server misconfigured)
+  - Themed templates: `admin_assets/metrics_401.html` and `metrics_403.html`
+  - Password input form with auto-save to localStorage + cookie and instant redirect
+  - Works seamlessly in iframe context (privileged panel)
+  - Inline fallback template (~50 lines) if themed files missing
+  - Updated E2E tests to expect HTML unlock screens
 - **Telemetry + Behavior Learning System**:
   - `/agent/metrics/ingest` endpoint for anonymous section analytics
   - `/agent/analyze/behavior` and `/agent/layout` for learned ordering
