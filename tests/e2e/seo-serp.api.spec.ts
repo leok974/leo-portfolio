@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test.describe('@seo-serp API', () => {
   test('mock populate → report has anomalies', async ({ request }) => {

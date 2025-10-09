@@ -6,7 +6,7 @@
  * 2. Actually copies the PR URL to clipboard
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 // Overlay enabled
 test.use({ storageState: 'playwright/.auth/dev-overlay.json' });

@@ -8,7 +8,7 @@
  * 4. Sitemap index references all sub-sitemaps
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test('robots points to sitemap-index and gzipped main sitemap exists', async ({ request }) => {
   // Check robots.txt references sitemap-index

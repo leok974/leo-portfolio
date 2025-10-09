@@ -3,6 +3,33 @@
 ## [Unreleased]
 
 ### Added
+- **Phase 51.0 — Analytics Loop / RAG Insights**:
+  - **Analytics Pipeline** (`analytics/pipeline.py`):
+    - Orchestrates nightly data collection, KPI extraction, trend detection, and AI insights
+    - Integrates RAG (Retrieval-Augmented Generation) for context-aware analysis
+    - **Components**:
+      - `collectors/nightly_loader.py`: Merges JSON reports from SEO, Playwright, Prometheus
+      - `collectors/kpi_extractor.py`: Extracts SEO coverage %, Playwright pass rate %, avg P95 latency, autofix delta
+      - `collectors/trend_detector.py`: Detects anomalies using z-score analysis (threshold: ±2σ)
+      - `rag/embedder_local.py`: Local embeddings via `intfloat/e5-base-v2` (SentenceTransformers)
+      - `rag/query_engine.py`: SQLite vector store with cosine similarity search
+      - `summarizers/insight_llm.py`: AI insight generation using local Ollama (fixed to use `gpt-oss:20b` model)
+      - `summarizers/report_builder.py`: Markdown report generation with KPIs, trends, and insights
+    - **Usage**: `python -m analytics.pipeline --window-days 7`
+    - **Output**: `analytics/outputs/insight-summary.md`, `analytics/outputs/trend-report.json`
+    - **Model Configuration**: Defaults to `gpt-oss:20b` (13GB Ollama model), configurable via `OPENAI_MODEL` env var
+  - **FastAPI Analytics Endpoint** (`assistant_api/routers/analytics_insights.py`):
+    - `GET /analytics/latest`: Returns latest insight report (Markdown + JSON trend data)
+    - `GET /analytics/health`: System health check (reports availability, RAG index status)
+    - Protected by existing `ANALYTICS_ENABLED` flag (defaults to enabled)
+  - **GitHub Actions Workflows**:
+    - `.github/workflows/analytics-nightly.yml`: Nightly pipeline run at 02:30 UTC, uploads artifacts
+    - `.github/workflows/analytics-pr-comment.yml`: Posts sticky PR comments with latest insights
+  - **Developer Tools**:
+    - `scripts/analytics.ps1`: PowerShell wrapper for local pipeline runs
+    - Makefile target: `make analytics`
+  - **Sample Data**: Seed reports for SEO, Playwright, Prometheus (enables first-run testing)
+
 - **SEO Intelligence & Nightly Auto-PR (Phase 50.9)**:
   - **Nightly Workflow** (`.github/workflows/seo-intel-nightly.yml`):
     - Automated daily runs at 02:30 ET (06:30 UTC)

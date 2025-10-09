@@ -1,4 +1,4 @@
-import { test, expect, request } from '@playwright/test';
+import { test, expect, request } from './test.base';
 
 test('metrics endpoint reachable', async () => {
   const base = process.env.E2E_BASE || process.env.EDGE_BASE || 'http://127.0.0.1:8080';

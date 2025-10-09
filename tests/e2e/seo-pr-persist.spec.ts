@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 /**
  * Enforces: the inline PR URL banner appears after PR action (when available)

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 // Reuse BASE from env pattern in other specs (fallback to localhost)
 const BASE = process.env.BASE || 'http://localhost:8080';

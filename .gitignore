@@ -103,3 +103,10 @@ playwright/.auth/
 reports/
 !reports/.gitkeep
 tests/e2e/.auth/
+
+# Phase 51.0 — Analytics artifacts
+analytics/rag/vector_store.sqlite
+analytics/rag/index/
+analytics/outputs/
+data/nightly/*.json
+!data/nightly/.gitkeep

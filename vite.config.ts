@@ -19,6 +19,17 @@ export default defineConfig({
         changeOrigin: false,
         secure: false,
       },
+      // Phase 51.0 E2E Test Support: Forward API routes to backend
+      '/api': {
+        target: 'http://127.0.0.1:8001',
+        changeOrigin: false,
+        secure: false,
+      },
+      '/analytics': {
+        target: 'http://127.0.0.1:8001',
+        changeOrigin: false,
+        secure: false,
+      },
     },
   },
   build: {

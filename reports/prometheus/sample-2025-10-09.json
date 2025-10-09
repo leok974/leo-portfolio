@@ -1,0 +1,12 @@
+{
+  "metrics": [
+    { "name": "route_/ p95", "p95_ms": 185.2 },
+    { "name": "route_/api/ready p95", "p95_ms": 45.8 },
+    { "name": "route_/api/chat p95", "p95_ms": 1250.5 },
+    { "name": "route_/api/agent/analytics/ingest p95", "p95_ms": 220.3 },
+    { "name": "route_/api/seo/tune p95", "p95_ms": 3200.7 },
+    { "name": "route_/api/rag/query p95", "p95_ms": 890.1 },
+    { "name": "route_/analytics/latest p95", "p95_ms": 15.6 }
+  ],
+  "scrape_timestamp": "2025-10-09T06:30:00Z"
+}

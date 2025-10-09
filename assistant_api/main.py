@@ -112,6 +112,10 @@ app.include_router(llm_health_router)
 app.include_router(ready_router)
 app.include_router(analytics_router)
 
+# Analytics events (Phase 51.0 - E2E Test Support)
+from assistant_api.routers import analytics_events
+app.include_router(analytics_events.router)
+
 # Behavior metrics routes (Phase 50.8)
 from assistant_api.routers import metrics_behavior
 app.include_router(metrics_behavior.router)
@@ -143,6 +147,13 @@ app.include_router(resume_public.router)
 # Dev overlay routes (for enabling/disabling admin UI via cookie)
 from assistant_api.routers import dev_overlay
 app.include_router(dev_overlay.router)
+
+# Test-only routes (Phase 51.0 - E2E Test Support)
+try:
+    from assistant_api.routers import test_mocks
+    app.include_router(test_mocks.router)
+except Exception:
+    pass
 
 # Phase 50.4 — SEO & OG Intelligence routes
 try:
@@ -227,6 +238,14 @@ try:
     app.include_router(agent_metrics.router)
 except Exception as e:
     print("[warn] agent_metrics router not loaded:", e)
+
+# Phase 51.0 — Analytics insights (RAG-based nightly reports)
+if ANALYTICS_ENABLED:
+    try:
+        from assistant_api.routers import analytics_insights
+        app.include_router(analytics_insights.router)
+    except Exception as e:
+        print("[warn] analytics_insights router not loaded:", e)
 
 # Ultra-fast ping for UI hydration fallback (/api/ping)
 _ping_router = APIRouter()

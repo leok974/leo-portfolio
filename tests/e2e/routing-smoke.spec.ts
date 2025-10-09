@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 /**
  * Purpose: verify nginx maps /api/chat* to the backend without depending on model

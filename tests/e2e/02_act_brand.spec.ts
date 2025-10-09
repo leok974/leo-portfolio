@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 import { requireBackendOrSkip } from './_utils';
 
 test('set brand via /agent/act reflects in /agent/report', async ({ request }) => {

@@ -9,7 +9,7 @@
  * 5. lastmod timestamps are present
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test('robots.txt references sitemap and sitemap.xml is valid', async ({ request }) => {
   // Check robots.txt

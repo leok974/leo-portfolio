@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test('@schema: CollectionPage & parts present', async ({ page }) => {
   await page.goto('/gallery.html');

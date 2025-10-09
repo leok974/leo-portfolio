@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { test } from './test.base';
 
 test('debug calendly consent check', async ({ page }) => {
   // Stub Calendly

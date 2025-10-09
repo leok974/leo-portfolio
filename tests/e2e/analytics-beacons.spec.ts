@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 import { captureBeacons, Beacon } from './utils/beacons';
 
 function byType(arr: Beacon[], type: string) {

@@ -6,7 +6,7 @@
  * - /generate - Generate JSON-LD from URL (dry-run and commit modes)
  * - /mock - Fast artifact generator for E2E/CI
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test.describe('@backend seo-ld API', () => {
   test('validate & generate (dry-run)', async ({ baseURL, request }) => {

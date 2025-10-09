@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { test } from './test.base';
 
 test('debug privacy page init', async ({ page }) => {
   // Capture console logs

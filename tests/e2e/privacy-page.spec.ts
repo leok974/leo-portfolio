@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 // Stub Calendly offline, keep tests deterministic
 test.beforeEach(async ({ page }) => {

@@ -1,4 +1,4 @@
-import { test, expect, request } from '@playwright/test';
+import { test, expect, request } from './test.base';
 import { BASE } from './helpers/env';
 
 // Negative readiness test: asserts ready=false when FAIL_READY=1 and EXPECT_READY_FALSE=1 provided.

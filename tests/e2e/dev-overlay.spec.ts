@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 /**
  * Dev overlay E2E tests - validates cookie-based authentication for admin tools.

@@ -1,0 +1,25 @@
+{
+  "totals": {
+    "total": 45,
+    "passed": 43,
+    "failed": 2,
+    "skipped": 0,
+    "flaky": 0
+  },
+  "tests": [
+    { "name": "SEO LD validation", "status": "passed", "duration": 1250 },
+    { "name": "SEO autofix dry-run", "status": "passed", "duration": 2100 },
+    { "name": "Dev overlay cookie auth", "status": "passed", "duration": 850 },
+    { "name": "Metrics dashboard loads", "status": "passed", "duration": 920 },
+    { "name": "Admin panel auth", "status": "passed", "duration": 680 },
+    { "name": "SEO keywords discovery", "status": "passed", "duration": 1540 },
+    { "name": "Status pages API", "status": "passed", "duration": 420 },
+    { "name": "Sitemap loader", "status": "passed", "duration": 780 },
+    { "name": "Analytics ingest", "status": "passed", "duration": 1120 },
+    { "name": "Behavior metrics", "status": "passed", "duration": 980 },
+    { "name": "E2E popover sources", "status": "failed", "duration": 3200, "error": "Timeout waiting for popover" },
+    { "name": "Public smoke test", "status": "passed", "duration": 650 },
+    { "name": "Playwright summary generation", "status": "passed", "duration": 520 }
+  ],
+  "pass_rate": 95.56
+}

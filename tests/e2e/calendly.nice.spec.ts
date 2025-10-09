@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 // Mocks Calendly external script and captures URLs passed to init
 const WIDGET_URL = 'https://assets.calendly.com/assets/external/widget.js';

@@ -2,13 +2,13 @@
  * E2E Test: AB Winner Highlighting
  * @tags @frontend @phase50.2 @analytics @tools
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./test.base";
 import { enableOverlayOnPage } from "./lib/overlay";
 
 test.describe("AB Winner Bold Highlighting @tools", () => {
   test("should bold the winner CTR and dim the loser", async ({ page }) => {
     await enableOverlayOnPage(page);
-    await page.goto("/tools.html", { waitUntil: "networkidle" });
+    await page.goto("/tools.html");
 
     // Wait for AB analytics dashboard to load
     await page.getByTestId("ab-analytics").waitFor({ state: "visible" });
@@ -28,7 +28,7 @@ test.describe("AB Winner Bold Highlighting @tools", () => {
 
   test("should display winner in analytics dashboard", async ({ page }) => {
     await enableOverlayOnPage(page);
-    await page.goto("/tools.html", { waitUntil: "networkidle" });
+    await page.goto("/tools.html");
 
     await page.getByTestId("ab-analytics").waitFor({ state: "visible" });
 
@@ -42,7 +42,7 @@ test.describe("AB Winner Bold Highlighting @tools", () => {
 
   test("should show refresh button and date filters", async ({ page }) => {
     await enableOverlayOnPage(page);
-    await page.goto("/tools.html", { waitUntil: "networkidle" });
+    await page.goto("/tools.html");
 
     await page.getByTestId("ab-analytics").waitFor({ state: "visible" });
 

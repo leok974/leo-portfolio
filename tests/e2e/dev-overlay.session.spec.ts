@@ -9,7 +9,7 @@
  * and creates the initial storage state file.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 

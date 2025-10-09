@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 import { installFastUI } from './lib/fast-ui';
 import { mockReady } from './lib/mock-ready';
 import { readFileSync, readdirSync } from 'node:fs';

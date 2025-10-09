@@ -27,6 +27,14 @@
   }
   function flush() {
     const payload = JSON.stringify({ events: q.splice(0) });
+    
+    // E2E mode: skip network call
+    if (window.__VITE_E2E__) {
+      console.debug('[E2E] behavior-tracker beacon suppressed');
+      t = null;
+      return;
+    }
+    
     const ok =
       navigator.sendBeacon &&
       navigator.sendBeacon(

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test.describe('Weights Editor @frontend', () => {
   test('proposes, approves, and optimizes weights', async ({ page }) => {

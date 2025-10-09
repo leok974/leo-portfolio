@@ -1,0 +1,23 @@
+{
+  "date": "2025-10-09",
+  "totals": {
+    "total": 12,
+    "passed": 11,
+    "failed": 1
+  },
+  "pages": [
+    { "path": "/", "ok": true, "title_len": 45, "desc_len": 155 },
+    { "path": "/projects/ledgermind.html", "ok": true, "title_len": 52, "desc_len": 148 },
+    { "path": "/projects/clarity.html", "ok": true, "title_len": 48, "desc_len": 142 },
+    { "path": "/book.html", "ok": true, "title_len": 41, "desc_len": 135 },
+    { "path": "/agent-tools.html", "ok": true, "title_len": 50, "desc_len": 140 },
+    { "path": "/public/gallery.html", "ok": true, "title_len": 38, "desc_len": 128 },
+    { "path": "/privacy.html", "ok": true, "title_len": 35, "desc_len": 120 },
+    { "path": "/projects/datapipe-ai.html", "ok": true, "title_len": 55, "desc_len": 150 },
+    { "path": "/projects/dermaai.html", "ok": true, "title_len": 47, "desc_len": 145 },
+    { "path": "/projects/pixo-banana-suite.html", "ok": true, "title_len": 60, "desc_len": 160 },
+    { "path": "/completed.html", "ok": true, "title_len": 42, "desc_len": 138 },
+    { "path": "/public/metrics.html", "ok": false, "title_len": 25, "desc_len": 90, "issues": ["Title too short"] }
+  ],
+  "seo_coverage": 91.67
+}

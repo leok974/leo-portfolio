@@ -1,0 +1,60 @@
+name: Analytics Nightly
+
+on:
+  schedule:
+    - cron: "30 2 * * *"  # 02:30 UTC nightly
+  workflow_dispatch:
+    inputs:
+      window_days:
+        description: "Number of days to analyze for trends"
+        required: false
+        default: "7"
+
+jobs:
+  run-analytics:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r assistant_api/requirements.txt
+
+      - name: Download previous reports (if any)
+        uses: dawidd6/action-download-artifact@v6
+        continue-on-error: true
+        with:
+          workflow: seo-intel-nightly.yml
+          workflow_conclusion: success
+          name: seo-intel-reports
+          path: reports/
+
+      - name: Run analytics pipeline
+        env:
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL || 'http://127.0.0.1:11434/v1' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'not-needed' }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'qwen2.5:7b-instruct-q4_K_M' }}
+        run: |
+          python -m analytics.pipeline --window-days ${{ github.event.inputs.window_days || '7' }}
+
+      - name: Upload analytics outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: analytics-outputs
+          path: analytics/outputs/
+          retention-days: 30
+
+      - name: Upload nightly data
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-data
+          path: data/nightly/
+          retention-days: 90

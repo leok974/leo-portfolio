@@ -73,6 +73,13 @@
 
   // Show the consent banner (force = true will clear consent and re-show)
   function showBanner(force = false) {
+    // Skip banner entirely in E2E test mode
+    if (window.__VITE_E2E__ === '1' || window.localStorage?.getItem('VITE_E2E') === '1') {
+      // Auto-grant consent for E2E tests
+      saveConsent({ analytics: true, calendly: true });
+      return;
+    }
+
     // If forcing, clear any existing consent
     if (force) {
       try {

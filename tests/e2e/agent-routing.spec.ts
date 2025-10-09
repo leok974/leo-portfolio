@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test('GET /agent/tasks returns JSON, not HTML', async ({ request }) => {
   const res = await request.get('/agent/tasks');

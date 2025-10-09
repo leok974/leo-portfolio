@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 test.describe('Layout Agent Panel Integration @frontend', () => {
   test('all components render together', async ({ page }) => {

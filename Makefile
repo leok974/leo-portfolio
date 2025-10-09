@@ -1,4 +1,4 @@
-.PHONY: deps test build run audit latency models dev cmddev hyperdev webdev prod-up prod-down prod-logs prod-rebuild tunnel-up tunnel-down env-init
+.PHONY: deps test build run audit latency models dev cmddev hyperdev webdev prod-up prod-down prod-logs prod-rebuild tunnel-up tunnel-down env-init analytics
 
 # Lock dependencies from requirements.in
 deps:
@@ -7,6 +7,14 @@ deps:
 # Run pytest suite
 test:
 	pytest -q
+
+# Phase 51.0 — Run analytics pipeline (nightly insights with RAG)
+analytics:
+	@echo "🚀 Running analytics pipeline..."
+	@python -m analytics.pipeline --window-days 7
+	@echo "📄 Reports:"
+	@echo "   - analytics/outputs/insight-summary.md"
+	@echo "   - analytics/outputs/trend-report.json"
 
 # Build Docker image
 build:

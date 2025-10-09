@@ -5,7 +5,7 @@
  * This ensures users cannot create PRs without content changes.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 
 // Reuse authenticated overlay state
 test.use({ storageState: 'playwright/.auth/dev-overlay.json' });

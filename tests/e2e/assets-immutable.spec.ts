@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 

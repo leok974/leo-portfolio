@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test.base';
 import { requireBackendOrSkip } from './_utils';
 import fs from 'node:fs';
 import path from 'node:path';
