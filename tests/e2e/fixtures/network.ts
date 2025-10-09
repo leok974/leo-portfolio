@@ -18,18 +18,22 @@ export const test = base.extend({
       localStorage.setItem('consent.calendly', 'true');
     });
 
-    // Disable animations for deterministic testing
-    await page.addStyleTag({
-      content: `
-        *,
-        *::before,
-        *::after {
-          transition-duration: 0s !important;
-          transition-delay: 0s !important;
-          animation-duration: 0s !important;
-          animation-delay: 0s !important;
-        }
-      `
+    // Disable animations - must happen AFTER page navigation
+    page.on('load', async () => {
+      await page.addStyleTag({
+        content: `
+          *,
+          *::before,
+          *::after {
+            transition-duration: 0s !important;
+            transition-delay: 0s !important;
+            animation-duration: 0s !important;
+            animation-delay: 0s !important;
+          }
+        `
+      }).catch(() => {
+        // Ignore errors if page is closing
+      });
     });
 
     // Stub Ollama/LLM calls (to prevent 404s when model not available)
