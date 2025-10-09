@@ -146,6 +146,83 @@ try:
 except Exception as e:  # optional soft-fail in dev
     print("[warn] seo router not loaded:", e)
 
+# Phase 50.6 — Analytics ingestion and SEO tune
+try:
+    from assistant_api.routers import agent_analytics as agent_analytics_router
+    app.include_router(agent_analytics_router.router)
+except Exception as e:
+    print("[warn] agent_analytics router not loaded:", e)
+
+# Phase 50.7+++++ — Metrics export (CSV)
+try:
+    from assistant_api.routers import metrics_export
+    app.include_router(metrics_export.router)
+except Exception as e:
+    print("[warn] metrics_export router not loaded:", e)
+
+# Test-only mock routes (guarded by ALLOW_TEST_ROUTES)
+try:
+    from assistant_api.routers import agent_run_mock
+    app.include_router(agent_run_mock.router)
+except Exception as e:
+    print("[warn] agent_run_mock router not loaded:", e)
+
+# SEO Keywords intelligence (Phase 50.6.3+)
+try:
+    from assistant_api.routers import seo_keywords
+    app.include_router(seo_keywords.router)
+except Exception as e:
+    print("[warn] seo_keywords router not loaded:", e)
+
+# SEO Keywords mock route (Phase 50.6.3+ test-only)
+try:
+    from assistant_api.routers import seo_keywords_mock
+    app.include_router(seo_keywords_mock.router)
+except Exception as e:
+    print("[warn] seo_keywords_mock router not loaded:", e)
+
+# Status Pages (Phase 50.6.5+ — discovery status endpoint)
+try:
+    from assistant_api.routers import status_pages
+    app.include_router(status_pages.router)
+except Exception as e:
+    print("[warn] status_pages router not loaded:", e)
+
+# SEO Meta Suggestions (Phase 50.7 seed — title/desc suggestions)
+try:
+    from assistant_api.routers import seo_meta
+    app.include_router(seo_meta.router)
+except Exception as e:
+    print("[warn] seo_meta router not loaded:", e)
+
+# SEO Meta Apply (Phase 50.7 — preview & commit with backups)
+try:
+    from assistant_api.routers import seo_meta_apply
+    app.include_router(seo_meta_apply.router)
+except Exception as e:
+    print("[warn] seo_meta_apply router not loaded:", e)
+
+# SEO JSON-LD (generate, validate, report)
+try:
+    from assistant_api.routers import seo_ld
+    app.include_router(seo_ld.router)
+except Exception as e:
+    print("[warn] seo_ld router not loaded:", e)
+
+# SEO SERP (fetch GSC, analyze CTR anomalies, report)
+try:
+    from assistant_api.routers import seo_serp
+    app.include_router(seo_serp.router)
+except Exception as e:
+    print("[warn] seo_serp router not loaded:", e)
+
+# Agent metrics (telemetry + behavior learning)
+try:
+    from assistant_api.routers import agent_metrics
+    app.include_router(agent_metrics.router)
+except Exception as e:
+    print("[warn] agent_metrics router not loaded:", e)
+
 # Ultra-fast ping for UI hydration fallback (/api/ping)
 _ping_router = APIRouter()
 

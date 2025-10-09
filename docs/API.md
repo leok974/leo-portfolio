@@ -386,6 +386,895 @@ Warmup / startup environment flags:
 - `DISABLE_PRIMARY=1` – Skip waiting entirely; service starts in fallback mode (`llm.path=fallback`). Useful for CI and fast local dev.
 - `SAFE_LIFESPAN=1` – Skip model probing entirely inside the FastAPI lifespan (no `/models` calls on boot). Complements `DISABLE_PRIMARY` and is the safer default for Windows/CI.
 
+## Analytics & SEO
+
+### POST /agent/analytics/ingest
+Ingest CTR (Click-Through Rate) analytics data for SEO optimization.
+
+**Accepts multiple formats:**
+
+1. **Internal JSON** (recommended):
+```json
+{
+  "source": "search_console",
+  "rows": [
+    { "url": "/projects/datapipe-ai", "impressions": 1000, "clicks": 5 },
+    { "url": "/projects/derma-ai", "impressions": 1200, "clicks": 12 }
+  ]
+}
+```
+
+2. **Google Search Console API JSON** (from `searchanalytics.query`):
+```json
+{
+  "rows": [
+    { "keys": ["/projects/datapipe-ai"], "clicks": 6, "impressions": 1400 },
+    { "keys": ["https://example.com/about"], "clicks": 10, "impressions": 1200 }
+  ]
+}
+```
+
+3. **CSV** (from GSC UI export with `Content-Type: text/csv`):
+```csv
+Page,Clicks,Impressions,CTR,Position
+/,12,2200,0.54%,1.2
+/projects/siteagent,11,1850,0.59%,1.5
+```
+
+4. **GA4 JSON** (loose mapping with dimensionValues/metricValues):
+```json
+{
+  "rows": [
+    {
+      "dimensionValues": [{"value": "/projects/clarity"}],
+      "metricValues": [{"value": "892"}, {"value": "8"}]
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "inserted_or_updated": 2,
+  "rows": 2,
+  "source": "search_console"
+}
+```
+
+**Sources:** `search_console`, `ga4`, `manual`
+
+**URL Normalization:** All URLs are normalized to relative paths (e.g., `https://example.com/about` → `/about`)
+
+**Auth:** Requires agent authentication (dev overlay or Cloudflare Access)
+
+### POST /agent/run?task=seo.tune
+Generate SEO metadata improvement recommendations based on CTR data.
+
+Request (optional):
+```json
+{ "threshold": 0.02 }
+```
+
+Response:
+```json
+{
+  "ok": true,
+  "json": "./agent_artifacts/seo-tune.json",
+  "md": "./agent_artifacts/seo-tune.md",
+  "count": 3
+}
+```
+
+Creates two artifacts:
+- `seo-tune.json` - Structured recommendations with old/new title and description
+- `seo-tune.md` - Human-readable report
+
+**LLM Rewriting**: The task now attempts LLM-based metadata rewriting using the primary endpoint (configured via `OPENAI_BASE_URL`/`OPENAI_MODEL`) with automatic fallback to a secondary endpoint (`FALLBACK_BASE_URL`/`FALLBACK_MODEL`). If both LLM endpoints fail or are unreachable, the system gracefully falls back to heuristic rewrites (action verbs, value props, AI/automation keywords). The `notes` field in the JSON artifact indicates which method was used: `"llm"` or `"heuristic"`.
+
+**Configuration**:
+- `SEO_LLM_ENABLED=1` - Enable LLM rewriting (default: enabled)
+- `SEO_LLM_TIMEOUT=9.0` - Timeout for LLM requests in seconds
+- Reuses existing `OPENAI_BASE_URL`, `OPENAI_MODEL`, `OPENAI_API_KEY`
+- Reuses existing `FALLBACK_BASE_URL`, `FALLBACK_MODEL`, `FALLBACK_API_KEY`
+
+Example artifact entry:
+```json
+{
+  "url": "/projects/datapipe-ai",
+  "ctr": 0.008,
+  "old_title": "DataPipe AI",
+  "old_description": "Data pipeline automation",
+  "new_title": "DataPipe AI — Automate Your Data Pipelines with AI",
+  "new_description": "Transform raw data into insights automatically with AI-powered pipeline orchestration and real-time processing.",
+  "notes": "llm"
+}
+```
+
+### POST /agent/run/mock (Test-only)
+**Purpose**: Instantly writes fake `seo-tune.json` and `seo-tune.md` artifacts for E2E smoke tests.
+
+**Guarded by**: `ALLOW_TEST_ROUTES=1` (disable in production)
+
+**Request**:
+```json
+{ "threshold": 0.02 }
+```
+
+**Response**:
+```json
+{
+  "ok": true,
+  "mock": true,
+  "json": "./agent_artifacts/seo-tune.json",
+  "md": "./agent_artifacts/seo-tune.md",
+  "count": 2
+}
+```
+
+**Use Case**: Fast E2E tests that need artifacts without waiting for real agent execution. Always writes 2 mock pages (`/` and `/projects/siteagent`) with deterministic content.
+
+### POST /agent/seo/keywords
+**Purpose**: Generate keyword intelligence artifacts with LLM or heuristic extraction, Google Trends-like enrichment, and CTR underperformer bias.
+
+**Authentication**: Requires Cloudflare Access or dev bearer token.
+
+**Page Discovery**: Auto-discovers pages via enhanced sitemap loader:
+1. **Reads sitemap.xml** from `public/`, `dist/`, or repo root
+2. **Scans filesystem** for `*.html` files (supports 3-level nesting: `/blog/post/index.html`)
+3. **Extracts metadata** from HTML `<title>` and `<meta name="description">`
+4. **Applies filters** via env vars:
+   - `SEO_SITEMAP_INCLUDE="/*.html,/blog/*"` — Only include matching paths
+   - `SEO_SITEMAP_EXCLUDE="/drafts/*,/tmp-e2e/*"` — Exclude matching paths
+5. **Falls back** to defaults (`/index.html`, `/agent.html`) if no pages found
+6. **Optional caching** to `agent/artifacts/status.json` via `SEO_SITEMAP_CACHE=1`
+7. Returns deduplicated list with path, title, desc metadata
+
+**Request**: None (uses auto-discovered pages from sitemap/filesystem)
+
+**Response**:
+```json
+{
+  "generated_at": "2025-10-08T18:30:00.123456+00:00",
+  "mode": "heuristic",
+  "inputs": {
+    "analytics": "underperformers",
+    "source": "sitemap|defaults"
+  },
+  "items": [
+    {
+      "page": "/",
+      "title": "SiteAgent — Autonomous Portfolio Agent",
+      "desc": "Self-maintaining portfolio builder...",
+      "keywords": [
+        {
+          "term": "AI portfolio automation",
+          "score": 0.96,
+          "trend": 85
+        },
+        {
+          "term": "autonomous website builder",
+          "score": 0.94,
+          "trend": 92
+        }
+      ]
+    }
+  ],
+  "integrity": {
+    "algo": "sha256",
+    "value": "7f8d9e1c...",
+    "size": "1456"
+  }
+}
+```
+
+**Artifacts Written**:
+- `agent_artifacts/seo-keywords.json` — Full report with integrity
+- `agent_artifacts/seo-keywords.md` — Human-readable report
+
+**Mode Selection**:
+- `SEO_LLM_ENABLED=1` — LLM-powered keyword extraction (high quality)
+- `SEO_LLM_ENABLED=0` — Heuristic extraction (fast, rule-based)
+
+**CTR Bias**: Pages with CTR < 2% receive +15% confidence boost for broader keyword exploration.
+
+**Ranking**: Combines confidence (0-1) × trend interest (0-100) for effectiveness scoring.
+
+### GET /agent/seo/keywords
+**Purpose**: Fetch the most recently generated keyword intelligence report.
+
+**Authentication**: Public (no auth required).
+
+**Response**: Same as POST response above.
+
+**Error**: Returns 404 if no report exists. Run POST first to generate.
+
+### POST /agent/seo/keywords/mock (Test-only)
+**Purpose**: Instantly writes deterministic mock seo-keywords artifacts for fast CI verification.
+
+**Guarded by**: `ALLOW_TEST_ROUTES=1` (disable in production)
+
+**Authentication**: Requires Cloudflare Access or dev bearer token.
+
+**Request**: None
+
+**Response**:
+```json
+{
+  "ok": true,
+  "artifacts": [
+    {
+      "file": "./agent_artifacts/seo-keywords.json",
+      "type": "json",
+      "integrity": {
+        "algo": "sha256",
+        "value": "56050ce087...",
+        "size": "951"
+      }
+    },
+    {
+      "file": "./agent_artifacts/seo-keywords.md",
+      "type": "markdown"
+    }
+  ],
+  "payload": {
+    "generated_at": "2025-10-08T18:13:13+00:00",
+    "mode": "mock",
+    "items": [
+      {
+        "page": "/index.html",
+        "title": "SiteAgent — Leo Klemet",
+        "keywords": [...]
+      }
+    ],
+    "integrity": {...}
+  }
+}
+```
+
+**Artifacts**: Always writes 2 pages (`/index.html`, `/agent.html`) with 5 deterministic keywords each.
+
+**Use Case**: Fast E2E tests that need keyword artifacts without waiting for real extraction or LLM calls. Runtime ~500ms vs ~3s for full heuristic.
+
+### GET /agent/seo/keywords/mock (Test-only)
+**Purpose**: Fetch the most recently generated mock keyword report.
+
+**Response**: Same structure as POST `/agent/seo/keywords` (KeywordsReport with mode="mock").
+
+**Error**: Returns 404 if no mock artifacts exist.
+
+---
+
+## SEO JSON-LD
+
+### POST /agent/seo/ld/generate
+**Purpose**: Generate JSON-LD structured data for a URL with validation.
+
+**Request**:
+```json
+{
+  "url": "https://example.com/projects/ledgermind",
+  "types": ["WebPage", "WebSite", "BreadcrumbList", "Person", "Organization", "CreativeWork"],
+  "dry_run": true
+}
+```
+
+**Response**:
+```json
+{
+  "jsonld": [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Leo Klemet — SiteAgent",
+      "url": "https://example.com",
+      "logo": "https://example.com/assets/logo.png"
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "Leo Klemet",
+      "url": "https://example.com",
+      "sameAs": ["https://www.linkedin.com/in/leo-klemet/"]
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "url": "https://example.com",
+      "name": "Leo Klemet — SiteAgent",
+      "inLanguage": "en",
+      "publisher": {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Leo Klemet"
+      }
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://example.com"},
+        {"@type": "ListItem", "position": 2, "name": "Projects", "item": "https://example.com/projects"},
+        {"@type": "ListItem", "position": 3, "name": "Ledgermind", "item": "https://example.com/projects/ledgermind"}
+      ]
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "url": "https://example.com/projects/ledgermind",
+      "name": "ledgermind — Leo Klemet — SiteAgent",
+      "description": "Self-updating portfolio powered by SiteAgent.",
+      "isPartOf": {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "url": "https://example.com",
+        "name": "Leo Klemet — SiteAgent"
+      },
+      "primaryImageOfPage": {
+        "@type": "ImageObject",
+        "url": "https://example.com/assets/logo.png"
+      },
+      "breadcrumb": {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [...]
+      }
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "CreativeWork",
+      "name": "ledgermind — Leo Klemet — SiteAgent",
+      "url": "https://example.com/projects/ledgermind",
+      "description": "Self-updating portfolio powered by SiteAgent.",
+      "image": ["https://example.com/assets/logo.png"],
+      "author": {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Leo Klemet"
+      },
+      "datePublished": "2025-10-08T18:30:00Z"
+    }
+  ],
+  "report": {
+    "count": 6,
+    "errors": [],
+    "warnings": []
+  },
+  "artifacts": {
+    "json": "agent/artifacts/seo-ld/<slug>/2025-10-08T123456Z.jsonld",
+    "report": "agent/artifacts/seo-ld/<slug>/2025-10-08T123456Z.report.json"
+  }
+}
+```
+
+**Parameters**:
+- `url` (required): Page URL to generate JSON-LD for
+- `types` (optional): Array of schema.org types to generate. Available types:
+  - `WebSite` - Main website entity
+  - `WebPage` - Individual page
+  - `BreadcrumbList` - Navigation breadcrumbs
+  - `Person` - Person entity (author, publisher)
+  - `Organization` - Organization/brand entity
+  - `CreativeWork` - Creative work (for project pages)
+  - `Article` - Article content (for blog/content pages)
+  - `ImageObject` - Images with metadata
+  - `VideoObject` - Videos with metadata
+  - Defaults to `["WebPage", "WebSite"]`
+- `dry_run` (optional): If `true`, validates but doesn't write artifacts (default: `true`)
+
+**Behavior**:
+- Intelligently generates JSON-LD based on URL patterns (projects vs articles)
+- Validates generated JSON-LD against schema.org requirements
+- Returns validation report with errors and warnings
+- When `dry_run: false`, writes artifacts to `agent/artifacts/seo-ld/`
+- Currently produces minimal stub data; replace with actual metadata extraction
+
+**Feature flags**:
+- `SEO_LD_ENABLED=1` (required)
+- `SEO_LD_TYPES` (allowlist of valid @type values)
+
+### POST /agent/seo/ld/validate
+**Purpose**: Validate JSON-LD structure and schema compliance.
+
+**Request**:
+```json
+{
+  "jsonld": {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "url": "https://example.com",
+    "name": "Test Page"
+  }
+}
+```
+
+Or validate multiple objects:
+```json
+{
+  "jsonld": [
+    { "@context": "https://schema.org", "@type": "WebSite", "url": "...", "name": "..." },
+    { "@context": "https://schema.org", "@type": "WebPage", "url": "...", "name": "..." }
+  ]
+}
+```
+
+**Response**:
+```json
+{
+  "count": 1,
+  "errors": [],
+  "warnings": []
+}
+```
+
+**Validation checks**:
+- `@context` must be `https://schema.org`
+- `@type` must be present and in allowlist (if configured)
+- No duplicate `@id` values
+- Schema-specific field validation for known types
+- Date fields must be ISO-8601 format
+
+**Errors vs Warnings**:
+- **Errors**: Structural issues (missing required fields, invalid format)
+- **Warnings**: Best practice violations (type not in allowlist, date format suggestions)
+
+**Strict mode**: When `SEO_LD_VALIDATE_STRICT=1`, returns HTTP 422 if errors are present.
+
+### GET /agent/seo/ld/report?url=<url>
+**Purpose**: Retrieve the latest JSON-LD and validation report for a URL.
+
+**Request**: Query parameter `url` (exact URL used when generating artifacts)
+
+**Response**:
+```json
+{
+  "url": "https://example.com/page",
+  "jsonld": [...],
+  "report": {
+    "url": "https://example.com/page",
+    "count": 2,
+    "errors": [],
+    "warnings": []
+  }
+}
+```
+
+**Error**: Returns 404 if no artifacts exist for the URL.
+
+### POST /agent/seo/ld/mock (Test-only)
+**Purpose**: Fast artifact generator for E2E/CI (no external fetch).
+
+**Guarded by**: `ALLOW_DEV_ROUTES=1` (disable in production)
+
+**Request**:
+```json
+{
+  "url": "https://example.com/"
+}
+```
+
+**Response**: Same as `/generate` with `dry_run: false`, but instant execution.
+
+**Use case**: Fast E2E tests that need JSON-LD artifacts without metadata extraction overhead.
+
+---
+
+### GET /agent/status/pages
+**Purpose**: Return discovered pages from sitemap/filesystem with metadata (title, desc).
+
+**Authentication**: None required (public endpoint).
+
+**Response**:
+```json
+{
+  "ok": true,
+  "generated_at": "2025-10-08T18:54:06.141876+00:00",
+  "count": 29,
+  "integrity": {
+    "algo": "sha256",
+    "value": "3af0229d1b84e8a9...",
+    "size": 3685
+  },
+  "pages": [
+    {
+      "path": "/index.html",
+      "title": "Portfolio Home",
+      "desc": "Welcome to my portfolio"
+    },
+    {
+      "path": "/blog/post/index.html",
+      "title": "Blog Post Title",
+      "desc": "Post description"
+    }
+  ]
+}
+```
+
+**Behavior**:
+- Returns cached discovery from `agent/artifacts/status.json` if present
+- Falls back to on-demand discovery via `discover_pages()`
+- Writes cache for future requests
+- Integrity checksum computed on compact JSON for validation
+
+**Discovery Sources** (in order):
+1. `sitemap.xml` from `public/`, `dist/`, or repo root
+2. Filesystem scan for `*.html` files (3 levels deep)
+3. Fallback to defaults (`/index.html`, `/agent.html`)
+
+**Environment Variables** (affect discovery):
+- `SEO_PUBLIC_DIRS`: Comma-separated paths to scan
+- `SEO_SITEMAP_INCLUDE`: Include only matching globs
+- `SEO_SITEMAP_EXCLUDE`: Exclude matching globs
+- `SEO_SITEMAP_CACHE=1`: Auto-write cache on discovery
+
+**Use Cases**:
+- Dev overlay panel showing all pages
+- Pre-flight validation of page coverage
+- Debugging sitemap/filesystem discovery
+- Cache warmup for other services
+
+---
+
+### GET /agent/status/open
+**Purpose**: Dev-only route to view underlying HTML files for discovered pages. Guards against directory traversal.
+
+**Authentication**: Requires `ALLOW_DEV_ROUTES=1` environment variable.
+
+**Parameters**:
+- `path` (required): Site-relative path (e.g., `/index.html`)
+- `raw` (optional): If `1`, streams raw HTML; otherwise returns metadata JSON
+
+**Response (Metadata mode, raw=0)**:
+```json
+{
+  "ok": true,
+  "abs_path": "D:\\leo-portfolio\\dist\\index.html",
+  "size": 12345,
+  "mtime": 1696789012.345,
+  "hint_raw_url": "/agent/status/open?path=/index.html&raw=1"
+}
+```
+
+**Response (Raw mode, raw=1)**:
+- Content-Type: `text/html; charset=utf-8` (or `text/plain` for non-HTML files)
+- Body: Raw file contents (size-capped at 2MB)
+- Header: `X-Resolved-Path: <absolute_path>`
+
+**Error Responses**:
+- `403`: Dev routes are disabled (`ALLOW_DEV_ROUTES` not set)
+- `400`: Path must be site-relative (start with `/`)
+- `404`: File not found in public directories
+- `413`: File too large for raw view (>2MB)
+
+**Security**:
+- Directory traversal protection: Validates resolved path is within configured public dirs
+- Size limits: 2MB cap on raw file streaming
+- Environment guard: Only accessible when `ALLOW_DEV_ROUTES=1`
+
+**Use Cases**:
+- Dev overlay "Open" action to view page HTML in new tab
+- Copy absolute file path for local editing
+- Debug page metadata extraction
+- Verify which file serves a given URL path
+
+**Example Requests**:
+```bash
+# Metadata (returns abs_path, size, mtime)
+curl "http://127.0.0.1:8001/agent/status/open?path=/index.html"
+
+# Raw HTML (opens in browser)
+curl "http://127.0.0.1:8001/agent/status/open?path=/index.html&raw=1"
+
+# Copy absolute path
+curl -s "http://127.0.0.1:8001/agent/status/open?path=/blog/post/index.html" | jq -r '.abs_path'
+```
+
+---
+
+## SEO SERP / Indexing
+
+### POST /agent/seo/serp/fetch
+**Purpose**: Fetch Search Console data (or mock) for a date range and write artifacts.
+
+**Request**:
+```json
+{
+  "start_date": "2025-10-07",
+  "end_date": "2025-10-08",
+  "property_url": "https://leok974.github.io/leo-portfolio/",
+  "limit": 200,
+  "dry_run": true
+}
+```
+
+**Parameters**:
+- `start_date` (optional): YYYY-MM-DD format (defaults to yesterday)
+- `end_date` (optional): YYYY-MM-DD format (defaults to today)
+- `property_url` (optional): GSC property URL (defaults to `GSC_PROPERTY` env var)
+- `limit` (optional): Max rows to return (default: 200)
+- `dry_run` (optional): If `false`, writes artifacts to `agent/artifacts/seo-serp/` (default: `true`)
+
+**Response**:
+```json
+{
+  "rows": [
+    {
+      "date": "2025-10-08",
+      "page": "https://leok974.github.io/leo-portfolio/",
+      "clicks": 45,
+      "impressions": 1200,
+      "ctr": 0.0375,
+      "position": 8.5
+    }
+  ],
+  "report": {
+    "source": "gsc",
+    "property": "https://leok974.github.io/leo-portfolio/"
+  },
+  "artifacts": {
+    "jsonl": "agent/artifacts/seo-serp/2025-10-08/gsc.jsonl",
+    "summary": "agent/artifacts/seo-serp/2025-10-08/summary.json"
+  }
+}
+```
+
+**Behavior**:
+- When `GSC_PROPERTY` and service account credentials are configured, fetches real Google Search Console data
+- Falls back to mock data if credentials missing or not configured
+- Mock data includes stable test data with one low-CTR anomaly for testing
+- When `dry_run: false`, writes JSONL artifacts for downstream analysis
+
+**Required Environment Variables** (for real GSC):
+- `GSC_PROPERTY`: Full property URL (e.g., `https://leok974.github.io/leo-portfolio/`)
+- `GSC_SA_JSON`: Service account JSON as string OR
+- `GSC_SA_FILE`: Path to service account JSON file
+
+### POST /agent/seo/serp/analyze
+**Purpose**: Analyze SERP data for CTR anomalies and performance issues.
+
+**Request**:
+```json
+{
+  "rows": [
+    {
+      "date": "2025-10-08",
+      "page": "https://example.com/page",
+      "clicks": 2,
+      "impressions": 500,
+      "ctr": 0.004,
+      "position": 35.0
+    }
+  ],
+  "min_impressions": 50,
+  "low_ctr_factor": 0.5
+}
+```
+
+**Parameters**:
+- `rows` (required): Array of SERP data (from `/fetch` or manual input)
+- `min_impressions` (optional): Minimum impressions to consider for analysis (default: 50)
+- `low_ctr_factor` (optional): Flag pages with CTR < (factor × median CTR) (default: 0.5)
+
+**Response**:
+```json
+{
+  "median_ctr": 0.045,
+  "total_pages": 5,
+  "anomalies": [
+    {
+      "page": "https://example.com/page",
+      "impressions": 500,
+      "ctr": 0.004,
+      "position": 35.0,
+      "prev_ctr": 0.025,
+      "delta_ctr": -0.021,
+      "reasons": [
+        "ctr<0.5×median (0.004 < 0.023)",
+        "ctr drop vs prev (0.004 < 0.5×0.025)"
+      ],
+      "suggestions": [
+        "Run seo.rewrite on H1/description.",
+        "Validate JSON-LD types for this route.",
+        "Check internal links/anchor text.",
+        "Consider new thumbnail/OG image test."
+      ]
+    }
+  ]
+}
+```
+
+**Analysis Logic**:
+- Calculates median CTR across all pages with sufficient impressions
+- Flags pages with CTR significantly below median
+- Compares with previous day's data (if available) to detect CTR drops
+- Provides actionable suggestions for each anomaly
+
+### GET /agent/seo/serp/report?day=YYYY-MM-DD
+**Purpose**: Retrieve latest or specific day's SERP analysis with anomalies.
+
+**Request**: Query parameter `day` (optional, defaults to latest available)
+
+**Response**:
+```json
+{
+  "day": "2025-10-08",
+  "count": 5,
+  "summary": {
+    "window": {"start": "2025-10-07", "end": "2025-10-08"},
+    "fetched": 5,
+    "source": "gsc"
+  },
+  "analysis": {
+    "median_ctr": 0.045,
+    "total_pages": 5,
+    "anomalies": [...]
+  }
+}
+```
+
+**Error**: Returns 404 if no artifacts exist for requested day.
+
+### POST /agent/seo/serp/ping-sitemaps
+**Purpose**: Ping Google and Bing to notify of sitemap updates.
+
+**Request**:
+```json
+{
+  "sitemap_urls": [
+    "https://leok974.github.io/leo-portfolio/sitemap.xml"
+  ],
+  "dry_run": true
+}
+```
+
+**Parameters**:
+- `sitemap_urls` (required): Array of full sitemap URLs to ping
+- `dry_run` (optional): If `false`, actually performs HTTP requests (default: `true`)
+
+**Response**:
+```json
+{
+  "targets": [
+    "https://www.google.com/ping?sitemap=https://leok974.github.io/leo-portfolio/sitemap.xml",
+    "https://www.bing.com/ping?sitemap=https://leok974.github.io/leo-portfolio/sitemap.xml"
+  ],
+  "performed": false
+}
+```
+
+**Behavior**:
+- Safe by default: `dry_run: true` only returns ping URLs without making requests
+- When `dry_run: false`, fires-and-forgets HTTP requests to search engines
+- Use after sitemap regeneration or significant content updates
+
+### POST /agent/seo/serp/mock/populate (Test-only)
+**Purpose**: Generate mock SERP artifacts for testing and CI.
+
+**Guarded by**: `ALLOW_DEV_ROUTES=1` (disable in production)
+
+**Request**:
+```json
+{
+  "days": 2
+}
+```
+
+**Response**:
+```json
+{
+  "ok": true,
+  "days": 3
+}
+```
+
+**Behavior**:
+- Creates `days + 1` worth of mock artifacts (specified days back + today)
+- Generates stable mock data with one intentional low-CTR anomaly
+- Writes to `agent/artifacts/seo-serp/<date>/` for testing report endpoints
+- Used by E2E tests to verify anomaly detection without real GSC data
+
+---
+
+## Agent Telemetry & Behavior
+
+### POST /agent/metrics/ingest
+**Purpose**: Accept anonymous section-level analytics events from frontend.
+
+**Request**:
+```json
+{
+  "events": [
+    {
+      "session_id": "abc12345",
+      "visitor_id": "v1234567",
+      "section": "projects",
+      "event_type": "view",
+      "ts": "2025-10-08T12:00:00Z",
+      "viewport_pct": 0.8
+    },
+    {
+      "session_id": "abc12345",
+      "visitor_id": "v1234567",
+      "section": "projects",
+      "event_type": "click",
+      "ts": "2025-10-08T12:00:01Z"
+    },
+    {
+      "session_id": "abc12345",
+      "visitor_id": "v1234567",
+      "section": "about",
+      "event_type": "dwell",
+      "ts": "2025-10-08T12:00:05Z",
+      "dwell_ms": 4500
+    }
+  ]
+}
+```
+
+**Event Types**:
+- `view`: Section entered viewport
+- `click`: User clicked within section
+- `dwell`: Section left viewport (includes time spent)
+
+**Response**:
+```json
+{ "ok": true, "count": 3 }
+```
+
+**Notes**:
+- `visitor_id` is client-generated (no PII)
+- Origin allowlist enforced via `ANALYTICS_ORIGIN_ALLOWLIST` setting
+- Events stored as JSONL in `./data/analytics/events-YYYYMMDD.jsonl`
+
+### POST /agent/analyze/behavior
+**Purpose**: Analyze recent events (last 14 days), compute per-section weights, and return optimal ordering.
+
+**Response**:
+```json
+{
+  "updated": "2025-10-08T12:30:00Z",
+  "weights": {
+    "projects": { "weight": 0.85 },
+    "about": { "weight": 0.72 },
+    "skills": { "weight": 0.68 },
+    "contact": { "weight": 0.45 }
+  },
+  "order": ["projects", "about", "skills", "hero", "contact"]
+}
+```
+
+**Algorithm**:
+- Computes CTR (clicks/views) and average dwell time per section
+- Normalizes metrics, combines with 60/40 weight (CTR/dwell)
+- Applies EMA smoothing with configurable alpha
+- Applies time decay to gradually regress to baseline
+- Adds epsilon-greedy exploration (randomly swaps 2 sections)
+
+**Configuration**:
+- `LEARNING_EPSILON`: Exploration probability (default: 0.10)
+- `LEARNING_DECAY`: Daily decay factor (default: 0.98)
+- `LEARNING_EMA_ALPHA`: EMA smoothing (default: 0.30)
+
+### GET /agent/layout
+**Purpose**: Return current learned section ordering (no exploration, deterministic).
+
+**Response**:
+```json
+{
+  "order": ["projects", "about", "skills", "hero", "contact"],
+  "weights": {
+    "projects": { "weight": 0.85 },
+    "about": { "weight": 0.72 }
+  }
+}
+```
+
+**Usage**:
+- Call on page load to apply learned layout
+- Frontend script `apply-learned-layout.js` reorders sections automatically
+
+---
+
 ## Errors
 Standard JSON error form:
 ```json

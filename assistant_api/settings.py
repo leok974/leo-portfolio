@@ -9,6 +9,7 @@ import os
 import urllib.parse
 from functools import lru_cache
 from typing import List, Dict, Any
+from pydantic import AnyHttpUrl
 
 
 def _split_env_list(val: str) -> list[str]:
@@ -103,6 +104,14 @@ def get_settings() -> Dict[str, Any]:
         "BRAND_LOGO": os.getenv("BRAND_LOGO", "https://assistant.ledger-mind.org/assets/logo.png"),
         "PERSON_NAME": os.getenv("PERSON_NAME", "Leo Klemet"),
         "PERSON_SAME_AS": os.getenv("PERSON_SAME_AS", ""),
+        # Analytics / Learning settings
+        "ANALYTICS_ENABLED": os.getenv("ANALYTICS_ENABLED", "1") in {"1", "true", "TRUE", "yes", "on"},
+        "ANALYTICS_ORIGIN_ALLOWLIST": _split_env_list(os.getenv("ANALYTICS_ORIGIN_ALLOWLIST", "")),
+        "LEARNING_EPSILON": float(os.getenv("LEARNING_EPSILON", "0.10")),
+        "LEARNING_DECAY": float(os.getenv("LEARNING_DECAY", "0.98")),
+        "LEARNING_EMA_ALPHA": float(os.getenv("LEARNING_EMA_ALPHA", "0.30")),
+        "LAYOUT_SECTIONS_DEFAULT": _split_env_list(os.getenv("LAYOUT_SECTIONS_DEFAULT", "hero,projects,skills,about,contact")),
+        "ANALYTICS_DIR": os.getenv("ANALYTICS_DIR", "./data/analytics"),
     }
 
 

@@ -99,6 +99,50 @@ Run all tests:
 ```bash
 pytest -q
 ```
+
+### Backend Python Tests
+```bash
+# All backend tests
+pytest -q
+
+# Analytics & SEO tests
+pytest tests/test_analytics_ingest.py -v
+pytest tests/test_seo_llm_fallback.py -v
+
+# Direct Python test (bypasses HTTP auth)
+python test_analytics_direct.py
+```
+
+### SEO LLM Smoke Test
+Manual end-to-end test for LLM-based SEO rewriting:
+
+```powershell
+# 1) Ensure Ollama is running with a suitable model
+# Example: ollama run qwen2.5:7b-instruct
+
+# 2) Set environment variables
+$env:OPENAI_BASE_URL = "http://127.0.0.1:11434/v1"
+$env:OPENAI_MODEL = "qwen2.5:7b-instruct"
+$env:SEO_LLM_ENABLED = "1"
+$env:SEO_LLM_TIMEOUT = "9.0"
+
+# 3) Start backend
+uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001
+
+# 4) Run smoke test (in another terminal)
+.\test-seo-llm.ps1
+```
+
+The script will:
+1. Ingest sample CTR data for 2 pages
+2. Run the `seo.tune` task with LLM rewriting enabled
+3. Display artifacts with method used (llm vs heuristic)
+4. Show a preview of the generated recommendations
+
+Expected output shows `notes: "llm"` when Ollama is reachable, or `notes: "heuristic"` when falling back.
+
+### Frontend Tests
+
 Frontend unit tests (Vitest + jsdom):
 ```bash
 npm run test     # one-off
@@ -176,6 +220,138 @@ Radix Select testing notes:
   - `page.getByRole('option', { name: 'Regression' }).click()`
 - The options render in a portal; role-based queries remain stable across portals.
 - For e2e stability, prefer polling `/api/eval/history` to assert a run completed rather than waiting for the POST response.
+
+### Agent E2E Tests (SEO Analytics)
+
+The SEO analytics agent (`seo.tune` task) has dedicated E2E tests with **mock** and **full** modes:
+
+#### Quick Commands
+```bash
+npm run test:e2e:seo:mock  # Fast mock tests (~3s) - no LLM/DB dependencies
+npm run test:e2e:seo:full  # Full integration tests (~2min) - real agent execution
+```
+
+#### Test Modes Comparison
+
+| Mode | Duration | Dependencies | Use Case | Artifacts |
+|------|----------|--------------|----------|-----------|
+| **Mock** (`seo-analytics.mock.spec.ts`) | ~3s | None (test endpoint `/agent/run/mock`) | CI smoke tests, quick verification | Deterministic fake data with SHA-256 integrity |
+| **Full** (`seo-analytics.spec.ts`) | ~2min | Backend + Ollama/OpenAI LLM | Pre-deploy validation, LLM quality checks | Real agent analysis results |
+
+#### Auto-Downgrade Feature
+When the **backend** is started with `SEO_LLM_ENABLED=0`, the `seo.tune` task automatically downgrades to mock mode:
+- No code changes needed in tests
+- Backend logs `seo.tune.auto_mock` event
+- Artifacts include `"mock": true` indicator
+- Useful for:
+  - Local dev without LLM setup
+  - CI environments without API keys
+  - Fast smoke tests
+
+**Important**: The environment variable must be set when **starting the backend**, not just in the test runner.
+
+```bash
+# Example: Start backend with auto-downgrade enabled
+$env:SEO_LLM_ENABLED="0"
+.venv/Scripts/python.exe -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001
+
+# Then run tests (they'll use mock under the hood)
+npm run test:e2e:seo:full
+```
+
+**CI Integration**: The e2e-mock workflow automatically sets `SEO_LLM_ENABLED=0` when starting the backend, enabling auto-downgrade for fast CI tests.
+
+#### Helper Functions
+**`waitForArtifact(filePath, options)`** (`tests/e2e/helpers/waitForArtifact.ts`):
+- Polls filesystem for artifact with retry logic
+- Configurable timeout (default: 30s) and interval (default: 500ms)
+- Returns parsed JSON content or throws timeout error
+- Used in both mock and full test suites
+
+```typescript
+import { waitForArtifact } from './helpers/waitForArtifact';
+const artifact = await waitForArtifact('./agent_artifacts/seo-tune.json', { timeout: 60000 });
+expect(artifact.changes).toBeInstanceOf(Array);
+```
+
+#### Prerequisites
+1. **Backend running** on port 8001:
+   ```bash
+   .venv/Scripts/python.exe -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001
+   ```
+2. **Test routes enabled**: `ALLOW_TEST_ROUTES=1` (default in dev)
+3. **For full tests**: Ollama/OpenAI configured with `SEO_LLM_ENABLED=1`
+
+#### Troubleshooting
+- **Artifact not found**: Check backend logs for task execution errors
+- **Timeout in mock tests**: Ensure `ALLOW_TEST_ROUTES=1` and backend is healthy
+- **LLM errors in full tests**: Verify `SEO_LLM_ENABLED=1` and model availability
+- **SHA-256 mismatch**: Mock artifacts use compact JSON format for consistent hashing
+
+**CI Integration**: `.github/workflows/e2e-mock.yml` runs mock tests on every push/PR to main and LINKEDIN-OPTIMIZED branches. Badge: [![e2e-mock](https://github.com/leok974/leo-portfolio/actions/workflows/e2e-mock.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/e2e-mock.yml)
+
+### Fast Mock E2E — Keywords (Phase 50.6.3)
+
+Quick verification of `/agent/seo/keywords` endpoint using deterministic mock route.
+
+**Mock Endpoint**: `POST /agent/seo/keywords/mock`
+- Instantly writes `agent_artifacts/seo-keywords.{json,md}`
+- Deterministic output (2 pages: `/index.html`, `/agent.html`)
+- No LLM dependencies
+- Includes SHA-256 integrity checksums
+- Runtime ~500ms vs ~3s for full extraction
+
+**Test Suite**: `tests/e2e/seo-keywords.mock.spec.ts`
+- 3 tests validating artifact structure, integrity, and content
+- Verifies keyword format (term, score 0-1, trend 0-100)
+- Checks for expected portfolio/automation keywords
+
+**Environment**:
+- `ALLOW_TEST_ROUTES=1` — Enables mock endpoints
+- `SEO_LLM_ENABLED=0` — Fast heuristic mode (not needed for mock)
+
+**Auto-Downgrade Feature**:
+- When `SEO_LLM_ENABLED=0`, hitting `/agent/seo/keywords` (full route) automatically downgrades to the mock path
+- Provides seamless fallback without code changes in clients or tests
+- Verified by `tests/e2e/seo-keywords.fallback.spec.ts`
+
+**Sitemap Auto-Discovery**:
+- `/agent/seo/keywords` auto-discovers pages via `assistant_api/utils/sitemap.py`
+- **Sources** (in order): `sitemap.xml` → filesystem scan (3 levels deep) → fallback defaults
+- **Nested paths**: Supports `/blog/post/index.html`, `/projects/ai/agent.html`, etc.
+- **Filtering**: Include/exclude via env vars
+  - `SEO_SITEMAP_INCLUDE="/*.html,/blog/*"` — Only include matching paths
+  - `SEO_SITEMAP_EXCLUDE="/drafts/*,/tmp-e2e/*"` — Exclude matching paths
+- **Custom public dirs**: `SEO_PUBLIC_DIRS="public,dist,/var/www/html"`
+- **Caching**: `SEO_SITEMAP_CACHE=1` writes to `agent/artifacts/status.json`
+- **Title/description extraction**: Regex-based from HTML (no dependencies)
+- **Test locally**:
+  ```bash
+  # Discover pages
+  python -c "from assistant_api.utils.sitemap import discover_pages; [print(f'{p.path}: {p.title}') for p in discover_pages()]"
+
+  # Test with filtering
+  SEO_SITEMAP_INCLUDE="/*.html,/blog/*" SEO_SITEMAP_EXCLUDE="/tmp-e2e/*" \
+    python -c "from assistant_api.utils.sitemap import discover_pages; print(f'Found {len(discover_pages())} pages')"
+  ```
+
+**Local Usage**:
+```bash
+# Generate mock artifacts
+curl -X POST http://127.0.0.1:8001/agent/seo/keywords/mock \
+  -H "Authorization: Bearer dev" | jq
+
+# Verify artifacts
+cat agent_artifacts/seo-keywords.json | jq '.integrity'
+cat agent_artifacts/seo-keywords.md | head -20
+
+# Run E2E tests
+npx playwright test tests/e2e/seo-keywords.mock.spec.ts --project=chromium
+```
+
+**CI Workflow**: `.github/workflows/e2e-keywords-mock.yml` runs on push/PR. Badge: [![e2e-keywords-mock](https://github.com/leok974/leo-portfolio/actions/workflows/e2e-keywords-mock.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/e2e-keywords-mock.yml)
+
+---
 
 **CI Workflow:** `.github/workflows/frontend-fast.yml` runs `test:fast` on push/PR. Badge: [![Frontend Fast Tests](https://github.com/leok974/leo-portfolio/actions/workflows/frontend-fast.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/frontend-fast.yml)
 
@@ -1283,6 +1459,711 @@ curl -s -X POST http://127.0.0.1:8080/api/chat \
 ```
 
 Place this after the stack is up but before running Playwright to reduce cold-start variability.
+
+## E2E Testing
+
+### Quick Commands
+
+**Fast Mock Tests** (for smoke checks, ~10-15s):
+```powershell
+# Set environment
+$env:ALLOW_DEV_ROUTES="1"
+$env:ALLOW_TEST_ROUTES="1"
+$env:SITEAGENT_DEV_COOKIE_KEY="dev-secret-test"
+$env:BACKEND_URL="http://127.0.0.1:8001"
+$env:UI_URL="http://127.0.0.1:5173"
+$env:DEV_BEARER="dev"
+
+# Run mock tests (uses /agent/run/mock endpoint)
+npm run test:e2e:seo:mock
+```
+
+**Full Integration Tests** (with real agent execution, ~1-2min):
+```powershell
+# Same environment as above
+$env:ALLOW_DEV_ROUTES="1"
+$env:SITEAGENT_DEV_COOKIE_KEY="dev-secret-test"
+$env:BACKEND_URL="http://127.0.0.1:8001"
+$env:UI_URL="http://127.0.0.1:5173"
+$env:DEV_BEARER="dev"
+
+# Optional: Skip LLM to speed up (uses heuristic fallback)
+$env:SEO_LLM_ENABLED="0"
+
+# Run full tests (real seo.tune task)
+npm run test:e2e:seo:full
+```
+
+### Test Modes
+
+1. **Mock Mode** (`seo-analytics.mock.spec.ts`)
+   - Uses `/agent/run/mock` endpoint
+   - Instant artifact generation (no LLM/DB required)
+   - Deterministic output (2 pages: `/` and `/projects/siteagent`)
+   - Ideal for: CI smoke tests, quick validation
+   - Timeout: 30s
+
+2. **Full Mode** (`seo-analytics.spec.ts`)
+   - Uses real `/agent/run` with `seo.tune` task
+   - Real database queries, LLM calls (with heuristic fallback)
+   - Variable output based on actual data
+   - Ideal for: Integration testing, pre-deployment validation
+   - Timeout: 60s
+
+### Helper Functions
+
+**`waitForArtifact(api, path, headers, timeoutMs)`** (`tests/e2e/helpers/waitForArtifact.ts`)
+- Smart polling for artifact availability
+- Validates content (not just 200 OK)
+- Supports JSON and text artifacts
+- Default timeout: 45s
+
+Example:
+```typescript
+const json = await waitForArtifact(
+  api,
+  '/agent/artifacts/seo-tune.json',
+  { Authorization: 'Bearer dev' },
+  10_000
+);
+```
+
+### Prerequisites
+
+1. **Backend running** (port 8001):
+   ```powershell
+   uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 --reload
+   ```
+
+2. **Vite dev server** (port 5173, for UI tests):
+   ```powershell
+   npm run dev
+   ```
+
+3. **Environment variables set** (see commands above)
+
+### Troubleshooting
+
+**Tests timeout**: Increase timeout or disable LLM (`SEO_LLM_ENABLED=0`)
+
+**"Test routes disabled"**: Set `ALLOW_TEST_ROUTES=1` (for mock tests)
+
+---
+
+## Telemetry + Behavior Learning (dev)
+
+1. Ensure backend runs on `http://127.0.0.1:8001` and `ANALYTICS_ENABLED=true`.
+2. Add `data-section="..."` to each major section and include:
+   - `src/lib/behavior-tracker.js`
+   - `src/lib/apply-learned-layout.js`
+3. Click around locally, then:
+   ```bash
+   curl -X POST http://127.0.0.1:8001/agent/analyze/behavior
+   curl http://127.0.0.1:8001/agent/layout
+   ```
+4. Run tests:
+   ```bash
+   pytest -q tests/test_metrics_learning.py
+   npx playwright test tests/e2e/behavior-analytics.spec.ts --project=chromium
+   ```
+
+**Configuration**:
+- `ANALYTICS_ENABLED=true` (default)
+- `ANALYTICS_ORIGIN_ALLOWLIST=""` (empty = allow all origins in dev)
+- `LEARNING_EPSILON=0.10` (exploration rate)
+- `LEARNING_DECAY=0.98` (time decay factor)
+- `LEARNING_EMA_ALPHA=0.30` (smoothing factor)
+- `LAYOUT_SECTIONS_DEFAULT="hero,projects,skills,about,contact"` (baseline ordering)
+- `ANALYTICS_DIR="./data/analytics"` (storage path)
+
+**How it Works**:
+- Frontend tracker sends anonymous events (view/click/dwell) to `/agent/metrics/ingest`
+- Events stored as JSONL files (`events-YYYYMMDD.jsonl`)
+- Analyze endpoint computes weights based on CTR and dwell time
+- Layout endpoint returns learned ordering (deterministic, no exploration)
+- Frontend applier fetches layout and reorders DOM sections
+
+---
+
+**Authentication errors**: Verify `ALLOW_DEV_ROUTES=1` and `DEV_BEARER="dev"`
+
+**Artifacts not found**: Check `./agent_artifacts/` directory exists and backend has write permissions
+
+---
+
+## Dev Overlay — Discovered Pages
+
+The Dev Overlay includes a **Discovered Pages** panel that displays all pages discovered by the sitemap loader.
+
+### Backend Endpoint
+
+**GET /agent/status/pages**
+- Returns cached discovery from `agent/artifacts/status.json` or triggers on-demand discovery
+- Response includes:
+  - `ok`: Always true
+  - `generated_at`: ISO timestamp
+  - `count`: Number of pages
+  - `pages`: Array of `{path, title, desc}`
+  - `integrity`: SHA-256 checksum for validation
+
+**Example**:
+```bash
+curl -s http://127.0.0.1:8001/agent/status/pages | jq '.count, .integrity'
+```
+
+### Frontend Panel
+
+Located at `src/features/dev/DevPagesPanel.tsx` (integrated into your dev overlay).
+
+**Features**:
+- **Real-time filtering** by path, title, or description
+- **Refresh** button to reload discovery
+- **Copy JSON** exports pages array to clipboard
+- **Table view** with path, title, desc columns
+- **Integrity display** shows SHA-256 checksum at bottom
+
+### Environment Variables
+
+Control discovery behavior (same as sitemap loader):
+- `SEO_PUBLIC_DIRS="public,dist"` — Directories to scan
+- `SEO_SITEMAP_INCLUDE="/*.html,/blog/**/*.html"` — Include only matching paths
+- `SEO_SITEMAP_EXCLUDE="/drafts/*,/tmp-e2e/*"` — Exclude matching paths
+- `SEO_SITEMAP_CACHE=1` — Write cache to `agent/artifacts/status.json`
+
+### Local Usage
+
+```bash
+# Backend route
+curl -s http://127.0.0.1:8001/agent/status/pages | jq '.count, .integrity'
+
+# Frontend: open your dev overlay and switch to "Discovered Pages" tab
+# (or access DevPagesPanel component directly)
+```
+
+### E2E Tests
+
+**Backend API tests** (`tests/e2e/status-pages.api.spec.ts`):
+- Validates response structure (ok, count, integrity, pages)
+- Verifies SHA-256 integrity checksums
+- Tests metadata extraction (title, desc)
+- Validates cache consistency
+
+**Run tests**:
+```bash
+npx playwright test tests/e2e/status-pages.api.spec.ts --project=chromium
+```
+
+---
+
+### Status Open Endpoint (Dev-Only)
+
+**GET /agent/status/open** — View underlying HTML files for discovered pages.
+
+**Prerequisites**:
+- Set `ALLOW_DEV_ROUTES=1` environment variable
+- Backend must be running with dev routes enabled
+
+**Modes**:
+1. **Metadata mode** (`raw=0` or omitted): Returns file info as JSON
+2. **Raw mode** (`raw=1`): Streams raw HTML content
+
+**Examples**:
+```bash
+# Metadata (returns abs_path, size, mtime)
+curl -s "http://127.0.0.1:8001/agent/status/open?path=/index.html" | jq
+
+# Raw HTML (view in browser)
+start "" "http://127.0.0.1:8001/agent/status/open?path=/index.html&raw=1"
+
+# Copy absolute path for editing
+curl -s "http://127.0.0.1:8001/agent/status/open?path=/blog/post/index.html" | jq -r '.abs_path'
+```
+
+**Security**:
+- Directory traversal protection (validates path is within public dirs)
+- 2MB file size limit for raw streaming
+- Only accessible when `ALLOW_DEV_ROUTES=1`
+
+**Dev Panel Actions**:
+The `DevPagesPanel` component includes action buttons for each page:
+- **Open**: Opens raw HTML in new tab
+- **Copy path**: Fetches metadata and copies absolute path to clipboard
+
+**E2E Tests** (`tests/e2e/status-open.api.spec.ts`):
+- Metadata response validation
+- Raw HTML streaming
+- Directory traversal rejection
+- Path format validation
+
+**Run tests**:
+```bash
+# Set ALLOW_DEV_ROUTES=1 for tests to pass
+$env:ALLOW_DEV_ROUTES='1'
+npx playwright test tests/e2e/status-open.api.spec.ts --project=chromium
+```
+
+---
+
+### Dev Overlay — Sitemap & Meta Tools
+
+The Dev Overlay includes additional tools for sitemap inspection and SEO meta generation.
+
+#### Reveal in Sitemap
+
+**Feature**: Checks if a page exists in `sitemap.xml`.
+
+- Calls `/agent/status/sitemap` to get sitemap URLs
+- If page found: Opens raw sitemap.xml in new tab
+- If page not found: Shows alert message
+- If no sitemap: Opens raw endpoint anyway (404 or empty)
+
+**Backend Endpoint**: `GET /agent/status/sitemap`
+- Metadata mode (`raw=0`): Returns `{ok, files, count, urls, integrity}`
+- Raw mode (`raw=1`): Streams sitemap.xml as `application/xml`
+
+**Example**:
+```bash
+# Get sitemap metadata
+curl -s http://127.0.0.1:8001/agent/status/sitemap | jq '.count, .urls'
+
+# View raw sitemap
+start "" "http://127.0.0.1:8001/agent/status/sitemap?raw=1"
+```
+
+#### Suggest Meta
+
+**Feature**: Generates SEO-optimized title (≤60 chars) and description (≤155 chars) using discovered keywords.
+
+- Opens modal with title/description suggestions
+- Incorporates keywords from `seo-keywords.json` when available
+- Provides "Copy" buttons for easy copying
+- Writes artifacts to `agent/artifacts/seo-meta/<slug>.json`
+
+**Backend Endpoint**: `GET /agent/seo/meta/suggest?path=<url>`
+- Returns `{path, base, keywords, suggestion, integrity}`
+- Title: 1-2 top keywords woven into existing title
+- Description: 2-3 keywords incorporated into readable sentence
+
+**Example**:
+```bash
+# Get meta suggestions for index.html
+curl -s "http://127.0.0.1:8001/agent/seo/meta/suggest?path=/index.html" | jq '.suggestion'
+
+# Output:
+# {
+#   "title": "Portfolio Home — Python — FastAPI",
+#   "desc": "Welcome to my portfolio showcasing Python and FastAPI projects. Keywords: web development, API design.",
+#   "limits": {"title_max": 60, "desc_max": 155}
+# }
+```
+
+**Artifacts**:
+- Location: `agent/artifacts/seo-meta/`
+- Naming: `<slugified-path>.json` (e.g., `index-html.json`, `blog-post-index-html.json`)
+- Content: Full metadata with integrity checksum
+
+**E2E Tests**:
+- `tests/e2e/sitemap-status.api.spec.ts` — Sitemap endpoint validation
+- `tests/e2e/seo-meta.suggest.api.spec.ts` — Meta suggestion validation
+- `tests/e2e/devpages.suggest.ui.spec.ts` — UI modal tests (optional)
+
+#### Preview & Commit Meta Changes (Phase 50.7 — Dev Only)
+
+**Feature**: Apply SEO meta suggestions directly to HTML files with preview and backup.
+
+**Safety Features**:
+- ✅ **Traversal guards**: Only resolves files under `public/`, `dist/`, or root directories
+- ✅ **PR-ready diffs**: Generates unified diffs for code review
+- ✅ **Timestamped backups**: Creates `.bak.<timestamp>.html` before writing
+- ✅ **Integrity checksums**: SHA-256 on all artifacts
+- ✅ **Dev-only**: Requires `ALLOW_DEV_ROUTES=1` environment variable
+- ✅ **Dry-run mode**: Preview changes without writing files
+
+**Backend Endpoints**:
+
+1. **`POST /agent/seo/meta/preview?path=<url>`** (Always available)
+   - Accepts `{title, desc}` payload
+   - Returns `{ok, path, changed, artifacts, integrity, empty_diff}`
+   - Writes artifacts to `agent/artifacts/seo-meta-apply/<slug>.*`:
+     - `<slug>.diff` — Unified diff
+     - `<slug>.preview.html` — Modified HTML
+     - `<slug>.apply.json` — Metadata with integrity
+
+2. **`POST /agent/seo/meta/commit?path=<url>&confirm=1`** (Requires `ALLOW_DEV_ROUTES=1`)
+   - Accepts `{title, desc}` payload
+   - Returns `{ok, applied, path, backup, changed, artifacts, integrity}`
+   - Creates timestamped backup: `<file>.bak.<timestamp>.html`
+   - Writes modified HTML to original file
+   - Without `confirm=1`: Returns dry-run response
+
+**Dev Overlay UI**:
+- **Editable fields**: Title and description are editable (not readonly)
+- **Preview diff** button (sky theme): Calls preview endpoint, shows changed fields
+- **Approve & commit** button (emerald theme): Calls commit endpoint with `confirm=1`
+- **Diff display**: Shows changed fields and artifact paths
+
+**Example Usage**:
+
+```bash
+# Enable dev routes (required for commit)
+$env:ALLOW_DEV_ROUTES='1'  # PowerShell
+
+# Preview changes (always available)
+curl -s -X POST "http://127.0.0.1:8001/agent/seo/meta/preview?path=/index.html" `
+  -H "Content-Type: application/json" `
+  -d '{"title":"New Index Title","desc":"New description for index"}' | jq
+
+# Output:
+# {
+#   "ok": true,
+#   "path": "/index.html",
+#   "changed": {"title": true, "description": true},
+#   "artifacts": {
+#     "diff": "agent/artifacts/seo-meta-apply/index-html.diff",
+#     "preview_html": "agent/artifacts/seo-meta-apply/index-html.preview.html"
+#   },
+#   "integrity": {"algo": "sha256", "value": "abc123...", "size": 456},
+#   "empty_diff": false
+# }
+
+# View diff
+cat agent/artifacts/seo-meta-apply/index-html.diff
+
+# Commit changes (writes backup + applies HTML)
+curl -s -X POST "http://127.0.0.1:8001/agent/seo/meta/commit?path=/index.html&confirm=1" `
+  -H "Content-Type: application/json" `
+  -d '{"title":"New Index Title","desc":"New description for index"}' | jq
+
+# Output:
+# {
+#   "ok": true,
+#   "applied": true,
+#   "path": "/index.html",
+#   "backup": "public/index.bak.20251008-143022.html",
+#   "changed": {"title": true, "description": true},
+#   "artifacts": {...},
+#   "integrity": {...}
+# }
+
+# Verify artifacts written
+Get-ChildItem agent\artifacts\seo-meta-apply\*
+```
+
+**E2E Tests**:
+- `tests/e2e/seo-meta.apply.api.spec.ts` — Preview and commit endpoint tests
+  - Preview with changes
+  - Preview with no changes (empty_diff)
+  - Preview with invalid path (404)
+  - Commit dry-run mode (confirm=0)
+  - Commit with file write (confirm=1) — **SKIPPED by default** (set `WRITE_OK=1` to enable)
+
+**Workflow**:
+1. Open Dev Overlay → Discovered Pages
+2. Click "Suggest meta" on any page
+3. Edit title/description in modal (character limits shown)
+4. Click "Preview diff" to see proposed changes
+5. Review diff artifacts in `agent/artifacts/seo-meta-apply/`
+6. Click "Approve & commit" to apply changes (creates backup)
+7. Verify changes in HTML file and backup created
+
+**CI/CD Notes**:
+- Set `ALLOW_DEV_ROUTES=1` in dev/staging environments to enable commit endpoint
+- Keep `ALLOW_DEV_ROUTES=0` (or unset) in production to disable file modifications
+- Tests with `WRITE_OK=1` are skipped by default to prevent CI file modifications
+
+#### Meta PR Helper (GitHub Actions)
+
+**Workflow**: `.github/workflows/siteagent-meta-pr.yml`
+
+Automates the process of creating a pull request with SEO meta artifacts for code review.
+
+**How to Use**:
+1. Generate suggestions and preview changes in Dev Overlay (creates artifacts)
+2. Click "Open PR helper" button in the Suggest Meta modal
+3. Or navigate to: Actions → siteagent-meta-pr → Run workflow
+4. Fill in workflow inputs:
+   - `page_path`: Page path (e.g., `/index.html`) — leave empty to use newest artifact
+   - `compress`: Zip artifacts into `_pr/` directory (default: true)
+   - `include_html`: Include modified HTML files in PR (default: false)
+   - `draft`: Open PR as draft (default: true)
+   - `reviewers`: Comma-separated GitHub usernames to request review from (e.g., alice,bob)
+   - `team_reviewers`: Comma-separated team slugs to request review from (e.g., web,platform)
+5. Click "Run workflow"
+
+**Workflow Inputs**:
+
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `page_path` | string | (empty) | Page path like `/index.html`. If empty, uses newest artifact. |
+| `compress` | boolean | true | Zip `.diff`, `.apply.json`, `.preview.html` into `_pr/` directory |
+| `include_html` | boolean | false | Also include modified HTML files (public/, dist/) in PR |
+| `draft` | boolean | true | Open PR as draft |
+| `reviewers` | string | (empty) | Comma-separated GitHub usernames to request review from (e.g., alice,bob) |
+| `team_reviewers` | string | (empty) | Comma-separated team slugs to request review from (e.g., web,platform) |
+
+**Workflow Outputs**:
+
+The workflow creates a pull request with:
+- **Branch**: `meta/<slug>-<timestamp>` (e.g., `meta/index-html-20251008143022`)
+- **Title**: `SEO Meta: <page> — PR-ready diff`
+- **Body**: Markdown with artifact paths, changed fields, integrity checksum
+- **Files**: All artifacts in `agent/artifacts/seo-meta-apply/` (and optional HTML)
+- **Reviewers**: Auto-requested from `reviewers` and `team_reviewers` inputs (if provided)
+
+**Artifacts Structure**:
+
+```
+agent/artifacts/seo-meta-apply/
+├── index-html.diff              # Unified diff
+├── index-html.preview.html      # Modified HTML
+├── index-html.apply.json        # Metadata + integrity
+└── _pr/
+    ├── index-html-20251008143022.zip  # Optional: compressed artifacts
+    └── index-html-PR.md               # PR body markdown
+```
+
+**Script**: `scripts/meta-pr-summary.mjs`
+
+Helper script that:
+- Picks slug from `--page` argument or finds newest `*.apply.json`
+- Reads artifacts: `.diff`, `.preview.html`, `.apply.json`
+- Optionally creates ZIP with all artifacts
+- Emits GitHub Actions outputs: `branch`, `title`, `commit`, `body`, `html_glob`
+
+**Example Manual Run**:
+
+```bash
+# Generate PR summary for specific page
+node scripts/meta-pr-summary.mjs --page /index.html --compress true
+
+# Use newest artifact
+node scripts/meta-pr-summary.mjs --compress true --include-html false
+```
+
+**Permissions**:
+
+The workflow uses `GITHUB_TOKEN` (no PAT required) with:
+- `contents: write` — Create branch and commit
+- `pull-requests: write` — Create pull request
+
+**Workflow Steps**:
+1. Checkout repository with full history
+2. Setup Node.js 20
+3. Run `meta-pr-summary.mjs` to build PR metadata
+4. Create pull request using `peter-evans/create-pull-request@v6`
+
+**Quick Runbook**:
+
+```bash
+# 1. Generate suggestions and preview in Dev Overlay
+# (creates artifacts in agent/artifacts/seo-meta-apply/)
+
+# 2. Open PR helper
+# Click "Open PR helper" button in modal
+# OR navigate to: https://github.com/<owner>/<repo>/actions/workflows/siteagent-meta-pr.yml
+
+# 3. Fill inputs
+# - page_path: /index.html (or leave empty for newest)
+# - compress: ✅ (recommended)
+# - include_html: ❌ (unless you want HTML in PR)
+# - draft: ✅ (recommended)
+
+# 4. Run workflow
+# Creates draft PR with artifacts for code review
+
+# 5. Review PR
+# - Check diff in PR
+# - Review artifacts in PR files
+# - Approve and merge when ready
+```
+
+**PR Labeling & Preview Comments**:
+
+The workflow now includes automatic labeling and preview comment posting:
+
+1. **Auto Labels**: PRs created by `siteagent-meta-pr` are automatically tagged with:
+   - `seo-meta` — Indicates SEO metadata changes
+   - `automation` — Marks workflow-generated PRs
+
+2. **Repo-wide PR Labeler**: `.github/workflows/labeler.yml` automatically applies labels to ALL PRs based on file paths:
+   - `seo-meta`: Matches `agent/artifacts/seo-meta-apply/**` and `agent/artifacts/seo-meta/**`
+   - `html`: Matches `public/**/*.html` and `dist/**/*.html`
+   - `automation`: Matches `.github/workflows/**` and `scripts/**`
+
+   Configuration: `.github/labeler.yml` (uses `actions/labeler@v5` with `pull_request_target` for fork safety)
+
+3. **Preview Comment**: After PR creation, the workflow posts a comment with:
+   - Proposed title and description (≤60 / ≤155 chars)
+   - Clickable GitHub links to diff and preview HTML artifacts
+   - Apply metadata JSON link
+
+   Example comment structure:
+   ```markdown
+   **SEO Meta Proposal for `/index.html`**
+
+   **Title (≤60):** New Title Here
+   **Description (≤155):** New description here
+
+   **Artifacts:**
+   - Diff: [agent/artifacts/.../diff](link)
+   - Preview HTML: [agent/artifacts/.../preview.html](link)
+   - Apply metadata: [agent/artifacts/.../apply.json](link)
+   ```
+
+4. **Artifact Metadata**: All `.apply.json` files now include a `proposal` field with:
+   ```json
+   {
+     "proposal": {
+       "title": "Proposed title",
+       "desc": "Proposed description"
+     }
+   }
+   ```
+
+   This enables PR comments to show what's being proposed without parsing HTML diffs.
+
+5. **Reviewer Assignment**: Workflow accepts `reviewers` and `team_reviewers` inputs:
+   - `reviewers`: Comma-separated GitHub usernames (e.g., `alice,bob`)
+   - `team_reviewers`: Comma-separated team slugs (e.g., `web,platform`)
+   - Auto-requests reviews when PR is created
+   - If empty, no reviewers are requested
+
+6. **Path-based Reviewer Auto-Assignment**:
+   - Configure `.github/seo-meta-reviewers.json` with glob-based rules
+   - Maps page paths to reviewers and team reviewers
+   - Example rules: `/index.html` → `leok974`, `/blog/**` → `alice` + `content` team
+   - Supports `**` (any subpath) and `*` (single segment) glob patterns
+   - Merges path-based reviewers with manual workflow inputs
+   - Removes duplicates and leading `@` symbols
+   - Falls back to `defaults` if no rules match
+   - Script: `scripts/seo-meta-reviewers.mjs`
+
+**Benefits**:
+- Reviewers see proposed changes immediately in PR comment
+- Labels enable quick filtering of meta-related PRs
+- Autolinks provide instant navigation to artifacts
+- Fork PRs are safely labeled using `pull_request_target`
+- Auto-request reviews from team members
+- Path-based reviewer assignment based on page context
+
+**Path-based Reviewer Configuration**:
+
+Example `.github/seo-meta-reviewers.json`:
+```json
+{
+  "rules": [
+    { "glob": "/index.html",            "reviewers": ["leok974"] },
+    { "glob": "/blog/**",               "reviewers": ["alice"],     "team_reviewers": ["content"] },
+    { "glob": "/agent/**",              "team_reviewers": ["platform"] },
+    { "glob": "/projects/**",           "team_reviewers": ["web"] }
+  ],
+  "defaults": {
+    "team_reviewers": ["web"]
+  }
+}
+```
+
+**Glob patterns**:
+- `**`: Matches any subpath (e.g., `/blog/**` matches `/blog/post/index.html`)
+- `*`: Matches single segment (e.g., `/blog/*/index.html` matches `/blog/post/index.html` but not `/blog/2023/post/index.html`)
+- Case-insensitive matching
+
+**Merging behavior**:
+1. Script resolves reviewers from matching rules (first match wins, but all matches are accumulated)
+2. Falls back to `defaults` if no rules match
+3. Merges with manual workflow inputs (`reviewers` and `team_reviewers`)
+4. Removes duplicates and leading `@` symbols
+5. Emits comma-separated lists to workflow
+
+#### SEO Meta Guardrails (PR Validation)
+
+**Workflow**: `.github/workflows/seo-meta-guardrails.yml`
+
+Automatically validates SEO meta proposals on every PR that changes `*.apply.json` files.
+
+**What it checks**:
+- Title length ≤ 60 characters
+- Description length ≤ 155 characters
+
+**Validation script**: `scripts/seo-meta-guardrails.mjs`
+
+**How it works**:
+1. Triggers on PR open/sync/reopen when `agent/artifacts/seo-meta-apply/**/*.apply.json` changes
+2. Computes diff between base and head to find changed files
+3. Validates `proposal.title` and `proposal.desc` from each `.apply.json`
+4. Writes `guardrails-violations.json` report if violations found
+5. Posts a PR review (REQUEST_CHANGES) summarizing all violations
+6. Uploads violations report as workflow artifact
+7. Uses GitHub log annotations for inline errors (visible in Files Changed view)
+8. Fails PR check if any violation found
+
+**Example error annotation**:
+```
+::error file=agent/artifacts/seo-meta-apply/index-html.apply.json,line=1::Title too long (72 > 60)
+```
+
+**PR Review format**:
+When violations are found, an automated PR review is posted:
+```markdown
+### ❌ SEO Meta Guardrails failed
+
+**Rules:** Title ≤ 60, Description ≤ 155
+
+- **title length 72 > 60** in `agent/artifacts/seo-meta-apply/index-html.apply.json`
+> Very long title that exceeds the maximum character limit...
+- **description length 180 > 155** in `agent/artifacts/seo-meta-apply/index-html.apply.json`
+> Very long description that also exceeds the limit...
+
+_Automated review by **seo-meta-guardrails**._
+```
+
+**Violations report** (`guardrails-violations.json`):
+```json
+{
+  "files": ["agent/artifacts/seo-meta-apply/index-html.apply.json"],
+  "violations": [
+    {
+      "file": "agent/artifacts/seo-meta-apply/index-html.apply.json",
+      "field": "title",
+      "length": 72,
+      "limit": 60,
+      "excerpt": "Very long title..."
+    }
+  ],
+  "title_max": 60,
+  "desc_max": 155
+}
+```
+
+**Permissions**: `contents: read`, `pull-requests: write` (needed for PR reviews)
+
+**Quick test locally**:
+```bash
+# Validate specific files
+node scripts/seo-meta-guardrails.mjs agent/artifacts/seo-meta-apply/index-html.apply.json
+
+# Validate all apply.json files
+node scripts/seo-meta-guardrails.mjs agent/artifacts/seo-meta-apply/*.apply.json
+```
+
+**Benefits**:
+- Prevents merge of invalid SEO meta (title/desc too long)
+- Inline annotations point to exact file causing violation
+- Automated PR review summarizes all violations with excerpts
+- Machine-readable violations report uploaded as artifact
+- REQUEST_CHANGES review blocks merge until violations fixed
+- Runs automatically on every PR with meta changes
+- Fast validation (no build required)
+- Acts as status check (blocks merge if enabled)
+
+**Optional: Non-blocking reviews**:
+To change from REQUEST_CHANGES to COMMENT (non-blocking), edit the workflow:
+```yaml
+event: 'COMMENT'  # instead of 'REQUEST_CHANGES'
+```
+
+---
+
 ## Adding a New Endpoint
 1. Implement route in `assistant_api/...`
 2. Add tests in `tests/`

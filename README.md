@@ -1,5 +1,13 @@
 # Leo Klemet — Portfolio (HTML/CSS/JS)
 
+[![e2e-mock](https://github.com/leok974/leo-portfolio/actions/workflows/e2e-mock.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/e2e-mock.yml)
+[![e2e-keywords-mock](https://github.com/leok974/leo-portfolio/actions/workflows/e2e-keywords-mock.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/e2e-keywords-mock.yml)
+[![Nightly SEO Meta](https://github.com/leok974/leo-portfolio/actions/workflows/siteagent-meta-auto.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/siteagent-meta-auto.yml)
+[![SEO JSON-LD](https://github.com/leok974/leo-portfolio/actions/workflows/seo-ld-validate.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/seo-ld-validate.yml)
+[![SEO SERP Nightly](https://github.com/leok974/leo-portfolio/actions/workflows/seo-serp-cron.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/seo-serp-cron.yml)
+
+> Nightly auto-PR **skips** when no pages are selected or when all selected pages already meet title/description limits.
+
 [![Release](https://img.shields.io/github/v/release/leok974> _"Copilot, audit the site for WCAG 2.1: focus states, ARIA labels, color contrast, and generate a checklist in `docs/a11y.md`."_
 
 ---
@@ -26,6 +34,28 @@ The overlay lets you run agent plans, see last actions, and download artifacts (
   ```bash
   npm run test:e2e
   ```
+
+---
+
+## Metrics & Grafana
+
+- Nightly job writes JSONL metrics to the `metrics` branch and publishes a rolling CSV:
+  - `agent/metrics/seo-meta-auto.jsonl`
+  - `agent/metrics/seo-meta-auto.csv`
+- CSV workflow: **siteagent-metrics-csv** (runs daily + on metrics updates)
+- Optional API export: `/agent/metrics/seo-meta-auto.csv?limit_days=180`
+
+**Grafana Dashboard**:
+1. Install the **Infinity** datasource (yesoreyeram-infinity-datasource) in Grafana
+2. Import `grafana/seo-meta-auto-dashboard.json`
+3. Update panel query URLs to your API endpoint or GitHub raw CSV
+
+**Setup Guides**:
+- 📖 **Full setup**: [`docs/GRAFANA_SETUP.md`](docs/GRAFANA_SETUP.md)
+- ⚡ **Quick setup**: [`grafana/QUICK_SETUP.md`](grafana/QUICK_SETUP.md)
+- 🔧 **VS Code extension**: [`docs/GRAFANA_VSCODE_SETUP.md`](docs/GRAFANA_VSCODE_SETUP.md)
+- 🛠️ **grafanactl CLI**: [`grafana/GRAFANACTL_QUICKREF.md`](grafana/GRAFANACTL_QUICKREF.md)
+- 📊 **Method comparison**: [`grafana/SETUP_COMPARISON.md`](grafana/SETUP_COMPARISON.md)
 
 ---
 
@@ -74,6 +104,10 @@ A fast, modern, **framework-free** portfolio for **Leo Klemet — AI Engineer ·
   - FFmpeg poster generation for videos
   - Agent-callable gallery tools for autonomous content management
   - Sitemap auto-refresh after uploads
+- ✅ **Self-improving layout** via Telemetry + Behavior Learning:
+  - Frontend tracker collects anonymous section-level signals (views, clicks, dwell).
+  - Backend analyzes recent activity, updates per-section weights (EMA + time decay), and reorders sections with a small exploration rate.
+  - Endpoints: `/agent/metrics/ingest`, `/agent/analyze/behavior`, `/agent/layout`.
 
 > Built with **plain HTML, CSS (Grid/Flex), and vanilla JS**. Easy to extend into React/Vite/CMS later.
 
@@ -924,6 +958,25 @@ All code changes must be reflected in project documentation:
 - Note added tests or tooling in `DEVELOPMENT.md`.
 
 Copilot is configured (see `.github/copilot-instructions.md`) to nudge for doc updates whenever code impacts setup, APIs, or deployment. PRs without necessary doc updates may be flagged.
+
+### SEO Meta PRs — Guardrails & Reviewers
+
+The **siteagent-meta-pr** workflow automates SEO meta change PRs with built-in validation:
+
+- **Auto-request reviewers**: Use workflow inputs `reviewers` (comma-separated usernames) and `team_reviewers` (comma-separated team slugs)
+  - Example: `reviewers: alice,bob` or `team_reviewers: web,platform`
+  - If empty, no reviewers are requested
+
+- **SEO Meta Guardrails**: The **seo-meta-guardrails** check runs automatically on PRs that change `*.apply.json` files
+  - Validates: Title ≤ 60 characters, Description ≤ 155 characters
+  - Fails PR check with inline annotations if violations found
+  - Script: `scripts/seo-meta-guardrails.mjs`
+  - No build dependencies — fast validation
+
+**Quick local validation**:
+```bash
+node scripts/seo-meta-guardrails.mjs agent/artifacts/seo-meta-apply/*.apply.json
+```
 
 ---
 
