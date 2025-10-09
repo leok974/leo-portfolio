@@ -13,6 +13,10 @@ class MetricEvent(BaseModel):
     ts: datetime
     viewport_pct: Optional[float] = None  # 0..1
     dwell_ms: Optional[int] = None  # for "dwell"
+    # Optional A/B and geo metadata (filled client- or server-side)
+    variant: Optional[str] = None  # e.g., "A" | "B" | "alg-v2"
+    anon_ip_prefix: Optional[str] = None
+    country: Optional[str] = None
 
 
 class MetricIngestRequest(BaseModel):

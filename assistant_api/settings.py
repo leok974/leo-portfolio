@@ -112,6 +112,13 @@ def get_settings() -> Dict[str, Any]:
         "LEARNING_EMA_ALPHA": float(os.getenv("LEARNING_EMA_ALPHA", "0.30")),
         "LAYOUT_SECTIONS_DEFAULT": _split_env_list(os.getenv("LAYOUT_SECTIONS_DEFAULT", "hero,projects,skills,about,contact")),
         "ANALYTICS_DIR": os.getenv("ANALYTICS_DIR", "./data/analytics"),
+        # --- Optional Enhancements ---
+        "GEOIP_DB_PATH": os.getenv("GEOIP_DB_PATH"),  # e.g., "./geo/GeoLite2-Country.mmdb"
+        "LOG_IP_ENABLED": os.getenv("LOG_IP_ENABLED", "0") in {"1", "true", "TRUE", "yes", "on"},
+        "METRICS_EXPORT_MAX_DAYS": int(os.getenv("METRICS_EXPORT_MAX_DAYS", "60")),
+        "EMAIL_FROM": os.getenv("EMAIL_FROM"),
+        "EMAIL_TO": os.getenv("EMAIL_TO"),
+        "SENDGRID_API_KEY": os.getenv("SENDGRID_API_KEY"),
     }
 
 

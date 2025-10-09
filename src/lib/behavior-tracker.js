@@ -51,11 +51,13 @@
         const el = e.target;
         const sec = el.getAttribute("data-section");
         if (!sec) return;
+        const variant = el.getAttribute("data-variant") || undefined;
         if (e.isIntersecting) {
           push({
             session_id: sid,
             visitor_id: vid,
             section: sec,
+            variant,
             event_type: "view",
             ts: now,
             viewport_pct: e.intersectionRatio,
@@ -67,6 +69,7 @@
             session_id: sid,
             visitor_id: vid,
             section: sec,
+            variant,
             event_type: "dwell",
             ts: now,
             dwell_ms: d,
@@ -81,10 +84,12 @@
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-section]");
     if (!el) return;
+    const variant = el.getAttribute("data-variant") || undefined;
     push({
       session_id: sid,
       visitor_id: vid,
       section: el.getAttribute("data-section"),
+      variant,
       event_type: "click",
       ts: new Date().toISOString(),
     });

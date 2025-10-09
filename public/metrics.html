@@ -81,6 +81,40 @@
         <div class="muted">Top Sections (by weight)</div>
         <ol id="top"></ol>
       </div>
+      <div class="card">
+        <div class="muted">Exports</div>
+        <div class="row" style="margin-top: 8px; flex-wrap: wrap">
+          <a
+            id="dlCsv"
+            class="pill"
+            href="#"
+            style="text-decoration: none; color: #111"
+            >Download CSV</a
+          >
+          <a
+            id="dlPdf"
+            class="pill"
+            href="#"
+            style="text-decoration: none; color: #111"
+            >Download PDF</a
+          >
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin: 16px 0">
+      <div class="row" style="justify-content: space-between">
+        <div class="muted">CTR Trend (last 30d)</div>
+        <select
+          id="sectionSel"
+          style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px"
+        ></select>
+      </div>
+      <canvas
+        id="ctrChart"
+        width="1200"
+        height="260"
+        style="width: 100%; height: 260px; margin-top: 12px"
+      ></canvas>
     </div>
     <table id="tbl">
       <thead>
@@ -121,7 +155,102 @@
               `<li><span class="pill">${r.section}</span> ${fmtPct(r.ctr)} CTR · ${Math.round(r.avg_dwell_ms)}ms dwell</li>`,
           )
           .join("");
+
+        // Wire export links
+        $("#dlCsv").href = API + "/metrics/export.csv";
+        $("#dlPdf").href = API + "/metrics/export.pdf";
+
+        // Populate section selector
+        const sel = $("#sectionSel");
+        sel.innerHTML = ["(all)", ...summary.rows.map((r) => r.section)]
+          .map((s) => `<option value="${s === "(all)" ? "" : s}">${s}</option>`)
+          .join("");
+        sel.addEventListener("change", () => drawCtr(sel.value || null));
+        await drawCtr(null);
+
         renderTable();
+      }
+
+      async function drawCtr(section) {
+        const res = await fetch(
+          API +
+            `/metrics/timeseries?metric=ctr&days=30${section ? `&section=${encodeURIComponent(section)}` : ""}`,
+        );
+        const { series } = await res.json();
+        const canvas = $("#ctrChart");
+        const ctx = canvas.getContext("2d");
+        const w = canvas.width;
+        const h = canvas.height;
+        const padL = 50,
+          padR = 20,
+          padT = 30,
+          padB = 40;
+        const plotW = w - padL - padR;
+        const plotH = h - padT - padB;
+
+        ctx.clearRect(0, 0, w, h);
+
+        // Draw axes
+        ctx.strokeStyle = "#ddd";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padL, padT);
+        ctx.lineTo(padL, padT + plotH);
+        ctx.lineTo(padL + plotW, padT + plotH);
+        ctx.stroke();
+
+        if (series.length === 0) {
+          ctx.fillStyle = "#999";
+          ctx.font = "14px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("No data", padL + plotW / 2, padT + plotH / 2);
+          return;
+        }
+
+        // Grid + Y-axis labels
+        ctx.strokeStyle = "#f5f5f5";
+        ctx.fillStyle = "#999";
+        ctx.font = "12px sans-serif";
+        ctx.textAlign = "right";
+        for (let i = 0; i <= 5; i++) {
+          const pct = i * 0.2;
+          const y = padT + plotH - pct * plotH;
+          ctx.beginPath();
+          ctx.moveTo(padL, y);
+          ctx.lineTo(padL + plotW, y);
+          ctx.stroke();
+          ctx.fillText((pct * 100).toFixed(0) + "%", padL - 8, y + 4);
+        }
+
+        // X-axis labels (every 5 days)
+        ctx.textAlign = "center";
+        for (let i = 0; i < series.length; i += 5) {
+          const x = padL + (i / (series.length - 1 || 1)) * plotW;
+          const date = series[i].date.split("-").slice(1).join("/");
+          ctx.fillText(date, x, padT + plotH + 20);
+        }
+
+        // Plot line
+        ctx.strokeStyle = "#4285f4";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        series.forEach((d, i) => {
+          const x = padL + (i / (series.length - 1 || 1)) * plotW;
+          const y = padT + plotH - d.ctr * plotH;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        // Plot points
+        ctx.fillStyle = "#4285f4";
+        series.forEach((d, i) => {
+          const x = padL + (i / (series.length - 1 || 1)) * plotW;
+          const y = padT + plotH - d.ctr * plotH;
+          ctx.beginPath();
+          ctx.arc(x, y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
       }
 
       function renderTable() {
