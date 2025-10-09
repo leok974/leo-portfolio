@@ -367,10 +367,37 @@
             "author": {
               "@id": "https://leok974.github.io/leo-portfolio/#person"
             }
+          },
+          {
+            "@type": "WebPage",
+            "@id": "https://leok974.github.io/leo-portfolio/#webpage",
+            "url": "https://leok974.github.io/leo-portfolio/",
+            "name": "Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative Technologist",
+            "description": "Building agents, analytics, and cinematic creative pipelines.",
+            "isPartOf": {
+              "@id": "https://leok974.github.io/leo-portfolio/#website"
+            },
+            "about": {
+              "@id": "https://leok974.github.io/leo-portfolio/#person"
+            },
+            "inLanguage": "en"
           }
         ]
       }
     </script>
+
+    <!-- JSON-LD runtime injector flags -->
+    <script>
+      window.SEO_LD_ENABLED =
+        location.hostname === "localhost" || location.hostname === "127.0.0.1";
+      window.SEO_LD_TYPES = null; // or explicit array
+      window.SEO_LD_ENDPOINT = "/agent/seo/ld/generate";
+    </script>
+    <script defer src="/assets/js/ld-inject.js"></script>
+
+    <!-- JSON-LD Admin Tools fallback panel (enabled via ?seoLd=1) -->
+    <script defer src="/assets/js/ld-admin.js"></script>
+
     <script>
       (function () {
         try {
@@ -611,7 +638,12 @@
     </header>
 
     <!-- HERO / LANDING -->
-    <section class="hero container" id="home">
+    <section
+      class="hero container"
+      id="home"
+      data-section="hero"
+      data-variant="baseline"
+    >
       <div>
         <h1 class="headline text-shadow-lg">
           Leo Klemet — AI Engineer · SWE · Generative AI / 3D Artist & Creative
@@ -687,7 +719,7 @@
     </section>
 
     <!-- PROJECTS -->
-    <section id="projects">
+    <section id="projects" data-section="projects" data-variant="baseline">
       <div class="container">
         <div class="section-head">
           <h2 class="section-title text-shadow-sm">Projects</h2>
@@ -833,7 +865,7 @@
     </section>
 
     <!-- ABOUT -->
-    <section id="about">
+    <section id="about" data-section="about" data-variant="baseline">
       <div class="container">
         <div class="section-head">
           <h2 class="section-title">About Me</h2>
@@ -979,7 +1011,7 @@
     </section>
 
     <!-- CONTACT -->
-    <section id="contact">
+    <section id="contact" data-section="contact" data-variant="baseline">
       <div class="container">
         <div class="section-head">
           <h2 class="section-title">Contact</h2>

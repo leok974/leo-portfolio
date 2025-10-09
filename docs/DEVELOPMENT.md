@@ -1626,6 +1626,48 @@ The metrics dashboard is protected by server-side authentication:
 - Layout endpoint returns learned ordering (deterministic, no exploration)
 - Frontend applier fetches layout and reorders DOM sections
 
+### Advanced Analytics: GeoIP Setup (Optional)
+
+To enable country-level geo enrichment with IP anonymization:
+
+1. **Get MaxMind License Key** (free):
+   - Sign up at https://www.maxmind.com/en/geolite2/signup
+   - Generate a license key from your account dashboard
+
+2. **Download GeoLite2-Country Database**:
+   ```powershell
+   # PowerShell (Windows/Linux/Mac)
+   ./scripts/download-geoip.ps1 -LicenseKey "YOUR_LICENSE_KEY_HERE"
+   ```
+   
+   Or manually:
+   ```bash
+   # Linux/Mac
+   wget "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=YOUR_KEY&suffix=tar.gz" -O GeoLite2-Country.tar.gz
+   tar -xzf GeoLite2-Country.tar.gz
+   mv GeoLite2-Country_*/GeoLite2-Country.mmdb data/geo/
+   ```
+
+3. **Configure Environment Variables**:
+   ```bash
+   # .env or system environment
+   GEOIP_DB_PATH=./data/geo/GeoLite2-Country.mmdb
+   LOG_IP_ENABLED=true  # Optional: log anonymized IPs to events
+   ```
+
+4. **Restart Backend**:
+   ```powershell
+   # Backend will now enrich events with country code and anon_ip_prefix
+   ./.venv/Scripts/python.exe -m uvicorn assistant_api.main:app --reload
+   ```
+
+**What Gets Enriched**:
+- **IP Anonymization**: IPv4 → /24 subnet (e.g., `192.168.1.0/24`), IPv6 → /48 prefix
+- **Country Detection**: Optional GeoIP lookup adds `country` field to events (e.g., `"US"`, `"GB"`)
+- **Privacy-First**: Original IPs are never stored, only anonymized prefixes
+
+**Update Frequency**: MaxMind updates GeoLite2 databases monthly. Re-run the download script to refresh.
+
 ---
 
 **Authentication errors**: Verify `ALLOW_DEV_ROUTES=1` and `DEV_BEARER="dev"`
