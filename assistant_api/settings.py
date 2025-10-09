@@ -65,6 +65,44 @@ def get_settings() -> Dict[str, Any]:
         "allowed_origins": origins,
         "derived_from_domain": derived,
         "domain_env": domain,
+        "RAG_DB": os.getenv("RAG_DB", "./data/rag.sqlite"),
+        "ARTIFACTS_DIR": os.getenv("ARTIFACTS_DIR", "./agent_artifacts"),
+        "WEB_ROOT": os.getenv("WEB_ROOT", "./dist"),
+        "BACKEND_URL": os.getenv("BACKEND_URL", "http://127.0.0.1:8001"),
+        "SEO_CTR_THRESHOLD": float(os.getenv("SEO_CTR_THRESHOLD", "0.02")),
+        # SEO LLM settings (reuse existing OPENAI_* and FALLBACK_* envs)
+        "SEO_LLM_ENABLED": os.getenv("SEO_LLM_ENABLED", "1") in {"1", "true", "TRUE", "yes", "on"},
+        "SEO_LLM_TIMEOUT": float(os.getenv("SEO_LLM_TIMEOUT", "9.0")),
+        "OPENAI_BASE_URL": os.getenv("OPENAI_BASE_URL", "http://127.0.0.1:11434/v1"),
+        "OPENAI_MODEL": os.getenv("OPENAI_MODEL", "qwen2.5:7b-instruct"),
+        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", None),
+        "FALLBACK_BASE_URL": os.getenv("FALLBACK_BASE_URL", ""),
+        "FALLBACK_MODEL": os.getenv("FALLBACK_MODEL", "gpt-4o-mini"),
+        "FALLBACK_API_KEY": os.getenv("FALLBACK_API_KEY", None),
+        # Dev authentication bypass (for local testing)
+        "ALLOW_DEV_AUTH": os.getenv("ALLOW_DEV_AUTH", "1") in {"1", "true", "TRUE", "yes", "on"},
+        "DEV_BEARER_TOKEN": os.getenv("DEV_BEARER_TOKEN", "dev"),
+        # Test routes (mock endpoints for fast E2E tests)
+        "ALLOW_TEST_ROUTES": os.getenv("ALLOW_TEST_ROUTES", "1") in {"1", "true", "TRUE", "yes", "on"},
+        # Dev routes (open file endpoints for viewing HTML)
+        "ALLOW_DEV_ROUTES": os.getenv("ALLOW_DEV_ROUTES", "0") in {"1", "true", "TRUE", "yes", "on"},
+        # SEO JSON-LD settings
+        "SEO_LD_ENABLED": os.getenv("SEO_LD_ENABLED", "1") in {"1", "true", "TRUE", "yes", "on"},
+        "SEO_LD_VALIDATE_STRICT": os.getenv("SEO_LD_VALIDATE_STRICT", "1") in {"1", "true", "TRUE", "yes", "on"},
+        "SEO_LD_TYPES": os.getenv("SEO_LD_TYPES", "WebSite,WebPage,BreadcrumbList,Person,Organization,CreativeWork,Article,VideoObject,ImageObject"),
+        "ARTIFACTS_ROOT": os.getenv("ARTIFACTS_ROOT", "agent/artifacts"),
+        "SERP_ARTIFACTS_DIR": os.getenv("SERP_ARTIFACTS_DIR", "seo-serp"),
+        # Google Search Console settings
+        "GSC_PROPERTY": os.getenv("GSC_PROPERTY", ""),  # e.g. "https://leok974.github.io/leo-portfolio/"
+        "GSC_SA_JSON": os.getenv("GSC_SA_JSON", ""),     # base64/JSON string of service account (optional)
+        "GSC_SA_FILE": os.getenv("GSC_SA_FILE", ""),     # path to SA json on disk (optional)
+        "REWRITE_ENDPOINT": os.getenv("REWRITE_ENDPOINT", ""),  # optional: POST endpoint to trigger seo.rewrite jobs
+        # Brand/Person settings for JSON-LD
+        "BRAND_NAME": os.getenv("BRAND_NAME", "Leo Klemet — SiteAgent"),
+        "BRAND_URL": os.getenv("BRAND_URL", "https://assistant.ledger-mind.org"),
+        "BRAND_LOGO": os.getenv("BRAND_LOGO", "https://assistant.ledger-mind.org/assets/logo.png"),
+        "PERSON_NAME": os.getenv("PERSON_NAME", "Leo Klemet"),
+        "PERSON_SAME_AS": os.getenv("PERSON_SAME_AS", ""),
     }
 
 
