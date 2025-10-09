@@ -18,6 +18,21 @@ import { syncDevFlagFromQuery } from './lib/devGuard';
 import MetricsBadge from './components/MetricsBadge';
 
 // -----------------------------
+// E2E MODE SETUP (Phase 51.0)
+// -----------------------------
+if (import.meta.env?.VITE_E2E === '1') {
+  (window as any).__VITE_E2E__ = '1';
+  // Auto-grant consent for E2E tests to prevent banner blocking
+  try {
+    localStorage.setItem('consent.v1', JSON.stringify({
+      analytics: true,
+      calendly: true,
+      timestamp: Date.now()
+    }));
+  } catch {}
+}
+
+// -----------------------------
 // DEV FLAG SYNC (Phase 50.8)
 // -----------------------------
 syncDevFlagFromQuery();

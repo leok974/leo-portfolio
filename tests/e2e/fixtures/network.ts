@@ -7,9 +7,9 @@ import { test as base } from '@playwright/test';
 export const test = base.extend({
   page: async ({ page }, use) => {
     // Stub Ollama/LLM calls (to prevent 404s when model not available)
-    await page.route('**/v1/chat/completions', route => 
-      route.fulfill({ 
-        status: 200, 
+    await page.route('**/v1/chat/completions', route =>
+      route.fulfill({
+        status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
           id: 'test-completion',
@@ -29,12 +29,12 @@ export const test = base.extend({
     );
 
     // Stub analytics beacon calls
-    await page.route('**/analytics/beacon', route => 
+    await page.route('**/analytics/beacon', route =>
       route.fulfill({ status: 204, body: '' })
     );
 
     // Stub external analytics services (if any)
-    await page.route('**/collect', route => 
+    await page.route('**/collect', route =>
       route.fulfill({ status: 200, body: '{}' })
     );
 

@@ -9,6 +9,15 @@ import { mountAdminRebuildFloating } from '@/components/render-admin';
 
 declare global { interface Window { __assistantDockMounted?: boolean; __creatingSourcesPopover?: boolean; __sourcesListenersBound?: boolean; __sourcesObserverBound?: boolean; AgentStatus?: { updateServed: (s: string) => void; } } }
 
+// Hide assistant chip in E2E mode to prevent pointer event interception
+if ((window as any).__VITE_E2E__ === '1') {
+  const chip = document.getElementById('assistantChip');
+  if (chip) {
+    (chip as HTMLElement).style.display = 'none';
+    chip.remove();
+  }
+}
+
 if (window.__assistantDockMounted) {
   document.querySelectorAll('.assistant-dock').forEach((el, i) => { if (i > 0) el.remove(); });
   console.warn('[assistant] duplicate mount prevented');

@@ -6,10 +6,10 @@ import { request, FullConfig } from '@playwright/test';
 
 export default async function globalSetup(config: FullConfig) {
   const baseURL = config.projects[0].use?.baseURL as string || 'http://localhost:5173';
-  
+
   console.log('🔧 Global Setup: Analytics Tests');
   console.log(`   Base URL: ${baseURL}`);
-  
+
   try {
     const req = await request.newContext({
       baseURL,
@@ -30,8 +30,8 @@ export default async function globalSetup(config: FullConfig) {
     // Optional: Unlock dev mode if you have a test-only endpoint
     // Uncomment if you added /agent/mock/unlock-dev
     // try {
-    //   await req.post('/agent/mock/unlock-dev', { 
-    //     data: { token: process.env.TEST_UNLOCK || 'ok' } 
+    //   await req.post('/agent/mock/unlock-dev', {
+    //     data: { token: process.env.TEST_UNLOCK || 'ok' }
     //   });
     //   console.log('   ✓ Dev mode unlocked');
     // } catch (e) {

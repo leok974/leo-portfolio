@@ -77,5 +77,9 @@ export default defineConfig({
     timeout: 120_000,
     stdout: 'pipe',
     stderr: 'pipe',
+    env: {
+      VITE_E2E: '1', // Enable E2E mode (hides consent banner, assistant chip)
+      ...process.env,
+    },
   },
 });
