@@ -146,6 +146,7 @@
     "e2e:guardrails:proxy": "cross-env PLAYWRIGHT_GLOBAL_SETUP_SKIP=1 WS_CMD=\"npx http-server ./dist -p 5186 -P http://127.0.0.1:8001\" BASE=http://127.0.0.1:5186 API_BASE=http://127.0.0.1:5186 playwright test tests/e2e/guardrails-injection.spec.ts --project=chromium --reporter=line --timeout=120000"
   },
   "dependencies": {
+    "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-select": "^2.0.0",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tailwindcss/aspect-ratio": "^0.4.2",
