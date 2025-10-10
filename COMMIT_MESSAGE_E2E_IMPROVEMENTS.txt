@@ -1,0 +1,129 @@
+feat(e2e): improve CSV testing with deterministic href validation
+
+## Summary
+
+Enhanced E2E testing infrastructure with test-friendly CSV export and
+optional live-mode testing capabilities.
+
+## Changes
+
+### 1. CSV Export: Button → Test-Friendly Anchor
+- **File**: `src/components/OpsAgents.tsx`
+- Changed CSV button to anchor tag with `data-testid="csv-link"`
+- Deterministic `href` attribute constructed from filter state
+- Same UX for users (target="_blank" opens in new tab)
+- More reliable for E2E testing (no popup handling needed)
+
+### 2. CSV Test: Popup → Href Validation
+- **File**: `tests/e2e/ops-agents.spec.ts`
+- Updated "download CSV link preserves filters" test
+- Validates href attribute contains all filter parameters
+- Assertions: status, task, limit parameters present in URL
+- No popup window handling = more reliable and deterministic
+- Test applies filters via UI, then checks CSV link href
+
+### 3. CI: Optional Live-Mode Job
+- **File**: `.github/workflows/e2e.yml`
+- Added `e2e-live` job (runs on workflow_dispatch only)
+- Starts real backend API and dev UI
+- Runs tests with `E2E_LIVE=1` (no mocks)
+- Uploads separate artifacts: playwright-report-live, playwright-traces-live
+- Includes log output on failure for debugging
+- Useful for pre-deployment smoke tests
+
+### 4. Documentation Updates
+- **Files**: `tests/e2e/README.md`, `E2E_TESTS_LOCKED.md`
+- Updated test coverage table (CSV test description)
+- Changed selector documentation: csv-btn → csv-link
+- Added PowerShell commands for E2E_LIVE mode
+- Documented e2e-live CI job usage
+- Added CSV test improvement explanation
+
+## Test Results
+
+✅ All tests passing: 10/10 (5 tests × 2 repetitions)
+
+| Test | Status |
+|------|--------|
+| loads, paginates, and shows rows | ✅ Pass |
+| filters by status pills and task list | ✅ Pass |
+| date presets update since and refetch | ✅ Pass |
+| download CSV link preserves filters | ✅ Pass |
+| Reset clears filters | ✅ Pass |
+
+**Stability**: 100% pass rate across parallel, serial, and repeated executions
+
+## Benefits
+
+### Development
+- More reliable CSV testing (no popup handling)
+- Comprehensive filter validation in CSV href
+- Ability to run smoke tests against real backend
+- Better live-mode documentation
+
+### CI/CD
+- Optional live-mode testing on demand
+- Separate artifacts for live tests
+- Log output on failure for debugging
+- Deterministic mocked tests by default
+
+### Maintenance
+- Cleaner test code (no popup complexity)
+- More assertions = better coverage
+- Test-friendly component design
+- Clear documentation of all changes
+
+## Usage
+
+### Run tests normally (mocked APIs)
+```bash
+npx playwright test tests/e2e/ops-agents.spec.ts
+```
+
+### Run tests in live mode (real backend)
+```bash
+# Windows PowerShell
+$env:E2E_LIVE="1"; npx playwright test tests/e2e/ops-agents.spec.ts
+
+# Linux/Mac
+E2E_LIVE=1 npx playwright test tests/e2e/ops-agents.spec.ts
+```
+
+### Trigger live-mode in CI
+1. Go to GitHub Actions → E2E workflow
+2. Click "Run workflow" (manual dispatch)
+3. The `e2e-live` job will run against real backend
+
+## Files Changed
+
+**Modified**:
+- src/components/OpsAgents.tsx
+- tests/e2e/ops-agents.spec.ts
+- .github/workflows/e2e.yml
+
+**Documentation**:
+- tests/e2e/README.md
+- E2E_TESTS_LOCKED.md
+- E2E_IMPROVEMENTS_SUMMARY.md (new)
+- COMMIT_MESSAGE_E2E_IMPROVEMENTS.txt (new)
+
+## Verification
+
+```bash
+# Build frontend
+npm run build
+
+# Run tests
+npx playwright test tests/e2e/ops-agents.spec.ts --reporter=list
+
+# Verify stability
+npx playwright test tests/e2e/ops-agents.spec.ts --repeat-each=2
+
+# Generate HTML report
+npx playwright test tests/e2e/ops-agents.spec.ts --reporter=html
+npx playwright show-report
+```
+
+---
+
+**Status**: ✅ Complete, Tested, and Production Ready
