@@ -337,9 +337,38 @@ async function openPR({ title, body, files }) {
       issue_number: pr.number,
       labels: ["needs-approval"]
     });
+
+    // Post checklist comment for new PRs
+    try {
+      await postPRChecklist(octo, pr.number);
+    } catch { /* non-fatal */ }
   }
 
   return pr.html_url;
+}
+
+/**
+ * Post interactive checklist comment to PR
+ * @param {Octokit} octo - Octokit instance
+ * @param {number} issueNumber - PR number
+ */
+async function postPRChecklist(octo, issueNumber) {
+  const body = [
+    "## ✅ Infra Scale Plan – Review Checklist",
+    "",
+    "- [ ] Review `plan.yaml` and `SUMMARY.md`",
+    "- [ ] Confirm namespace and workloads",
+    "- [ ] Capacity & budget LGTM",
+    "",
+    "### Quick actions",
+    "- To **apply** this plan, comment: `**/approve-plan**` (adds label `execute-plan`)",
+    "- To **prepare rollback**, comment: `**/rollback-plan**` (adds label `rollback-plan`)",
+    "",
+    "> Both actions are label-gated by CI. Remove labels to stop jobs. 🚦"
+  ].join("\n");
+  await octo.request("POST /repos/{owner}/{repo}/issues/{issue_number}/comments", {
+    owner: OWNER, repo: REPO, issue_number: issueNumber, body
+  });
 }
 
 /**
