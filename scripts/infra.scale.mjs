@@ -210,7 +210,8 @@ function toSummary(plan) {
       }
       if (a.action === "apply_hpa") {
         const h = a.hpa || {};
-        return `${i + 1}. **HPA** ${a.name} (min:${h.min} max:${h.max} cpu:${h.targetCPU}%)`;
+        const f = a.from || {};
+        return `${i + 1}. **HPA** ${a.name} (min:${h.min} from:${f.min ?? "?"} · max:${h.max} from:${f.max ?? "?"} · cpu:${h.targetCPU}% from:${f.targetCPU ?? "?"}%)`;
       }
       return `${i + 1}. ${a.action} ${a.kind}/${a.name}`;
     })
@@ -369,7 +370,16 @@ export function buildActionsTable(plan) {
     }
     if (a.action === "apply_hpa") {
       const h = a.hpa || {};
-      return `| HPA | ${a.name} (ns: \`${ns}\`) | min **${h.min ?? "?"}** · max **${h.max ?? "?"}** · cpu **${h.targetCPU ?? "?"}%** |`;
+      const f = a.from || {};
+      const min = h.min ?? "?";
+      const max = h.max ?? "?";
+      const cpu = h.targetCPU ?? "?";
+      const diff = [
+        f.min !== undefined ? `min **${f.min} → ${min}**` : `min **${min}**`,
+        f.max !== undefined ? `max **${f.max} → ${max}**` : `max **${max}**`,
+        f.targetCPU !== undefined ? `cpu **${f.targetCPU}% → ${cpu}%**` : `cpu **${cpu}%**`,
+      ].join(" · ");
+      return `| HPA | ${a.name} (ns: \`${ns}\`) | ${diff} |`;
     }
     return `| ${a.action} | ${kind}/${a.name} (ns: \`${ns}\`) | — |`;
   });

@@ -9,28 +9,28 @@
   - Queries cluster: `kubectl -n <ns> get <kind>/<name> -o json`
   - Extracts `spec.replicas` or `status.replicas`
   - Returns `{ ok: true, replicas: N }` or `{ ok: false }`
-  
+
 - Added `shouldDetect()` gate function
   - Checks `SKIP_CLUSTER_DETECT` env var
   - Returns false if `SKIP_CLUSTER_DETECT=1`
-  
+
 - Enhanced `makePlan()` in k8s-planner
   - Detection loop for each workload with replicas
   - Sets `action.from` to detected value or "unknown"
   - Adds detection notes (no-change or unavailable messages)
   - Merges detection notes into plan
-  
+
 - Added `--detect=on|off` CLI flag to `scripts/infra.scale.mjs`
   - Sets `SKIP_CLUSTER_DETECT=1` when `--detect=off`
   - Default: `on` (detection enabled)
-  
+
 - Enhanced `buildActionsTable()` for from → to display
   - Shows `replicas **3 → 6**` when from detected
   - Shows `replicas → **6**` when from=unknown
-  
+
 - Enhanced `toSummary()` with fallback
   - Shows `(from 3)` or `(from unknown)` in summary
-  
+
 - Updated test fixture in `tests/infra.prbody.spec.ts`
   - Added `from: 3` to scale action
   - Updated regex to match `replicas **3 → 6**`

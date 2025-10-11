@@ -74,6 +74,38 @@ export function detectReplicas(kind, name, namespace) {
 }
 
 /**
+ * Detect current HPA settings from cluster
+ * @param {string} name - HPA name
+ * @param {string} namespace - Namespace
+ * @returns {Object} { ok: boolean, min?: number, max?: number, cpu?: number }
+ */
+export function detectHPA(name, namespace) {
+  if (!shouldDetect()) return { ok: false };
+  try {
+    const out = execSync(
+      `kubectl -n ${namespace} get hpa ${name} -o json`,
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }
+    );
+    const h = JSON.parse(out);
+    // Common fields:
+    // spec.minReplicas, spec.maxReplicas, spec.metrics[*].resource.target.averageUtilization (CPU)
+    const min = h?.spec?.minReplicas;
+    const max = h?.spec?.maxReplicas;
+    // try to find CPU target %
+    let cpu = null;
+    const metrics = h?.spec?.metrics || [];
+    for (const m of metrics) {
+      if (m?.resource?.name?.toLowerCase() === "cpu") {
+        cpu = m?.resource?.target?.averageUtilization ?? cpu;
+      }
+    }
+    return { ok: true, min, max, cpu };
+  } catch {
+    return { ok: false };
+  }
+}
+
+/**
  * Generate a scale plan from input specification
  * @param {Object} input - Plan input with target, namespace, workloads, autoscaling
  * @returns {Object} ScalePlan object with actions, risks, notes, and rollback hints
@@ -130,6 +162,10 @@ export function makePlan(input) {
 
     // Apply HPA (HorizontalPodAutoscaler)
     if (input.autoscaling === "hpa" && w.hpa) {
+      const from = detectHPA(w.name, ns);
+      if (!from.ok) {
+        detectionNotes.push(`Could not detect current HPA for ${id} (no kubectl or no access).`);
+      }
       actions.push({
         action: "apply_hpa",
         kind: "HorizontalPodAutoscaler",
@@ -140,6 +176,11 @@ export function makePlan(input) {
           max: w.hpa.max,
           targetCPU: w.hpa.targetCPU
         },
+        from: {
+          min: from.ok ? from.min ?? "unknown" : "unknown",
+          max: from.ok ? from.max ?? "unknown" : "unknown",
+          targetCPU: from.ok ? from.cpu ?? "unknown" : "unknown"
+        }
       });
 
       // Check for replica count vs HPA max mismatch
