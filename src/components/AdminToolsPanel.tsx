@@ -6,6 +6,11 @@ import SeoJsonLdPanel from "./SeoJsonLdPanel";
 import SerpLatest from "./SerpLatest";
 import SerpRemediate from "./SerpRemediate";
 import BehaviorMetricsPanel from "./BehaviorMetricsPanel";
+import AgentsApprovalPanel from "./AgentsApprovalPanel";
+import AgentsQuickRuns from "./AgentsQuickRuns";
+import OpsAgents from "./OpsAgents";
+import OverlayRecentRuns from "./OverlayRecentRuns";
+import OverlayApprovalBadge from "./OverlayApprovalBadge";
 
 interface ToolsList {
   ok: boolean;
@@ -329,6 +334,32 @@ export function AdminToolsPanel({ base = "" }: { base?: string }) {
           </span>
         </div>
         <BehaviorMetricsPanel />
+      </section>
+
+      {/* === Agent Orchestration === */}
+      <section aria-labelledby="agents-title" className="mt-6">
+        <div className="flex items-center gap-2 mb-3">
+          <h2 id="agents-title" className="text-xl font-semibold">
+            Agent Orchestration
+          </h2>
+          <OverlayApprovalBadge />
+        </div>
+        <div className="space-y-3">
+          <AgentsQuickRuns onLaunched={(r) => console.debug("agents.run →", r)} />
+          <AgentsApprovalPanel />
+
+          {/* Recent Runs */}
+          <div className="mt-4">
+            <h3 className="text-sm font-semibold mb-2">Recent runs</h3>
+            <OverlayRecentRuns />
+          </div>
+
+          {/* Task History Viewer */}
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-3">Task History</h3>
+            <OpsAgents />
+          </div>
+        </div>
       </section>
     </div>
   );

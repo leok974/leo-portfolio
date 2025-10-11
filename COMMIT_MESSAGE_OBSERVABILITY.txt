@@ -1,0 +1,169 @@
+feat(observability): add metrics emission and Recent runs panel
+
+## Summary
+
+Implemented comprehensive observability for agent orchestration with:
+1. Lifecycle event metrics emission to external analytics collector
+2. Compact "Recent runs" panel in admin overlay with filters
+
+## Changes
+
+### 1. Metrics Emitter (Node.js)
+- **Created**: `scripts/analytics.mjs`
+- Lightweight HTTP POST to METRICS_URL
+- Non-blocking with 3-second timeout
+- Silently fails if not configured (no impact on orchestration)
+- Supports optional METRICS_KEY for authentication
+
+### 2. Orchestrator Integration
+- **Modified**: `scripts/orchestrator.nightly.mjs`
+- Added import of emitMetric function
+- Emit events at lifecycle points:
+  - `agent.task_started` — Task execution begins
+  - `agent.task_finished` — Task completes (status, duration, outputs)
+  - `agent.awaiting_approval` — PR created, needs approval
+  - `agent.auto_approved` — Task succeeded with auto-approved PR
+
+### 3. Metrics Emitter (Python)
+- **Modified**: `assistant_api/metrics.py`
+- Added emit() function for FastAPI
+- Non-blocking (daemon thread)
+- 3-second timeout
+- Swallows all exceptions to prevent API disruption
+
+### 4. API Integration
+- **Modified**: `assistant_api/routers/agents_tasks.py`
+- Added import of emit_metric function
+- Emit events in endpoints:
+  - `agent.task_created` — On POST /agents/tasks
+  - `agent.task_updated` — On PATCH /agents/tasks/{id}
+- Wrapped in try/except to prevent failures
+
+### 5. Recent Runs Panel
+- **Created**: `src/components/OverlayRecentRuns.tsx`
+- Compact table showing last 10 task runs
+- Filters:
+  - Agent name (task) input
+  - Status dropdown (queued, running, awaiting_approval, etc.)
+  - Time range dropdown (6h, 12h, 24h, 72h, 7d)
+- Auto-refresh on filter change
+- Manual refresh button
+- Displays: time, agent, status, duration, output link
+- Test IDs: overlay-agent-input, overlay-status-select, overlay-since-select, overlay-refresh
+
+### 6. Admin Panel Integration
+- **Modified**: `src/components/AdminToolsPanel.tsx`
+- Added import of OverlayRecentRuns
+- Mounted in "Agent Orchestration" section
+- Positioned above "Task History" viewer
+
+### 7. Documentation
+- **Modified**: `assistant_api/README.md`
+- Added "Observability (Metrics)" section
+- Documented METRICS_URL and METRICS_KEY
+- Listed all event types emitted
+- Configuration examples
+
+- **Created**: `OBSERVABILITY_IMPLEMENTATION.md`
+- Comprehensive implementation guide
+- Event schema documentation
+- Testing instructions
+- Configuration examples
+- Benefits and next steps
+
+## Environment Variables
+
+### METRICS_URL
+- **Purpose**: Analytics collector endpoint (expects JSON POST)
+- **Example**: `https://analytics.example.com/metrics`
+- **Behavior**: If not set, metrics emission is silently disabled (no-op)
+
+### METRICS_KEY
+- **Purpose**: Optional shared key for authentication
+- **Header**: Sent as `x-metrics-key`
+- **Optional**: Metrics work without it
+
+## Event Schema
+
+All events include:
+```json
+{
+  "ts": "2025-10-10T12:34:56.789Z",
+  "event": "agent.task_finished",
+  "source": "orchestrator" | "api",
+  ...payload
+}
+```
+
+## Event Types
+
+**From orchestrator**:
+- agent.task_started
+- agent.task_finished
+- agent.awaiting_approval
+- agent.auto_approved
+
+**From API**:
+- agent.task_created
+- agent.task_updated
+
+## Testing
+
+### Test orchestrator metrics
+```bash
+export METRICS_URL="https://analytics.example.com/metrics"
+export METRICS_KEY="your-key"
+npm run orchestrator:nightly
+# Verify events appear in analytics
+```
+
+### Test API metrics
+```bash
+curl -X POST "$API_BASE/agents/tasks" \
+  -H "content-type: application/json" \
+  -d '{"task":"test","run_id":"manual-1","status":"running"}'
+# Verify agent.task_created event
+```
+
+### Test Recent runs panel
+1. Open admin overlay
+2. Navigate to "Agent Orchestration" → "Recent runs"
+3. Filter by agent: "seo.validate"
+4. Filter by status: "awaiting_approval"
+5. Change time range: "6h"
+6. Click "Refresh"
+7. Verify table updates
+
+## Benefits
+
+### Operational
+- Real-time monitoring in admin overlay
+- Historical analysis via analytics collector
+- Failure detection and tracking
+- Performance monitoring (duration trends)
+
+### Developer Experience
+- Non-intrusive (failures don't affect orchestration/API)
+- Zero config required (works without METRICS_URL)
+- Easy filtering for specific agents/statuses
+- Direct links to PR outputs
+
+## Files Changed
+
+### Created (3 files)
+1. scripts/analytics.mjs
+2. src/components/OverlayRecentRuns.tsx
+3. OBSERVABILITY_IMPLEMENTATION.md
+
+### Modified (5 files)
+1. scripts/orchestrator.nightly.mjs
+2. assistant_api/metrics.py
+3. assistant_api/routers/agents_tasks.py
+4. src/components/AdminToolsPanel.tsx
+5. assistant_api/README.md
+
+---
+
+**Status**: ✅ Complete and Ready for Testing
+
+All components implemented, documented, and ready for production use.

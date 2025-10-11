@@ -33,6 +33,7 @@ export default defineConfig({
     navigationTimeout: 15_000, // Can override lower for @ui-polish tests
     ignoreHTTPSErrors: true,
     storageState: process.env.PW_STATE || 'tests/e2e/.auth/dev-overlay-state.json',
+    viewport: { width: 1280, height: 1600 },
     extraHTTPHeaders: {
       // All APIRequestContext calls will include this header
       // Enables dev auth for /agent/* routes in tests

@@ -1,0 +1,22 @@
+{
+  "tool": "infra-scale-stub",
+  "mode": "plan",
+  "hostname": "BIOS",
+  "recommendations": [
+    {
+      "service": "web",
+      "action": "scale",
+      "from": 2,
+      "to": 3,
+      "reason": "p95 latency > 400ms"
+    },
+    {
+      "service": "api",
+      "action": "hold",
+      "from": 2,
+      "to": 2,
+      "reason": "stable performance"
+    }
+  ],
+  "cost_delta_estimate_usd": 27.5
+}

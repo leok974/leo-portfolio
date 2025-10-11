@@ -87,6 +87,107 @@ data: {"_served_by":"primary","grounded":true,"sources":[...],"guardrails":{"fla
 
 ```
 
+## Agent Orchestration
+
+### GET /agents/tasks/paged
+Paginated list of agent task runs with filtering support.
+
+**Query Parameters:**
+- `limit` (integer, default: 50) - Max items per page
+- `cursor` (string, optional) - Pagination cursor from `next_cursor`
+- `since` (datetime, optional) - Filter by `started_at >= since` (ISO 8601 UTC)
+- `status` (array, optional) - Filter by status (e.g., `?status=queued&status=running`)
+  - Values: `queued`, `running`, `awaiting_approval`, `succeeded`, `failed`, `skipped`
+- `task` (array, optional) - Filter by task name (e.g., `?task=validate&task=review`)
+
+**Response:**
+```json
+{
+  "items": [
+    {
+      "id": 11,
+      "task": "validate",
+      "run_id": "834b0717-d2ee-4f",
+      "status": "awaiting_approval",
+      "started_at": "2025-10-10T13:22:23",
+      "finished_at": "2025-10-10T13:22:23",
+      "duration_ms": 450,
+      "outputs_uri": "https://...",
+      "log_excerpt": "Validation complete...",
+      "approval_state": "pending",
+      "approver": null,
+      "webhook_notified_at": null
+    }
+  ],
+  "next_cursor": "eyJzdGFydGVkX2F0IjogIjIwMjUtMTAtMTBUMTM6MjI6MjMiLCAiaWQiOiAxMX0="
+}
+```
+
+**Example:**
+```bash
+# Last 7 days, awaiting approval or failed
+curl "http://localhost:8001/agents/tasks/paged?since=2025-10-03T00:00:00Z&status=awaiting_approval&status=failed&limit=20"
+```
+
+### GET /agents/tasks/paged.csv
+Export agent task runs as CSV (max 10,000 rows).
+
+**Query Parameters:** Same as `/paged` endpoint
+
+**Response:** CSV file with headers:
+```csv
+id,task,run_id,status,started_at,finished_at,duration_ms,outputs_uri,log_excerpt
+11,validate,834b0717-d2ee-4f,awaiting_approval,2025-10-10T13:22:23,2025-10-10T13:22:23,450,https://...,Validation complete...
+```
+
+**Example:**
+```bash
+# Export last 30 days of succeeded tasks
+curl "http://localhost:8001/agents/tasks/paged.csv?since=2025-09-10T00:00:00Z&status=succeeded&limit=1000" > tasks.csv
+```
+
+### DELETE /agents/tasks/before (Admin Only)
+Prune historical agent task records before a specified date.
+
+**Security:** Requires `X-Admin-Key` header matching server's `ADMIN_API_KEY` environment variable.
+
+**Query Parameters:**
+- `date` (datetime, required) - Delete rows with `started_at < date` (ISO 8601 UTC)
+
+**Request:**
+```bash
+# Delete tasks older than 90 days
+CUTOFF=$(date -u -d '90 days ago' +%FT%TZ)
+curl -X DELETE "http://localhost:8001/agents/tasks/before?date=$CUTOFF" \
+  -H "X-Admin-Key: $ADMIN_API_KEY" \
+  -H "Accept: application/json"
+```
+
+**Response:**
+```json
+{
+  "deleted": 42,
+  "cutoff": "2025-07-12T00:00:00Z"
+}
+```
+
+**Error Response (403 Forbidden):**
+```json
+{
+  "detail": "Forbidden"
+}
+```
+
+**Setup:**
+1. Set `ADMIN_API_KEY` environment variable on server (strong random key)
+2. Configure same key in GitHub Actions secrets for automated pruning
+3. Optional: Run Alembic migration `002_agents_tasks_prune_fn` for PostgreSQL function
+
+**Automated Pruning:**
+- Weekly cron via `.github/workflows/agents-prune.yml` (Mondays 03:15 UTC)
+- Requires repository Variable: `API_BASE` (e.g., `https://api.yourdomain.com`)
+- Requires repository Secret: `ADMIN_API_KEY` (must match server env var)
+
 ## RAG
 ### POST /api/rag/query
 ```json

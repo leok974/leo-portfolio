@@ -1,0 +1,27 @@
+{
+  "tool": "dx-integrate-stub",
+  "mode": "check",
+  "hostname": "BIOS",
+  "checks": [
+    {
+      "name": "storybook",
+      "status": "ok",
+      "message": "Build passed (stub)"
+    },
+    {
+      "name": "docs",
+      "status": "ok",
+      "message": "Docs validated (stub)"
+    },
+    {
+      "name": "lint",
+      "status": "ok",
+      "message": "Lint passed (stub)"
+    }
+  ],
+  "summary": {
+    "ok": 3,
+    "warn": 0,
+    "fail": 0
+  }
+}

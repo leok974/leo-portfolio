@@ -49,11 +49,11 @@ def require_cf_access(req: Request) -> str:
     if jwt:
         # ... full JWT verification ...
         return "cf-user"
-    
+
     # Test mode bypass
     if is_test_mode() or req.headers.get("x-test-auth") == "ok":
         return "test-user"
-    
+
     raise HTTPException(401, "Cloudflare Access required")
 ```
 
@@ -138,8 +138,8 @@ def dev_enable():
     """Enable dev overlay - returns JSON and sets cookie."""
     resp = JSONResponse({"ok": True, "allowed": True})
     resp.set_cookie(
-        COOKIE_NAME, 
-        "1", 
+        COOKIE_NAME,
+        "1",
         max_age=COOKIE_AGE,
         path="/",
         httponly=False,  # Allow JS access in dev
@@ -202,7 +202,7 @@ def metrics_counters():
     """Get current counter values."""
     if is_test_mode():
         return {"ok": True, "counters": dict(_TEST_COUNTS)}
-    
+
     # Production: query Prometheus or return empty
     return {"ok": True, "counters": {}}
 ```
@@ -215,7 +215,7 @@ def test_metrics_counts(client):
     client.post("/agent/metrics/ingest", json={"type": "faq"})
     client.post("/agent/metrics/ingest", json={"type": "faq"})
     client.post("/agent/metrics/ingest", json={"type": "rag"})
-    
+
     # Verify counts
     r = client.get("/agent/metrics/counters")
     assert r.json()["counters"] == {"faq": 2, "rag": 1}
@@ -243,8 +243,8 @@ from assistant_api.util.testmode import is_test_mode
 
 if is_test_mode() and not os.getenv("RAG_DB"):
     tf = tempfile.NamedTemporaryFile(
-        prefix="ragdb-", 
-        suffix=".sqlite", 
+        prefix="ragdb-",
+        suffix=".sqlite",
         delete=False
     )
     os.environ["RAG_DB"] = tf.name
@@ -259,7 +259,7 @@ Ensure tests always have sources for grounded responses:
 async def chat(req: ChatReq):
     # Normal retrieval
     sources = retrieve_sources(query)
-    
+
     # Test mode backstop: guarantee at least one source
     if is_test_mode() and not sources:
         sources = [{
@@ -267,7 +267,7 @@ async def chat(req: ChatReq):
             "url": "https://example.com/test",
             "snippet": "Deterministic test source to satisfy grounded fallback."
         }]
-    
+
     grounded = bool(sources)
     # ... continue with LLM generation ...
 ```
@@ -297,10 +297,10 @@ def is_allowlisted(req: Request) -> bool:
     if is_test_mode():
         # Test mode: allow with header or dry_run flag
         return (
-            req.headers.get("x-test-auth") == "ok" or 
+            req.headers.get("x-test-auth") == "ok" or
             req.query_params.get("dry_run") == "1"
         )
-    
+
     # Production: check actual allowlist
     # return check_ip_allowlist(req.client.host)
     return False
@@ -310,12 +310,12 @@ async def exec_tools(req: Request):
     """Execute dangerous tools (gated)."""
     if not exec_enabled() or not is_allowlisted(req):
         raise HTTPException(403, "exec disabled")
-    
+
     # In test mode, skip git status checks
     if not is_test_mode():
         # Check for dirty repo, etc.
         pass
-    
+
     return {"ok": True, "mode": "dry-run"}
 ```
 
@@ -340,13 +340,13 @@ from fastapi import Query
 @router.post("/agent/run")
 async def agent_run(request: Request, task: Optional[str] = Query(None)):
     """Run agent task."""
-    
+
     # Test-mode adapter for seo.tune task
     if is_test_mode() and task == "seo.tune":
         # Create minimal fake artifacts for test validation
         artifacts_dir = Path("agent/artifacts")
         artifacts_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Fake seo-tune.json
         fake_data = {
             "generated": "2025-01-01T00:00:00Z",
@@ -366,9 +366,9 @@ async def agent_run(request: Request, task: Optional[str] = Query(None)):
         (artifacts_dir / "seo-tune.md").write_text(
             "# SEO Tune Results\n\nTest data"
         )
-        
+
         return {"ok": True, "count": 1}
-    
+
     # Normal production path
     # ... execute actual agent runner ...
 ```
@@ -404,16 +404,16 @@ def test_dev_cookie_flow(client):
     # Initially disabled
     r = client.get("/agent/dev/status")
     assert r.json() == {"ok": True, "allowed": False}
-    
+
     # Enable
     r = client.post("/agent/dev/enable")
     assert r.json() == {"ok": True, "allowed": True}
     assert "saDevOverlay=1" in r.headers.get("set-cookie", "")
-    
+
     # Verify enabled
     r = client.get("/agent/dev/status")
     assert r.json()["allowed"] is True
-    
+
     # Disable
     r = client.post("/agent/dev/disable")
     assert r.json() == {"ok": True, "allowed": False}
@@ -428,7 +428,7 @@ def test_metrics_counts(client):
     client.post("/agent/metrics/ingest", json={"type": "faq"})
     client.post("/agent/metrics/ingest", json={"type": "faq"})
     client.post("/agent/metrics/ingest", json={"type": "rag"})
-    
+
     # Verify counts
     r = client.get("/agent/metrics/counters")
     assert r.json()["counters"] == {"faq": 2, "rag": 1}
@@ -447,7 +447,7 @@ async def test_chat_grounded_fallback():
         }
         r = await ac.post("/chat", json=payload)
         r.raise_for_status()
-        
+
         data = r.json()
         assert data["grounded"] is True
         assert len(data["sources"]) > 0
@@ -461,7 +461,7 @@ def test_cf_access_test_mode(client):
     # No auth header - should work in test mode
     r = client.post("/secure-stuff")
     assert r.status_code == 200
-    
+
     # With test header
     r = client.post(
         "/secure-stuff",
@@ -534,7 +534,7 @@ def test_shim(fn):
 async def complex_route(req: Request, __test_mode__: bool = False):
     if __test_mode__:
         return {"ok": True, "test_data": "fake"}
-    
+
     # Normal production logic
     ...
 ```

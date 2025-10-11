@@ -35,6 +35,34 @@ A convenience pass-through keeps `/status/summary` working without the prefix fo
 
 **Cold starts:** expect `llm.path = "warming"` until the primary model is cached. Compose pre-pulls the configured model, but large weights still take time on first deploy.
 
+## Observability (Metrics)
+
+The orchestrator and API emit lifecycle events to an external analytics collector when configured:
+
+- **METRICS_URL** — Analytics collector endpoint (expects JSON POST at `/metrics`)
+- **METRICS_KEY** — Optional shared key sent in header `x-metrics-key`
+
+### Events emitted
+
+**From orchestrator** (`scripts/orchestrator.nightly.mjs`):
+- `agent.task_started` — Task execution begins
+- `agent.task_finished` — Task completes (status: succeeded/failed/awaiting_approval)
+- `agent.awaiting_approval` — Task needs manual approval (PR created)
+- `agent.auto_approved` — Task auto-approved after success
+
+**From API** (`assistant_api/routers/agents_tasks.py`):
+- `agent.task_created` — New task record created
+- `agent.task_updated` — Task record updated
+
+### Example configuration
+
+```powershell
+$env:METRICS_URL = "https://analytics.example.com/metrics"
+$env:METRICS_KEY = "your-shared-key"
+```
+
+**Note:** If METRICS_URL is not set, metrics emission is silently disabled (no-op). Failures in metrics emission never affect orchestration or API operations.
+
 ## Examples
 
 PowerShell

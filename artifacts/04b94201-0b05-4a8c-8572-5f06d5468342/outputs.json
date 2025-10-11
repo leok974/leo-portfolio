@@ -1,0 +1,8 @@
+{
+  "pages": "sitemap://current",
+  "issues": 0,
+  "lighthouse_scores": {
+    "performance": 95,
+    "seo": 98
+  }
+}

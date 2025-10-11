@@ -108,18 +108,18 @@ def list_tasks():
 async def run_agent(request: Request, task: Optional[str] = Query(None), body: bytes = Depends(_authorized)):
     """Run agent with dual authentication (CF Access OR HMAC)."""
     from ..util.testmode import is_test_mode
-    
+
     # Test-mode compatibility for analytics ingest test
     if is_test_mode() and task == "seo.tune":
         # Create minimal fake artifacts for test validation
         from ..settings import get_settings
         from pathlib import Path
         import json as json_lib
-        
+
         settings = get_settings()
         artifacts_dir = Path(settings["ARTIFACTS_DIR"])
         artifacts_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Create fake seo-tune.json
         fake_data = {
             "generated": "2025-01-01T00:00:00Z",
@@ -135,9 +135,9 @@ async def run_agent(request: Request, task: Optional[str] = Query(None), body: b
         }
         (artifacts_dir / "seo-tune.json").write_text(json_lib.dumps(fake_data, indent=2))
         (artifacts_dir / "seo-tune.md").write_text("# SEO Tune Results\n\nTest data")
-        
+
         return {"ok": True, "count": 1}
-    
+
     # Normal behavior
     payload = RunReq(**json.loads(body or b"{}"))
     return run(payload.plan, payload.params)

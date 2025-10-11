@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { adminHeaders } from "@/lib/adminHeaders";
 
 interface AgentTask {
   id: number;
@@ -10,6 +11,8 @@ interface AgentTask {
   duration_ms?: number;
   outputs_uri?: string;
   approval_state?: string;
+  approver?: string;
+  approval_note?: string;
   log_excerpt?: string;
 }
 
@@ -271,9 +274,12 @@ export default function OpsAgents() {
                 <th className="px-3 py-2 text-left">Task</th>
                 <th className="px-3 py-2 text-left">Run ID</th>
                 <th className="px-3 py-2 text-left">Status</th>
+                <th className="px-3 py-2 text-left">Approver</th>
+                <th className="px-3 py-2 text-left">Note</th>
                 <th className="px-3 py-2 text-left">Started</th>
                 <th className="px-3 py-2 text-left">Duration</th>
                 <th className="px-3 py-2 text-left">Output</th>
+                <th className="px-3 py-2 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -282,6 +288,10 @@ export default function OpsAgents() {
                   <td className="px-3 py-2">{row.task}</td>
                   <td className="px-3 py-2 text-xs text-zinc-400">{row.run_id}</td>
                   <td className="px-3 py-2">{statusBadge(row.status)}</td>
+                  <td className="px-3 py-2 text-zinc-300 text-xs">{row.approver || "—"}</td>
+                  <td className="px-3 py-2 text-zinc-400 text-xs max-w-[260px] truncate" title={row.approval_note || ""}>
+                    {row.approval_note || "—"}
+                  </td>
                   <td className="px-3 py-2 text-xs text-zinc-400">
                     {row.started_at ? new Date(row.started_at).toLocaleString() : "—"}
                   </td>
@@ -300,11 +310,73 @@ export default function OpsAgents() {
                       <span className="text-zinc-500 text-xs">—</span>
                     )}
                   </td>
+                  <td className="px-3 py-2">
+                    {row.status === "awaiting_approval" ? (
+                      <div className="flex gap-2">
+                        <button
+                          className="px-2 py-1 text-xs rounded bg-emerald-700/30 hover:bg-emerald-700/50 text-emerald-200"
+                          onClick={async () => {
+                            const note = window.prompt("Approval note (optional):") || "";
+                            const res = await fetch(`${API_BASE}/agents/tasks/${row.id}/approve?note=${encodeURIComponent(note)}`, {
+                              method: "POST",
+                              headers: adminHeaders(),
+                            });
+                            if (res.ok) {
+                              const updated = await res.json();
+                              setRows(prev => prev.map(x => x.id === row.id ? updated : x));
+                            } else {
+                              alert("Approve failed");
+                            }
+                          }}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          className="px-2 py-1 text-xs rounded bg-rose-700/30 hover:bg-rose-700/50 text-rose-200"
+                          onClick={async () => {
+                            const note = window.prompt("Reject reason:") || "";
+                            const res = await fetch(`${API_BASE}/agents/tasks/${row.id}/reject?note=${encodeURIComponent(note)}`, {
+                              method: "POST",
+                              headers: adminHeaders(),
+                            });
+                            if (res.ok) {
+                              const updated = await res.json();
+                              setRows(prev => prev.map(x => x.id === row.id ? updated : x));
+                            } else {
+                              alert("Reject failed");
+                            }
+                          }}
+                        >
+                          Reject
+                        </button>
+                        <button
+                          className="px-2 py-1 text-xs rounded bg-zinc-700/30 hover:bg-zinc-700/50 text-zinc-300"
+                          onClick={async () => {
+                            const note = window.prompt("Cancel note (optional):") || "";
+                            const res = await fetch(`${API_BASE}/agents/tasks/${row.id}/cancel?note=${encodeURIComponent(note)}`, {
+                              method: "POST",
+                              headers: adminHeaders(),
+                            });
+                            if (res.ok) {
+                              const updated = await res.json();
+                              setRows(prev => prev.map(x => x.id === row.id ? updated : x));
+                            } else {
+                              alert("Cancel failed");
+                            }
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-zinc-500 text-xs">—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td className="px-3 py-6 text-zinc-400" colSpan={6}>
+                  <td className="px-3 py-6 text-zinc-400" colSpan={9}>
                     No runs yet.
                   </td>
                 </tr>

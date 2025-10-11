@@ -1,0 +1,9 @@
+{
+  "ok": false,
+  "skipped": false,
+  "rc": 1,
+  "duration_sec": 0.08284258842468262,
+  "artifacts": {
+    "report_json": "D:\\leo-portfolio\\artifacts\\c0f23b93-957b-46ee-8f3b-d6316feb1d6e\\dx_integrate.json"
+  }
+}

@@ -1,0 +1,37 @@
+name: agents-prune
+
+# Prune old agent task history (older than 90 days)
+# Runs weekly on Mondays at 03:15 UTC
+
+on:
+  schedule:
+    - cron: "15 3 * * 1"   # Mondays 03:15 UTC
+  workflow_dispatch:        # Allow manual trigger
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prune agents_tasks history (older than 90 days)
+        env:
+          API_BASE: ${{ vars.API_BASE }}           # e.g., https://api.yourdomain.com
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+        run: |
+          if [ -z "$API_BASE" ] || [ -z "$ADMIN_API_KEY" ]; then
+            echo "❌ API_BASE or ADMIN_API_KEY not set"
+            echo "Set repository Variable: API_BASE (e.g., https://api.yourdomain.com)"
+            echo "Set repository Secret: ADMIN_API_KEY (must match server ADMIN_API_KEY env var)"
+            exit 1
+          fi
+
+          CUTOFF=$(date -u -d '90 days ago' +%FT%TZ)
+          echo "🗑️  Pruning agents_tasks rows before $CUTOFF"
+
+          RESPONSE=$(curl -fsS -X DELETE "$API_BASE/agents/tasks/before?date=$CUTOFF" \
+            -H "X-Admin-Key: $ADMIN_API_KEY" \
+            -H "Accept: application/json")
+
+          echo "$RESPONSE" | tee prune_result.json
+
+          DELETED=$(echo "$RESPONSE" | jq -r '.deleted')
+          echo "✅ Deleted $DELETED rows"

@@ -1,0 +1,42 @@
+# Agent Registry
+# Defines autonomous agents with goals, tools, and approval policies
+
+orchestrator:
+  goals: [schedule, approve, route, escalate]
+  tools: [calendar.read, repo.diff, rag.query, chat.send]
+  allow_auto: false
+
+projects:
+  goals: [sync, curate]
+  tools: [github.sync, projects.generate_page, rag.ingest]
+  allow_auto: false
+
+seo:
+  goals: [tune, validate]
+  tools: [seo.audit, seo.autofix, lighthouse.run]
+  allow_auto: false
+
+branding:
+  goals: [logo, theme]
+  tools: [asset.scan, palette.suggest, og.generate]
+  allow_auto: false
+
+content:
+  goals: [summarize, rewrite]
+  tools: [rag.query, style.check, post.draft]
+  allow_auto: false
+
+code:
+  goals: [review]
+  tools: [code.review]
+  allow_auto: false
+
+dx:
+  goals: [integrate]
+  tools: [dx.integrate]
+  allow_auto: false
+
+infra:
+  goals: [scale]
+  tools: [infra.scale]
+  allow_auto: false

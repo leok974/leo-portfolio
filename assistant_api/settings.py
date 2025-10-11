@@ -140,6 +140,38 @@ def get_settings() -> Dict[str, Any]:
         "EMAIL_FROM": os.getenv("EMAIL_FROM"),
         "EMAIL_TO": os.getenv("EMAIL_TO"),
         "SENDGRID_API_KEY": os.getenv("SENDGRID_API_KEY"),
+
+        # --- SEO validation tool commands (overridable via env) ---
+        "SEO_GUARDRAILS_CMD": os.getenv(
+            "SEO_GUARDRAILS_CMD",
+            "node ./scripts/seo-meta-guardrails.mjs --out json"
+        ),
+        "LIGHTHOUSE_BATCH_CMD": os.getenv(
+            "LIGHTHOUSE_BATCH_CMD",
+            "node ./scripts/lighthouse-batch.mjs --sitemap sitemap.xml --format json"
+        ),
+        "SEO_VALIDATE_TIMEOUT_SECS": int(os.getenv("SEO_VALIDATE_TIMEOUT_SECS", "300")),
+
+        # --- Code Review (static analysis / diff-aware) ---
+        "CODE_REVIEW_CMD": os.getenv(
+            "CODE_REVIEW_CMD",
+            "node ./scripts/code-review.mjs --diff HEAD~1..HEAD --out json"
+        ),
+        "CODE_REVIEW_TIMEOUT_SECS": int(os.getenv("CODE_REVIEW_TIMEOUT_SECS", "240")),
+
+        # --- DX Integrations (storybook/docs/stubs health) ---
+        "DX_INTEGRATE_CMD": os.getenv(
+            "DX_INTEGRATE_CMD",
+            "node ./scripts/dx-integrate.mjs --check --out json"
+        ),
+        "DX_INTEGRATE_TIMEOUT_SECS": int(os.getenv("DX_INTEGRATE_TIMEOUT_SECS", "240")),
+
+        # --- Infra Scale (docker/k8s dry-run) ---
+        "INFRA_SCALE_CMD": os.getenv(
+            "INFRA_SCALE_CMD",
+            "node ./scripts/infra-scale.mjs --plan --out json"
+        ),
+        "INFRA_SCALE_TIMEOUT_SECS": int(os.getenv("INFRA_SCALE_TIMEOUT_SECS", "300")),
     }
 
 

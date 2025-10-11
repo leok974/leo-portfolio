@@ -1,0 +1,10 @@
+{
+  "ok": false,
+  "skipped": false,
+  "rc": 1,
+  "duration_sec": 0.04163718223571777,
+  "artifacts": {
+    "report_json": "D:\\leo-portfolio\\artifacts\\793d26ce-d5f5-4d17-9c1c-62d1408e753c\\report.json",
+    "infra_scale_json": "D:\\leo-portfolio\\artifacts\\793d26ce-d5f5-4d17-9c1c-62d1408e753c\\infra_scale.json"
+  }
+}

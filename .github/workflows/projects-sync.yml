@@ -1,0 +1,26 @@
+name: projects-sync
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * 1"  # Mondays 09:00 UTC
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - name: Sync & open PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          out=$(npm run -s projects:sync)
+          echo "$out"
+          pr_url=$(echo "$out" | tail -n1 | sed -n 's/^outputs_uri=//p')
+          echo "PR_URL=$pr_url" >> $GITHUB_OUTPUT

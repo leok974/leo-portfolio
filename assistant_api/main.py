@@ -148,6 +148,10 @@ app.include_router(resume_public.router)
 from assistant_api.routers import dev_overlay
 app.include_router(dev_overlay.router)
 
+# Agents orchestration routes (for nightly task tracking)
+from assistant_api.routers import agents_tasks
+app.include_router(agents_tasks.router)
+
 # Phase 50.4 — SEO & OG Intelligence routes
 try:
     from assistant_api.routers import seo as seo_router
@@ -188,6 +192,17 @@ try:
     from assistant_api.routers import seo_keywords_mock
     app.include_router(seo_keywords_mock.router)
 except Exception as e:
+    print("[warn] seo_keywords_mock router not loaded:", e)
+
+# Agent Registry System (autonomous task execution with approval)
+try:
+    from assistant_api.routers import agents as agents_router
+    from assistant_api.agents.database import init_db
+    # Initialize database tables
+    init_db()
+    app.include_router(agents_router.router)
+except Exception as e:
+    print("[warn] agents router not loaded:", e)
     print("[warn] seo_keywords_mock router not loaded:", e)
 
 # Status Pages (Phase 50.6.5+ — discovery status endpoint)
@@ -674,7 +689,7 @@ async def chat(req: ChatReq):
                     src["url"] = url
                 sources.append(src)
             grounded = len(sources) > 0
-    
+
     # Test-mode backstop: guarantee at least one source for grounded fallback tests
     from assistant_api.util.testmode import is_test_mode
     if is_test_mode() and not sources:
@@ -684,7 +699,7 @@ async def chat(req: ChatReq):
             "snippet": "Deterministic test source to satisfy grounded fallback."
         }]
         grounded = True
-    
+
     def _ensure_followup_question(data: dict) -> dict:
         try:
             c = data.get("choices", [{}])[0].get("message", {}).get("content")

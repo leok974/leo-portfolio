@@ -181,3 +181,60 @@ def timer(stage: str, backend: str):
             _stage_record(stage, backend, dt)
         except Exception:
             pass
+
+
+# ==================================================================================
+# Analytics / Observability: Emit events to external metrics collector
+# ==================================================================================
+import os
+import json
+import urllib.request
+
+METRICS_URL = os.getenv("METRICS_URL", "")
+METRICS_KEY = os.getenv("METRICS_KEY", "")
+
+
+def emit(event: str, payload: dict):
+    """
+    Emit a metric event to the analytics collector (non-blocking).
+
+    This function spawns a daemon thread to send the request.
+    Failures are silently ignored to prevent disrupting API operations.
+
+    Args:
+        event: Event name (e.g., "agent.task_created")
+        payload: Additional event data (task, run_id, status, etc.)
+
+    Example:
+        emit("agent.task_created", {"task": "seo.validate", "run_id": "nightly-123"})
+    """
+    if not METRICS_URL:
+        return  # noop if not configured
+
+    from datetime import datetime
+
+    data = {
+        "ts": datetime.utcnow().isoformat() + "Z",
+        "event": event,
+        "source": "api",
+        **payload,
+    }
+
+    def _send():
+        try:
+            req = urllib.request.Request(
+                METRICS_URL,
+                data=json.dumps(data).encode("utf-8"),
+                headers={
+                    "content-type": "application/json",
+                    **({"x-metrics-key": METRICS_KEY} if METRICS_KEY else {})
+                },
+                method="POST",
+            )
+            urllib.request.urlopen(req, timeout=3)
+        except Exception:
+            # Swallow all exceptions - metrics failures should not affect API
+            pass
+
+    # Send in background thread
+    threading.Thread(target=_send, daemon=True).start()

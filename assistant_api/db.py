@@ -1,8 +1,38 @@
 from pathlib import Path
 import sqlite3, numpy as np, json, os, time
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from typing import Generator
+
+# SQLAlchemy Base for ORM models (agents_tasks, etc.)
+Base = declarative_base()
 
 # Legacy constant kept for backward compatibility, but connect() now resolves RAG_DB dynamically
 DB_PATH = os.environ.get("RAG_DB", "./data/rag.sqlite")
+
+# SQLAlchemy engine and session for ORM models
+# Default to SQLite, but can be overridden with DATABASE_URL env var for PostgreSQL
+DATABASE_URL = os.environ.get("DATABASE_URL") or os.environ.get("DB_URL")
+if not DATABASE_URL:
+    AGENTS_DB = os.environ.get("AGENTS_DB", DB_PATH)
+    Path(AGENTS_DB).parent.mkdir(parents=True, exist_ok=True)
+    DATABASE_URL = f"sqlite:///{AGENTS_DB}"
+
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
+    pool_pre_ping=True
+)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def get_db() -> Generator:
+    """FastAPI dependency for SQLAlchemy database sessions."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 _LOCK_MSG = "database is locked"
 
