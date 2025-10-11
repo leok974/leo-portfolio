@@ -33,6 +33,7 @@ typing-extensions>=4.15
 # Minimal deps that meta scripts might need
 requests>=2.32
 PyYAML>=6.0
+numpy>=2.0  # Required by rag_query.py imports
 
 # Health check
 httptools>=0.6
