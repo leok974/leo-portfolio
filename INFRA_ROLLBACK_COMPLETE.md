@@ -21,11 +21,17 @@ Successfully implemented a safe, label-gated rollback executor for the infrastru
 - **Dry-run by default** (safe preview mode)
 - **Label-gated execution** (requires `rollback-plan` label)
 - **PR validation** via GitHub API (Octokit)
+- **PR comments** - Posts rollback summary as PR comment (both dry-run and execution)
+- **Improved YAML parser** - Better nested HPA field handling
 
 **Usage**:
 ```bash
 # Preview rollback (safe, no execution)
 node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --dry-run
+
+# Preview rollback with PR comment (posts summary to PR)
+GH_OWNER=<owner> GH_REPO=<repo> GITHUB_TOKEN=<token> \
+node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --dry-run --pr=<PR_NUMBER>
 
 # Execute rollback (requires rollback-plan label on PR)
 node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --execute --pr=123
@@ -59,13 +65,33 @@ node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --ex
 1. Checkout PR head SHA
 2. Setup Node.js 20
 3. Install dependencies (`npm ci`)
-4. **Dry-run preview**: Run with `KUBECTL=echo` to preview commands
-5. **Execute rollback**: Run with real kubectl (if kubeconfig available)
+4. **Dry-run preview**: Run with `KUBECTL=echo` to preview commands, posts summary comment to PR
+5. **Execute rollback**: *(Commented out)* Run with real kubectl when runner has kubeconfig
+
+**Permissions**:
+- `contents: read` - Read repository code
+- `pull-requests: write` - Post comments to PR
 
 **Environment Variables**:
 - `GH_OWNER`: From `github.repository_owner`
 - `GH_REPO`: From `github.event.pull_request.head.repo.name`
 - `GITHUB_TOKEN`: From `secrets.GITHUB_TOKEN`
+
+**PR Comment Format**:
+```markdown
+### 🔄 Rollback executor
+
+\```json
+{
+  "ok": true,
+  "executed": false,
+  "namespace": "assistant",
+  "results": [...]
+}
+\```
+
+> Mode: **dry-run**
+```
 
 ### 3. Package Scripts
 
@@ -193,7 +219,7 @@ The rollback system includes **three safety gates**:
 
 ### Workflow 1: Preview Rollback Locally
 ```bash
-# Safe preview (no execution)
+# Safe preview (no execution, no PR comment)
 node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --dry-run
 
 # Expected output:
@@ -204,24 +230,41 @@ node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --dr
 # succeeded
 ```
 
-### Workflow 2: Execute Rollback via CI (Recommended)
+### Workflow 2: Preview Rollback with PR Comment
+```bash
+# Dry-run that posts summary comment to PR
+GH_OWNER=ledger-mind GH_REPO=website GITHUB_TOKEN=<token> \
+node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --dry-run --pr=123
+
+# Posts to PR:
+# ### 🔄 Rollback executor
+# ```json
+# { "ok": true, "executed": false, "namespace": "assistant", "results": [...] }
+# ```
+# > Mode: **dry-run**
+```
+
+### Workflow 3: Execute Rollback via CI (Recommended)
 ```bash
 # 1. Add rollback-plan label to PR
 gh pr edit <PR-NUMBER> --add-label rollback-plan
 
 # 2. CI workflow triggers automatically
 # - Validates label presence
-# - Runs dry-run preview
-# - Executes rollback with kubectl
+# - Runs dry-run preview (posts comment to PR)
+# - Real rollback step is commented out (requires kubeconfig)
 
-# 3. Review results in GitHub Actions logs
-gh run view --job=<job-id>
+# 3. Review preview comment in PR
+# 4. Uncomment real rollback step in workflow when runner has kubeconfig
 ```
 
-### Workflow 3: Execute Rollback Locally
+### Workflow 4: Execute Rollback Locally
 ```bash
 # Requires kubectl + kubeconfig configured
 node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --execute --pr=123
+
+# Posts execution summary to PR comment
+```
 
 # Verify rollback
 kubectl -n assistant get deploy
