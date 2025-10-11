@@ -8,7 +8,7 @@ services:
     ports:
       - "11434:11434"
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "11434"]
+      test: ["CMD-SHELL", "pidof nginx || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 10
