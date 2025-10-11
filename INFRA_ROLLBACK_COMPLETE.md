@@ -1,6 +1,6 @@
 # Infrastructure Rollback System - Implementation Complete
 
-**Date**: October 11, 2025  
+**Date**: October 11, 2025
 **Status**: ✅ Complete
 
 ## Overview
@@ -441,7 +441,7 @@ kubectl -n assistant get hpa
    # Create a staging plan
    node scripts/infra.scale.mjs --dry-run --target=staging --namespace=assistant-staging \
      --workload=Deployment:web:2 --workload=Deployment:api:2
-   
+
    # Preview rollback
    node scripts/infra.rollback.mjs --plan=<staging-plan-path> --dry-run
    ```
