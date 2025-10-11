@@ -35,6 +35,10 @@ requests>=2.32
 PyYAML>=6.0
 numpy>=2.0  # Required by rag_query.py imports
 
+# Metrics + monitoring
+prometheus_client>=0.21
+prometheus-fastapi-instrumentator>=7.1
+
 # Health check
 httptools>=0.6
 
