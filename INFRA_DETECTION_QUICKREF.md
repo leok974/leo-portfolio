@@ -1,8 +1,10 @@
-# Replica Detection - Quick Reference
+# Detection Quick Reference (Replicas & HPA)
 
 ## TL;DR
 
-Infrastructure scale plans now **detect current replicas** from the cluster and show **deltas** in PR bodies (`3 → 6` instead of `→ 6`).
+Infrastructure scale plans now **detect current state** from the cluster and show **deltas** in PR bodies:
+- **Replicas**: `3 → 6` instead of `→ 6`
+- **HPA**: `min **2 → 4** · max **10 → 12** · cpu **70% → 65%**` instead of static values
 
 **Safe by design**: Read-only, optional, gracefully falls back to `unknown` if kubectl unavailable.
 
@@ -14,12 +16,13 @@ Infrastructure scale plans now **detect current replicas** from the cluster and 
 ```bash
 node scripts/infra.scale.mjs --apply \
   --target=prod --namespace=assistant \
-  --workload=Deployment:web:6
+  --workload=Deployment:web:6 --hpa=min:4,max:12,cpu:65
 ```
 
 **PR Body Shows**:
 ```markdown
 | Scale | Deployment/web | replicas **3 → 6** |
+| HPA | web | min **2 → 4** · max **10 → 12** · cpu **70% → 65%** |
 ```
 
 ---
@@ -36,6 +39,7 @@ SKIP_CLUSTER_DETECT=1 node scripts/infra.scale.mjs --apply ...
 **PR Body Shows**:
 ```markdown
 | Scale | Deployment/web | replicas → **6** |
+| HPA | web | min **4** · max **12** · cpu **65%** |
 ```
 
 ---
@@ -61,6 +65,7 @@ SKIP_CLUSTER_DETECT=1 node scripts/infra.scale.mjs --apply ...
 |:--|:--|:--|
 | Scale | Deployment/web (ns: `assistant`) | replicas **3 → 6** |
 | Scale | Deployment/api (ns: `assistant`) | replicas **2 → 4** |
+| HPA | web (ns: `assistant`) | min **2 → 4** · max **10 → 12** · cpu **70% → 65%** |
 ```
 
 ### Without Detection
@@ -72,22 +77,33 @@ SKIP_CLUSTER_DETECT=1 node scripts/infra.scale.mjs --apply ...
 |:--|:--|:--|
 | Scale | Deployment/web (ns: `assistant`) | replicas → **6** |
 | Scale | Deployment/api (ns: `assistant`) | replicas → **4** |
+| HPA | web (ns: `assistant`) | min **4** · max **12** · cpu **65%** |
 ```
 
 ---
 
 ## Detection Notes
 
-### Successful Detection (No Change)
+### Replica Detection
+
+**Successful Detection (No Change)**:
 ```yaml
 notes:
   - "No change: Deployment/web already at 6 replicas."
 ```
 
-### Failed Detection
+**Failed Detection**:
 ```yaml
 notes:
   - "Could not detect current replicas for Deployment/web (no kubectl or no access)."
+```
+
+### HPA Detection
+
+**Failed Detection**:
+```yaml
+notes:
+  - "Could not detect current HPA for Deployment/web (no kubectl or no access)."
 ```
 
 ---

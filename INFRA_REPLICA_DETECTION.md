@@ -1,8 +1,12 @@
-# Infrastructure Replica Detection
+# Infrastructure Detection (Replicas & HPA)
 
 ## Overview
 
-The infrastructure orchestration system now **detects current replica counts** from the cluster before generating scale plans. This provides reviewers with clear visibility into the actual changes (`3 → 6 replicas`) rather than just target values (`→ 6 replicas`).
+The infrastructure orchestration system now **detects current state** from the cluster before generating scale plans:
+- **Replica counts**: Shows `3 → 6 replicas` instead of `→ 6 replicas`
+- **HPA settings**: Shows `min **2 → 4** · max **10 → 12** · cpu **70% → 65%**` instead of static values
+
+This provides reviewers with clear visibility into **actual changes** rather than just target values.
 
 **Key principle**: Detection is **read-only, optional, and safe**. Plans still generate successfully even if kubectl is unavailable or cluster access is denied.
 
@@ -43,6 +47,22 @@ If detected replicas match the target:
 - Action still included in plan (not filtered out)
 - Reviewers can see the no-op explicitly
 
+### 5. HPA Detection
+
+When `makePlan()` encounters HPA actions:
+
+1. Calls `detectHPA(name, namespace)` for each HPA
+2. Runs: `kubectl -n <namespace> get hpa <name> -o json`
+3. Extracts:
+   - `spec.minReplicas` → `from.min`
+   - `spec.maxReplicas` → `from.max`
+   - `spec.metrics[*].resource.target.averageUtilization` (CPU) → `from.targetCPU`
+4. Sets `action.from` object with detected values
+5. If detection fails: sets all from values to `"unknown"` and adds a note
+
+**HPA Detection Notes**:
+- `"Could not detect current HPA for Deployment/web (no kubectl or no access)."`
+
 ---
 
 ## Usage Examples
@@ -82,7 +102,9 @@ SKIP_CLUSTER_DETECT=1 node scripts/infra.scale.mjs --apply \
 
 ## PR Body Changes
 
-### With Detection (from=3, to=6)
+### Replica Detection
+
+**With Detection (from=3, to=6)**:
 
 ```markdown
 | Action | Target | Details |
@@ -90,7 +112,7 @@ SKIP_CLUSTER_DETECT=1 node scripts/infra.scale.mjs --apply \
 | Scale | Deployment/web (ns: `assistant`) | replicas **3 → 6** |
 ```
 
-### Without Detection (from=unknown, to=6)
+**Without Detection (from=unknown, to=6)**:
 
 ```markdown
 | Action | Target | Details |
@@ -98,18 +120,50 @@ SKIP_CLUSTER_DETECT=1 node scripts/infra.scale.mjs --apply \
 | Scale | Deployment/web (ns: `assistant`) | replicas → **6** |
 ```
 
+### HPA Detection
+
+**With Detection (from: min=2, max=10, cpu=70%)**:
+
+```markdown
+| Action | Target | Details |
+|:--|:--|:--|
+| HPA | web (ns: `assistant`) | min **2 → 4** · max **10 → 12** · cpu **70% → 65%** |
+```
+
+**Without Detection (from=unknown)**:
+
+```markdown
+| Action | Target | Details |
+|:--|:--|:--|
+| HPA | web (ns: `assistant`) | min **4** · max **12** · cpu **65%** |
+```
+
 ---
 
 ## SUMMARY.md Changes
 
-### With Detection
+### Replica Detection
+
+**With Detection**:
 ```markdown
 1. **Scale** Deployment/web → replicas: 6 (from 3)
 ```
 
-### Without Detection
+**Without Detection**:
 ```markdown
 1. **Scale** Deployment/web → replicas: 6 (from unknown)
+```
+
+### HPA Detection
+
+**With Detection**:
+```markdown
+3. **HPA** web (min:4 from:2 · max:12 from:10 · cpu:65% from:70%)
+```
+
+**Without Detection**:
+```markdown
+3. **HPA** web (min:4 from:? · max:12 from:? · cpu:65% from:?%)
 ```
 
 ---
@@ -117,6 +171,8 @@ SKIP_CLUSTER_DETECT=1 node scripts/infra.scale.mjs --apply \
 ## Detection Notes in Plan
 
 Plans include `notes` array with detection results:
+
+### Replica Detection Notes
 
 **Successful detection with no change**:
 ```yaml
@@ -128,6 +184,14 @@ notes:
 ```yaml
 notes:
   - "Could not detect current replicas for Deployment/web (no kubectl or no access)."
+```
+
+### HPA Detection Notes
+
+**Failed detection**:
+```yaml
+notes:
+  - "Could not detect current HPA for Deployment/web (no kubectl or no access)."
 ```
 
 ---
@@ -191,6 +255,34 @@ export function detectReplicas(kind, name, namespace) {
 }
 ```
 
+### `detectHPA()` Function
+
+```javascript
+export function detectHPA(name, namespace) {
+  if (!shouldDetect()) return { ok: false };
+  try {
+    const out = execSync(
+      `kubectl -n ${namespace} get hpa ${name} -o json`,
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }
+    );
+    const h = JSON.parse(out);
+    const min = h?.spec?.minReplicas;
+    const max = h?.spec?.maxReplicas;
+    // Find CPU target % in metrics array
+    let cpu = null;
+    const metrics = h?.spec?.metrics || [];
+    for (const m of metrics) {
+      if (m?.resource?.name?.toLowerCase() === "cpu") {
+        cpu = m?.resource?.target?.averageUtilization ?? cpu;
+      }
+    }
+    return { ok: true, min, max, cpu };
+  } catch {
+    return { ok: false };
+  }
+}
+```
+
 ### CLI Integration
 
 ```javascript
@@ -208,7 +300,9 @@ const DETECT = val("--detect", "on"); // CLI flag
 
 ## Testing
 
-### Test Fixture (tests/infra.prbody.spec.ts)
+### Replica Detection Tests
+
+**Test Fixture (tests/infra.prbody.spec.ts)**:
 
 ```typescript
 const plan = {
@@ -218,10 +312,30 @@ const plan = {
 };
 ```
 
-### Test Assertion
+**Test Assertion**:
 
 ```typescript
 expect(md).toMatch(/Scale \| Deployment\/web .* replicas \*\*3 → 6\*\*/);
+```
+
+### HPA Detection Tests
+
+**Test Fixture (tests/infra.prbody.spec.ts)**:
+
+```typescript
+const plan = {
+  actions: [
+    { action: "apply_hpa", kind: "HorizontalPodAutoscaler", name: "web",
+      hpa: { min: 4, max: 12, targetCPU: 65 },
+      from: { min: 2, max: 10, targetCPU: 70 } }
+  ]
+};
+```
+
+**Test Assertion**:
+
+```typescript
+expect(md).toMatch(/HPA \| web .* min \*\*2 → 4\*\* · max \*\*10 → 12\*\* · cpu \*\*70% → 65%\*\*/);
 ```
 
 ---
