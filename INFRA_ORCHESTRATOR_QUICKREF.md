@@ -38,16 +38,33 @@ node scripts/orchestrator.nightly.mjs
 ### 2. Review Generated Plan
 The orchestrator will:
 1. Create a draft PR with `needs-approval` label
-2. Include `plan.yaml` with 6 scaling actions:
+2. Post interactive checklist comment with:
+   - Review items (plan.yaml, SUMMARY.md, namespace, workloads, capacity)
+   - Quick action commands (`/approve-plan`, `/rollback-plan`)
+3. Include `plan.yaml` with 6 scaling actions:
    - Scale `web` deployment to 6 replicas
    - Scale `api` deployment to 4 replicas
    - Update `web` resources (cpu: 500m/1, mem: 1Gi/2Gi)
    - Update `api` resources (cpu: 400m/1, mem: 1Gi/2Gi)
    - Apply HPA to `web` (min: 4, max: 12, cpu: 65%)
    - Apply HPA to `api` (min: 4, max: 12, cpu: 65%)
-3. Include `SUMMARY.md` with execution preview
+4. Include `SUMMARY.md` with execution preview
 
 ### 3. Execute Plan
+
+**Option A: Chat Command (Recommended)**
+```bash
+# Simply comment on the PR:
+/approve-plan
+
+# The command workflow will:
+# - Add execute-plan label
+# - Remove needs-approval label
+# - Post acknowledgment comment
+# - Trigger apply workflow
+```
+
+**Option B: Manual Label**
 ```bash
 # Add label to trigger execution
 gh pr edit <PR-NUMBER> --add-label execute-plan
@@ -99,15 +116,52 @@ permissions:
 
 ## Approval Gates
 
+### Interactive Checklist
+
+When a plan PR is created, an interactive checklist comment is posted:
+
+```markdown
+## ✅ Infra Scale Plan – Review Checklist
+
+- [ ] Review `plan.yaml` and `SUMMARY.md`
+- [ ] Confirm namespace and workloads
+- [ ] Capacity & budget LGTM
+
+### Quick actions
+- To **apply** this plan, comment: **/approve-plan** (adds label `execute-plan`)
+- To **prepare rollback**, comment: **/rollback-plan** (adds label `rollback-plan`)
+
+> Both actions are label-gated by CI. Remove labels to stop jobs. 🚦
+```
+
+### Chat Commands
+
+| Command | Action | Workflow Triggered |
+|---------|--------|-------------------|
+| `/approve-plan` | Adds `execute-plan` label, removes `needs-approval` | `infra-apply.yml` |
+| `/rollback-plan` | Adds `rollback-plan` label | `infra-rollback.yml` |
+
+**Command Workflow**: `.github/workflows/plan-commands.yml`
+- Listens to PR comments (`issue_comment` event)
+- Parses commands (case-insensitive)
+- Adds appropriate labels
+- Posts acknowledgment comment
+
 ### Gate 1: needs-approval
 - **Added by**: `infra.scale` automatically
 - **Purpose**: Review gate
 - **Action**: Review `plan.yaml` and `SUMMARY.md`
+- **Cleared by**: `/approve-plan` command or manual label addition
 
 ### Gate 2: execute-plan
-- **Added by**: Human reviewer
+- **Added by**: `/approve-plan` command or human reviewer
 - **Purpose**: Execution gate
 - **Action**: Triggers CI workflow to run `kubectl` commands
+
+### Gate 3: rollback-plan
+- **Added by**: `/rollback-plan` command or human reviewer
+- **Purpose**: Rollback gate
+- **Action**: Triggers rollback workflow (dry-run + optional execution)
 
 ## Orchestrator Output
 
