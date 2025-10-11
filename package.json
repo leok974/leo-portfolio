@@ -28,6 +28,8 @@
     "infra:scale": "node scripts/infra.scale.mjs --apply",
     "infra:apply:dry": "node scripts/infra.apply.mjs --dry-run",
     "infra:apply": "node scripts/infra.apply.mjs --execute",
+    "infra:rollback:dry": "node scripts/infra.rollback.mjs --dry-run",
+    "infra:rollback": "node scripts/infra.rollback.mjs --execute",
     "seo:guardrails": "node ./scripts/seo-meta-guardrails.mjs --out json",
     "seo:lighthouse": "node ./scripts/lighthouse-batch.mjs --sitemap sitemap.xml --format json",
     "seo:validate": "npm run seo:guardrails && npm run seo:lighthouse",

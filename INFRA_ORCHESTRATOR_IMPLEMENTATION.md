@@ -97,6 +97,93 @@ GITHUB_TOKEN=<token>
 - `issues:write` - Add labels (needs-approval)
 - `actions:read` - Check workflow status
 
+## Rollback System
+
+### New Component: infra.rollback.mjs
+
+**File**: `scripts/infra.rollback.mjs`
+
+Safe, label-gated rollback executor that reads `plan.yaml` and reverses executed actions.
+
+#### Key Features
+
+1. **Dry-run by default**: Requires explicit `--execute` flag
+2. **Label-gated execution**: Validates PR has `rollback-plan` label via GitHub API
+3. **Rollback hint support**: Uses concrete previous manifests from `rollbackHints` array
+4. **Deployment rollback**: Falls back to `kubectl rollout undo` for workloads
+5. **HPA handling**: Applies hint file or deletes HPA to revert autoscaling
+
+#### Usage
+
+```bash
+# Preview rollback (safe, no execution)
+node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --dry-run
+
+# Execute rollback (requires rollback-plan label on PR)
+node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --execute --pr=123
+```
+
+#### Package Scripts
+
+```json
+{
+  "scripts": {
+    "infra:rollback:dry": "node scripts/infra.rollback.mjs --dry-run",
+    "infra:rollback": "node scripts/infra.rollback.mjs --execute"
+  }
+}
+```
+
+#### CI Workflow Integration
+
+**File**: `.github/workflows/infra-rollback.yml`
+
+```yaml
+name: infra-rollback
+on:
+  pull_request_target:
+    types: [labeled, opened, reopened, synchronize]
+
+jobs:
+  rollback:
+    if: contains(github.event.pull_request.labels.*.name, 'rollback-plan')
+    # ... runs dry-run preview first
+    # ... executes rollback with kubectl
+```
+
+**Trigger**: Add `rollback-plan` label to PR
+
+#### How Rollback Works
+
+1. **Parse Plan**: Reads `plan.yaml` from PR artifacts
+2. **Apply Hints**: If `rollbackHints` contains file paths (e.g., `previous-hpa.yaml`):
+   ```bash
+   kubectl -n <namespace> apply -f previous-hpa.yaml
+   ```
+3. **Rollback Deployments**: For each `scale_workload` and `update_resources` action:
+   ```bash
+   kubectl -n <namespace> rollout undo deployment/<name>
+   ```
+4. **Handle HPA**: If plan applied HPA and no hint was used:
+   ```bash
+   kubectl -n <namespace> delete hpa <name>
+   ```
+
+#### Test Coverage
+
+**File**: `tests/infra.rollback.spec.ts`
+
+```typescript
+describe("infra.rollback (dry-run)", () => {
+  it("previews rollout undo and HPA hint apply", () => {
+    const out = execSync(`node scripts/infra.rollback.mjs --plan=${file} --dry-run`, { encoding: "utf8" });
+    expect(out).toMatch(/preview: kubectl -n testns rollout undo deployment\/web/);
+    expect(out).toMatch(/preview: kubectl -n testns apply -f previous-hpa.yaml/);
+    expect(out).toMatch(/succeeded/);
+  });
+});
+```
+
 ## Contract Validation
 
 ### infra.scale CLI Contracts
@@ -449,6 +536,15 @@ node scripts/infra.scale.mjs --dry-run \
   --hpa=min:2,max:6,cpu:70 \
   --req=web:cpu=300m,mem=512Mi --lim=web:cpu=700m,mem=1Gi \
   --req=api:cpu=300m,mem=512Mi --lim=api:cpu=700m,mem=1Gi
+
+# Preview rollback (safe, no execution)
+npm run infra:rollback:dry
+
+# Or directly
+node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --dry-run
+
+# Execute rollback (label-gated, requires rollback-plan label on PR)
+node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --execute --pr=123
 
 # If unsure of resource names
 kubectl config current-context

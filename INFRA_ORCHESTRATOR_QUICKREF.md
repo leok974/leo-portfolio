@@ -173,18 +173,90 @@ npm run infra:apply:dry -- --plan-path artifacts/infra-scale-*/plan.yaml
 
 ## Rollback
 
-### If Plan Hasn't Executed Yet
-1. Close the PR without adding `execute-plan` label
-2. Plan never executes
+### Safe, Label-Gated Rollback Executor
 
-### If Plan Executed
-1. Revert PR merge
-2. Run rollback plan:
+The rollback executor (`scripts/infra.rollback.mjs`) provides safe rollback capabilities with multiple safety gates:
+
+**Features:**
+- Reads `plan.yaml` and reverses actions
+- Uses `rollbackHints` for concrete previous manifests
+- Falls back to `kubectl rollout undo` for deployments
+- Handles HPA deletion or restoration
+- **Dry-run by default** (safe preview)
+- **Label-gated execution** (requires `rollback-plan` label on PR)
+
+### Quick Rollback Commands
+
+#### Preview Rollback (Safe)
 ```bash
-node scripts/infra.scale.mjs --apply \
-  --target=prod --namespace=assistant \
-  --workload=Deployment:web:<old-replicas> \
-  --workload=Deployment:api:<old-replicas>
+# Preview what rollback would do (dry-run)
+node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --dry-run
+
+# Or via npm script
+npm run infra:rollback:dry
+```
+
+#### Execute Rollback (Label-Gated)
+```bash
+# Local execution (requires kubeconfig)
+node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --execute --pr=123
+
+# Or via npm script
+npm run infra:rollback
+```
+
+**Safety Gate**: When using `--execute` with `--pr=<number>`, the PR **must** have the `rollback-plan` label or the script exits with `skipped`.
+
+### Rollback via CI (Recommended)
+
+1. **Add `rollback-plan` label to PR**
+   ```bash
+   gh pr edit <PR-NUMBER> --add-label rollback-plan
+   ```
+
+2. **CI workflow triggers automatically**
+   - Workflow: `.github/workflows/infra-rollback.yml`
+   - Verifies label presence
+   - Runs dry-run preview first
+   - Executes rollback with kubectl
+
+### How Rollback Works
+
+1. **Uses rollbackHints first**: If `plan.yaml` contains hints like `previous-hpa.yaml`, applies them:
+   ```bash
+   kubectl -n <namespace> apply -f previous-hpa.yaml
+   ```
+
+2. **Rolls back deployments**: For `scale_workload` and `update_resources` actions:
+   ```bash
+   kubectl -n <namespace> rollout undo deployment/<name>
+   ```
+
+3. **Handles HPA**: If no hint provided, deletes HPA to revert to previous state:
+   ```bash
+   kubectl -n <namespace> delete hpa <name>
+   ```
+
+### Rollback Strategies
+
+#### If Plan Hasn't Executed Yet
+1. Close the PR without adding `execute-plan` label
+2. Plan never executes (no rollback needed)
+
+#### If Plan Just Executed
+1. Add `rollback-plan` label to PR
+2. CI workflow executes rollback automatically
+3. Review rollback results in GitHub Actions logs
+
+#### Manual Rollback
+```bash
+# If you have cluster access locally
+node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --execute --pr=<PR-NUMBER>
+
+# Verify rollback
+kubectl -n assistant get deploy
+kubectl -n assistant describe deploy web
+kubectl -n assistant describe deploy api
 ```
 
 ## Package Scripts
@@ -195,6 +267,8 @@ node scripts/infra.scale.mjs --apply \
 | `infra:scale` | Generate plan and create PR |
 | `infra:apply:dry` | Preview kubectl commands |
 | `infra:apply` | Execute plan |
+| `infra:rollback:dry` | Preview rollback (safe, no execution) |
+| `infra:rollback` | Execute rollback (requires label gate) |
 
 ## Kubernetes Discovery
 

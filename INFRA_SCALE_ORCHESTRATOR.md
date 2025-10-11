@@ -228,7 +228,24 @@ After reviewing the plan:
 
 **Safety**: Two separate labels for two separate actions (generate vs. execute)
 
-## Rollback Hints
+## Rollback System
+
+### Safe, Label-Gated Rollback Executor
+
+The infrastructure system includes a dedicated rollback executor (`scripts/infra.rollback.mjs`) with multiple safety gates:
+
+**Key Features:**
+- Reads `plan.yaml` and reverses executed actions
+- Uses `rollbackHints` for concrete previous manifests (e.g., `previous-hpa.yaml`)
+- Falls back to `kubectl rollout undo` for deployments
+- Handles HPA deletion or restoration from hints
+- **Dry-run by default** - requires explicit `--execute` flag
+- **Label-gated** - requires `rollback-plan` label on PR for execution
+- **PR validation** - verifies label via GitHub API before executing
+
+### Rollback Workflow
+
+#### 1. Generate Plan with Rollback Hints
 
 Every generated plan includes rollback commands:
 
@@ -240,6 +257,72 @@ rollbackHints:
 ```
 
 These are included in `SUMMARY.md` for quick reference during incidents.
+
+#### 2. Preview Rollback (Safe)
+
+```bash
+# Dry-run locally (no execution)
+node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --dry-run
+
+# Output shows preview commands:
+# preview: kubectl -n assistant apply -f previous-hpa.yaml
+# preview: kubectl -n assistant rollout undo deployment/web
+# preview: kubectl -n assistant rollout undo deployment/api
+```
+
+#### 3. Execute Rollback (Label-Gated)
+
+**Via CI (Recommended)**:
+1. Add `rollback-plan` label to PR:
+   ```bash
+   gh pr edit <PR-NUMBER> --add-label rollback-plan
+   ```
+2. CI workflow (`.github/workflows/infra-rollback.yml`) triggers automatically
+3. Validates label presence
+4. Executes rollback with kubectl
+
+**Locally** (requires kubeconfig):
+```bash
+node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --execute --pr=123
+```
+
+**Safety Gate**: Script validates PR has `rollback-plan` label before executing. Without label, exits with `skipped`.
+
+### How Rollback Works
+
+1. **Parse Plan**: Reads `plan.yaml` to identify actions that were executed
+2. **Apply Hints First**: If `rollbackHints` contains file paths (e.g., `previous-hpa.yaml`), applies them via `kubectl apply -f`
+3. **Rollback Deployments**: For each `scale_workload` and `update_resources` action, runs `kubectl rollout undo deployment/<name> -n <namespace>`
+4. **Handle HPA**: If plan applied HPA and no hint was used, deletes HPA to revert: `kubectl delete hpa <name> -n <namespace>`
+
+### Package Scripts
+
+```bash
+# Preview rollback (safe, no execution)
+npm run infra:rollback:dry
+
+# Execute rollback (requires label gate)
+npm run infra:rollback
+```
+
+### CI Workflow
+
+`.github/workflows/infra-rollback.yml` provides automated rollback:
+
+```yaml
+name: infra-rollback
+on:
+  pull_request_target:
+    types: [labeled, opened, reopened, synchronize]
+
+jobs:
+  rollback:
+    if: contains(github.event.pull_request.labels.*.name, 'rollback-plan')
+    # ... runs dry-run preview first
+    # ... executes rollback with kubectl
+```
+
+**Trigger**: Add `rollback-plan` label to PR
 
 ## Database Tracking
 
