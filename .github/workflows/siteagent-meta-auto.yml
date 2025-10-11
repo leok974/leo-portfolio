@@ -79,27 +79,20 @@ jobs:
               core.warning(`Could not update repo settings: ${error.message}`);
             }
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install backend deps (best-effort)
+      - name: Start backend stack (Docker Compose)
+        working-directory: deploy
         run: |
-          pip install -q "fastapi" "uvicorn[standard]" || true
-          # If your repo has a requirements file, uncomment:
-          # pip install -r requirements.txt || true
-
-      - name: Boot API in background
-        run: |
-          nohup python -m assistant_api.main > api.log 2>&1 &
-          for i in {1..45}; do
-            if curl -sf http://127.0.0.1:8001/ready >/dev/null; then
-              echo "API ready"; break
+          docker compose -f docker-compose.ci.yml up -d --build
+          echo "Waiting for API to be ready..."
+          for i in {1..30}; do
+            if curl -sf http://127.0.0.1:8001/ready >/dev/null 2>&1; then
+              echo "✅ API ready"
+              break
             fi
-            sleep 1
+            echo "⏳ Waiting for API... ($i/30)"
+            sleep 2
           done
-          curl -s http://127.0.0.1:8001/ready || (echo "API failed to start" && exit 1)
+          curl -s http://127.0.0.1:8001/ready || (echo "❌ API failed to start" && docker compose -f docker-compose.ci.yml logs && exit 1)
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -317,3 +310,9 @@ jobs:
           git add agent/metrics/seo-meta-auto.jsonl
           git commit -m "metrics: append nightly run $GITHUB_RUN_ID"
           git push origin metrics
+
+      - name: Cleanup Docker containers
+        if: always()
+        working-directory: deploy
+        run: |
+          docker compose -f docker-compose.ci.yml down -v || true
