@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["urls"],
+  "properties": {
+    "urls": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uri",
+        "pattern": "^https?://"
+      },
+      "minItems": 1,
+      "description": "Array of URLs to tune"
+    },
+    "strategy": {
+      "type": "string",
+      "enum": ["ctr-remediate", "heuristic"],
+      "default": "ctr-remediate",
+      "description": "Tuning strategy: ctr-remediate for CTR-based optimization, heuristic for rule-based"
+    },
+    "max_changes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "default": 5,
+      "description": "Maximum number of changes to apply per run"
+    },
+    "dry_run": {
+      "type": "boolean",
+      "default": true,
+      "description": "If true, changes are previewed but not applied"
+    }
+  },
+  "additionalProperties": false
+}

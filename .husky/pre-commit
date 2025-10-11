@@ -1,3 +1,4 @@
 #!/usr/bin/env sh
-# Simplified for Husky v9+/v10: legacy bootstrap lines removed per deprecation notice.
-npx lint-staged
+. "$(dirname -- "$0")/_/husky.sh"
+
+npm run payload:validate && npm run -s lint || true
