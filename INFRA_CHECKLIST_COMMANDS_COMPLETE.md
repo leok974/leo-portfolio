@@ -1,6 +1,6 @@
 # PR Checklist and Chat Commands - Implementation Complete
 
-**Date**: October 11, 2025  
+**Date**: October 11, 2025
 **Status**: ✅ Complete
 
 ## Overview
@@ -310,7 +310,7 @@ All of these work (case-insensitive, whitespace-tolerant):
 /approve-plan
 /APPROVE-PLAN
   /approve-plan
-/approve-plan  
+/approve-plan
 /approve-plan followed by explanation
 ```
 

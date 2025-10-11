@@ -348,6 +348,71 @@ async function openPR({ title, body, files }) {
 }
 
 /**
+ * Build actions table for PR body
+ * @param {Object} plan - Scale plan
+ * @returns {string} Markdown table
+ */
+export function buildActionsTable(plan) {
+  const ns = plan?.context?.namespace || "default";
+  const rows = (plan.actions || []).map(a => {
+    const kind = String(a.kind || "").replace(/^HorizontalPodAutoscaler$/i, "HPA");
+    if (a.action === "scale_workload") {
+      return `| Scale | ${kind}/${a.name} (ns: \`${ns}\`) | replicas → **${a.to}** |`;
+    }
+    if (a.action === "update_resources") {
+      const req = a.requests ? "`" + Object.entries(a.requests).map(([k,v])=>`${k}=${v}`).join(",") + "`" : "—";
+      const lim = a.limits ? "`" + Object.entries(a.limits).map(([k,v])=>`${k}=${v}`).join(",") + "`" : "—";
+      return `| Resources | ${kind}/${a.name} (ns: \`${ns}\`) | req ${req} · lim ${lim} |`;
+    }
+    if (a.action === "apply_hpa") {
+      const h = a.hpa || {};
+      return `| HPA | ${a.name} (ns: \`${ns}\`) | min **${h.min ?? "?"}** · max **${h.max ?? "?"}** · cpu **${h.targetCPU ?? "?"}%** |`;
+    }
+    return `| ${a.action} | ${kind}/${a.name} (ns: \`${ns}\`) | — |`;
+  });
+  if (!rows.length) return "_No actions in this plan._";
+  return [
+    "| Action | Target | Details |",
+    "|:--|:--|:--|",
+    ...rows.slice(0, 30) // keep table concise
+  ].join("\n");
+}
+
+/**
+ * Build PR body with plan summary
+ * @param {Object} params - Parameters
+ * @param {Object} params.plan - Scale plan
+ * @param {boolean} params.artifactPaths - Whether to include artifact paths
+ * @returns {string} PR body markdown
+ */
+export function buildPRBody({ plan, artifactPaths }) {
+  const table = buildActionsTable(plan);
+  const artifactsList = artifactPaths
+    ? [
+        "- `ops/plans/infra-scale/plan.yaml` (in this PR)",
+        "- `ops/plans/infra-scale/SUMMARY.md` (in this PR)"
+      ].join("\n")
+    : "- Plan & Summary artifacts are attached to this PR.";
+  const target = plan?.metadata?.target || "unknown";
+  const ns = plan?.context?.namespace || "default";
+  const autoscaling = plan?.assumptions?.autoscaling || "none";
+  return [
+    `## Infra Scale Plan — **${target}**`,
+    "",
+    `- Namespace: \`${ns}\``,
+    `- Autoscaling: \`${autoscaling}\``,
+    "",
+    "### Artifacts",
+    artifactsList,
+    "",
+    "### Actions (summary)",
+    table,
+    "",
+    "> Add label **`execute-plan`** to apply; **`rollback-plan`** to preview rollback."
+  ].join("\n");
+}
+
+/**
  * Post interactive checklist comment to PR
  * @param {Octokit} octo - Octokit instance
  * @param {number} issueNumber - PR number
@@ -399,17 +464,10 @@ async function postPRChecklist(octo, issueNumber) {
       [`ops/plans/infra-scale/${TARGET}/SUMMARY.md`]: summary
     };
 
+    const body = buildPRBody({ plan, artifactPaths: true });
     const prUrl = await openPR({
       title: `infra.scale: ${TARGET} (${new Date().toISOString().slice(0, 10)})`,
-      body: [
-        "## Infra scale plan",
-        "",
-        "Artifacts:",
-        `- \`ops/plans/infra-scale/${TARGET}/plan.yaml\``,
-        `- \`ops/plans/infra-scale/${TARGET}/SUMMARY.md\``,
-        "",
-        "**Gate**: draft PR with `needs-approval` label."
-      ].join("\n"),
+      body,
       files: repoFiles
     });
 
