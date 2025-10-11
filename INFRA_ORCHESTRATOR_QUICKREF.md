@@ -38,17 +38,43 @@ node scripts/orchestrator.nightly.mjs
 ### 2. Review Generated Plan
 The orchestrator will:
 1. Create a draft PR with `needs-approval` label
-2. Post interactive checklist comment with:
+2. Generate comprehensive PR body with:
+   - Target, namespace, autoscaling info
+   - Artifacts list (plan.yaml, SUMMARY.md paths)
+   - **Actions summary table** (Scale, Resources, HPA)
+   - Quick action labels note
+3. Post interactive checklist comment with:
    - Review items (plan.yaml, SUMMARY.md, namespace, workloads, capacity)
    - Quick action commands (`/approve-plan`, `/rollback-plan`)
-3. Include `plan.yaml` with 6 scaling actions:
+4. Include `plan.yaml` with 6 scaling actions:
    - Scale `web` deployment to 6 replicas
    - Scale `api` deployment to 4 replicas
    - Update `web` resources (cpu: 500m/1, mem: 1Gi/2Gi)
    - Update `api` resources (cpu: 400m/1, mem: 1Gi/2Gi)
    - Apply HPA to `web` (min: 4, max: 12, cpu: 65%)
    - Apply HPA to `api` (min: 4, max: 12, cpu: 65%)
-4. Include `SUMMARY.md` with execution preview
+5. Include `SUMMARY.md` with execution preview
+
+**Example PR Body**:
+```markdown
+## Infra Scale Plan — **prod**
+
+- Namespace: `assistant`
+- Autoscaling: `hpa`
+
+### Artifacts
+- `ops/plans/infra-scale/plan.yaml` (in this PR)
+- `ops/plans/infra-scale/SUMMARY.md` (in this PR)
+
+### Actions (summary)
+| Action | Target | Details |
+|:--|:--|:--|
+| Scale | Deployment/web (ns: `assistant`) | replicas → **6** |
+| Resources | Deployment/web (ns: `assistant`) | req `cpu=500m,mem=1Gi` · lim `cpu=1,mem=2Gi` |
+| HPA | web (ns: `assistant`) | min **4** · max **12** · cpu **65%** |
+
+> Add label **`execute-plan`** to apply; **`rollback-plan`** to preview rollback.
+```
 
 ### 3. Execute Plan
 

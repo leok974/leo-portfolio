@@ -40,6 +40,40 @@ export function detectContext() {
 }
 
 /**
+ * Check if cluster detection should run
+ * @returns {boolean} False if SKIP_CLUSTER_DETECT=1, true otherwise
+ */
+function shouldDetect() {
+  // SKIP_CLUSTER_DETECT=1 to force off, or detect=off via CLI (infra.scale passes through)
+  return String(process.env.SKIP_CLUSTER_DETECT || "").trim() !== "1";
+}
+
+/**
+ * Detect current replica count from cluster
+ * @param {string} kind - Resource kind (Deployment, StatefulSet, etc.)
+ * @param {string} name - Resource name
+ * @param {string} namespace - Namespace
+ * @returns {Object} { ok: boolean, replicas?: number }
+ */
+export function detectReplicas(kind, name, namespace) {
+  if (!shouldDetect()) return { ok: false };
+  try {
+    const k = kind.toLowerCase();
+    const out = execSync(
+      `kubectl -n ${namespace} get ${k}/${name} -o json`,
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }
+    );
+    const obj = JSON.parse(out);
+    // Prefer spec.replicas (desired) with fallback to status.replicas
+    const current = obj?.spec?.replicas ?? obj?.status?.replicas;
+    if (typeof current === "number") return { ok: true, replicas: current };
+    return { ok: false };
+  } catch {
+    return { ok: false };
+  }
+}
+
+/**
  * Generate a scale plan from input specification
  * @param {Object} input - Plan input with target, namespace, workloads, autoscaling
  * @returns {Object} ScalePlan object with actions, risks, notes, and rollback hints
@@ -51,18 +85,29 @@ export function makePlan(input) {
   const actions = [];
   const notes = [];
   const risks = [];
+  const detectionNotes = [];
 
   for (const w of (input.workloads || [])) {
     const id = `${w.kind}/${w.name}`;
 
     // Scale replicas
     if (w.replicas != null) {
+      let fromVal = "unknown";
+      const d = detectReplicas(w.kind, w.name, ns);
+      if (d.ok) {
+        fromVal = d.replicas;
+        if (Number(w.replicas) === Number(d.replicas)) {
+          detectionNotes.push(`No change: ${id} already at ${d.replicas} replicas.`);
+        }
+      } else {
+        detectionNotes.push(`Could not detect current replicas for ${id} (no kubectl or no access).`);
+      }
       actions.push({
         action: "scale_workload",
         kind: w.kind,
         name: w.name,
         namespace: ns,
-        from: "${detect}",
+        from: fromVal,
         to: w.replicas,
         reason: "requested_scale",
       });
@@ -126,7 +171,7 @@ export function makePlan(input) {
       "kubectl apply -f previous-hpa.yaml"
     ],
     risks,
-    notes
+    notes: [...notes, ...detectionNotes]
   };
 
   return plan;

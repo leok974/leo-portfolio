@@ -48,6 +48,7 @@ const DRY = flag("--dry-run") || !flag("--apply");
 const TARGET = val("--target", "prod");
 const NAMESPACE = val("--namespace", "default");
 const AUTOSCALING = val("--autoscaling", "hpa"); // default to hpa
+const DETECT = val("--detect", "on"); // on|off → off disables kubectl detection
 const OWNER = process.env.GH_OWNER || val("--owner", "");
 const REPO = process.env.GH_REPO || val("--repo", "");
 const TOKEN = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || "";
@@ -200,7 +201,7 @@ function toSummary(plan) {
   const actions = plan.actions
     .map((a, i) => {
       if (a.action === "scale_workload") {
-        return `${i + 1}. **Scale** ${a.kind}/${a.name} → replicas: ${a.to} (from ${a.from})`;
+        return `${i + 1}. **Scale** ${a.kind}/${a.name} → replicas: ${a.to} (from ${a.from ?? "unknown"})`;
       }
       if (a.action === "update_resources") {
         const req = a.requests ? `req ${JSON.stringify(a.requests)}` : "";
@@ -357,7 +358,9 @@ export function buildActionsTable(plan) {
   const rows = (plan.actions || []).map(a => {
     const kind = String(a.kind || "").replace(/^HorizontalPodAutoscaler$/i, "HPA");
     if (a.action === "scale_workload") {
-      return `| Scale | ${kind}/${a.name} (ns: \`${ns}\`) | replicas → **${a.to}** |`;
+      const from = a.from ?? "unknown";
+      const detail = (from !== "unknown") ? `replicas **${from} → ${a.to}**` : `replicas → **${a.to}**`;
+      return `| Scale | ${kind}/${a.name} (ns: \`${ns}\`) | ${detail} |`;
     }
     if (a.action === "update_resources") {
       const req = a.requests ? "`" + Object.entries(a.requests).map(([k,v])=>`${k}=${v}`).join(",") + "`" : "—";
@@ -440,6 +443,9 @@ async function postPRChecklist(octo, issueNumber) {
  * Main execution function
  */
 (async function main() {
+  if (DETECT === "off") {
+    process.env.SKIP_CLUSTER_DETECT = "1";
+  }
   const workloads = parseWorkloads();
   if (!workloads.length) {
     console.error("No workloads specified. Use --workload=Deployment:web:6 etc.");
