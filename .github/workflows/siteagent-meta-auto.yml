@@ -58,10 +58,10 @@ jobs:
           fetch-depth: 0
 
       - name: Enforce PR hygiene settings (optional)
-        if: ${{ secrets.ADMIN_REPO_TOKEN != '' }}
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.ADMIN_REPO_TOKEN }}
+          github-token: ${{ secrets.ADMIN_REPO_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             const owner = context.repo.owner;
             const repo  = context.repo.repo;
