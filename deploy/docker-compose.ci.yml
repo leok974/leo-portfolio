@@ -8,10 +8,10 @@ services:
     ports:
       - "11434:11434"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:11434/api/tags"]
+      test: ["CMD", "nc", "-z", "localhost", "11434"]
       interval: 5s
       timeout: 3s
-      retries: 20
+      retries: 10
       start_period: 5s
 
   backend:
