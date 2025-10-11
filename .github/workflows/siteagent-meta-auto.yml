@@ -20,6 +20,17 @@ on:
         required: false
         default: true
         type: boolean
+  pull_request:
+    paths:
+      - "assistant_api/**"
+      - "scripts/**"
+      - ".github/workflows/siteagent-meta-auto.yml"
+  push:
+    branches: [main]
+    paths:
+      - "assistant_api/**"
+      - "scripts/**"
+      - ".github/workflows/siteagent-meta-auto.yml"
 
 permissions:
   contents: write
@@ -58,6 +69,7 @@ jobs:
           fetch-depth: 0
 
       - name: Enforce PR hygiene settings (optional)
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
         continue-on-error: true
         uses: actions/github-script@v7
         with:
@@ -84,15 +96,24 @@ jobs:
         run: |
           docker compose -f docker-compose.ci.yml up -d --build
           echo "Waiting for API to be ready..."
+          TIMEOUT=60
+          ELAPSED=0
           for i in {1..30}; do
             if curl -sf http://127.0.0.1:8001/ready >/dev/null 2>&1; then
-              echo "✅ API ready"
+              echo "✅ API ready (took ${ELAPSED}s)"
               break
             fi
-            echo "⏳ Waiting for API... ($i/30)"
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "❌ Timeout waiting for API after ${TIMEOUT}s"
+              docker compose -f docker-compose.ci.yml logs
+              exit 1
+            fi
+            echo "⏳ Waiting for API... ($i/30, ${ELAPSED}s/${TIMEOUT}s)"
             sleep 2
+            ELAPSED=$((ELAPSED + 2))
           done
-          curl -s http://127.0.0.1:8001/ready || (echo "❌ API failed to start" && docker compose -f docker-compose.ci.yml logs && exit 1)
+          # Final check
+          curl -s http://127.0.0.1:8001/ready || (echo "❌ API failed health check" && docker compose -f docker-compose.ci.yml logs && exit 1)
 
       - name: Setup Node
         uses: actions/setup-node@v4
