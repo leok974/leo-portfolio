@@ -15,7 +15,28 @@ services:
       start_period: 5s
 
   backend:
+    build:
+      context: ../assistant_api
+      dockerfile: Dockerfile
     depends_on:
-      - ollama
+      ollama:
+        condition: service_healthy
     environment:
+      - ALLOW_DEV_ROUTES=1
+      - ALLOW_TEST_ROUTES=1
+      - SEO_LLM_ENABLED=0
+      - SEO_SITEMAP_CACHE=1
+      - DATABASE_URL=sqlite:///tmp/test.db
+      - OLLAMA_HOST=ollama
+      - OPENAI_BASE_URL=http://ollama:11434/v1
+      - OPENAI_MODEL=gpt-oss:20b
       - PRIMARY_MODEL=${PRIMARY_MODEL:-gpt-oss:20b}
+      - DISABLE_PRIMARY=0
+    ports:
+      - "8001:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
