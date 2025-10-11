@@ -19,6 +19,7 @@ export default [
       'coverage/**',
       '.husky/**',
       '.venv/**',
+      '.venv-temp/**',
       'assistant_api/**',
       'tests/e2e/**/*.md',  // Exclude test documentation markdown files
       'docs/**/*.md',  // Exclude project documentation markdown files
@@ -157,6 +158,7 @@ export default [
         Buffer: 'readonly',
         console: 'readonly',
         fetch: 'readonly', // Node 18+
+        AbortController: 'readonly', // Node 15+
         setTimeout: 'readonly',
         setInterval: 'readonly',
         clearTimeout: 'readonly',
