@@ -29,7 +29,13 @@ DOMAIN=assistant.ledger-mind.org
 # Dangerous tool gating (default off). Enable only when you need Admin Rebuild UI.
 ALLOW_TOOLS=0
 ALLOW_SCRIPTS=scripts/rag-build-index.ps1
+# Agent orchestration admin API key (for pruning historical records)
+ADMIN_API_KEY=your-strong-random-key-here
 ```
+
+**Security Notes:**
+- `ADMIN_API_KEY`: Required for `/agents/tasks/before` (DELETE) endpoint. Generate a strong random key (e.g., `openssl rand -hex 32`). Store securely in server environment, never commit to repository.
+- Used by GitHub Actions workflow for automated weekly pruning of old agent task records.
 
 Frontend env (Vite) hints:
 ```

@@ -9,6 +9,10 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: siteagent-nightly-pr
+  cancel-in-progress: false
+
 jobs:
   nightly-maintenance:
     runs-on: ubuntu-latest

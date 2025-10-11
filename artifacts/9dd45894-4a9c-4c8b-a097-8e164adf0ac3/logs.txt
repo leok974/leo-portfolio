@@ -1,0 +1,1 @@
+[seo.validate] guardrails/lighthouse simulated

@@ -1,0 +1,50 @@
+name: Orchestrator Nightly
+
+on:
+  schedule:
+    - cron: '30 2 * * *'  # 02:30 UTC daily
+  workflow_dispatch:      # Manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+
+jobs:
+  orchestrate:
+    runs-on: ubuntu-latest
+    env:
+      API_BASE: ${{ vars.API_BASE || 'https://api.assistant.ledger-mind.org' }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SITE_BASE_URL: ${{ vars.SITE_BASE_URL || 'https://assistant.ledger-mind.org' }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      EMAIL_WEBHOOK: ${{ secrets.EMAIL_WEBHOOK }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git diff
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run nightly orchestration
+        run: npm run orchestrator:nightly
+
+      - name: Upload orchestration logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: orchestration-logs
+          path: |
+            orchestration-*.log
+            orchestration-*.json
+          retention-days: 30

@@ -1,0 +1,41 @@
+name: infra-apply
+
+on:
+  pull_request_target:
+    types: [labeled, opened, reopened, synchronize]
+
+jobs:
+  apply:
+    if: contains(github.event.pull_request.labels.*.name, 'execute-plan')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Optionally preview without touching cluster
+      - name: Dry-run apply (preview)
+        env:
+          KUBECTL: echo
+        run: |
+          node scripts/infra.apply.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --dry-run
+
+      # Real apply (requires runner to have kubectl + kubeconfig)
+      # Comment out or protect with environment until runner has kubectl + kubeconfig
+      - name: Apply plan to cluster
+        env:
+          GH_OWNER: ${{ github.repository_owner }}
+          GH_REPO: ${{ github.event.repository.name }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/infra.apply.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --execute --pr=${{ github.event.pull_request.number }}

@@ -1,0 +1,13 @@
+{
+  "window_days": 7,
+  "series": [
+    {
+      "date": "2025-10-09",
+      "seo_coverage_pct": 91.67,
+      "playwright_pass_pct": 0.0,
+      "avg_p95_ms": 829.74,
+      "autofix_delta_count": 0
+    }
+  ],
+  "anomalies": []
+}

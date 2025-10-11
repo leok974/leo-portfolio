@@ -1,0 +1,6 @@
+{
+  "urls": ["https://siteagents.app/"],
+  "strategy": "ctr-remediate",
+  "max_changes": 5,
+  "dry_run": true
+}

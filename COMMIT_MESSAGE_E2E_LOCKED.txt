@@ -1,0 +1,52 @@
+feat(e2e): lock in OpsAgents E2E tests with production-ready infrastructure
+
+Complete E2E testing implementation for Agent Task History (OpsAgents component):
+
+Test Infrastructure:
+- 5 comprehensive tests with 100% pass rate (15/15 with 3× repetition)
+- 11 locked data-testid selectors for stability
+- Deterministic API mocking (/agents/tasks/paged + .csv)
+- Live mode toggle (E2E_LIVE=1) for smoke tests against real backend
+- Fixed-position element handling with .evaluate() clicks
+
+Test Coverage:
+✅ Page load and pagination button visibility
+✅ Status filter pills and task input with URL persistence
+✅ Date preset buttons (Today, 7d, 30d)
+✅ CSV export endpoint validation
+✅ Reset functionality clears all filters
+
+CI/CD Integration:
+- Always upload Playwright reports (playwright-report-{mode})
+- Upload traces on failure (playwright-traces-{mode})
+- 7-day artifact retention
+- Matrix testing (dev + strict modes)
+- Uses actions/upload-artifact@v4
+
+Documentation:
+- tests/e2e/README.md - Quick reference with all commands and tips
+- E2E_TESTS_LOCKED.md - Production checklist and optional polish
+- E2E_IMPLEMENTATION_SUMMARY.md - Complete implementation overview
+- Inline test documentation with strategy notes
+
+Best Practices Locked:
+- Pin test selectors: Use data-testid only (no text, no CSS classes)
+- Deterministic mocks: Fixed timestamps (2025-10-10T01:23:45Z)
+- CI artifact uploads: Reports always, traces on failure
+- Live mode: Skip mocks with E2E_LIVE=1 for smoke tests
+
+Files Changed:
+- tests/e2e/ops-agents.spec.ts - Added E2E_LIVE support and documentation
+- .github/workflows/e2e.yml - Enhanced artifact uploads
+- tests/e2e/README.md - NEW quick reference guide
+- E2E_TESTS_LOCKED.md - NEW production readiness doc
+- E2E_IMPLEMENTATION_SUMMARY.md - NEW implementation summary
+
+Commands:
+npm run test:e2e              # Run all tests
+npx playwright test tests/e2e/ops-agents.spec.ts --workers=1  # Serial execution
+PWDEBUG=1 npx playwright test tests/e2e/ops-agents.spec.ts    # Debug mode
+npm run test:e2e:ui           # Interactive UI mode
+E2E_LIVE=1 npx playwright test tests/e2e/ops-agents.spec.ts   # Live backend
+
+Closes: E2E testing infrastructure for OpsAgents

@@ -1,0 +1,48 @@
+name: plan-commands
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  route:
+    if: github.event.issue.pull_request != null
+    runs-on: ubuntu-latest
+    steps:
+      - name: Parse command
+        id: parse
+        run: |
+          body="${{ github.event.comment.body }}"
+          cmd=$(echo "$body" | tr '[:upper:]' '[:lower:]' | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          if echo "$cmd" | grep -q "^/approve-plan"; then
+            echo "label=execute-plan" >> $GITHUB_OUTPUT
+          elif echo "$cmd" | grep -q "^/rollback-plan"; then
+            echo "label=rollback-plan" >> $GITHUB_OUTPUT
+          else
+            echo "label=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Add label
+        if: steps.parse.outputs.label != ''
+        uses: actions-ecosystem/action-add-labels@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          labels: ${{ steps.parse.outputs.label }}
+
+      - name: Remove 'needs-approval' once apply is requested
+        if: steps.parse.outputs.label == 'execute-plan'
+        uses: actions-ecosystem/action-remove-labels@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          labels: needs-approval
+
+      - name: Acknowledge
+        if: steps.parse.outputs.label != ''
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            Command **${{ steps.parse.outputs.label }}** queued. ✅

@@ -7,7 +7,7 @@
     <loc>http://localhost:5173/gallery.html</loc>
     <priority>0.5</priority>
     <changefreq>monthly</changefreq>
-    <lastmod>2025-10-07T15:29:29.477Z</lastmod>
+    <lastmod>2025-10-09T14:31:43.185Z</lastmod>
     
       <image:image>
         <image:loc>http://localhost:5173/assets/gallery/blender-glass.jpg</image:loc>
@@ -34,7 +34,7 @@
     <loc>http://localhost:5173/</loc>
     <priority>0.9</priority>
     <changefreq>weekly</changefreq>
-    <lastmod>2025-10-09T02:15:07.515Z</lastmod>
+    <lastmod>2025-10-10T19:44:54.639Z</lastmod>
     
     
   </url>
@@ -43,7 +43,7 @@
     <loc>http://localhost:5173/metrics.html</loc>
     <priority>0.5</priority>
     <changefreq>monthly</changefreq>
-    <lastmod>2025-10-09T02:12:31.263Z</lastmod>
+    <lastmod>2025-10-09T14:31:43.185Z</lastmod>
     
     
   </url>
@@ -52,7 +52,7 @@
     <loc>http://localhost:5173/tools.html</loc>
     <priority>0.5</priority>
     <changefreq>monthly</changefreq>
-    <lastmod>2025-10-09T02:15:07.514Z</lastmod>
+    <lastmod>2025-10-10T19:44:54.638Z</lastmod>
     
     
   </url>

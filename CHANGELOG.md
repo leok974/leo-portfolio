@@ -3,6 +3,40 @@
 ## [Unreleased]
 
 ### Added
+- **Task Orchestration System** (Database-backed agent coordination):
+  - **Database Layer**: PostgreSQL `agents_tasks` table with Alembic migration (13 columns, 3 indexes)
+  - **API Layer**: FastAPI router at `/agents/tasks/` (POST create, PATCH update, GET list, GET paged, GET paged.csv)
+    - **Pagination**: Keyset-based pagination at `/agents/tasks/paged` with multi-filter support
+    - **Filters**: `status` (multi-select), `task` (multi-select), `since` (time-range)
+    - **CSV Export**: `/agents/tasks/paged.csv` endpoint for bulk data export (up to 10,000 rows)
+    - **Cursor**: Opaque base64-encoded token for stable pagination
+    - **Performance**: Composite index on `(started_at, id)` for efficient queries
+  - **UI Component** (`src/components/OpsAgents.tsx`):
+    - Task history viewer with time-range filter (defaults to last 7 days)
+    - **Status filter**: Multi-select toggle pills (queued, running, succeeded, failed, awaiting_approval, skipped)
+    - **Task filter**: Comma-separated input for filtering by task name
+    - **CSV Download**: Button to download filtered results (limit 1,000 rows)
+    - **Reset button**: Clear all filters
+    - **Responsive grid layout**: Adapts to screen size (md:2-col, lg:3-col)
+    - "Load more" button for pagination
+    - Color-coded status badges
+    - Clickable output links to PRs/artifacts
+  - **Orchestrator Script** (`scripts/orchestrator.nightly.mjs`):
+    - Runs predefined plan of tasks (seo.validate, code.review, dx.integrate)
+    - Logs all task executions to database via API
+    - Sends webhook notifications (Slack/Email) for tasks awaiting approval
+    - Captures outputs_uri, log_excerpt, duration_ms for each task
+    - Default URLs: `https://api.assistant.ledger-mind.org` (API), `https://assistant.ledger-mind.org` (frontend)
+  - **CI Workflow** (`.github/workflows/orchestrator-nightly.yml`):
+    - Runs daily at 02:30 UTC
+    - Uploads orchestration logs as artifacts
+    - Configurable via environment variables (API_BASE, SLACK_WEBHOOK, EMAIL_WEBHOOK)
+    - Production defaults: `https://api.assistant.ledger-mind.org`, `https://assistant.ledger-mind.org`
+  - **npm Scripts**: `orchestrator:nightly`, `code:review`, `dx:integrate`
+  - **Task Statuses**: queued | running | succeeded | failed | awaiting_approval | skipped
+  - **Approval States**: pending | approved | rejected
+  - **Documentation**: Complete setup and usage guide in `docs/ORCHESTRATION.md`
+
 - **SEO Intelligence & Nightly Auto-PR (Phase 50.9)**:
   - **Nightly Workflow** (`.github/workflows/seo-intel-nightly.yml`):
     - Automated daily runs at 02:30 ET (06:30 UTC)

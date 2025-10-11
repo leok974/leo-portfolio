@@ -1,0 +1,19 @@
+{
+  "tool": "code-review-stub",
+  "diff": "HEAD~1..HEAD",
+  "hostname": "BIOS",
+  "files_examined": 1,
+  "findings": [
+    {
+      "file": "docs/ROUTE_HARDENING_GUIDE.md",
+      "severity": "info",
+      "message": "Stub review: no issues found",
+      "rule": "stub/no-op"
+    }
+  ],
+  "summary": {
+    "errors": 0,
+    "warnings": 0,
+    "infos": 1
+  }
+}

@@ -4,10 +4,17 @@ on:
     branches: [ main ]
   pull_request:
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      SITEAGENT_ENABLE_WRITE: "1"
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 

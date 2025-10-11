@@ -49,12 +49,20 @@ jobs:
           else
             pnpm exec playwright test
           fi
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.mode }}
+          path: playwright-report
+          retention-days: 7
       - name: Upload traces on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-traces-${{ matrix.mode }}
-          path: playwright-report
+          path: test-results
+          retention-days: 7
       - name: Stop nginx (strict only)
         if: matrix.mode == 'strict'
         run: docker compose -f docker-compose.test.yml down -v
@@ -98,12 +106,82 @@ jobs:
           BACKEND_REQUIRED: 1
           NGINX_STRICT: 1
         run: pnpm exec playwright test -g "stylesheet|status pill|summary|ping"
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-strict-full
+          path: playwright-report
+          retention-days: 7
       - name: Upload traces on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-traces-strict-full
-          path: playwright-report
+          path: test-results
+          retention-days: 7
       - name: Stop stack
         if: always()
         run: docker compose -f docker-compose.test.full.yml down -v
+
+  e2e-live:
+    name: e2e-live (optional smoke test against real API)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install pnpm
+        run: npm i -g pnpm@9
+      - name: Install deps
+        run: pnpm i
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Python dependencies
+        run: |
+          cd assistant_api
+          pip install -r requirements.txt
+      - name: Start API backend
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SITE_BASE_URL: https://assistant.ledger-mind.org
+        run: |
+          cd assistant_api
+          nohup uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 > api.log 2>&1 &
+          sleep 8
+      - name: Start dev UI
+        run: |
+          nohup pnpm dev --port 8080 > ui.log 2>&1 &
+          sleep 5
+      - name: Playwright install
+        run: pnpm exec playwright install --with-deps
+      - name: Run Playwright E2E (live mode)
+        env:
+          E2E_LIVE: "1"
+          E2E_BASE_URL: http://localhost:8080
+        run: pnpm exec playwright test tests/e2e/ops-agents.spec.ts
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-live
+          path: playwright-report
+          retention-days: 7
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-live
+          path: test-results
+          retention-days: 7
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          echo "=== API Logs ==="
+          cat assistant_api/api.log || true
+          echo "=== UI Logs ==="
+          cat ui.log || true

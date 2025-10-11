@@ -1,0 +1,24 @@
+{
+  "ok": false,
+  "pages": "sitemap://current",
+  "artifacts": {
+    "report_json": "D:\\leo-portfolio\\artifacts\\e62101d8-346e-4382-8907-3dff0e506e37\\report.json",
+    "guardrails_json": null,
+    "lighthouse_json": "D:\\leo-portfolio\\artifacts\\e62101d8-346e-4382-8907-3dff0e506e37\\lighthouse.json"
+  },
+  "skipped_all": false,
+  "step_status": [
+    {
+      "step": "guardrails",
+      "ok": false,
+      "rc": 1,
+      "skipped": false
+    },
+    {
+      "step": "lighthouse",
+      "ok": true,
+      "rc": 0,
+      "skipped": false
+    }
+  ]
+}

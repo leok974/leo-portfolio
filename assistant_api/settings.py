@@ -23,6 +23,8 @@ def _split_env_list(val: str) -> list[str]:
 
 @lru_cache(maxsize=1)
 def get_settings() -> Dict[str, Any]:
+    from .util.testmode import is_test_mode
+
     raw_origins = os.getenv("ALLOWED_ORIGINS", "")
     origins_tokens = _split_env_list(raw_origins)
 
@@ -60,13 +62,25 @@ def get_settings() -> Dict[str, Any]:
             "http://127.0.0.1:5530",
         ]
 
+    # RAG_DB: Use in-memory DB for tests if not explicitly set
+    rag_db = os.getenv("RAG_DB")
+    if not rag_db and is_test_mode():
+        import tempfile
+        tf = tempfile.NamedTemporaryFile(prefix="ragdb-test-", suffix=".sqlite", delete=False)
+        rag_db = tf.name
+        tf.close()
+        # Force-set the env var so tests that read os.getenv() directly still get a value
+        os.environ["RAG_DB"] = rag_db
+    elif not rag_db:
+        rag_db = "./data/rag.sqlite"
+
     return {
         "raw_env": raw_origins,
         "allow_all": allow_all,
         "allowed_origins": origins,
         "derived_from_domain": derived,
         "domain_env": domain,
-        "RAG_DB": os.getenv("RAG_DB", "./data/rag.sqlite"),
+        "RAG_DB": rag_db,
         "ARTIFACTS_DIR": os.getenv("ARTIFACTS_DIR", "./agent_artifacts"),
         "WEB_ROOT": os.getenv("WEB_ROOT", "./dist"),
         "BACKEND_URL": os.getenv("BACKEND_URL", "http://127.0.0.1:8001"),
@@ -126,6 +140,38 @@ def get_settings() -> Dict[str, Any]:
         "EMAIL_FROM": os.getenv("EMAIL_FROM"),
         "EMAIL_TO": os.getenv("EMAIL_TO"),
         "SENDGRID_API_KEY": os.getenv("SENDGRID_API_KEY"),
+
+        # --- SEO validation tool commands (overridable via env) ---
+        "SEO_GUARDRAILS_CMD": os.getenv(
+            "SEO_GUARDRAILS_CMD",
+            "node ./scripts/seo-meta-guardrails.mjs --out json"
+        ),
+        "LIGHTHOUSE_BATCH_CMD": os.getenv(
+            "LIGHTHOUSE_BATCH_CMD",
+            "node ./scripts/lighthouse-batch.mjs --sitemap sitemap.xml --format json"
+        ),
+        "SEO_VALIDATE_TIMEOUT_SECS": int(os.getenv("SEO_VALIDATE_TIMEOUT_SECS", "300")),
+
+        # --- Code Review (static analysis / diff-aware) ---
+        "CODE_REVIEW_CMD": os.getenv(
+            "CODE_REVIEW_CMD",
+            "node ./scripts/code-review.mjs --diff HEAD~1..HEAD --out json"
+        ),
+        "CODE_REVIEW_TIMEOUT_SECS": int(os.getenv("CODE_REVIEW_TIMEOUT_SECS", "240")),
+
+        # --- DX Integrations (storybook/docs/stubs health) ---
+        "DX_INTEGRATE_CMD": os.getenv(
+            "DX_INTEGRATE_CMD",
+            "node ./scripts/dx-integrate.mjs --check --out json"
+        ),
+        "DX_INTEGRATE_TIMEOUT_SECS": int(os.getenv("DX_INTEGRATE_TIMEOUT_SECS", "240")),
+
+        # --- Infra Scale (docker/k8s dry-run) ---
+        "INFRA_SCALE_CMD": os.getenv(
+            "INFRA_SCALE_CMD",
+            "node ./scripts/infra-scale.mjs --plan --out json"
+        ),
+        "INFRA_SCALE_TIMEOUT_SECS": int(os.getenv("INFRA_SCALE_TIMEOUT_SECS", "300")),
     }
 
 

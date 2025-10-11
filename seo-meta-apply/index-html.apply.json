@@ -1,0 +1,17 @@
+{
+  "ts": "2025-10-08T19:48:55.477281+00:00",
+  "path": "/index.html",
+  "changed": {
+    "title": true,
+    "description": true
+  },
+  "files": {
+    "diff": "agent\\artifacts\\seo-meta-apply\\index-html.diff",
+    "preview_html": "agent\\artifacts\\seo-meta-apply\\index-html.preview.html"
+  },
+  "integrity": {
+    "algo": "sha256",
+    "value": "90a409860190747bd97c9d75dd86526dd2bf6b2fbaf6f55e89c27297df0d2aa2",
+    "size": 250
+  }
+}

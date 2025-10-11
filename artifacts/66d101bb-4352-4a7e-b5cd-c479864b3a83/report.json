@@ -1,0 +1,25 @@
+{
+  "inputs": {
+    "pages": "sitemap://current"
+  },
+  "steps": [
+    {
+      "step": "guardrails",
+      "ok": false,
+      "rc": 1,
+      "duration_sec": 0.037145376205444336,
+      "skipped": false,
+      "note": "guardrails failed",
+      "report_summary": null
+    },
+    {
+      "step": "lighthouse",
+      "ok": false,
+      "rc": 1,
+      "duration_sec": 0.0315859317779541,
+      "skipped": false,
+      "note": "lighthouse failed",
+      "report_summary": null
+    }
+  ]
+}

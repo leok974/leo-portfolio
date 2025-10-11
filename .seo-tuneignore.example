@@ -1,0 +1,13 @@
+# .seo-tuneignore
+# Exclude files from SEO tune automation (glob patterns, one per line)
+# Lines starting with # are comments
+
+# Skip template files
+src/templates/**/*
+
+# Skip test snapshots
+public/snapshots/**/*.html
+tests/fixtures/**/*.html
+
+# Skip generated documentation
+docs/api/**/*.html

@@ -1,0 +1,60 @@
+name: seo-tune
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 8 * * 2" # Tuesdays 08:30 UTC
+jobs:
+  tune:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write         # push branches / commits
+      pull-requests: write    # open PRs, request reviewers, update body
+      issues: write           # add labels, post comments
+      actions: read           # read workflow artifacts
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+
+      - name: Run SEO tune (safe, require rolling PR)
+        id: tune
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SITE_BASE_URL: https://assistant.ledger-mind.org
+        run: |
+          set -e
+          OUT=$(npm run -s seo:tune -- --require-pr)
+          echo "$OUT"
+          PR_URL=$(echo "$OUT" | sed -n 's/^outputs_uri=//p')
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Generate unified diff
+        if: always() # produce artifact even on no changes (empty diff file)
+        run: |
+          git diff --patch --stat > seo-tune.diff || true
+          if [ ! -s seo-tune.diff ]; then
+            echo "(no changes)" > seo-tune.diff
+          fi
+          printf "### SEO Tune Diff\n\n\`\`\`diff\n" > seo-tune-summary.md
+          cat seo-tune.diff >> seo-tune-summary.md
+          printf "\n\`\`\`\n" >> seo-tune-summary.md
+
+      - name: Upload SEO tune artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-tune-artifacts
+          path: |
+            seo-tune.diff
+            seo-tune-summary.md
+
+      - name: Comment artifact link on PR
+        if: steps.tune.outputs.pr_url != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_URL="${{ steps.tune.outputs.pr_url }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          gh issue comment "$PR_URL" --body "SEO tune completed. See artifacts: ${RUN_URL}#artifacts"

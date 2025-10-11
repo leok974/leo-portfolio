@@ -29,6 +29,174 @@
 
 ---
 
+## 🧹 SiteAgent Branch Hygiene
+
+SiteAgent maintains a **clean repository** through intelligent branch reuse:
+
+- **One branch per category**: `siteagent/{seo|content|og|deps|misc}` (no proliferation)
+- **PR updates, not duplication**: Reuses existing open PRs instead of creating new ones
+- **Single-commit rolling branches**: Clean one-commit history per automation branch
+- **Auto-cleanup**: Merged branches deleted + nightly pruning of stale branches (>14 days)
+- **Concurrency guards**: Prevents race conditions across workflows
+
+**Quick Commands**:
+```bash
+# Dry-run (preview)
+curl -X POST http://127.0.0.1:8001/agent/artifacts/pr \
+  -H "Content-Type: application/json" \
+  -d '{"dry_run":true,"labels":["seo","auto"],"use_llm":true}' | jq
+
+# Create/update PR
+export SITEAGENT_ENABLE_WRITE=1 GITHUB_TOKEN="ghp_..."
+curl -X POST http://127.0.0.1:8001/agent/artifacts/pr \
+  -H "Content-Type: application/json" \
+  -d '{"labels":["seo","auto"],"use_llm":true}' | jq
+```
+
+**Status values**: `created`, `updated`, `noop`, `dry-run`
+
+📖 **Full Guide**: [`docs/SITEAGENT_BRANCH_HYGIENE.md`](docs/SITEAGENT_BRANCH_HYGIENE.md) — Comprehensive documentation with API reference, troubleshooting, and best practices.
+
+---
+
+## SEO Validation (Agents)
+
+The `seo.validate` agent runs two steps and writes artifacts to `artifacts/<task_id>/`:
+
+1. **Guardrails** (`seo-meta-guardrails.mjs`) → `guardrails.json`
+2. **Lighthouse batch** (`lighthouse-batch.mjs`) → `lighthouse.json`
+3. Merged **summary** → `report.json` (returned as `outputs_uri`)
+
+**Local usage**:
+```bash
+# Run via agents API
+curl -s -X POST http://localhost:8001/agents/run \
+  -H 'content-type: application/json' \
+  -d '{"agent":"seo","task":"validate","inputs":{"pages":"sitemap://current"}}' | jq
+
+# Or via npm (stubbed outputs for quick dev)
+npm run seo:validate
+```
+
+📖 **Details**: See [`SEO_REAL_TOOL_COMPLETE.md`](SEO_REAL_TOOL_COMPLETE.md) for architecture, configuration, and testing.
+
+---
+
+## Projects Sync (GitHub → projects.json)
+
+Automatically fetch your GitHub repositories, normalize metadata (stars, topics, languages), and open a PR updating `projects.json` + regenerated pages.
+
+**One-time local run**:
+```bash
+export GITHUB_TOKEN=<your_pat>
+npm run projects:sync
+# prints: outputs_uri=https://github.com/<owner>/<repo>/pull/123
+```
+
+**Dry-run (show changes without committing)**:
+```bash
+npm run projects:sync:dry | jq
+# returns: { dry_run: true, changed: true, added: [...], removed: [...], count_before: 10, count_after: 12 }
+```
+
+**Limit to specific repos**:
+```bash
+npm run projects:sync:only ledger-mind,leo-portfolio
+```
+
+**Recurring (GitHub Actions)**:
+The workflow `.github/workflows/projects-sync.yml` runs weekly (Mondays 09:00 UTC) or on manual dispatch. It opens a PR automatically if there are changes. **Idempotent**: Reuses the same PR (`chore/projects-sync`) instead of creating duplicates on every run.📋 **Environment**:
+- `GITHUB_TOKEN` (required): classic PAT or fine-grained token with repo read/write + pull request permissions
+- `GH_OWNER` / `GH_REPO` (optional): defaults inferred from git remote
+- `SYNC_INCLUDE_FORKS` (default: `false`): set to `true` to include forked repos
+- `SYNC_MAX_REPOS` (optional): cap number of repos fetched (e.g., `30`)
+
+📖 **Details**: Script creates a timestamped branch (`chore/projects-sync-YYYYMMDDHHMMSS`), runs `generate-projects.js`, commits all changes under `projects.json` + `/projects/*.html`, and opens a PR. No changes = no-op.
+
+---
+
+## Agent Stubs (Local Development)
+
+For quick local testing without external tooling, we ship lightweight stub scripts that emit valid JSON:
+
+```bash
+# Code review (diff-aware)
+npm run agents:code:review | jq
+
+# DX integration checks (storybook/docs/lint)
+npm run agents:dx:integrate | jq
+
+# Infrastructure scaling plan
+npm run agents:infra:scale | jq
+
+# SEO validation (lighthouse stub)
+npm run agents:seo:lighthouse | jq
+```
+
+These stubs write proper artifacts so the backend works on fresh clones. Replace with real tooling via environment variables (see `assistant_api/.env.example`).
+
+**Via API**:
+```bash
+# Code review
+curl -X POST http://localhost:8001/agents/run \
+  -H 'content-type: application/json' \
+  -d '{"agent":"code","task":"review"}' | jq
+
+# DX checks
+curl -X POST http://localhost:8001/agents/run \
+  -H 'content-type: application/json' \
+  -d '{"agent":"dx","task":"integrate"}' | jq
+
+# Infra scaling
+curl -X POST http://localhost:8001/agents/run \
+  -H 'content-type: application/json' \
+  -d '{"agent":"infra","task":"scale"}' | jq
+```
+
+---
+
+## Task Orchestration (Nightly Automation)
+
+The orchestration system coordinates nightly agent tasks with database tracking and webhook notifications for approval workflows.
+
+**Quick Commands**:
+```bash
+# Run orchestrator locally
+npm run orchestrator:nightly
+
+# Run individual tasks
+npm run code:review
+npm run dx:integrate
+```
+
+**Features**:
+- 📊 **Database tracking**: PostgreSQL table logs all task executions
+- 🔔 **Webhook notifications**: Slack/Email alerts for tasks needing approval
+- 🔄 **Automated workflow**: Runs daily at 02:30 UTC via GitHub Actions
+- 📈 **Task history**: Query API for run history and status
+
+**API Endpoints**:
+```bash
+# Create task
+POST /agents/tasks/
+
+# Update task
+PATCH /agents/tasks/{id}
+
+# List tasks (with filters)
+GET /agents/tasks/?run_id=nightly-2025-01-15
+GET /agents/tasks/?status=awaiting_approval
+```
+
+**Nightly Plan**:
+1. **seo.validate** - Validates SEO metadata, creates PR if changes needed
+2. **code.review** - ESLint + tests on changed files
+3. **dx.integrate** - Formatting + dependency validation
+
+📖 **Details**: See [`docs/ORCHESTRATION.md`](docs/ORCHESTRATION.md) for setup, configuration, and extending the system.
+
+---
+
 ## Dev Overlay (Maintenance Panel)
 
 Open your site with `?dev=1` to force the maintenance overlay, e.g.:

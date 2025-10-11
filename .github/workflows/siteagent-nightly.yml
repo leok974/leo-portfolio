@@ -5,6 +5,10 @@ on:
     - cron: "17 3 * * *"   # 03:17 UTC nightly (adjust as you like)
   workflow_dispatch: {}
 
+concurrency:
+  group: siteagent-nightly
+  cancel-in-progress: false
+
 jobs:
   run-siteagent:
     runs-on: ubuntu-latest

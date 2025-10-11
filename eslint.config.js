@@ -25,6 +25,7 @@ export default [
       '*.md',  // Exclude root-level markdown files
       'public/assets/js/**/*.js',  // Exclude public asset JavaScript files
       'test-script.js',  // HTML file misnamed as .js
+      'scripts/seo.tune.mjs',  // JSDoc comments trigger TypeScript parser false positives
     ],
   },
 

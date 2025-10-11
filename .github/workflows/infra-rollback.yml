@@ -1,0 +1,38 @@
+name: infra-rollback
+on:
+  pull_request_target:
+    types: [labeled, opened, reopened, synchronize]
+
+jobs:
+  rollback:
+    if: contains(github.event.pull_request.labels.*.name, 'rollback-plan')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+
+      - name: Dry-run preview
+        env:
+          KUBECTL: echo
+          GH_OWNER: ${{ github.repository_owner }}
+          GH_REPO:  ${{ github.event.pull_request.head.repo.name }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --dry-run --pr=${{ github.event.pull_request.number }}
+
+      # Real rollback (requires kubectl + kubeconfig on runner)
+      # - name: Roll back plan
+      #   env:
+      #     GH_OWNER: ${{ github.repository_owner }}
+      #     GH_REPO:  ${{ github.event.pull_request.head.repo.name }}
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   run: |
+      #     node scripts/infra.rollback.mjs --plan=ops/plans/infra-scale/prod/plan.yaml --execute --pr=${{ github.event.pull_request.number }}

@@ -57,6 +57,28 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Enforce PR hygiene settings (optional)
+        if: ${{ secrets.ADMIN_REPO_TOKEN != '' }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ADMIN_REPO_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo  = context.repo.repo;
+            // Set: squash only, delete branches on merge
+            try {
+              await github.rest.repos.update({
+                owner, repo,
+                delete_branch_on_merge: true,
+                allow_squash_merge: true,
+                allow_merge_commit: false,
+                allow_rebase_merge: false
+              });
+              core.info('✅ Repo PR settings enforced: squash-only + auto-delete heads.');
+            } catch (error) {
+              core.warning(`Could not update repo settings: ${error.message}`);
+            }
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
