@@ -69,11 +69,13 @@ The orchestrator will:
 ### Actions (summary)
 | Action | Target | Details |
 |:--|:--|:--|
-| Scale | Deployment/web (ns: `assistant`) | replicas → **6** |
+| Scale | Deployment/web (ns: `assistant`) | replicas **3 → 6** |
 | Resources | Deployment/web (ns: `assistant`) | req `cpu=500m,mem=1Gi` · lim `cpu=1,mem=2Gi` |
 | HPA | web (ns: `assistant`) | min **4** · max **12** · cpu **65%** |
 
 > Add label **`execute-plan`** to apply; **`rollback-plan`** to preview rollback.
+
+**Note**: The table shows `3 → 6` when current replicas are detected from the cluster. If detection fails (no kubectl/access), it shows `→ 6` instead. See `INFRA_DETECTION_QUICKREF.md` for details.
 ```
 
 ### 3. Execute Plan
@@ -418,6 +420,9 @@ kubectl -n assistant get hpa
 
 - **Full Documentation**: `INFRA_SCALE_ORCHESTRATOR.md`
 - **Implementation Summary**: `INFRA_ORCHESTRATOR_IMPLEMENTATION.md`
+- **Replica Detection**: `INFRA_REPLICA_DETECTION.md` (full guide) / `INFRA_DETECTION_QUICKREF.md` (quick ref)
+- **Rollback System**: `INFRA_ROLLBACK_COMPLETE.md`
+- **PR Commands**: `INFRA_CHECKLIST_COMMANDS_COMPLETE.md`
 - **Scale CLI**: `scripts/infra.scale.mjs`
 - **Apply Executor**: `scripts/infra.apply.mjs`
 - **K8s Planner**: `scripts/planners/k8s-planner.mjs`
