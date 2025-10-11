@@ -1,0 +1,41 @@
+# Lean CI dependencies for siteagent-meta-auto workflow
+# Excludes torch, transformers, sentence-transformers, and other heavy ML deps
+
+# Core FastAPI stack
+fastapi>=0.117
+uvicorn[standard]>=0.37
+starlette>=0.48
+
+# Pydantic & settings
+pydantic>=2.11
+pydantic-settings>=2.10
+pydantic_core>=2.33
+
+# HTTP client
+httpx>=0.28
+
+# Database (SQLite for CI)
+SQLAlchemy>=2.0.43
+alembic>=1.16.5
+
+# Environment
+python-dotenv>=1.1
+
+# HTML parsing (for SEO scraping)
+beautifulsoup4>=4.14
+lxml>=5.3
+
+# Utility
+python-multipart>=0.0.20
+jinja2>=3.1
+typing-extensions>=4.15
+
+# Minimal deps that meta scripts might need
+requests>=2.32
+PyYAML>=6.0
+
+# Health check
+httptools>=0.6
+
+# No torch, no transformers, no sentence-transformers, no faiss
+# These consume 3-5GB+ of disk space

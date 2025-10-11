@@ -16,10 +16,8 @@ services:
 
   backend:
     build:
-      context: ../assistant_api
-      dockerfile: Dockerfile
-      cache_from:
-        - type=local,src=/tmp/.buildx-cache
+      context: ..
+      dockerfile: assistant_api/Dockerfile.ci
     depends_on:
       ollama:
         condition: service_healthy
@@ -29,7 +27,7 @@ services:
       - ALLOW_TEST_ROUTES=1
       - SEO_LLM_ENABLED=0
       - SEO_SITEMAP_CACHE=1
-      - DATABASE_URL=sqlite:///tmp/ci.sqlite3
+      - DATABASE_URL=sqlite:///./ci.sqlite3
       - PUBLIC_API_ORIGIN=http://127.0.0.1:8001
       - ALLOWED_ORIGINS=http://127.0.0.1:8001
       - DISABLE_AUTH=1
@@ -44,5 +42,5 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8000/ready"]
       interval: 5s
       timeout: 3s
-      retries: 20
+      retries: 30
       start_period: 10s

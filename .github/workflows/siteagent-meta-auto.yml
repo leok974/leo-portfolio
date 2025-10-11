@@ -112,23 +112,12 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Temporarily disabled - caching consumes too much disk space
-      # - name: Cache Docker layers
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: /tmp/.buildx-cache
-      #     key: ${{ runner.os }}-buildx-${{ hashFiles('assistant_api/**') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-buildx-
-
-      - name: Start backend stack (Docker Compose)
+      - name: Start backend stack (lean CI image)
         working-directory: deploy
-        env:
-          DOCKER_BUILDKIT: 1
-          COMPOSE_DOCKER_CLI_BUILD: 1
-          BUILDKIT_PROGRESS: plain
         run: |
+          echo "🏗️ Building lean backend (no torch/transformers)..."
           docker compose -f docker-compose.ci.yml up -d --build
+          echo "✅ Stack started"
 
       - name: Wait for API to be ready
         run: |
@@ -138,7 +127,7 @@ jobs:
               echo "✅ API ready after $((i * 2)) seconds"
               exit 0
             fi
-            echo "  Attempt $i/60... (${i}0s elapsed)"
+            echo "  Attempt $i/60..."
             sleep 2
           done
           echo "❌ API did not become ready in 120 seconds"
