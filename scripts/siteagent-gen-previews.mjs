@@ -5,6 +5,10 @@
  *  - POST /agent/seo/meta/preview?path=<page> with suggested {title,desc}
  * Produces *.apply.json/.diff/.preview.html artifacts.
  */
+import fs from 'fs';
+import path from 'path';
+import { URL } from 'url';
+
 const base = (arg('--base') || 'http://127.0.0.1:8001').replace(/\/+$/,'');
 const pages = (arg('--pages') || '').split(',').map(s => s.trim()).filter(Boolean);
 const TRIM = ['1','true','TRUE','yes'].includes(String(arg('--trim')) || '');
@@ -12,8 +16,6 @@ const hdrAuth = process.env.API_AUTH ? { 'Authorization': process.env.API_AUTH }
 function arg(k){ const i=process.argv.indexOf(k); return i>=0 ? process.argv[i+1] : ''; }
 
 // ---- limits from reviewers config
-import fs from 'fs';
-import path from 'path';
 const CFG = path.join(process.cwd(), '.github', 'seo-meta-reviewers.json');
 const cfg = fs.existsSync(CFG) ? JSON.parse(fs.readFileSync(CFG,'utf-8')) : {};
 const defaults = (cfg.defaults && cfg.defaults.limits) || { title_max: 60, desc_max: 155 };
