@@ -1,0 +1,6 @@
+{
+  "url": "https://siteagents.app",
+  "mode": "full",
+  "dry_run": true,
+  "notes": "Default payload for seo.validate from agents-run.mjs"
+}
