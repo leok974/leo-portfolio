@@ -1,6 +1,1 @@
-{
-  "schemaVersion": 1,
-  "label": "streaming",
-  "message": "fallback: fail",
-  "color": "red"
-}
+{ "schemaVersion": 1, "label": "streaming", "message": "fallback: fail", "color": "red" }
