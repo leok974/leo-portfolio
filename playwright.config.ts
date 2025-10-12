@@ -8,7 +8,8 @@ const __dirname = path.dirname(__filename);
 // Assumptions / overrides via env
 const isCI = !!process.env.CI;
 const workers = process.env.PW_WORKERS ? Number(process.env.PW_WORKERS) : undefined;
-const baseURL = process.env.BASE_URL ?? process.env.BASE ?? process.env.PROD_BASE ?? 'http://127.0.0.1:5173';
+const defaultPort = process.env.PW_APP === 'portfolio' ? '5174' : '5173';
+const baseURL = process.env.BASE_URL ?? process.env.BASE ?? process.env.PROD_BASE ?? `http://127.0.0.1:${defaultPort}`;
 
 // Reporter: line locally; html + line in CI (keeps local output light)
 const reporter = (isCI ? [['html'], ['line']] : [['line']]) as any;
@@ -70,11 +71,14 @@ export default defineConfig({
     },
   ],
   webServer: process.env.PW_SKIP_WS ? undefined : {
-    // Use dev server (not preview) - has proxy for /agent/* -> backend
-    // No build needed for E2E - dev serves from source with proxy
-    command: 'pnpm exec vite --port 5173 --strictPort --host',
-    url: 'http://localhost:5173',
-    reuseExistingServer: true,
+    // Use dev server for the app being tested
+    // Portfolio: vite with portfolio config on 127.0.0.1:5174
+    // Siteagent: vite default on 127.0.0.1:5173
+    command: process.env.PW_APP === 'portfolio'
+      ? 'pnpm exec vite --config vite.config.portfolio.ts --port 5174 --host 127.0.0.1 --strictPort'
+      : 'pnpm exec vite --port 5173 --host 127.0.0.1 --strictPort',
+    url: process.env.PW_APP === 'portfolio' ? 'http://127.0.0.1:5174' : 'http://127.0.0.1:5173',
+    reuseExistingServer: !isCI,
     timeout: 120_000,
     stdout: 'pipe',
     stderr: 'pipe',
