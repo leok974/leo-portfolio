@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Portfolio — Leo's Projects</title>
+  <meta name="description" content="AI and software engineering projects by Leo. Explore my portfolio of innovative solutions." />
+  <meta name="theme-color" content="#0f172a" />
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://assistant.ledger-mind.org/" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Portfolio — Leo's Projects" />
+  <meta property="og:description" content="AI and software engineering projects." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://assistant.ledger-mind.org/" />
+
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script type="module" crossorigin src="/assets/main-dFPMEruA.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-BcbCdMwc.css">
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <div class="header-content">
+        <h1>Portfolio</h1>
+        <p class="subtitle">AI & Software Engineering Projects</p>
+      </div>
+    </header>
+
+    <main class="container">
+      <!-- Portfolio Filters -->
+      <section class="filters-section">
+        <div class="filters">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="ai">AI</button>
+          <button class="filter-btn" data-filter="finance">Finance</button>
+          <button class="filter-btn" data-filter="ml">ML</button>
+          <button class="filter-btn" data-filter="analytics">Analytics</button>
+        </div>
+      </section>
+
+      <!-- Portfolio Grid -->
+      <section class="portfolio-section">
+        <div id="portfolio-grid" class="portfolio-grid">
+          <!-- Loading state -->
+          <div class="portfolio-loading">
+            <div class="loading-spinner"></div>
+            <p>Loading projects...</p>
+          </div>
+        </div>
+
+        <div id="portfolio-empty" class="portfolio-empty" style="display: none;">
+          <p>No projects found.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>&copy; 2025 Leo's Portfolio. All rights reserved.</p>
+    </footer>
+  </div>
+
+</body>
+</html>
