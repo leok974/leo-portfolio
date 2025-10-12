@@ -1,0 +1,100 @@
+{
+  "ledgermind": {
+    "title": "LedgerMind",
+    "slug": "ledgermind",
+    "tags": ["ai", "finance", "ml"],
+    "thumbnail": "assets/ledgermind-thumb.webp",
+    "problem": "Personal finance tools fragment data across banks, budgets, and AI assistants with little explainability.",
+    "solution": "Unified ledger ingestion, grounded NL → SQL analytics, and explainable AI suggestions with traceable references.",
+    "demo": "https://app.ledger-mind.org",
+    "description": "Private-by-default finances with explainable ML suggestions and NL → SQL analytics.",
+    "goals": "Private-by-default finances with explainable ML suggestions and NL → SQL analytics.",
+    "stack": [
+      "FastAPI, Postgres, Alembic",
+      "React/Vite (client), Recharts",
+      "OAuth/Authlib, JWT cookies + CSRF",
+      "Docker, Nginx, Cloudflare Tunnel"
+    ],
+    "outcomes": [
+      "Deterministic tools with friendly LLM rephrase",
+      "Explain drawer with grounded references",
+      "Exports to PDF/XLSX"
+    ],
+    "images": [
+      {
+        "src": "assets/ledgermind-detail.webp",
+        "alt": "LedgerMind dashboard overview",
+        "caption": "Overview dashboard with grounded analytics."
+      }
+    ],
+    "videos": [
+      {
+        "poster": "assets/ledgermind-detail-poster.webp",
+        "sources": [
+          { "src": "assets/ledgermind-demo.webm", "type": "video/webm" },
+          { "src": "assets/ledgermind-demo.mp4", "type": "video/mp4" }
+        ],
+        "captions": "assets/ledgermind-demo.vtt"
+      }
+    ],
+    "downloads": [
+      {
+        "href": "assets/ledgermind-case-study.pdf",
+        "label": "Case Study (PDF)"
+      },
+      { "href": "assets/ledgermind-brief.pdf", "label": "One‑pager" }
+    ]
+  },
+  "datapipe-ai": {
+    "title": "DataPipe AI",
+    "slug": "datapipe-ai",
+    "tags": ["ai", "devops", "kubernetes", "ml"],
+    "thumbnail": "assets/datapipe-ai-cover.webp",
+    "problem": "Kubernetes/GKE operations generate noisy metrics and manual pipelines—operators react instead of anticipating.",
+    "solution": "Agent monitors telemetry, predicts scaling / failures, and automates pipeline deployment + remediation actions.",
+    "description": "AI-powered ops agent for GKE deployments with automated data pipeline management and intelligent monitoring.",
+    "goals": "Streamline Kubernetes operations with AI-driven automation, providing intelligent monitoring and automated data pipeline management for GKE deployments.",
+    "stack": [
+      "Google Kubernetes Engine (GKE)",
+      "Python, FastAPI",
+      "Kubernetes API, kubectl",
+      "Prometheus, Grafana",
+      "Docker, CI/CD pipelines"
+    ],
+    "outcomes": [
+      "Automated deployment orchestration",
+      "Intelligent resource scaling",
+      "Proactive issue detection and resolution",
+      "Streamlined data pipeline operations"
+    ],
+    "images": [
+      {
+        "src": "assets/datapipe-ai-detail.webp",
+        "alt": "DataPipe AI dashboard showing GKE cluster management and monitoring"
+      }
+    ],
+    "videos": [],
+    "downloads": []
+  },
+  "clarity": {
+    "title": "Clarity Companion",
+    "slug": "clarity",
+    "tags": ["dev", "extension", "productivity"],
+    "thumbnail": "assets/clarity-thumb.webp",
+    "repo": "https://github.com/leok974/clarity-companion",
+    "problem": "Writers receive vague style feedback; privacy concerns limit use of cloud AI for iterative editing.",
+    "solution": "Local extension enforces clarity heuristics with coverage gates and offline-friendly analysis loop.",
+    "description": "On‑device writing clarity assistant with strict coverage gates and localized UI.",
+    "goals": "On‑device writing clarity assistant with strict coverage gates and localized UI.",
+    "stack": ["Chrome MV3, TypeScript", "Vitest, CI coverage gates"],
+    "outcomes": [],
+    "images": [
+      {
+        "src": "assets/clarity-detail.webp",
+        "alt": "Clarity Companion panel with localized UI"
+      }
+    ],
+    "videos": [],
+    "downloads": []
+  }
+}

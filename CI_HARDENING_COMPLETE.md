@@ -3,7 +3,7 @@
 ## Changes Applied
 
 ### 1. Concurrency Control ✅
-**Problem**: Multiple workflow runs competing for resources  
+**Problem**: Multiple workflow runs competing for resources
 **Solution**: Added concurrency grouping with auto-cancel
 ```yaml
 concurrency:
@@ -13,7 +13,7 @@ concurrency:
 **Result**: Superseded runs now cancel automatically (verified: run 18435245683 cancelled when 18435246409 started)
 
 ### 2. Docker Layer Caching ✅
-**Problem**: Slow Docker builds (90+ seconds per run)  
+**Problem**: Slow Docker builds (90+ seconds per run)
 **Solution**: Added Buildx with layer caching
 ```yaml
 - uses: docker/setup-buildx-action@v3
@@ -25,12 +25,12 @@ concurrency:
 **Expected**: 50-70% faster builds on cache hits
 
 ### 3. Improved Health Check Wait Loop ✅
-**Problem**: API health check failures (101s timeout)  
+**Problem**: API health check failures (101s timeout)
 **Solution**: Separated stack startup from health check, improved retry logic
 ```yaml
 - name: Start backend stack (Docker Compose)
   # Just start the stack
-  
+
 - name: Wait for API to be ready
   # Dedicated health check with 60 retries (120s total)
   for i in {1..60}; do
@@ -45,13 +45,13 @@ concurrency:
 - More retries (60 vs 30)
 
 ### 4. Failure Diagnostics & Artifacts ✅
-**Problem**: Hard to debug failures without logs  
+**Problem**: Hard to debug failures without logs
 **Solution**: Added automatic log collection on failure
 ```yaml
 - name: Dump compose state on failure
   if: failure()
   # Captures docker ps output + full logs
-  
+
 - name: Upload logs on failure
   uses: actions/upload-artifact@v4
   with:
@@ -60,7 +60,7 @@ concurrency:
 **Result**: Failed runs now automatically upload `compose-logs.txt` artifact
 
 ### 5. CI-Specific Environment Hardening ✅
-**Problem**: Inconsistent behavior between local and CI  
+**Problem**: Inconsistent behavior between local and CI
 **Solution**: Added explicit CI environment variables
 ```yaml
 environment:
@@ -72,7 +72,7 @@ environment:
 ```
 
 ### 6. Mock Ollama Health Check Fix ✅
-**Problem**: `nc -z` not available in nginx:alpine  
+**Problem**: `nc -z` not available in nginx:alpine
 **Solution**: Changed to process-based check
 ```yaml
 healthcheck:
@@ -84,7 +84,7 @@ healthcheck:
 - `pidof nginx` ✅ (works!)
 
 ### 7. Improved Cleanup ✅
-**Problem**: Dangling containers from failed runs  
+**Problem**: Dangling containers from failed runs
 **Solution**: Enhanced cleanup step
 ```yaml
 - name: Cleanup Docker containers
@@ -174,6 +174,6 @@ All 5 runs before hardening failed at same point:
 
 ---
 
-**Status**: Testing in progress  
-**Last Updated**: 2025-10-11  
+**Status**: Testing in progress
+**Last Updated**: 2025-10-11
 **Run ID**: 18435246409

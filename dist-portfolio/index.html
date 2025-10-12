@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leo Klemet — AI Engineer · Portfolio</title>
+  <meta name="description" content="Leo Klemet — AI Engineer & SWE. Building agents, analytics, and creative pipelines: LedgerMind, DataPipe AI, Clarity Companion." />
+  <meta name="theme-color" content="#0f172a" />
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://assistant.ledger-mind.org/" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Leo Klemet — AI Engineer · Portfolio" />
+  <meta property="og:description" content="Projects in AI Agents, ML/Analytics, Creative Tech & DevOps." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://assistant.ledger-mind.org/" />
+
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script type="module" crossorigin src="/assets/main-BPWkkI9I.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-BFB2vcq3.css">
+</head>
+<body>
+  <!-- Skip to content for accessibility -->
+  <a href="#hero" class="skip-to-content">Skip to content</a>
+
+  <!-- Sticky Navigation -->
+  <nav class="nav" role="navigation" aria-label="Main navigation">
+    <div class="nav-container">
+      <a href="#hero" class="nav-logo">LK</a>
+      <ul class="nav-links">
+        <li><a href="#hero" class="nav-link">Home</a></li>
+        <li><a href="#about" class="nav-link">About</a></li>
+        <li><a href="#experience" class="nav-link">Experience</a></li>
+        <li><a href="#projects" class="nav-link">Projects</a></li>
+        <li><a href="#contact" class="nav-link">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div id="app">
+    <!-- Hero Section -->
+    <section id="hero" class="hero-section">
+      <div class="hero-content">
+        <h1 class="hero-title">Leo Klemet</h1>
+        <p class="hero-subtitle">AI Engineer · Software Engineer · Creative Technologist</p>
+        <p class="hero-description">
+          Building intelligent systems, AI agents, and analytics pipelines.
+          Passionate about generative AI, 3D visualization, and crafting elegant solutions to complex problems.
+        </p>
+        <div class="hero-cta">
+          <a href="#projects" class="btn-primary">View Projects</a>
+          <a href="#contact" class="btn-secondary">Get in Touch</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about-section">
+      <div class="container">
+        <h2 class="section-title">About Me</h2>
+        <div class="about-content">
+          <div class="about-text">
+            <p>
+              I'm an AI Engineer and Software Engineer with a passion for building intelligent systems
+              that solve real-world problems. My expertise spans machine learning, full-stack development,
+              and creative technology.
+            </p>
+            <p>
+              I specialize in developing AI agents, building scalable analytics platforms, and creating
+              immersive 3D experiences. I thrive at the intersection of technology and creativity,
+              constantly exploring new ways to leverage AI for innovative solutions.
+            </p>
+            <p>
+              When I'm not coding, you'll find me experimenting with generative art, exploring new
+              technologies, or contributing to open-source projects.
+            </p>
+          </div>
+          <div class="about-image">
+            <img src="/assets/leo-avatar-md.png" alt="Leo Klemet" class="avatar" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Experience/Skills Section -->
+    <section id="experience" class="experience-section">
+      <div class="container">
+        <h2 class="section-title">Experience & Skills</h2>
+        <div class="experience-grid">
+          <div class="experience-card">
+            <h3>AI & Machine Learning</h3>
+            <ul>
+              <li>Large Language Models (LLMs) & Agent Development</li>
+              <li>RAG Systems & Vector Databases</li>
+              <li>Natural Language Processing</li>
+              <li>ML Model Training & Deployment</li>
+              <li>PyTorch, TensorFlow, Scikit-learn</li>
+            </ul>
+          </div>
+
+          <div class="experience-card">
+            <h3>Software Engineering</h3>
+            <ul>
+              <li>Full-Stack Development (Python, TypeScript, React)</li>
+              <li>API Design & Microservices</li>
+              <li>Database Design (PostgreSQL, SQLite)</li>
+              <li>Cloud Infrastructure (Docker, Kubernetes)</li>
+              <li>CI/CD Pipelines & DevOps</li>
+            </ul>
+          </div>
+
+          <div class="experience-card">
+            <h3>Creative Technology</h3>
+            <ul>
+              <li>3D Visualization & Rendering</li>
+              <li>Generative AI Art</li>
+              <li>Data Visualization</li>
+              <li>Interactive Experiences</li>
+              <li>Blender, Three.js, WebGL</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projects" class="projects-section">
+      <div class="container">
+        <h2 class="section-title">Featured Projects</h2>
+        
+        <!-- Portfolio Filters -->
+        <div class="filters">
+          <button class="filter-btn active" data-filter="all" aria-label="Show all projects">All</button>
+          <button class="filter-btn" data-filter="ai" aria-label="Filter AI projects">AI</button>
+          <button class="filter-btn" data-filter="finance" aria-label="Filter Finance projects">Finance</button>
+          <button class="filter-btn" data-filter="ml" aria-label="Filter ML projects">ML</button>
+          <button class="filter-btn" data-filter="analytics" aria-label="Filter Analytics projects">Analytics</button>
+        </div>
+
+        <!-- Portfolio Grid -->
+        <div id="portfolio-grid" class="portfolio-grid">
+          <!-- Loading state -->
+          <div class="portfolio-loading">
+            <div class="loading-spinner" role="status" aria-label="Loading projects"></div>
+            <p>Loading projects...</p>
+          </div>
+        </div>
+
+        <div id="portfolio-empty" class="portfolio-empty" style="display: none;">
+          <p>No projects found matching your filter.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section">
+      <div class="container">
+        <h2 class="section-title">Get in Touch</h2>
+        <div class="contact-content">
+          <p class="contact-intro">
+            I'm always interested in hearing about new projects and opportunities.
+            Whether you have a question or just want to say hi, feel free to reach out!
+          </p>
+          <div class="contact-links">
+            <a href="mailto:contact@ledger-mind.org" class="contact-link" aria-label="Send email">
+              <span class="contact-icon">✉️</span>
+              <span>contact@ledger-mind.org</span>
+            </a>
+            <a href="https://github.com/leok974" target="_blank" rel="noopener noreferrer" class="contact-link" aria-label="Visit GitHub profile">
+              <span class="contact-icon">💻</span>
+              <span>GitHub</span>
+            </a>
+            <a href="https://linkedin.com/in/leoklemet" target="_blank" rel="noopener noreferrer" class="contact-link" aria-label="Visit LinkedIn profile">
+              <span class="contact-icon">💼</span>
+              <span>LinkedIn</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>&copy; 2025 Leo Klemet. All rights reserved.</p>
+        <p class="footer-links">
+          <a href="#hero">Back to Top</a>
+        </p>
+      </div>
+    </footer>
+  </div>
+
+</body>
+</html>

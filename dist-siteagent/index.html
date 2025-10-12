@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SiteAgent — Your AI Site Assistant</title>
+  <meta name="description" content="SiteAgent: Intelligent AI assistant for website management, content updates, and automated maintenance. Powered by local-first technology." />
+  <meta name="theme-color" content="#0f172a" />
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://siteagents.app/" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="SiteAgent — Your AI Site Assistant" />
+  <meta property="og:description" content="Intelligent AI assistant for website management, content updates, and automated maintenance." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://siteagents.app/" />
+  <meta property="og:image" content="https://siteagents.app/og/siteagent.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="SiteAgent — Your AI Site Assistant" />
+  <meta name="twitter:description" content="Intelligent AI assistant for website management, content updates, and automated maintenance." />
+  <meta name="twitter:image" content="https://siteagents.app/og/siteagent.png" />
+
+  <!-- Security headers (meta fallback; prefer server headers in prod) -->
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.siteagents.app https://agent.siteagents.app; font-src 'self' data:; frame-ancestors 'none'; upgrade-insecure-requests;"
+  />
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
+
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script type="module" crossorigin src="/assets/main-Ybs8qCcd.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-Cp4S998t.css">
+</head>
+<body>
+  <div id="app">
+    <header class="hero">
+      <div class="hero-nav">
+        <a href="https://assistant.ledger-mind.org" class="portfolio-link">Portfolio →</a>
+      </div>
+      <div class="hero-content">
+        <div class="brand-logo">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="48" height="48" rx="12" fill="#7c9cff"/>
+            <path d="M24 12L12 20V36L24 44L36 36V20L24 12Z" fill="white"/>
+            <circle cx="24" cy="28" r="4" fill="#7c9cff"/>
+          </svg>
+          <h1>SiteAgent</h1>
+        </div>
+        <p class="tagline">Your AI Site Assistant</p>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="intro">
+        <h2>Intelligent Website Management</h2>
+        <p>SiteAgent is your AI-powered assistant for automated site maintenance, content updates, and smart monitoring. Built with local-first principles and enterprise-grade security.</p>
+      </section>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h3>AI-Powered Automation</h3>
+          <p>Automated content generation, SEO optimization, and intelligent site updates powered by advanced language models.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3>Secure & Private</h3>
+          <p>Local-first architecture with Cloudflare Access integration. Your data stays protected with enterprise-grade security.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Real-Time Monitoring</h3>
+          <p>Live health checks, performance metrics, and instant alerts. Know your site's status at a glance.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3>Smart Analytics</h3>
+          <p>Track visitor behavior, A/B testing, and conversion metrics with privacy-focused analytics.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔧</div>
+          <h3>Easy Integration</h3>
+          <p>RESTful API, SSE streaming, and webhook support. Integrate with your existing tools seamlessly.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Observability</h3>
+          <p>Detailed logs, metrics dashboards, and Prometheus integration for complete system visibility.</p>
+        </div>
+      </div>
+
+      <section class="chat-section">
+        <div class="chat-container">
+          <div class="chat-header">
+            <h3>Try SiteAgent Chat</h3>
+            <p>Ask questions, request updates, or get insights about your website.</p>
+          </div>
+          <div id="chat-interface">
+            <div class="chat-messages" id="chat-messages">
+              <div class="message system">
+                <div class="message-content">
+                  <p><strong>SiteAgent:</strong> Hello! I'm your AI site assistant. How can I help you today?</p>
+                </div>
+              </div>
+            </div>
+            <div class="chat-input-area">
+              <input
+                type="text"
+                id="chat-input"
+                placeholder="Type your message..."
+                autocomplete="off"
+              />
+              <button id="chat-send" class="btn-primary">Send</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="api-section">
+        <h2>API Access</h2>
+        <div class="api-grid">
+          <div class="api-card">
+            <h3>Health Check</h3>
+            <code class="endpoint">GET /ready</code>
+            <p>Check API health and database status</p>
+            <a href="https://api.siteagents.app/ready" target="_blank" class="btn-secondary">Test Endpoint</a>
+          </div>
+
+          <div class="api-card">
+            <h3>Chat API</h3>
+            <code class="endpoint">POST /chat</code>
+            <p>Send messages and get AI responses</p>
+            <a href="https://api.siteagents.app/docs#/default/chat_chat_post" target="_blank" class="btn-secondary">View Docs</a>
+          </div>
+
+          <div class="api-card">
+            <h3>Stream Chat</h3>
+            <code class="endpoint">POST /chat/stream</code>
+            <p>Server-sent events for real-time responses</p>
+            <a href="https://api.siteagents.app/docs#/default/stream_chat_chat_stream_post" target="_blank" class="btn-secondary">View Docs</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="status-section">
+        <h2>System Status</h2>
+        <div id="status-dashboard">
+          <div class="status-card">
+            <div class="status-indicator loading"></div>
+            <span>Loading status...</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-content">
+        <p>&copy; 2025 SiteAgent. All rights reserved.</p>
+        <div class="footer-links">
+          <a href="/privacy.html">Privacy</a>
+          <a href="https://api.siteagents.app/docs" target="_blank">API Docs</a>
+          <a href="https://github.com/leok974/leo-portfolio" target="_blank">GitHub</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+</body>
+</html>

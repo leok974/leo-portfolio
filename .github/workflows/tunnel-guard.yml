@@ -1,0 +1,51 @@
+name: tunnel-guard
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    paths:
+      - "deploy/**"
+      - "**/docker-compose*.yml"
+      - "infra/nginx/**"
+      - "scripts/tunnel-guard.sh"
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Docker info
+        run: |
+          docker version
+          docker network ls
+
+      - name: Start minimal stack (no build)
+        run: |
+          cd deploy
+          docker compose up -d --no-build
+          sleep 5
+
+      - name: List running containers
+        run: docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+
+      - name: Show network topology
+        run: |
+          docker network inspect infra_net --format '{{range .Containers}}{{.Name}}: {{range .Aliases}}{{.}} {{end}}{{"\n"}}{{end}}' || echo "infra_net not found"
+
+      - name: Verify unique tunnel aliases
+        run: bash scripts/tunnel-guard.sh
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          docker compose -f deploy/docker-compose.yml logs --tail=50
+
+      - name: Teardown
+        if: always()
+        run: |
+          cd deploy
+          docker compose down -v --remove-orphans
