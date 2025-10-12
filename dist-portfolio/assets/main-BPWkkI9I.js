@@ -13,4 +13,4 @@ var h=Object.defineProperty;var m=(i,e,s)=>e in i?h(i,e,{enumerable:!0,configura
         ${a}
       </div>
     `,r}showEmpty(){!this.gridContainer||!this.emptyElement||(this.gridContainer.innerHTML="",this.emptyElement.style.display="block")}escapeHtml(e){const s=document.createElement("div");return s.textContent=e,s.innerHTML}}document.addEventListener("DOMContentLoaded",()=>{console.log("Portfolio UI initialized"),new p});
-//# sourceMappingURL=main-dFPMEruA.js.map
+//# sourceMappingURL=main-BPWkkI9I.js.map
