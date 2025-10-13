@@ -39,6 +39,12 @@ jobs:
           mkdir -p dist-portfolio/assets/js
           cp public/assets/js/calendly.js dist-portfolio/assets/js/calendly.js
 
+      - name: Symlink dist path for tests
+        run: |
+          if [ -d dist-portfolio ] && [ ! -e dist ]; then
+            ln -s dist-portfolio dist
+          fi
+
       - name: Run E2E Tests
         env:
           PW_APP: portfolio
