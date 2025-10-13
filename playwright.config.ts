@@ -74,12 +74,13 @@ export default defineConfig({
     // Use dev server for the app being tested
     // Portfolio: vite with portfolio config on 127.0.0.1:5174
     // Siteagent: vite default on 127.0.0.1:5173
-    command: process.env.PW_APP === 'portfolio'
+    // Can override with PW_START env var for custom commands
+    command: process.env.PW_START || (process.env.PW_APP === 'portfolio'
       ? 'pnpm exec vite --config vite.config.portfolio.ts --port 5174 --host 127.0.0.1 --strictPort'
-      : 'pnpm exec vite --port 5173 --host 127.0.0.1 --strictPort',
-    url: process.env.PW_APP === 'portfolio' ? 'http://127.0.0.1:5174' : 'http://127.0.0.1:5173',
-    reuseExistingServer: !isCI,
-    timeout: 120_000,
+      : 'pnpm exec vite --port 5173 --host 127.0.0.1 --strictPort'),
+    url: process.env.PW_BASE_URL || (process.env.PW_APP === 'portfolio' ? 'http://127.0.0.1:5174' : 'http://127.0.0.1:5173'),
+    reuseExistingServer: true, // Always reuse to avoid port conflicts
+    timeout: 120_000, // Give CI time to build and start
     stdout: 'pipe',
     stderr: 'pipe',
   },
