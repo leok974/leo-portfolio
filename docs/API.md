@@ -1,3 +1,7 @@
+---
+title: API
+---
+
 # API Reference
 
 > Draft – Expand with full schemas as models stabilize.

@@ -5,17 +5,59 @@
     "docs/DEVELOPMENT.md",
     "docs/API.md",
     "docs/SECURITY.md",
-    "CHANGELOG.md",
     "CONTRIBUTING.md"
   ],
   "keep": [
     "docs/PHASE_0.3.0.md",
     "README.md",
     "docs/a11y.md",
-    "docs/BACKEND_QUICKSTART.md"
+    "docs/BACKEND_QUICKSTART.md",
+    "docs/CONSOLIDATION_SYSTEM.md",
+    "docs/CHANGELOG.md"
   ],
-  "deprecated": [],
-  "delete": [],
+  "deprecated": [
+    "docs/ADMIN_CONTROLS.md",
+    "docs/ADMIN_ROUTER_MIGRATION.md",
+    "docs/BACKEND_DEPLOYMENT.md",
+    "docs/CALENDLY_COMPLETE_SUMMARY.md",
+    "docs/CALENDLY_INTEGRATION.md",
+    "docs/CALENDLY_NICE_TO_HAVES.md",
+    "docs/CALENDLY_PRIVACY_HARDENING.md",
+    "docs/CALENDLY_PRIVACY_IMPLEMENTATION.md",
+    "docs/CALENDLY_PRIVACY_QUICK_REF.md",
+    "docs/CF_ACCESS.md",
+    "docs/CF_ACCESS_QUICKSTART.md",
+    "docs/CF_ACCESS_SERVICE_TOKENS.md",
+    "docs/CF_ACCESS_SETUP_COMPLETE.md",
+    "docs/CF_ACCESS_TESTING.md",
+    "docs/CLOUDFLARE_DASHBOARD_GUIDE.md",
+    "docs/CLOUDFLARE_TUNNEL_SETUP.md",
+    "docs/DEBUG_ERRORS_DIAGNOSIS.md",
+    "docs/DEPLOYMENT_CHECKLIST.md",
+    "docs/DEPLOYMENT_COMPLETE.md",
+    "docs/DEPLOYMENT_GUIDE.md",
+    "docs/DEPLOYMENT_VERIFICATION.md",
+    "docs/ERROR_FIXES_SUMMARY.md",
+    "docs/FOLLOWUP_TEST.md",
+    "docs/MIGRATION_CHECKLIST.md",
+    "docs/MIGRATION_COMPLETION_SUMMARY.md",
+    "docs/OPTION_B_TOKEN_AUTH_TEST_RESULTS.md",
+    "docs/PACKAGE_UPDATES_OCT2025.md",
+    "docs/PRODUCTION_BUILD_SUMMARY.md",
+    "docs/QUICK_DEPLOY.md",
+    "docs/SETUP_VERIFICATION.md",
+    "docs/TOKEN_AUTH_SUMMARY.md",
+    "docs/TUNNEL_QUICK_START.md",
+    "docs/VERIFY_CF_ACCESS.md"
+  ],
+  "delete": [
+    "docs/DEBUG_ERRORS_DIAGNOSIS.md",
+    "docs/ERROR_FIXES_SUMMARY.md",
+    "docs/FOLLOWUP_TEST.md",
+    "docs/OPTION_B_TOKEN_AUTH_TEST_RESULTS.md",
+    "docs/SETUP_VERIFICATION.md",
+    "docs/VERIFY_CF_ACCESS.md"
+  ],
   "renameMap": {},
   "indexGroups": [
     {
@@ -45,7 +87,13 @@
       "title": "Phases & Changelog",
       "items": [
         "docs/PHASE_0.3.0.md",
-        "CHANGELOG.md"
+        "docs/CHANGELOG.md"
+      ]
+    },
+    {
+      "title": "Tooling",
+      "items": [
+        "docs/CONSOLIDATION_SYSTEM.md"
       ]
     },
     {

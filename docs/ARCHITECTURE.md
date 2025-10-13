@@ -1,3 +1,7 @@
+---
+title: ARCHITECTURE
+---
+
 # Architecture
 
 > Draft – initial scaffold. Expand with diagrams (Mermaid) and sequence flows.

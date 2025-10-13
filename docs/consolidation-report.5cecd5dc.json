@@ -1,0 +1,449 @@
+{
+  "kept": [
+    "docs/a11y.md",
+    "docs/API.md",
+    "docs/ARCHITECTURE.md",
+    "docs/BACKEND_QUICKSTART.md",
+    "docs/CHANGELOG.md",
+    "docs/CONSOLIDATION_SYSTEM.md",
+    "docs/DEPLOY.md",
+    "docs/DEVELOPMENT.md",
+    "docs/PHASE_0.3.0.md",
+    "docs/SECURITY.md"
+  ],
+  "renamed": [],
+  "removed": [
+    "docs/DEBUG_ERRORS_DIAGNOSIS.md",
+    "docs/ERROR_FIXES_SUMMARY.md",
+    "docs/FOLLOWUP_TEST.md",
+    "docs/OPTION_B_TOKEN_AUTH_TEST_RESULTS.md",
+    "docs/SETUP_VERIFICATION.md",
+    "docs/VERIFY_CF_ACCESS.md"
+  ],
+  "flagged": [
+    {
+      "file": "docs/ADMIN_CONTROLS.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/ADMIN_ROUTER_MIGRATION.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/AGENTS_PRUNING.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/analytics.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/ANALYTICS_RETENTION.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/ASSISTANT_CHAT_IMPLEMENTATION.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/BACKEND_ADMIN_AUTH.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/BACKEND_DEPLOYMENT.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/BRAND_HEADER_IMPLEMENTATION.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/BRAND_HEADER_QUICK_REFERENCE.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/CALENDLY_COMPLETE_SUMMARY.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/CALENDLY_INTEGRATION.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/CALENDLY_NICE_TO_HAVES.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/CALENDLY_PRIVACY_HARDENING.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/CALENDLY_PRIVACY_IMPLEMENTATION.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/CALENDLY_PRIVACY_QUICK_REF.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/CF_ACCESS.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/CF_ACCESS_QUICKSTART.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/CF_ACCESS_SERVICE_TOKENS.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/CF_ACCESS_SETUP_COMPLETE.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/CF_ACCESS_TESTING.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/CLOUDFLARE_DASHBOARD_GUIDE.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/CLOUDFLARE_TUNNEL_SETUP.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/CONSENT_BANNER.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/CONSENT_MANAGE_PRIVACY.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/CSP_HEADER_FIX.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/CSP_NONCE_IMPLEMENTATION.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/DEPLOYMENT_CHECKLIST.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/DEPLOYMENT_COMPLETE.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/DEPLOYMENT_GUIDE.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/DEPLOYMENT_VERIFICATION.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/E2E_COOKIE_AUTH.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/E2E_TESTS_DEV_AWARE.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/FALLBACK_IMPLEMENTATION.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/FEATURE_GATING.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/FINAL_CONFIG_STEP.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/FRONTEND_IMPLEMENTATION.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/GALLERY.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/GITHUB_WORKFLOWS.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/GLOBAL_TYPOGRAPHY_SYSTEM.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/GRAFANA_SETUP.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/GRAFANA_VSCODE_SETUP.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/HYBRID_ARCHITECTURE.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/HYBRID_IMPLEMENTATION_SUMMARY.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/LLM_ROUTER.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/maintenance.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/MAINTENANCE_DASHBOARD.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/MIGRATION_CHECKLIST.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/MIGRATION_COMPLETION_SUMMARY.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/NEW_PROJECTS_SUMMARY.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/NEW_PROJECT_ASSETS.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/NEXT_POLISH.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/OG_BRANDING_GUIDE.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/OG_IMAGE_TODO.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/OG_PNG_CONVERSION_COMPLETE.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/OPERATIONS.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/ORCHESTRATION.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/PACKAGE_UPDATES_OCT2025.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/PHASE_50.4_IMPLEMENTATION_SUMMARY.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/PHASE_50.4_SEO_OG_INTELLIGENCE.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/PHASE_50.5_SEO_PR_PREVIEW.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/PORTFOLIO_FEATURE_AUDIT.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/PORTFOLIO_FINAL_POLISH.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/PRODUCTION_BUILD_SUMMARY.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/PRODUCTION_DEPLOYMENT.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/PROJECT_STATUS.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/PR_CHECKLIST.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/PUBLIC_SMOKE_TESTS.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/QUICK_DEPLOY.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/RAG_AUTH_IMPLEMENTATION_SUMMARY.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/RAG_AUTH_TESTS.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/RAG_DIAGNOSTICS_ENDPOINT.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/RAG_PROJECTS_COMPLETE_SUMMARY.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/RAG_PROJECTS_INTEGRATION.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/RAG_SCHEMA_MIGRATION.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/REGRESSION_GUARDS_COMPLETE.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/RESUME_METRICS.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/ROUTE_HARDENING_GUIDE.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/SEO_ENHANCEMENTS_PHASE_50_COMPLETE.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/SERP_REMEDIATION_UI_COMPLETE.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/SITEAGENT_BRANCH_HYGIENE.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/SITEAGENT_TASKS.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/SITEMAP.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/SSE_IMPROVEMENTS.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/STATUS_FILTER_IMPLEMENTATION.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/TAILWIND_FINAL_ENHANCEMENTS.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/TAILWIND_IMPLEMENTATION.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/TAILWIND_NEXT_STEPS.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/TAILWIND_POLISH_COMPLETE.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/TAILWIND_UPDATE.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/TESTING_ANALYTICS.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/TOKEN_AUTH_SUMMARY.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/TUNNEL_QUICK_START.md",
+      "reason": "deprecated"
+    },
+    {
+      "file": "docs/TYPOGRAPHY_IMPLEMENTATION_SUMMARY.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/TYPOGRAPHY_QUICK_REFERENCE.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/UI_POLISH_CI.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/UI_POLISH_CI_SUMMARY.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/UI_POLISH_TESTS.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/UI_POLISH_WORKFLOW_UPGRADE.md",
+      "reason": "extra"
+    },
+    {
+      "file": "docs/UPLOADS.md",
+      "reason": "extra"
+    }
+  ],
+  "fixedLinks": [
+    "docs/a11y.md",
+    "docs/API.md",
+    "docs/ARCHITECTURE.md",
+    "docs/BACKEND_QUICKSTART.md",
+    "docs/CHANGELOG.md",
+    "docs/CONSOLIDATION_SYSTEM.md",
+    "docs/DEPLOY.md",
+    "docs/DEVELOPMENT.md",
+    "docs/PHASE_0.3.0.md",
+    "docs/SECURITY.md"
+  ],
+  "frontmatterAdded": [
+    "docs/a11y.md",
+    "docs/API.md",
+    "docs/ARCHITECTURE.md",
+    "docs/BACKEND_QUICKSTART.md",
+    "docs/CHANGELOG.md",
+    "docs/CONSOLIDATION_SYSTEM.md",
+    "docs/DEPLOY.md",
+    "docs/DEVELOPMENT.md",
+    "docs/PHASE_0.3.0.md",
+    "docs/SECURITY.md"
+  ]
+}

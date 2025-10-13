@@ -1,3 +1,7 @@
+---
+title: BACKEND QUICKSTART
+---
+
 # Backend Implementation Quick Start
 
 **Purpose**: Minimal steps to implement HMAC-signed admin authentication.

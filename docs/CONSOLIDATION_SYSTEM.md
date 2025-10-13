@@ -1,3 +1,7 @@
+---
+title: CONSOLIDATION SYSTEM
+---
+
 # Docs & Workflows Consolidation System
 
 ## Overview

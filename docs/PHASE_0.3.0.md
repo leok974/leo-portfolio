@@ -1,3 +1,7 @@
+---
+title: PHASE 0.3.0
+---
+
 # Phase 0.3.0 — Docs & Release Polish
 
 **Goal:** Ship a polished 0.3.0 that tightens security, diagrams, and CI/release, with measurable test coverage and a clean contributor path.

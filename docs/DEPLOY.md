@@ -1,3 +1,7 @@
+---
+title: DEPLOY
+---
+
 | `PRIMARY_POLL_MAX_S` | Max seconds to keep polling for primary model presence before giving up. |
 | `ALLOW_FALLBACK` | (Tests) When `1`, skips Playwright no-fallback guard specs so CI can proceed while primary model unavailable. |
 # Deploy Guide
