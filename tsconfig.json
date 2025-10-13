@@ -38,6 +38,7 @@
     "public/assets/js/**/*.js",
     "assistant_api/**",
     "scripts/seo.tune.mjs",
+    "scripts/infra.scale.mjs",
     "test-script.js"
   ]
 }
