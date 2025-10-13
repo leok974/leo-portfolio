@@ -93,6 +93,26 @@ Files are only deleted if:
 1. Listed in `delete` array (docs)
 2. Identified as exact duplicate (workflows)
 3. User runs with `--apply` flag
+4. **NEW**: File hasn't been modified in last 14 days (time-based safeguard)
+
+### 🛡️ **Time-Based Safeguard**
+The docs consolidation script checks modification time before deleting:
+- Files modified within 14 days are flagged as `recent_change` instead of deleted
+- Prevents accidental deletion of actively maintained files
+- Provides safety buffer for ongoing work
+
+### 🛡️ **Code Ownership Protection**
+`.github/CODEOWNERS` enforces review requirements:
+- All `docs/**` changes require @leok974 review
+- All `.github/workflows/**` changes require @leok974 review
+- Consolidation scripts and config require @leok974 review
+
+### 🛡️ **Strict Mode (Optional)**
+CI workflow supports optional strict mode enforcement:
+- Set `STRICT_AUDIT=1` in workflow env to fail on violations
+- Checks for flagged docs and extra workflows
+- Can be enabled per-branch or per-PR
+- Default: `STRICT_AUDIT=0` (report only, non-blocking)
 
 ### 🛡️ **Traceability**
 Every operation generates a JSON report with:
@@ -226,15 +246,60 @@ The audit workflow is already in place and will report on future PRs.
 2. Run `npm run docs:apply` - links auto-fix
 3. Commit changes
 
+## Advanced: Strict Mode
+
+### Enabling Strict Mode
+
+To make audits **block PRs/pushes** when violations exist:
+
+**Option 1: Always On (Main Branch)**
+Edit `.github/workflows/docs-audit.yml`:
+```yaml
+env:
+  STRICT_AUDIT: "${{ github.ref_name == 'main' && '1' || '0' }}"
+```
+
+**Option 2: Manual Toggle**
+Set in workflow env:
+```yaml
+env:
+  STRICT_AUDIT: "1"  # Enable strict mode
+```
+
+**Option 3: Per-Branch**
+```yaml
+env:
+  STRICT_AUDIT: "${{ startsWith(github.ref, 'refs/tags/') && '1' || '0' }}"
+```
+
+### What Strict Mode Checks
+
+When `STRICT_AUDIT=1`:
+1. ❌ **Fails if any docs are flagged** (deprecated or extra)
+2. ❌ **Fails if extra workflows exist** (not in allowlist)
+3. ✅ **Provides clear error messages** with fix commands
+4. ✅ **Still uploads reports** for debugging
+
+### Recommended Strategy
+
+- **Feature branches**: `STRICT_AUDIT=0` (report only)
+- **Main branch**: `STRICT_AUDIT=1` (enforce)
+- **Release tags**: `STRICT_AUDIT=1` (enforce)
+
+This allows flexibility during development while maintaining quality gates for production.
+
 ## Safety Features
 
 ✅ **All mutations require --apply flag**
 ✅ **JSON reports for every operation**
 ✅ **Link fixing prevents broken references**
 ✅ **Frontmatter enforcement ensures consistency**
-✅ **CI audit never blocks PRs**
+✅ **CI audit configurable (report-only or blocking)**
 ✅ **Explicit deletion lists (no wildcards)**
 ✅ **Duplicate detection uses content signatures**
+✅ **Time-based safeguard (14-day modified check)**
+✅ **Code ownership protection via CODEOWNERS**
+✅ **PR template includes audit checklist**
 
 ## Files Created
 

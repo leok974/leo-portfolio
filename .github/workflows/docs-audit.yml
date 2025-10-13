@@ -4,6 +4,10 @@ on:
   push:
     branches: [ main ]
 
+env:
+  STRICT_AUDIT: "0"   # set to "1" to fail on violations
+  KEEP_WORKFLOWS: "ci.yml,release.yml,docs-audit.yml"
+
 jobs:
   audit:
     runs-on: ubuntu-latest
@@ -31,3 +35,58 @@ jobs:
           name: docs-workflows-audit
           path: |
             docs/consolidation-report*.json
+
+      - name: Enforce strict mode (optional)
+        if: env.STRICT_AUDIT == '1'
+        run: |
+          echo "🔒 Strict mode enabled - checking for violations..."
+          
+          # Check docs consolidation report
+          node -e "
+            const fs = require('fs');
+            const files = fs.readdirSync('docs');
+            const reportFile = files.find(x => x.startsWith('consolidation-report'));
+            if (!reportFile) {
+              console.error('❌ No consolidation report found');
+              process.exit(1);
+            }
+            const report = JSON.parse(fs.readFileSync('docs/' + reportFile, 'utf8'));
+            const flagged = report.flagged || [];
+            const deprecated = flagged.filter(x => x.reason === 'deprecated');
+            const extras = flagged.filter(x => x.reason === 'extra');
+            
+            console.log('📊 Docs audit results:');
+            console.log('  - Deprecated files:', deprecated.length);
+            console.log('  - Extra files:', extras.length);
+            console.log('  - Total flagged:', flagged.length);
+            
+            if (flagged.length > 0) {
+              console.error('❌ Flagged docs remain - strict mode violation');
+              console.error('Run: npm run docs:apply to fix');
+              process.exit(2);
+            }
+            console.log('✅ No flagged docs');
+          "
+          
+          # Check workflows
+          node -e "
+            const fs = require('fs');
+            const kept = process.env.KEEP_WORKFLOWS.split(',').map(x => x.trim()).filter(Boolean);
+            const found = fs.readdirSync('.github/workflows').filter(f => f.endsWith('.yml') || f.endsWith('.yaml'));
+            const extras = found.filter(f => !kept.includes(f));
+            
+            console.log('📊 Workflows audit results:');
+            console.log('  - Allowed workflows:', kept.length, '(' + kept.join(', ') + ')');
+            console.log('  - Found workflows:', found.length);
+            console.log('  - Extra workflows:', extras.length);
+            
+            if (extras.length) {
+              console.error('❌ Extra workflows found - strict mode violation');
+              console.error('Extra:', extras.join(', '));
+              console.error('Run: npm run wf:apply to fix');
+              process.exit(3);
+            }
+            console.log('✅ No extra workflows');
+          "
+          
+          echo "✅ All strict mode checks passed"

@@ -119,8 +119,20 @@ function main() {
       // Delete only if explicitly allowed by rules
       const okToDelete = (cfg.delete || []).includes(r);
       if (okToDelete) {
-        report.removed.push(r);
-        if (APPLY) fs.rmSync(f, { force: true });
+        // Time-based safeguard: don't delete files modified in last 14 days
+        const stat = fs.statSync(f);
+        const daysSinceModified = (Date.now() - stat.mtimeMs) / (1000 * 60 * 60 * 24);
+        
+        if (daysSinceModified < 14) {
+          report.flagged.push({ 
+            file: r, 
+            reason: "recent_change", 
+            details: `Modified ${Math.floor(daysSinceModified)} days ago - skipping delete` 
+          });
+        } else {
+          report.removed.push(r);
+          if (APPLY) fs.rmSync(f, { force: true });
+        }
       } else {
         report.flagged.push({ file: r, reason: isDeprecated ? "deprecated" : "extra" });
       }

@@ -17,6 +17,8 @@ Describe the change briefly (what / why).
 - [ ] Tested in both light and dark mode (if UI changes)
 - [ ] Added/updated docs (README / docs/ARCHITECTURE.md / docs/API.md / docs/DEPLOY.md)
 - [ ] Updated `docs/CHANGELOG.md`
+- [ ] **Ran docs & workflows audit** (`npm run docs:audit && npm run wf:audit`) and reviewed reports
+- [ ] **Updated docs config** when adding/removing/renaming docs files
 - [ ] No secrets added
 - [ ] Fallback still works if primary disabled
 - [ ] SSE streaming unaffected (if chat-related)
