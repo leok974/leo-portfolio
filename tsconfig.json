@@ -23,7 +23,7 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "apps/**/src/**/*.ts",
-    "apps/**/src/**/*.tsx", 
+    "apps/**/src/**/*.tsx",
     "tests/**/*.ts",
     "tests/**/*.tsx",
     "types/**/*.d.ts",
@@ -40,9 +40,7 @@
     "**/*.md",
     "public/assets/js/**/*.js",
     "assistant_api/**",
-    "scripts/seo.tune.mjs",
-    "scripts/infra.scale.mjs",
-    "scripts/**/*.scale.mjs",
+    "scripts/**",
     "test-script.js",
     "**/test-script.js"
   ]

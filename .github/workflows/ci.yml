@@ -89,7 +89,7 @@ jobs:
           RAG_DB_PATH: ":memory:"
           PRIMARY_MODEL: "qwen2.5:7b-instruct-q4_K_M"
           ENABLE_RAG: "false"
-        run: pytest -q --tb=short --maxfail=5
+        run: pytest assistant_api/tests/ -q --tb=short --maxfail=5
 
       - name: Upload coverage to Codecov
         if: success()
@@ -167,6 +167,7 @@ jobs:
           APP_ENV: test
           RAG_DB_PATH: ":memory:"
           PRIMARY_MODEL: "qwen2.5:7b-instruct-q4_K_M"
+          DISABLE_PRIMARY: "1"
         run: |
           python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 &
           echo $! > backend.pid
