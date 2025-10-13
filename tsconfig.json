@@ -20,13 +20,16 @@
     "noEmit": true
   },
   "include": [
-    "**/*.js",
     "src/**/*.ts",
     "src/**/*.tsx",
+    "apps/**/src/**/*.ts",
+    "apps/**/src/**/*.tsx", 
     "tests/**/*.ts",
     "tests/**/*.tsx",
     "types/**/*.d.ts",
-    "vite.config.ts"
+    "vite.config.ts",
+    "vite.config.*.ts",
+    "playwright.config.ts"
   ],
   "exclude": [
     "node_modules",
@@ -39,6 +42,8 @@
     "assistant_api/**",
     "scripts/seo.tune.mjs",
     "scripts/infra.scale.mjs",
-    "test-script.js"
+    "scripts/**/*.scale.mjs",
+    "test-script.js",
+    "**/test-script.js"
   ]
 }
