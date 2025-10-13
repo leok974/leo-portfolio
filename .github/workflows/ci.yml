@@ -45,12 +45,27 @@ jobs:
             ln -s dist-portfolio dist
           fi
 
+      - name: Start static server for E2E tests
+        run: |
+          npx http-server dist-portfolio -p 5174 -a 127.0.0.1 --silent &
+          echo $! > .http-server.pid
+          sleep 3
+
       - name: Run E2E Tests
         env:
           PW_APP: portfolio
           PW_BASE_URL: http://127.0.0.1:5174
+          PW_SKIP_WS: "1"
           BACKEND_REQUIRED: "0"
         run: npx playwright test --grep "@frontend" --reporter=html
+
+      - name: Stop static server
+        if: always()
+        run: |
+          if [ -f .http-server.pid ]; then
+            kill $(cat .http-server.pid) || true
+            rm .http-server.pid
+          fi
 
       - name: Upload Playwright HTML report
         if: failure()
