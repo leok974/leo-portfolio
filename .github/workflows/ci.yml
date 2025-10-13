@@ -124,7 +124,9 @@ jobs:
         run: npm ci
 
       - name: Install Python dependencies
-        run: pip install -r requirements-dev.txt
+        run: |
+          pip install ruff black mypy pip-audit
+          pip install -r requirements-dev.txt
 
       - name: Run ESLint
         run: npm run lint

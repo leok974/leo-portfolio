@@ -35,6 +35,12 @@ function parseSetCookie(value: string, name: string): string | null {
 export default async function globalSetup(_: FullConfig) {
   console.log('🔧 Setting up dev overlay authentication...');
 
+  // Skip backend-dependent setup if BACKEND_REQUIRED=0
+  if (process.env.BACKEND_REQUIRED === '0' || process.env.BACKEND_REQUIRED === 'false') {
+    console.log('⏭️  Skipping dev overlay setup (BACKEND_REQUIRED=0)');
+    return;
+  }
+
   // 1) Ask backend to enable overlay (sets HttpOnly cookie in response)
   const api = await PWRequest.newContext({
     baseURL: BACKEND,
