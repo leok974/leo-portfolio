@@ -25,6 +25,7 @@ export default [
       'assistant_api/**',
       'tests/e2e/**/*.md',  // Exclude test documentation markdown files
       'docs/**/*.md',  // Exclude project documentation markdown files
+      'deploy/**/*.md',  // Exclude deploy documentation (contains YAML examples)
       '*.md',  // Exclude root-level markdown files
       'public/assets/js/**/*.js',  // Exclude public asset JavaScript files
       'test-script.js',  // HTML file misnamed as .js
@@ -312,6 +313,9 @@ export default [
   {
     plugins: { yml },
     files: ['**/*.{yml,yaml}'],
+    ignores: [
+      'deploy/**/*.md',  // Skip YAML-in-markdown in deploy docs
+    ],
     languageOptions: { parser: yamlParser },
     rules: {
       'yml/indent': ['error', 2],

@@ -5,7 +5,6 @@
  * Replace with your real Lighthouse pipeline when ready.
  */
 import fs from "node:fs";
-import path from "node:path";
 
 function arg(name, fallback = null) {
   const ix = process.argv.findIndex(a => a === `--${name}`);

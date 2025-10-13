@@ -156,12 +156,8 @@ function fixMissingAlt($) {
   return changed;
 }
 
-function isLikelyFrameworkShell($) {
-  // Heuristics: root <div id="root">, script type=module entry, etc.
-  const hasRoot = $("#root, #__next, #app").length > 0;
-  const hasModuleScript = $('script[type="module"]').length > 0;
-  return hasRoot && hasModuleScript;
-}
+// Removed unused isLikelyFrameworkShell function
+// (was used for heuristic detection but no longer needed)
 
 async function processFile(fp) {
   const html = await fs.readFile(fp, "utf8");
