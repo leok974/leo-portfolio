@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Response, Request
+from fastapi import FastAPI, HTTPException, Response, Request, Depends
 import asyncio, httpx
 import os, re, sys, subprocess
 import logging
@@ -104,6 +104,21 @@ else:
         allow_methods=["*"],
         allow_headers=["*"]
     )
+
+# Admin authentication (HMAC-signed cookies)
+from .auth_admin import router as auth_router, require_admin
+app.include_router(auth_router)
+
+# Protected admin endpoints (for E2E testing)
+@app.post("/api/layout/reset")
+def layout_reset(_admin: dict = Depends(require_admin)):
+    """Reset layout configuration (admin only)."""
+    return {"ok": True, "message": "Layout reset successful"}
+
+@app.post("/api/layout/autotune")
+def layout_autotune(_admin: dict = Depends(require_admin)):
+    """Autotune layout configuration (admin only)."""
+    return {"ok": True, "message": "Layout autotune successful"}
 
 # RAG API routes
 app.include_router(rag_router, prefix="/api")
