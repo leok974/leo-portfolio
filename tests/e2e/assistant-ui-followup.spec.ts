@@ -6,17 +6,28 @@ import { fileURLToPath } from 'node:url';
 import { installFastUI } from './lib/fast-ui';
 import { mockReady } from './lib/mock-ready';
 
-const currentDir = dirname(fileURLToPath(import.meta.url));
-const distAssetsDir = resolve(currentDir, '../../dist/assets');
-const bundledScript = readdirSync(distAssetsDir).find(
-  (file) => file.startsWith('index-') && file.endsWith('.js')
-);
+function findBundle(distDir: string): string {
+  const distAssetsDir = join(distDir, 'assets');
+  const files = readdirSync(distAssetsDir);
 
-if (!bundledScript) {
-  throw new Error(`Assistant bundle not found under ${distAssetsDir}. Run \`npm run build\` before executing this spec.`);
+  // prefer index-*.js (siteagent), else main-*.js (portfolio), else any .js
+  const candidates = [
+    (f: string) => f.startsWith('index-') && f.endsWith('.js'),
+    (f: string) => f.startsWith('main-') && f.endsWith('.js'),
+    (f: string) => f.endsWith('.js') && !f.endsWith('.map.js'),
+  ];
+
+  for (const pred of candidates) {
+    const hit = files.find(pred);
+    if (hit) return join(distAssetsDir, hit);
+  }
+  throw new Error(`No JS bundle found under ${distAssetsDir}`);
 }
 
-const bundledScriptBody = readFileSync(join(distAssetsDir, bundledScript), 'utf-8');
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const distDir = resolve(currentDir, '../../dist');
+const bundledScriptPath = findBundle(distDir);
+const bundledScriptBody = readFileSync(bundledScriptPath, 'utf-8');
 
 // Minimal SSE body that looks like a real stream and ends with a question.
 function sseBody() {
