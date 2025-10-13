@@ -32,12 +32,12 @@ jobs:
         run: npm run build:portfolio
 
       - name: Copy book.html to dist
-        run: cp book.html dist/book.html
+        run: cp book.html dist-portfolio/book.html
 
       - name: Copy calendly.js to dist
         run: |
-          mkdir -p dist/assets/js
-          cp public/assets/js/calendly.js dist/assets/js/calendly.js
+          mkdir -p dist-portfolio/assets/js
+          cp public/assets/js/calendly.js dist-portfolio/assets/js/calendly.js
 
       - name: Run Typography Tests
         run: npx playwright test tests/e2e/typography.spec.ts --project=chromium
@@ -207,15 +207,15 @@ jobs:
 
       - name: Verify build output
         run: |
-          ls -lh dist/
+          ls -lh dist-portfolio/
           test -f dist-portfolio/index.html
 
       - name: Check SRI manifest
-        run: test -f dist/sri-manifest.json
+        run: test -f dist-portfolio/sri-manifest.json
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: dist/
+          name: dist-portfolio
+          path: dist-portfolio/
           retention-days: 7
