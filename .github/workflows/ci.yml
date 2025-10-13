@@ -43,6 +43,9 @@ jobs:
         run: |
           mkdir -p dist
           cp -r dist-portfolio/* dist/
+          echo "Verifying dist structure:"
+          ls -la dist/ || true
+          ls -la dist/assets/ || true
 
       - name: Run E2E Tests
         env:
