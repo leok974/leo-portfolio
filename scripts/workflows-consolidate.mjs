@@ -31,7 +31,7 @@ const files = fs.readdirSync(wfDir).filter(f => f.endsWith(".yml") || f.endsWith
 const report = { keep: [], remove: [], flagged: [], duplicates: [] };
 
 function rel(p) {
-  return p.replaceAll("\\", "/");
+  return path.relative(repoRoot, p).replaceAll("\\", "/");
 }
 
 function triggerKey(doc) {
