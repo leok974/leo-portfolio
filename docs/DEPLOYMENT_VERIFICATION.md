@@ -1,6 +1,6 @@
 # Deployment Verification Playbook
 
-**Generated**: October 13, 2025  
+**Generated**: October 13, 2025
 **Purpose**: Fast verification checklist for staging/production deployments.
 
 ---
@@ -11,7 +11,95 @@ Run these checks after deploying to staging or production.
 
 ---
 
-## A. Authentication & Roles
+## A. Backend Authentication (HMAC-Signed Cookies)
+
+### 1. Admin Login (Set Cookie)
+
+```bash
+# Login as admin (replace with your email)
+curl -i -X POST "https://assistant.ledger-mind.org/api/auth/admin/login?email=you@yourdomain.com"
+
+# Expected response:
+# HTTP/1.1 200 OK
+# Set-Cookie: admin_auth=<token>; Max-Age=604800; Path=/; Domain=.ledger-mind.org; HttpOnly; Secure; SameSite=None
+# 
+# {"ok": true, "email": "you@yourdomain.com"}
+```
+
+**Extract Cookie**:
+```bash
+# Copy the admin_auth value from Set-Cookie header above
+ADMIN_COOKIE="admin_auth=<paste-token-here>"
+
+# Or extract automatically:
+ADMIN_COOKIE=$(curl -i -X POST "https://assistant.ledger-mind.org/api/auth/admin/login?email=you@yourdomain.com" 2>&1 | grep -i 'set-cookie: admin_auth' | sed 's/.*admin_auth=\([^;]*\).*/admin_auth=\1/')
+```
+
+### 2. Verify Auth Status
+
+```bash
+# Check /api/auth/me with cookie
+curl -s -H "Cookie: $ADMIN_COOKIE" "https://assistant.ledger-mind.org/api/auth/me" | jq
+
+# Expected response:
+{
+  "user": {
+    "email": "you@yourdomain.com"
+  },
+  "roles": ["admin"],
+  "is_admin": true
+}
+```
+
+### 3. Test Without Cookie (Should Fail)
+
+```bash
+# Without cookie → no admin status
+curl -s "https://assistant.ledger-mind.org/api/auth/me" | jq
+
+# Expected response:
+{
+  "user": null,
+  "roles": [],
+  "is_admin": false
+}
+```
+
+### 4. Admin Logout
+
+```bash
+# Logout (delete cookie)
+curl -i -H "Cookie: $ADMIN_COOKIE" -X POST "https://assistant.ledger-mind.org/api/auth/admin/logout"
+
+# Expected response:
+# HTTP/1.1 200 OK
+# Set-Cookie: admin_auth=; Max-Age=0; Path=/; Domain=.ledger-mind.org
+# {"ok": true}
+```
+
+### 5. Cookie Attributes Verification
+
+**Check in Browser DevTools**:
+1. Open DevTools (F12)
+2. Application tab → Cookies → `https://assistant.ledger-mind.org`
+3. Find `admin_auth` cookie
+4. **Verify attributes**:
+   - ✅ **Domain**: `.ledger-mind.org` (note the leading dot)
+   - ✅ **Path**: `/`
+   - ✅ **Expires**: 7 days from now
+   - ✅ **HttpOnly**: Yes (checked)
+   - ✅ **Secure**: Yes (checked)
+   - ✅ **SameSite**: None
+
+**Why These Matter**:
+- **Domain**: `.ledger-mind.org` works on all subdomains (assistant., api., etc.)
+- **HttpOnly**: JavaScript can't steal the cookie (XSS protection)
+- **Secure**: Only sent over HTTPS
+- **SameSite=None**: Works across subdomains (requires Secure=true)
+
+---
+
+## B. Authentication & Roles (Legacy)
 
 ### 1. Check Auth Endpoint
 
@@ -152,7 +240,7 @@ curl -i https://assistant.ledger-mind.org/agent/events | head -n 10
 # HTTP/1.1 200 OK
 # Content-Type: text/event-stream
 # Transfer-Encoding: chunked
-# 
+#
 # event: ping
 # data: {"timestamp": ...}
 ```
@@ -186,50 +274,77 @@ docker exec -it portfolio-ui cat /etc/nginx/nginx.conf | grep -A 5 "location.*ch
 
 ## E. Admin Endpoints (Server-Side Auth)
 
-### 1. Autotune (Without Auth → 401/403)
+### 1. Test with HMAC Cookie (Recommended)
 
 ```bash
-# Should fail without auth
-curl -i -X POST https://assistant.ledger-mind.org/api/layout/autotune
+# First, login and get admin cookie (from Section A)
+ADMIN_COOKIE=$(curl -i -X POST "https://assistant.ledger-mind.org/api/auth/admin/login?email=you@yourdomain.com" 2>&1 | grep -i 'set-cookie: admin_auth' | sed 's/.*admin_auth=\([^;]*\).*/admin_auth=\1/')
 
-# Expected:
-# HTTP/1.1 401 Unauthorized
-# OR
-# HTTP/1.1 403 Forbidden
-```
-
-### 2. Autotune (With Admin Auth → 200)
-
-```bash
-# Should succeed with admin cookie
-curl -i -X POST -b "YOUR_COOKIE_HERE" https://assistant.ledger-mind.org/api/layout/autotune
+# Test autotune WITH admin cookie → 200
+curl -i -H "Cookie: $ADMIN_COOKIE" -X POST "https://assistant.ledger-mind.org/api/layout/autotune"
 
 # Expected:
 # HTTP/1.1 200 OK
-# { "status": "success", ... }
-```
+# {"ok": true, "message": "Layout autotuned"}
 
-### 3. Reset (Without Auth → 401/403)
-
-```bash
-# Should fail without auth
-curl -i -X POST https://assistant.ledger-mind.org/api/layout/reset
-
-# Expected:
-# HTTP/1.1 401 Unauthorized
-# OR
-# HTTP/1.1 403 Forbidden
-```
-
-### 4. Reset (With Admin Auth → 200)
-
-```bash
-# Should succeed with admin cookie
-curl -i -X POST -b "YOUR_COOKIE_HERE" https://assistant.ledger-mind.org/api/layout/reset
+# Test reset WITH admin cookie → 200
+curl -i -H "Cookie: $ADMIN_COOKIE" -X POST "https://assistant.ledger-mind.org/api/layout/reset"
 
 # Expected:
 # HTTP/1.1 200 OK
-# { "status": "success", ... }
+# {"ok": true, "message": "Layout reset to default"}
+```
+
+### 2. Test WITHOUT Auth → 401
+
+```bash
+# Autotune without cookie → 401
+curl -i -X POST "https://assistant.ledger-mind.org/api/layout/autotune"
+
+# Expected:
+# HTTP/1.1 401 Unauthorized
+# {"detail": "Authentication required"}
+
+# Reset without cookie → 401
+curl -i -X POST "https://assistant.ledger-mind.org/api/layout/reset"
+
+# Expected:
+# HTTP/1.1 401 Unauthorized
+# {"detail": "Authentication required"}
+```
+
+### 3. Test with INVALID Cookie → 403
+
+```bash
+# Invalid/expired cookie → 403
+curl -i -H "Cookie: admin_auth=invalid_token" -X POST "https://assistant.ledger-mind.org/api/layout/autotune"
+
+# Expected:
+# HTTP/1.1 403 Forbidden
+# {"detail": "Admin privileges required"}
+```
+
+### 4. Full Workflow Test
+
+```bash
+# Complete admin workflow
+echo "=== Admin Login ==="
+curl -i -X POST "https://assistant.ledger-mind.org/api/auth/admin/login?email=you@yourdomain.com"
+
+echo -e "\n=== Check Auth Status ==="
+curl -s -H "Cookie: $ADMIN_COOKIE" "https://assistant.ledger-mind.org/api/auth/me" | jq
+
+echo -e "\n=== Test Autotune ==="
+curl -i -H "Cookie: $ADMIN_COOKIE" -X POST "https://assistant.ledger-mind.org/api/layout/autotune"
+
+echo -e "\n=== Test Reset ==="
+curl -i -H "Cookie: $ADMIN_COOKIE" -X POST "https://assistant.ledger-mind.org/api/layout/reset"
+
+echo -e "\n=== Admin Logout ==="
+curl -i -H "Cookie: $ADMIN_COOKIE" -X POST "https://assistant.ledger-mind.org/api/auth/admin/logout"
+
+echo -e "\n=== Verify Logout (should fail) ==="
+curl -i -H "Cookie: $ADMIN_COOKIE" -X POST "https://assistant.ledger-mind.org/api/layout/autotune"
 ```
 
 ---
@@ -594,5 +709,5 @@ bash verify-deployment.sh "session=abc123..."
 
 ---
 
-**Last Updated**: October 13, 2025  
+**Last Updated**: October 13, 2025
 **Status**: Ready for deployment verification
