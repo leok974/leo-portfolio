@@ -29,6 +29,7 @@
     "docs:links": "markdown-link-check -q -c .mlc.json docs/**/*.md > agent/artifacts/dx-integrate/mlc.txt || true",
     "docs:audit": "node scripts/docs-consolidate.mjs",
     "docs:apply": "node scripts/docs-consolidate.mjs --apply",
+    "docs:renames": "node scripts/docs-rename-map.mjs",
     "wf:audit": "node scripts/workflows-consolidate.mjs",
     "wf:apply": "node scripts/workflows-consolidate.mjs --apply",
     "ts:check": "tsc -p tsconfig.json --noEmit || true",
