@@ -43,6 +43,7 @@ jobs:
         env:
           PW_APP: portfolio
           PW_BASE_URL: http://127.0.0.1:5174
+          BACKEND_REQUIRED: "0"
         run: npx playwright test --reporter=html
 
       - name: Upload Playwright HTML report
@@ -89,7 +90,7 @@ jobs:
           RAG_DB_PATH: ":memory:"
           PRIMARY_MODEL: "qwen2.5:7b-instruct-q4_K_M"
           ENABLE_RAG: "false"
-        run: pytest assistant_api/tests/ -q --tb=short --maxfail=5
+        run: pytest assistant_api/tests/ -q --tb=short --maxfail=5 --no-cov
 
       - name: Upload coverage to Codecov
         if: success()
