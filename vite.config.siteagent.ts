@@ -4,6 +4,7 @@ import path from 'node:path';
 export default defineConfig({
   root: 'apps/siteagent-ui',
   base: '/',
+  publicDir: 'public',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'apps/siteagent-ui'),

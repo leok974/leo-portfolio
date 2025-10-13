@@ -29,15 +29,15 @@ jobs:
         run: npx playwright install chromium --with-deps
 
       - name: Build frontend
-        run: npm run build
+        run: npm run build:portfolio
 
       - name: Copy book.html to dist
-        run: cp book.html dist/book.html
+        run: cp book.html dist-portfolio/book.html
 
       - name: Copy calendly.js to dist
         run: |
-          mkdir -p dist/assets/js
-          cp public/assets/js/calendly.js dist/assets/js/calendly.js
+          mkdir -p dist-portfolio/assets/js
+          cp public/assets/js/calendly.js dist-portfolio/assets/js/calendly.js
 
       - name: Run Typography Tests
         run: npx playwright test tests/e2e/typography.spec.ts --project=chromium
@@ -62,7 +62,7 @@ jobs:
 
       - name: Upload test results on failure
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report/
@@ -70,7 +70,7 @@ jobs:
 
       - name: Upload test traces on failure
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-traces
           path: test-results/
@@ -92,7 +92,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r assistant_api/requirements.txt
           pip install -r requirements-dev.txt
 
       - name: Run pytest with coverage
@@ -146,6 +146,45 @@ jobs:
       - name: Run Python type check (mypy)
         run: mypy assistant_api/ --ignore-missing-imports
 
+      - name: Run security audit (pip-audit)
+        run: pip-audit -r requirements.txt
+
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r assistant_api/requirements.txt
+          sudo apt-get update
+          sudo apt-get install -y curl jq
+
+      - name: Start backend service
+        run: |
+          python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 &
+          echo $! > backend.pid
+          sleep 10
+
+      - name: Run smoke tests
+        run: bash scripts/smoke-test.sh
+
+      - name: Stop backend service
+        if: always()
+        run: |
+          if [ -f backend.pid ]; then
+            kill $(cat backend.pid) || true
+          fi
+
   build:
     name: Build & Verify
     runs-on: ubuntu-latest
@@ -164,21 +203,19 @@ jobs:
         run: npm ci
 
       - name: Build frontend
-        run: npm run build
+        run: npm run build:portfolio
 
       - name: Verify build output
         run: |
-          ls -lh dist/
-          test -f dist/index.html
-          test -f dist/book.html
-          test -f dist/assets/js/calendly.js
+          ls -lh dist-portfolio/
+          test -f dist-portfolio/index.html
 
       - name: Check SRI manifest
-        run: test -f dist/sri-manifest.json
+        run: test -f dist-portfolio/sri-manifest.json
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: dist/
+          name: dist-portfolio
+          path: dist-portfolio/
           retention-days: 7

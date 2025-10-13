@@ -1,8 +1,49 @@
 # Changelog
 
+## [0.3.0] - 2025-01-13
+
+### Added
+- **Phase 0.3.0 - Docs & Release Polish**:
+  - **Deployment Topology Diagram**: Added Mermaid flowchart to `docs/DEPLOY.md` showing Browser → Edge → Backend → LLM/RAG architecture with deployment modes
+  - **API Documentation**: Expanded `docs/API.md` with concrete example responses for `/metrics` and `/status/summary` endpoints
+    - `/metrics`: Complete JSON example with requests_total, error_5xx_total, token_in/out, latency_ms percentiles, provider_distribution
+    - `/status/summary`: Full response schema with primary/fallback status, models list, rag_db status, uptime_s, llm/rag health details
+  - **Coverage Gate**: Configured pytest with `--cov-fail-under=90` to enforce 90% minimum code coverage in CI
+  - **Security Headers**: Verified nginx edge configuration includes X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
+  - **Rate Limiting**: Added `limit_req_zone` for chat endpoints (30 req/min) with burst=10 applied to `/chat` and `/chat/stream` locations
+  - **CI Enhancements**: Added pip-audit security scanning and smoke tests to `.github/workflows/ci.yml`
+  - **Release Workflow**: Created `.github/workflows/release.yml` for tag-based releases with validation, artifact creation, and Docker image builds
+  - **README Badges**: Added CI status, coverage (≥90%), and release version badges to README.md
+  - **Phase Documentation**: Created `docs/PHASE_0.3.0.md` with complete specification, checklist (11 items), acceptance criteria, rollback plan, and PR template
+
+### Changed
+- **Pre-commit Hooks**: Verified existing `.pre-commit-config.yaml` includes ruff (v0.6.9), pip-audit (v2.7.3), and trailing-whitespace/EOF fixers
+- **Architecture Documentation**: Verified `docs/ARCHITECTURE.md` already contains Chat Streaming and RAG Query sequence diagrams (no changes needed)
+
+### Infrastructure
+- **Quality Gates**: CI now enforces 90% coverage threshold, runs security audits, and executes smoke tests before merge
+- **Release Automation**: Tag-based releases trigger validation, artifact creation, and Docker image publishing to GitHub Container Registry
+
 ## [Unreleased]
 
 ### Added
+- **Portfolio Feature Audit & Integration**:
+  - **Resume Endpoint Buttons**: Added interactive download/view buttons in portfolio UI
+    - About section: 3 buttons (Markdown download, PDF view, LinkedIn copy)
+    - Footer section: 3 resume links (MD, PDF, LinkedIn)
+    - All buttons include proper ARIA labels and data-testid attributes for testing
+  - **E2E Tests**: Created `tests/e2e/resume-endpoints.spec.ts` with 15 test cases
+    - API tests: Verify 200 status for .md, .pdf, .txt, .json endpoints
+    - UI tests: Button visibility, href correctness, keyboard accessibility
+    - Error handling: Invalid parameters, character limits
+  - **CSP Update**: Added `https://assistant.ledger-mind.org` to nginx CSP `connect-src`
+    - Enables SSE connections for `/agent/events` and `/chat/stream` endpoints
+    - Critical for streaming chat V3 functionality
+  - **Documentation**: Created `docs/PORTFOLIO_FEATURE_AUDIT.md`
+    - Comprehensive feature status matrix (8 features audited)
+    - Old→new path mappings for all migrated features
+    - CSP/nginx verification results
+    - Deployment notes and success criteria
 - **Task Orchestration System** (Database-backed agent coordination):
   - **Database Layer**: PostgreSQL `agents_tasks` table with Alembic migration (13 columns, 3 indexes)
   - **API Layer**: FastAPI router at `/agents/tasks/` (POST create, PATCH update, GET list, GET paged, GET paged.csv)

@@ -1,0 +1,14 @@
+# CODEOWNERS
+# Documentation and workflows require review
+
+# Documentation changes
+docs/**                  @leok974
+*.md                     @leok974
+
+# GitHub Actions workflows
+.github/workflows/**     @leok974
+
+# Consolidation system
+scripts/docs-consolidate.mjs       @leok974
+scripts/workflows-consolidate.mjs  @leok974
+docs/docs.config.json              @leok974

@@ -139,6 +139,9 @@ class PortfolioGrid {
     card.className = 'project-card';
     card.style.animationDelay = `${index * 0.05}s`;
 
+    // Add data-card attribute for layout system
+    card.setAttribute('data-card', project.slug);
+
     const thumbnail = project.thumbnail || '/placeholder.svg';
     const title = this.escapeHtml(project.title);
     const description = this.escapeHtml(

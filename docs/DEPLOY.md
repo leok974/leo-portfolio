@@ -1,8 +1,34 @@
+---
+title: DEPLOY
+---
+
 | `PRIMARY_POLL_MAX_S` | Max seconds to keep polling for primary model presence before giving up. |
 | `ALLOW_FALLBACK` | (Tests) When `1`, skips Playwright no-fallback guard specs so CI can proceed while primary model unavailable. |
 # Deploy Guide
 
 > Draft. Consolidates deployment notes from `deploy/README.md` and adds full-stack + edge proxy guidance.
+
+## Deployment Topology
+
+```mermaid
+flowchart LR
+    Browser[Browser] --> Edge{Edge nginx?}
+    Edge -->|/api/* /chat/*| Backend[FastAPI Backend]
+    Browser -->|Direct mode| Backend
+    Backend --> Ollama[(Ollama\nPrimary LLM)]
+    Backend --> OpenAI[(OpenAI\nFallback)]
+    Backend --> RAG[(SQLite\nRAG Store)]
+
+    classDef service fill:#0d3b66,stroke:#0d3b66,color:#fff;
+    classDef external fill:#5f0f40,stroke:#5f0f40,color:#fff;
+    class Backend,Edge service;
+    class Ollama,OpenAI,RAG external;
+```
+
+**Deployment Modes**:
+- **Local Dev**: Browser → Backend (http://127.0.0.1:8001)
+- **Full Stack**: Browser → Edge nginx → Backend → Ollama/OpenAI + RAG
+- **GitHub Pages**: Browser (GitHub Pages) → Edge nginx → Backend
 
 ## Prerequisites
 - Docker & Docker Compose v2

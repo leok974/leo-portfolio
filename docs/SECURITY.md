@@ -1,3 +1,7 @@
+---
+title: SECURITY
+---
+
 # Security & Hardening
 
 > Draft – Baseline controls. Extend with org-specific policies.

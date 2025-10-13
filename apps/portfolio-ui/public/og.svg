@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Dark slate background matching portfolio theme -->
+  <rect width="100%" height="100%" fill="#0B0F1A"/>
+
+  <!-- Subtle grid pattern for depth -->
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1E293B" stroke-width="0.5" opacity="0.3"/>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#grid)"/>
+
+  <!-- Main heading -->
+  <text x="60" y="200" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="700" fill="#E5E7EB">
+    Leo Klemet — AI Engineer
+  </text>
+
+  <!-- Subheading -->
+  <text x="60" y="280" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="400" fill="#9CA3AF">
+    Building Agentic Apps · AI/ML · Creative Tech
+  </text>
+
+  <!-- Accent line -->
+  <line x1="60" y1="320" x2="460" y2="320" stroke="#3B82F6" stroke-width="4"/>
+
+  <!-- Tech stack badges -->
+  <g transform="translate(60, 380)">
+    <!-- Python -->
+    <rect width="120" height="40" rx="20" fill="#1E293B"/>
+    <text x="60" y="27" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#60A5FA" text-anchor="middle">Python</text>
+
+    <!-- FastAPI -->
+    <rect x="140" width="130" height="40" rx="20" fill="#1E293B"/>
+    <text x="205" y="27" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#60A5FA" text-anchor="middle">FastAPI</text>
+
+    <!-- Docker -->
+    <rect x="290" width="120" height="40" rx="20" fill="#1E293B"/>
+    <text x="350" y="27" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#60A5FA" text-anchor="middle">Docker</text>
+
+    <!-- Agents -->
+    <rect x="430" width="120" height="40" rx="20" fill="#1E293B"/>
+    <text x="490" y="27" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#60A5FA" text-anchor="middle">Agents</text>
+  </g>
+
+  <!-- Portfolio link -->
+  <text x="60" y="540" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#6B7280">
+    assistant.ledger-mind.org
+  </text>
+
+  <!-- Decorative element (abstract AI/tech pattern) -->
+  <g transform="translate(900, 250)" opacity="0.15">
+    <circle cx="0" cy="0" r="120" fill="none" stroke="#3B82F6" stroke-width="2"/>
+    <circle cx="0" cy="0" r="90" fill="none" stroke="#3B82F6" stroke-width="2"/>
+    <circle cx="0" cy="0" r="60" fill="none" stroke="#3B82F6" stroke-width="2"/>
+    <line x1="-120" y1="0" x2="120" y2="0" stroke="#3B82F6" stroke-width="1"/>
+    <line x1="0" y1="-120" x2="0" y2="120" stroke="#3B82F6" stroke-width="1"/>
+  </g>
+</svg>

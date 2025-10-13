@@ -1,0 +1,129 @@
+feat(backend): implement HMAC-signed admin authentication with protected endpoints
+
+Implements the backend half of the admin authentication system using HMAC-signed
+cookies. This completes the full-stack admin gating architecture with production-
+ready security patterns.
+
+## Implementation Details
+
+### 1. Auth Module (assistant_api/auth_admin.py)
+- **HMAC signing**: Custom base64url-encoded tokens with SHA-256 signatures
+- **Clock skew tolerance**: 5-minute grace period for token expiration
+- **Smart cookie configuration**:
+  * Local dev: SameSite=lax, no domain (same-origin only)
+  * Production: SameSite=none + Secure + Domain=.ledger-mind.org
+- **Email normalization**: Strip whitespace + lowercase for admin allowlist
+- **Endpoints**:
+  * POST /api/auth/admin/login?email={email} - Issue admin cookie
+  * GET /api/auth/me - Check auth status (returns user + roles + is_admin)
+  * POST /api/auth/admin/logout - Clear admin cookie
+- **Dependency**: require_admin(request) for protecting endpoints
+
+### 2. Main App Integration (assistant_api/main.py)
+- **Auth router**: Mounted at /api/auth prefix
+- **CORS**: Already configured with allow_credentials=True
+- **Protected endpoints** (for E2E testing):
+  * POST /api/layout/reset - Admin-only layout reset
+  * POST /api/layout/autotune - Admin-only layout autotune
+- **Imports**: Added Depends to FastAPI imports
+
+### 3. Response Format
+The /api/auth/me endpoint returns a structure compatible with frontend expectations:
+```json
+{
+  "user": {
+    "email": "leoklemet.pa@gmail.com",
+    "is_admin": true,
+    "roles": ["admin"]
+  },
+  "roles": ["admin"],
+  "is_admin": true
+}
+```
+
+This dual structure supports both `info?.user?.is_admin` and `info?.is_admin` checks
+in frontend code for maximum flexibility.
+
+## Security Features
+
+1. **HMAC validation**: Constant-time comparison prevents timing attacks
+2. **HttpOnly cookies**: Prevents XSS access to admin tokens
+3. **Clock skew tolerance**: 5-minute buffer prevents auth failures from minor time drift
+4. **Conditional SameSite**: Strict in prod (none+secure), relaxed in dev (lax)
+5. **Admin allowlist**: Email-based with normalized comparison
+6. **401/403 separation**: Missing cookie (401) vs invalid/expired (403)
+
+## Environment Variables
+
+Required:
+- **ADMIN_HMAC_SECRET**: 32+ byte secret for signing (generate with secrets.token_urlsafe(32))
+- **ADMIN_EMAILS**: Comma-separated email list (default: leoklemet.pa@gmail.com)
+
+Optional:
+- **COOKIE_DOMAIN**: None for local dev, ".ledger-mind.org" for production
+
+## Testing
+
+### Unit Tests (Python)
+```bash
+python test_auth.py        # Auth endpoints
+python test_layout.py      # Protected endpoints
+```
+
+### E2E Tests (Playwright)
+```bash
+PW_APP=portfolio ADMIN_TEST_EMAIL=leoklemet.pa@gmail.com \
+  pnpm exec playwright test tests/e2e/admin.auth.spec.ts
+```
+
+**Result**: 5/5 tests passing ✅
+- Full workflow (login → auth check → protected endpoints → UI)
+- Protected endpoint blocking (401/403)
+- Logout workflow
+- Invalid cookie rejection
+- UI badge visibility
+
+## Integration Points
+
+Frontend (already deployed):
+- `admin.ts`: Calls /api/auth/me with credentials: 'include'
+- `assistant.main.tsx`: Shows admin badge when is_admin === true
+- CORS: Configured to allow credentials from portfolio frontend
+
+Documentation:
+- docs/BACKEND_QUICKSTART.md: 15-minute implementation guide
+- docs/BACKEND_ADMIN_AUTH.md: Complete security architecture
+- scripts/Test-PortfolioAdmin.ps1: PowerShell verification tool
+
+## Production Deployment
+
+1. Generate secret: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
+2. Set environment:
+   ```bash
+   ADMIN_HMAC_SECRET="<generated_secret>"
+   ADMIN_EMAILS="leoklemet.pa@gmail.com"
+   COOKIE_DOMAIN=".ledger-mind.org"
+   ```
+3. Deploy backend (Docker/K8s/VPS)
+4. Verify with staging checks from BACKEND_QUICKSTART.md
+
+## Related Commits
+
+- f58ed1d: Streamlined quickstart with correct email
+- 0821f22: CSS fix + flexible E2E assertions
+- ef5e133: E2E test suite creation
+- 23cfef8: Backend documentation
+- dd1cce7: Admin UX micro-improvements
+- 281e48c: Frontend gating with layered security
+
+## Files Changed
+
+assistant_api/auth_admin.py    | 80 +++++++++++++++++ (NEW)
+assistant_api/main.py          | 16 +++-
+
+2 files changed, 95 insertions(+), 1 deletion(-)
+
+---
+
+**Status**: Backend implementation complete. Frontend already deployed. Full E2E suite passing.
+**Next**: Deploy to staging, run verification playbook, then production deployment.

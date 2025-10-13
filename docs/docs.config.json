@@ -1,0 +1,90 @@
+{
+  "required": [
+    "README.md",
+    "docs/ARCHITECTURE.md",
+    "docs/DEVELOPMENT.md",
+    "docs/DEPLOY.md",
+    "docs/API.md",
+    "docs/SECURITY.md",
+    "docs/CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "GIT_WORKFLOW.md"
+  ],
+  "keep": [
+    "docs/INDEX.md",
+    "docs/a11y.md"
+  ],
+  "keepPatterns": [
+    "docs/*.md"
+  ],
+  "renameMap": {},
+  "indexGroups": [
+    {
+      "title": "Overview",
+      "items": [
+        "README.md",
+        "docs/ARCHITECTURE.md",
+        "docs/DEVELOPMENT.md"
+      ]
+    },
+    {
+      "title": "Deploy & Security",
+      "items": [
+        "docs/DEPLOY.md",
+        "docs/SECURITY.md"
+      ]
+    },
+    {
+      "title": "API",
+      "items": [
+        "docs/API.md"
+      ]
+    },
+    {
+      "title": "Project Meta",
+      "items": [
+        "docs/CHANGELOG.md",
+        "CONTRIBUTING.md",
+        "GIT_WORKFLOW.md",
+        "docs/INDEX.md"
+      ]
+    }
+  ],
+  "deprecatedPatterns": [
+    "docs/**/drafts/**",
+    "docs/**/notes/**",
+    "docs/**/old/**",
+    "docs/**/experiments/**",
+    "docs/**/playbooks/**",
+    "docs/**/runbooks/**",
+    "docs/**/migrations/**",
+    "docs/**/troubleshooting/**",
+    "docs/**/verification/**",
+    "docs/**/tests/**",
+    "docs/**/e2e/**",
+    "docs/**/howto/**",
+    "docs/**/*_OLD.md",
+    "docs/**/*_LEGACY.md",
+    "docs/**/*_NOTES.md",
+    "docs/**/*_PLAYBOOK.md",
+    "docs/**/*_RUNBOOK.md",
+    "docs/**/*_MIGRATION*.md",
+    "docs/**/*(DEBUG|ERROR|FIX|VERIFY|WORKAROUND)*.md",
+    "docs/*PHASE_*",
+    "docs/CONSOLIDATION_SYSTEM.md"
+  ],
+  "deletePatterns": [
+    "docs/**/drafts/**",
+    "docs/**/notes/**",
+    "docs/**/old/**",
+    "docs/**/experiments/**",
+    "docs/**/*_OLD.md",
+    "docs/**/*_LEGACY.md",
+    "docs/**/*(DEBUG|ERROR|FIX|VERIFY|WORKAROUND)*.md",
+    "docs/**/*MIGRATION*.md",
+    "docs/**/troubleshooting/**",
+    "docs/**/verification/**"
+  ],
+  "deprecated": [],
+  "delete": []
+}

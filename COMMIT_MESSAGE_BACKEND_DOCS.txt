@@ -1,0 +1,73 @@
+docs(backend): comprehensive HMAC admin auth implementation guide
+
+Backend Implementation:
+- docs/BACKEND_ADMIN_AUTH.md (NEW - 900+ lines):
+  * Complete HMAC-signed cookie authentication guide
+  * No database required (stateless tokens)
+  * HMAC-SHA256 signature prevents tampering
+  * 7-day expiry with clock skew buffer
+  * Email allowlist for admin access
+  * Full code implementation (auth_admin.py)
+  * FastAPI integration examples
+  * require_admin() dependency for protected endpoints
+  * Environment variable configuration
+  * Cookie attributes (HttpOnly, Secure, SameSite=None, Domain)
+  * Cross-subdomain support (.ledger-mind.org)
+  * Testing procedures (local + production)
+  * Troubleshooting guide (11 common issues)
+  * Security best practices (secret rotation, audit logging, rate limiting)
+  * Production deployment checklist
+
+- docs/BACKEND_QUICKSTART.md (NEW - 350 lines):
+  * 15-minute implementation guide
+  * Step 1: Create auth module (5 min)
+  * Step 2: Mount router (2 min)
+  * Step 3: Environment variables (3 min)
+  * Step 4: Test locally (5 min)
+  * Step 5: Deploy & verify (5 min)
+  * Minimal code examples (copy/paste ready)
+  * Common pitfalls (CORS, domain, secrets, expiry)
+  * Verification checklist (15 items)
+  * Related documentation links
+
+- docs/DEPLOYMENT_VERIFICATION.md (UPDATED):
+  * Added Section A: Backend Authentication (HMAC-Signed Cookies)
+  * Admin login workflow (curl commands)
+  * Cookie extraction and verification
+  * Auth status testing (with/without cookie)
+  * Admin logout testing
+  * Cookie attributes verification (DevTools guide)
+  * Updated Section E: Admin Endpoints
+  * HMAC cookie testing (recommended method)
+  * Test without auth (401 expected)
+  * Test with invalid cookie (403 expected)
+  * Full workflow test script (login to test to logout)
+  * Comprehensive curl examples with expected outputs
+
+Implementation Details:
+- HMAC token structure: base64url(payload).base64url(signature)
+- Payload: JSON with email, role, exp fields
+- Signature: HMAC-SHA256(payload, secret)
+- Cookie: admin_auth (HttpOnly, Secure, SameSite=None, 7d expiry)
+- Domain: .ledger-mind.org (works on all subdomains)
+
+Security Model:
+- Stateless: No database, self-contained tokens
+- Tamper-proof: HMAC signature validation
+- Secure: HttpOnly prevents XSS, Secure requires HTTPS
+- Cross-subdomain: SameSite=None + Secure (portfolio + API on different subdomains)
+- Time-limited: 7-day expiry with 5-minute clock skew buffer
+- Allowlist: Only authorized emails can get admin tokens
+
+Testing Examples:
+- Login: POST /api/auth/admin/login?email=you@yourdomain.com
+- Check: GET /api/auth/me (with cookie)
+- Test: POST /api/layout/autotune (with cookie)
+
+Critical Requirements:
+- CORS: allow_credentials=True (required for cookies)
+- All backend replicas: Same ADMIN_HMAC_SECRET (critical for multi-pod)
+- Cookie domain: .ledger-mind.org (note leading dot for subdomains)
+- HTTPS: Required for Secure cookie attribute
+
+Refs: User request for backend HMAC admin authentication implementation

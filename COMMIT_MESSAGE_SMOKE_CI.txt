@@ -1,0 +1,120 @@
+chore(admin): add production smoke tests and CI integration for admin auth
+
+Adds automated verification tools and CI guards to ensure admin authentication
+stays functional in production/staging environments.
+
+## New Files
+
+### 1. Smoke Test Scripts (30-second verification)
+
+**scripts/smoke-admin-prod.sh** (Bash):
+- Login flow test
+- Cookie extraction and validation
+- /api/auth/me endpoint check
+- Protected endpoints (200 with auth, 401 without)
+- Automated cleanup
+
+**scripts/smoke-admin-prod.ps1** (PowerShell):
+- Windows-compatible version
+- Same test coverage as bash script
+- Colored output for better readability
+
+Usage:
+```bash
+# Bash
+SITE="https://assistant.ledger-mind.org" \
+ADMIN_EMAIL="leoklemet.pa@gmail.com" \
+bash scripts/smoke-admin-prod.sh
+
+# PowerShell
+$env:SITE = "https://assistant.ledger-mind.org"
+$env:ADMIN_EMAIL = "leoklemet.pa@gmail.com"
+.\scripts\smoke-admin-prod.ps1
+```
+
+### 2. CI Integration (.github/workflows/portfolio.yml)
+
+Added `e2e-admin-staging` job that:
+- Runs after build-and-test job completes
+- Only executes if ADMIN_HMAC_SECRET is configured in GitHub secrets
+- Tests admin authentication against staging
+- Runs full E2E suite (tests/e2e/admin.auth.spec.ts)
+- Uploads test reports as artifacts
+
+This ensures:
+- Admin auth doesn't break on deployment
+- Backend stays properly wired
+- Protected endpoints remain functional
+- Immediate feedback on auth regressions
+
+### 3. Documentation Updates
+
+**STAGING_DEPLOYMENT_GUIDE.md**:
+- Added quick smoke test section (30 seconds)
+- Both bash and PowerShell examples
+- Expected output documentation
+
+**ADMIN_AUTH_QUICKREF.md** (NEW):
+- Comprehensive quick reference
+- Smoke test commands
+- Environment variables
+- API endpoints
+- Testing commands
+- Troubleshooting
+- CI integration details
+
+## Benefits
+
+1. **Fast Verification**: 30-second smoke test vs 5-minute manual workflow
+2. **Automated CI Guard**: Catches auth breakage before production
+3. **Cross-Platform**: Bash and PowerShell support
+4. **Production-Safe**: Tests real endpoints without side effects
+5. **Developer-Friendly**: Copy-paste commands in docs
+
+## CI Workflow
+
+```yaml
+e2e-admin-staging:
+  if: ${{ secrets.ADMIN_HMAC_SECRET != '' }}
+  runs-on: ubuntu-latest
+  needs: build-and-test
+  steps:
+    - uses: pnpm/action-setup@v4
+    - run: pnpm exec playwright test tests/e2e/admin.auth.spec.ts
+```
+
+Only runs when ADMIN_HMAC_SECRET is configured, preventing CI failures in
+environments without admin auth setup.
+
+## Testing
+
+Tested smoke scripts against:
+- [x] Local backend (http://127.0.0.1:8001)
+- [ ] Staging (pending deployment)
+- [ ] Production (pending deployment)
+
+Expected results:
+- Login: 200 with Set-Cookie
+- /api/auth/me: {"is_admin": true, ...}
+- Protected endpoints: 200 with cookie, 401 without
+- Exit code: 0 on success, 1 on failure
+
+## Files Changed
+
+.github/workflows/portfolio.yml     | +48 (new job)
+scripts/smoke-admin-prod.sh         | +24 (NEW)
+scripts/smoke-admin-prod.ps1        | +96 (NEW)
+STAGING_DEPLOYMENT_GUIDE.md         | +40 (smoke test section)
+ADMIN_AUTH_QUICKREF.md              | +250 (NEW - complete reference)
+
+5 files changed, 458 insertions(+)
+
+## Related
+
+- Previous commits: bb31888 (backend implementation), f58ed1d (quickstart docs)
+- Documentation: docs/BACKEND_QUICKSTART.md, docs/BACKEND_ADMIN_AUTH.md
+- E2E tests: tests/e2e/admin.auth.spec.ts (5/5 passing)
+
+---
+
+**Status**: Ready for staging deployment with automated verification

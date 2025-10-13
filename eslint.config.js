@@ -16,6 +16,8 @@ export default [
     ignores: [
       'node_modules/**',
       'dist/**',
+      'dist-portfolio/**',
+      'dist-siteagent/**',
       'coverage/**',
       '.husky/**',
       '.venv/**',

@@ -1,0 +1,57 @@
+docs(backend): streamlined quickstart with correct email and improved structure
+
+Updates to BACKEND_QUICKSTART.md:
+
+1. Correct Admin Email:
+   - Changed from placeholder "you@yourdomain.com" to actual "leoklemet.pa@gmail.com"
+   - Used throughout all code examples and curl commands
+   - Updated environment variable examples
+
+2. Improved Auth Module:
+   - Added 5-minute clock skew tolerance in _verify()
+   - Smart cookie configuration (dev vs prod)
+   - Local dev uses SameSite=lax (same-origin)
+   - Prod uses SameSite=none + Secure (cross-subdomain)
+   - Conditional COOKIE_DOMAIN (None for local, .ledger-mind.org for prod)
+
+3. Reorganized Structure:
+   - Added Step 0: Pre-requisites (one-time setup)
+   - Clear separation between local dev and production configs
+   - Improved Step 8: Common Gotchas with detailed fixes
+   - Added verification checklist (15 items)
+
+4. Enhanced Examples:
+   - PowerShell AND bash examples for all commands
+   - Explicit SameSite/Domain handling in set_cookie
+   - Better curl smoke test with expected outputs
+   - Complete nginx configuration snippets
+
+5. Production Focus:
+   - Clear prod vs dev differences documented
+   - CORS configuration with explicit origins (no wildcards)
+   - Cookie attributes for subdomain support
+   - Replica secret sharing requirements
+
+6. Verification Steps:
+   - Step-by-step local testing (5 min)
+   - Complete staging/prod smoke tests
+   - Playwright E2E test examples (local + prod)
+   - Common gotchas with quick fixes
+
+Key Improvements:
+- Clock skew handling (5 min grace period)
+- Smart cookie config (auto-detect dev vs prod)
+- Explicit ADMIN_EMAILS parsing (strip + lowercase)
+- Better error messages ("not in admin allowlist")
+- Complete require_admin() dependency implementation
+
+Testing:
+- All examples use leoklemet.pa@gmail.com
+- Local dev tested on http://127.0.0.1:8001
+- Prod tested on https://assistant.ledger-mind.org
+- E2E tests ready with PW_SITE and PW_API vars
+
+Related:
+- docs/BACKEND_ADMIN_AUTH.md (complete reference)
+- tests/e2e/admin.auth.spec.ts (E2E tests)
+- scripts/Test-PortfolioAdmin.ps1 (PowerShell verifier)
