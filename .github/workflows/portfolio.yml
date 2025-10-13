@@ -1,0 +1,122 @@
+name: Portfolio CI
+
+on:
+  pull_request:
+    paths:
+      - 'apps/portfolio-ui/**'
+      - 'deploy/nginx.portfolio.conf'
+      - 'tests/e2e/**portfolio**'
+      - 'tests/e2e/**seo**'
+      - 'tests/e2e/**resume**'
+      - 'vite.config.portfolio.ts'
+      - '.github/workflows/portfolio.yml'
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'apps/portfolio-ui/**'
+      - 'deploy/nginx.portfolio.conf'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build portfolio
+        run: pnpm run build:portfolio
+
+      - name: Check build artifacts
+        run: |
+          test -f dist-portfolio/index.html || (echo "Missing index.html" && exit 1)
+          test -d dist-portfolio/assets || (echo "Missing assets dir" && exit 1)
+          echo "✅ Build artifacts present"
+
+      - name: Check CSP nonces
+        run: bash scripts/check-csp-nonce.sh
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run Portfolio E2E tests
+        env:
+          PW_APP: portfolio
+          CI: true
+        run: |
+          pnpm exec playwright test \
+            tests/e2e/portfolio.smoke.spec.ts \
+            tests/e2e/seo.spec.ts \
+            tests/e2e/csp.spec.ts \
+            tests/e2e/resume-endpoints.spec.ts \
+            --project=chromium
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-portfolio
+          path: playwright-report/
+          retention-days: 7
+
+  e2e-admin-staging:
+    # Only run if ADMIN_HMAC_SECRET is configured (protects staging/prod)
+    if: ${{ secrets.ADMIN_HMAC_SECRET != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: build-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Admin auth E2E (staging)
+        env:
+          PW_SITE: https://assistant.ledger-mind.org
+          PW_API: https://assistant.ledger-mind.org
+          ADMIN_TEST_EMAIL: leoklemet.pa@gmail.com
+          CI: true
+        run: |
+          pnpm exec playwright test tests/e2e/admin.auth.spec.ts --project=chromium
+
+      - name: Upload admin E2E report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-admin-staging
+          path: playwright-report/
+          retention-days: 7
