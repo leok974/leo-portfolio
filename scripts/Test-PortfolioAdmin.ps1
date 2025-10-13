@@ -39,10 +39,10 @@ function Test-PortfolioAdmin {
     Write-Host "`n1) Logging in as admin..." -ForegroundColor Cyan
     Write-Host "   Email: $Email" -ForegroundColor DarkGray
     Write-Host "   Site:  $Site" -ForegroundColor DarkGray
-    
+
     $loginUri = "$Site/api/auth/admin/login?email=$([uri]::EscapeDataString($Email))"
     $resp = Invoke-WebRequest -Uri $loginUri -Method POST -UseBasicParsing
-    
+
     $cookie = ($resp.Headers.'Set-Cookie' | Select-String -Pattern 'admin_auth=([^;]+)').Matches.Groups[1].Value
     if (-not $cookie) {
       throw "No admin_auth cookie in response. Check backend logs for errors."
@@ -55,7 +55,7 @@ function Test-PortfolioAdmin {
     Write-Host "`n2) Checking /api/auth/me..." -ForegroundColor Cyan
     $meResp = Invoke-WebRequest -Uri "$Site/api/auth/me" -Headers $headers -UseBasicParsing
     $meJson = $meResp.Content | ConvertFrom-Json
-    
+
     if (-not $meJson.is_admin) {
       throw "/api/auth/me did not return is_admin=true. Got: $($meResp.Content)"
     }
@@ -65,13 +65,13 @@ function Test-PortfolioAdmin {
     # 3) Protected endpoints (with cookie)
     Write-Host "`n3) Testing protected endpoints..." -ForegroundColor Cyan
     Write-Host "   a) With admin cookie:" -ForegroundColor DarkGray
-    
+
     $resetResp = Invoke-WebRequest -Uri "$Site/api/layout/reset" -Method POST -Headers $headers -UseBasicParsing
     if ($resetResp.StatusCode -ge 400) {
       throw "POST /api/layout/reset failed with status $($resetResp.StatusCode)"
     }
     Write-Host "      ✓ POST /api/layout/reset → $($resetResp.StatusCode)" -ForegroundColor Green
-    
+
     $autotuneResp = Invoke-WebRequest -Uri "$Site/api/layout/autotune" -Method POST -Headers $headers -UseBasicParsing
     if ($autotuneResp.StatusCode -ge 400) {
       throw "POST /api/layout/autotune failed with status $($autotuneResp.StatusCode)"
@@ -80,7 +80,7 @@ function Test-PortfolioAdmin {
 
     # 4) Protected endpoints (without cookie - should fail)
     Write-Host "   b) Without cookie (should fail):" -ForegroundColor DarkGray
-    
+
     try {
       $forbidResp = Invoke-WebRequest -Uri "$Site/api/layout/reset" -Method POST -UseBasicParsing -ErrorAction SilentlyContinue
       if ($forbidResp.StatusCode -lt 400) {
@@ -159,7 +159,7 @@ Examples:
 "@
     exit 0
   }
-  
+
   # Parse named parameters from args if provided
   $params = @{}
   for ($i = 0; $i -lt $args.Count; $i += 2) {
@@ -167,7 +167,7 @@ Examples:
       $params[$matches[1]] = $args[$i + 1]
     }
   }
-  
+
   if ($params.Site -and $params.Email) {
     Test-PortfolioAdmin @params
   } else {

@@ -153,15 +153,15 @@ if ($ghInstalled) {
     # Save PR body to temp file
     $tempFile = [System.IO.Path]::GetTempFileName()
     $PR_BODY | Out-File -FilePath $tempFile -Encoding UTF8
-    
+
     # Create PR
     gh pr create `
         --title "Portfolio: admin-gated controls (dev override + role auth), SEO & CSP tests, OG image" `
         --body-file $tempFile `
         --base main
-    
+
     Remove-Item $tempFile
-    
+
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ PR created successfully" -ForegroundColor Green
     } else {

@@ -1,6 +1,6 @@
 # Admin Controls Documentation
 
-**Generated**: October 13, 2025  
+**Generated**: October 13, 2025
 **Purpose**: Comprehensive guide to admin-gated controls in the portfolio assistant panel.
 
 ---
@@ -155,18 +155,18 @@ return info?.user?.is_admin === true ||
   <div class="asst-controls">
     {admin && (
       <>
-        <button 
-          class="btn-sm" 
-          onClick={autotuneLayout} 
-          title="Admin only: Autotune layout" 
+        <button
+          class="btn-sm"
+          onClick={autotuneLayout}
+          title="Admin only: Autotune layout"
           data-testid="btn-autotune"
         >
           Autotune
         </button>
-        <button 
-          class="btn-sm" 
-          onClick={resetLayout} 
-          title="Admin only: Reset layout" 
+        <button
+          class="btn-sm"
+          onClick={resetLayout}
+          title="Admin only: Reset layout"
           data-testid="btn-reset"
         >
           Reset
@@ -462,5 +462,5 @@ docker exec -it portfolio-ui nginx -T | grep -A 5 "location /api/"
 
 ---
 
-**Last Updated**: October 13, 2025  
+**Last Updated**: October 13, 2025
 **Status**: Complete and production-ready

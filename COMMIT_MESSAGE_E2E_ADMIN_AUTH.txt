@@ -1,0 +1,60 @@
+test(admin): comprehensive E2E tests + verification tools for HMAC auth
+
+Add complete testing suite for admin authentication flow:
+
+1. **Playwright E2E Tests** (tests/e2e/admin.auth.spec.ts)
+   - Full workflow: login → auth check → protected endpoints → UI controls
+   - Test protected endpoints with/without cookie (200 vs 401/403)
+   - Test with invalid cookie (403)
+   - Admin logout flow
+   - SSE endpoint accessibility (optional)
+   - 6 test cases covering all auth scenarios
+
+2. **PowerShell Verifier** (scripts/Test-PortfolioAdmin.ps1)
+   - One-shot admin auth verification script
+   - Tests login, auth status, protected endpoints, SSE
+   - Color-coded output with clear pass/fail indicators
+   - Usage: .\scripts\Test-PortfolioAdmin.ps1 -Site <url> -Email <email>
+   - Works on local dev, staging, and production
+
+3. **Deployment Verification Updates** (docs/DEPLOYMENT_VERIFICATION.md)
+   - Section A2: 60-second curl smoke test (quick staging/prod verification)
+   - Section A3: PowerShell one-shot verifier (copy/paste ready)
+   - Section A4: Playwright E2E test guide (local + CI)
+   - Section A5: GitHub Actions CI hook (only runs when secret available)
+   - Section A6: "What passing looks like" checklist
+   - All examples use real admin email: leoklemet.pa@gmail.com
+
+**Test Coverage**:
+- ✅ Admin login (HMAC cookie generation)
+- ✅ Auth status check (/api/auth/me)
+- ✅ Protected endpoints (with/without/invalid cookie)
+- ✅ Admin logout (cookie deletion)
+- ✅ UI visibility (admin badge + buttons)
+- ✅ SSE endpoint accessibility
+- ✅ Cross-subdomain cookie support
+
+**Usage Examples**:
+
+```bash
+# E2E tests (local dev)
+PW_APP=portfolio ADMIN_TEST_EMAIL=leoklemet.pa@gmail.com \
+  pnpm exec playwright test tests/e2e/admin.auth.spec.ts --project=chromium
+
+# E2E tests (staging/prod)
+PW_SITE="https://assistant.ledger-mind.org" ADMIN_TEST_EMAIL=leoklemet.pa@gmail.com \
+  pnpm exec playwright test tests/e2e/admin.auth.spec.ts --project=chromium
+
+# PowerShell verifier (production)
+.\scripts\Test-PortfolioAdmin.ps1 -Site "https://assistant.ledger-mind.org" -Email "leoklemet.pa@gmail.com"
+
+# 60-second curl smoke test
+curl -i -X POST "https://assistant.ledger-mind.org/api/auth/admin/login?email=leoklemet.pa@gmail.com"
+C="<paste_cookie>"
+curl -s -H "Cookie: admin_auth=$C" "https://assistant.ledger-mind.org/api/auth/me" | jq
+curl -i -H "Cookie: admin_auth=$C" -X POST "https://assistant.ledger-mind.org/api/layout/autotune"
+```
+
+Related: Backend HMAC auth guide (docs/BACKEND_ADMIN_AUTH.md)
+Related: Backend quickstart (docs/BACKEND_QUICKSTART.md)
+Related: Frontend admin gating (apps/portfolio-ui/src/admin.ts)

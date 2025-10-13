@@ -1,6 +1,6 @@
 # E2E Testing & Verification - Current Status
 
-**Date**: October 13, 2025  
+**Date**: October 13, 2025
 **Status**: ⚠️ Tests Ready, Backend Implementation Pending
 
 ---
@@ -66,7 +66,7 @@ const loginResp = await page.request.post(
 ✗ Admin HMAC Authentication > full workflow
   Expected loginResp.ok() to be true
   Received: false (HTTP 404)
-  
+
   POST http://127.0.0.1:8001/api/auth/admin/login
   → 404 Not Found (endpoint not implemented)
 ```
@@ -144,7 +144,7 @@ def mock_login(response: Response, email: str):
     token = "mock_token_12345"
     response = JSONResponse({"ok": True, "email": email})
     response.set_cookie(
-        "admin_auth", token, 
+        "admin_auth", token,
         max_age=604800, path="/",
         httponly=True, secure=False, samesite="lax"
     )

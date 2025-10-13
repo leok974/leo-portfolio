@@ -14,7 +14,7 @@ flowchart LR
     Backend --> Ollama[(Ollama\nPrimary LLM)]
     Backend --> OpenAI[(OpenAI\nFallback)]
     Backend --> RAG[(SQLite\nRAG Store)]
-    
+
     classDef service fill:#0d3b66,stroke:#0d3b66,color:#fff;
     classDef external fill:#5f0f40,stroke:#5f0f40,color:#fff;
     class Backend,Edge service;

@@ -131,7 +131,7 @@ curl -i -X POST "https://assistant.ledger-mind.org/api/auth/admin/login?email=le
 # HTTP/1.1 200 OK
 # Set-Cookie: admin_auth=eyJ...xyz; Max-Age=604800; Path=/; Domain=.ledger-mind.org; HttpOnly; Secure; SameSite=None
 # Content-Type: application/json
-# 
+#
 # {"ok":true,"email":"leoklemet.pa@gmail.com"}
 
 # Extract cookie
@@ -332,7 +332,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with: { version: 9 }
       - run: pnpm install --frozen-lockfile
-      
+
       # Start your staging URL or hit an already deployed env:
       - name: E2E admin auth (staging)
         env:

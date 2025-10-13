@@ -1,7 +1,7 @@
 # Backend Implementation Quick Start
 
-**Purpose**: Minimal steps to implement HMAC-signed admin authentication.  
-**Time**: 15 minutes  
+**Purpose**: Minimal steps to implement HMAC-signed admin authentication.
+**Time**: 15 minutes
 **Admin Email**: leoklemet.pa@gmail.com
 
 ---
@@ -41,10 +41,10 @@ COOKIE_NAME    = "admin_auth"
 COOKIE_MAX_AGE = 60 * 60 * 24 * 7  # 7 days
 COOKIE_DOMAIN  = os.environ.get("COOKIE_DOMAIN", None)  # e.g. ".ledger-mind.org" in prod
 
-def _b64url(b: bytes) -> str: 
+def _b64url(b: bytes) -> str:
     return base64.urlsafe_b64encode(b).rstrip(b"=").decode()
 
-def _b64url_decode(s: str) -> bytes: 
+def _b64url_decode(s: str) -> bytes:
     return base64.urlsafe_b64decode(s + "=" * (4 - len(s) % 4))
 
 def _sign(obj: Dict[str, Any]) -> str:
@@ -302,7 +302,7 @@ const EMAIL = process.env.ADMIN_TEST_EMAIL || 'leoklemet.pa@gmail.com';
 test('admin login → /me → protected → UI', async ({ page, context }) => {
   const rlogin = await page.request.post(`${API}/api/auth/admin/login?email=${encodeURIComponent(EMAIL)}`);
   expect(rlogin.ok()).toBeTruthy();
-  
+
   const setCookie = rlogin.headers()['set-cookie'] || '';
   const cookieVal = /admin_auth=([^;]+)/.exec(setCookie)?.[1];
   expect(cookieVal).toBeTruthy();
@@ -322,7 +322,7 @@ test('admin login → /me → protected → UI', async ({ page, context }) => {
 
   const r1 = await page.request.post(`${API}/api/layout/reset`);
   expect(r1.ok()).toBeTruthy();
-  
+
   const r2 = await page.request.post(`${API}/api/layout/autotune`);
   expect(r2.ok()).toBeTruthy();
 
@@ -362,8 +362,8 @@ pnpm exec playwright test tests/e2e/admin.auth.spec.ts --project=chromium
 ## Step 8: Common Gotchas (Quick Fixes)
 
 ### Issue 1: Cookie Not Sent to Frontend
-**Problem**: Cookie not forwarded in browser requests  
-**Cause**: CORS misconfiguration  
+**Problem**: Cookie not forwarded in browser requests
+**Cause**: CORS misconfiguration
 **Fix**: CORS must use `allow_credentials=True` and NO wildcard origins (`*`)
 
 ```python
@@ -377,8 +377,8 @@ app.add_middleware(
 ```
 
 ### Issue 2: Cookie Not Usable Across Subdomains
-**Problem**: Cookie not shared between `assistant.ledger-mind.org` and `api.ledger-mind.org`  
-**Cause**: Missing domain attribute or wrong SameSite  
+**Problem**: Cookie not shared between `assistant.ledger-mind.org` and `api.ledger-mind.org`
+**Cause**: Missing domain attribute or wrong SameSite
 **Fix**: Set `COOKIE_DOMAIN=.ledger-mind.org` (leading dot) and use `Secure; SameSite=None`
 
 ```python
@@ -388,8 +388,8 @@ cookie_kwargs.update(secure=True, samesite="none", domain=COOKIE_DOMAIN)
 ```
 
 ### Issue 3: 403 Everywhere
-**Problem**: All admin requests return 403 Forbidden  
-**Cause**: Different `ADMIN_HMAC_SECRET` on each backend replica  
+**Problem**: All admin requests return 403 Forbidden
+**Cause**: Different `ADMIN_HMAC_SECRET` on each backend replica
 **Fix**: All pods/replicas MUST share the SAME secret
 
 ```env
@@ -398,8 +398,8 @@ ADMIN_HMAC_SECRET=<shared-secret-32-chars>
 ```
 
 ### Issue 4: Token Instantly "Expired"
-**Problem**: Tokens expire immediately even though just created  
-**Cause**: Server clock skew  
+**Problem**: Tokens expire immediately even though just created
+**Cause**: Server clock skew
 **Fix**: Already handled with 5-minute grace period in `_verify()`
 
 ```python
@@ -445,8 +445,8 @@ if data.get("exp", 0) < int(time.time()) - 300: return None
 
 ---
 
-**Estimated Time**: 15 minutes  
-**Difficulty**: Low  
+**Estimated Time**: 15 minutes
+**Difficulty**: Low
 **Admin Email**: leoklemet.pa@gmail.com
         if data.get("exp", 0) < int(time.time()) - 300: return None  # 5min buffer
         return data

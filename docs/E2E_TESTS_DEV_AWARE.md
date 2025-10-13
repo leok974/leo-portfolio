@@ -1,7 +1,7 @@
 # Portfolio E2E Tests - Dev-Aware & Production-Ready
 
-**Date**: October 12, 2025  
-**Status**: ✅ COMPLETE  
+**Date**: October 12, 2025
+**Status**: ✅ COMPLETE
 **Branch**: chore/portfolio-sweep
 
 ## Summary
@@ -334,12 +334,12 @@ Refs: docs/OG_PNG_CONVERSION_COMPLETE.md, docs/REGRESSION_GUARDS_COMPLETE.md
 
 ## Sanity Recap
 
-✅ **og.svg → og.png** and referenced in meta tags  
-✅ **JSON-LD** added + tested (presence/content, not visibility)  
-✅ **CSP tests** gated to CI (nginx), not dev  
-✅ **Playwright** boots correct dev server on 127.0.0.1:5174  
-✅ **Nonce system** solid (build + nginx inject)  
-✅ **OG image checks** tightened (exact og.png match)  
-✅ **npm script** added (`pnpm run e2e:portfolio`)  
+✅ **og.svg → og.png** and referenced in meta tags
+✅ **JSON-LD** added + tested (presence/content, not visibility)
+✅ **CSP tests** gated to CI (nginx), not dev
+✅ **Playwright** boots correct dev server on 127.0.0.1:5174
+✅ **Nonce system** solid (build + nginx inject)
+✅ **OG image checks** tightened (exact og.png match)
+✅ **npm script** added (`pnpm run e2e:portfolio`)
 
 **Status**: Production-ready. All tests passing in dev mode. CI will run full suite with nginx. 🎉

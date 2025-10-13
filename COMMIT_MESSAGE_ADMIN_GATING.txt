@@ -1,0 +1,58 @@
+feat(portfolio): gated admin controls with layered security (dev override + role-based auth)
+
+Implements comprehensive admin gating system for portfolio assistant panel:
+- Admin controls (Autotune/Reset) hidden by default from normal visitors
+- Layered security: dev override (?admin=1) + role-based backend auth
+- Production-safe: dev override disabled via env flag (VITE_ALLOW_DEV_ADMIN=0)
+
+Core Implementation:
+- apps/portfolio-ui/src/admin.ts: Admin gate logic (88 lines)
+  * initAdminFromQuery(): Capture ?admin=1 from URL, persist to localStorage
+  * devAdminEnabled(): Check localStorage + VITE_ALLOW_DEV_ADMIN env flag
+  * fetchAuth(): Backend auth check via /api/auth/me (with cookies)
+  * hasAdminRole(): Validate admin/owner roles
+  * isAdmin(): Main decision function (dev override OR real auth)
+
+- apps/portfolio-ui/src/main.ts: Wire admin init at boot
+  * Call initAdminFromQuery() before loadLayout()
+  * Ensures ?admin=1 captured before component mount
+
+- apps/portfolio-ui/src/assistant.main.tsx: Gate admin controls
+  * Admin state management (useState + useEffect with focus detection)
+  * Admin control functions (autotuneLayout, resetLayout)
+  * Gated UI with conditional rendering
+  * Admin badge shows when admin enabled
+
+Environment Configuration:
+- apps/portfolio-ui/.env.development: VITE_ALLOW_DEV_ADMIN=1 (enable override)
+- apps/portfolio-ui/.env.production: VITE_ALLOW_DEV_ADMIN=0 (disable override)
+
+Infrastructure Updates:
+- deploy/nginx.portfolio.conf:
+  * Added /api/ location block for auth endpoints
+  * Added Cookie header forwarding for all proxy locations
+  * Ensures auth cookies passed to backend
+
+Styling:
+- apps/portfolio-ui/portfolio.css:
+  * Added .asst-badge-admin styles (green pill badge)
+  * font-size: 11px, border-radius: 999px, green accent
+
+E2E Tests:
+- tests/e2e/admin.panel.spec.ts (4 test cases):
+  * Hidden by default for normal visitors
+  * Visible with dev override (?admin=1)
+  * Disabled with ?admin=0
+  * Badge styling validation
+
+Security Model:
+- Layer 1: Dev override (?admin=1) only works in dev (VITE_ALLOW_DEV_ADMIN=1)
+- Layer 2: Real auth check (/api/auth/me) for prod or dev
+- Layer 3: Backend enforces auth on admin endpoints (/api/layout/*)
+- Production: Dev override disabled, requires authenticated admin user
+
+Usage:
+- Dev: http://127.0.0.1:5174/?admin=1 (persists across reloads)
+- Prod: Requires authenticated admin/owner role (backend enforces)
+
+Refs: User request for admin gating system; closes admin controls security gap

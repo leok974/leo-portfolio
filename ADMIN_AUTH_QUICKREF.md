@@ -156,15 +156,15 @@ This ensures the backend stays wired and admin authentication continues working 
 ## 🛠️ Troubleshooting
 
 ### Cookie not sent from frontend
-**Cause**: CORS credentials not allowed  
+**Cause**: CORS credentials not allowed
 **Fix**: Verify `allow_credentials=True` in CORS middleware
 
 ### 401 on /api/auth/me (with cookie)
-**Cause**: HMAC secret mismatch or expired token  
+**Cause**: HMAC secret mismatch or expired token
 **Fix**: Check `ADMIN_HMAC_SECRET` env var and restart backend
 
 ### Admin badge doesn't appear
-**Cause**: Frontend can't reach backend or response format wrong  
+**Cause**: Frontend can't reach backend or response format wrong
 **Debug**:
 ```bash
 curl -s https://api.ledger-mind.org/api/auth/me \
@@ -183,7 +183,7 @@ curl -s https://api.ledger-mind.org/api/auth/me \
 ```
 
 ### 403 on protected endpoints
-**Cause**: Cookie valid but email not in ADMIN_EMAILS  
+**Cause**: Cookie valid but email not in ADMIN_EMAILS
 **Fix**: Check `ADMIN_EMAILS` env var includes the email
 
 See **[STAGING_DEPLOYMENT_GUIDE.md](STAGING_DEPLOYMENT_GUIDE.md)** for full troubleshooting section.
@@ -228,6 +228,6 @@ See **[STAGING_DEPLOYMENT_GUIDE.md](STAGING_DEPLOYMENT_GUIDE.md)** for full trou
 
 ---
 
-**Last Updated**: October 13, 2025  
-**Version**: 1.0.0  
+**Last Updated**: October 13, 2025
+**Version**: 1.0.0
 **Status**: Production-ready ✅

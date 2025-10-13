@@ -1,6 +1,6 @@
 # Backend Admin Authentication Implementation
 
-**Generated**: October 13, 2025  
+**Generated**: October 13, 2025
 **Purpose**: HMAC-signed admin authentication for portfolio backend.
 
 ---
@@ -101,20 +101,20 @@ def _verify(token: str) -> Optional[Dict[str, Any]]:
     """
     try:
         body, sig = token.split(".", 1)
-        
+
         # Verify signature
         want = hmac.new(ADMIN_SECRET.encode(), body.encode(), hashlib.sha256).digest()
         got = _b64url_decode(sig)
         if not hmac.compare_digest(want, got):
             return None
-        
+
         # Decode payload
         data = json.loads(_b64url_decode(body))
-        
+
         # Check expiry (with 5-minute buffer for clock skew)
         if data.get("exp", 0) < int(time.time()) - 300:
             return None
-        
+
         return data
     except Exception:
         return None
@@ -127,7 +127,7 @@ def get_current_user(request: Request):
     """
     Get current user authentication status.
     Frontend calls this to check admin status.
-    
+
     Returns:
         {
             "user": {"email": "..."},
@@ -137,7 +137,7 @@ def get_current_user(request: Request):
     """
     token = request.cookies.get(COOKIE_NAME)
     data = _verify(token) if token else None
-    
+
     if data and data.get("role") == "admin":
         user = {"email": data.get("email")}
         roles = ["admin"]
@@ -146,7 +146,7 @@ def get_current_user(request: Request):
         user = None
         roles = []
         is_admin = False
-    
+
     return JSONResponse({
         "user": user,
         "roles": roles,
@@ -158,13 +158,13 @@ def admin_login(response: Response, email: str):
     """
     Admin login endpoint (allowlist-based).
     Sets HMAC-signed cookie with 7-day expiry.
-    
+
     Args:
         email: Email address to authenticate
-    
+
     Returns:
         {"ok": true} with Set-Cookie header
-    
+
     Raises:
         403: Email not in allowlist
     """
@@ -175,7 +175,7 @@ def admin_login(response: Response, email: str):
             status_code=403,
             detail=f"Email {email} not in admin allowlist"
         )
-    
+
     # Create signed payload
     payload = {
         "email": email_lower,
@@ -183,7 +183,7 @@ def admin_login(response: Response, email: str):
         "exp": int(time.time()) + COOKIE_MAX_AGE
     }
     token = _sign(payload)
-    
+
     # Set cookie
     response = JSONResponse({"ok": True, "email": email_lower})
     response.set_cookie(
@@ -196,7 +196,7 @@ def admin_login(response: Response, email: str):
         samesite="none",
         domain=COOKIE_DOMAIN
     )
-    
+
     return response
 
 @router.post("/admin/logout")
@@ -204,7 +204,7 @@ def admin_logout(response: Response):
     """
     Admin logout endpoint.
     Deletes admin_auth cookie.
-    
+
     Returns:
         {"ok": true} with cookie deletion
     """
@@ -221,10 +221,10 @@ def require_admin(request: Request) -> Dict[str, Any]:
     """
     FastAPI dependency that enforces admin auth.
     Use with: @app.post("/api/admin/action", dependencies=[Depends(require_admin)])
-    
+
     Returns:
         User data dict if admin
-    
+
     Raises:
         401: No auth cookie
         403: Invalid or expired token
@@ -235,14 +235,14 @@ def require_admin(request: Request) -> Dict[str, Any]:
             status_code=401,
             detail="Authentication required"
         )
-    
+
     data = _verify(token)
     if not data or data.get("role") != "admin":
         raise HTTPException(
             status_code=403,
             detail="Admin privileges required"
         )
-    
+
     return data
 ```
 
@@ -410,7 +410,7 @@ curl -i -X POST "https://assistant.ledger-mind.org/api/auth/admin/login?email=yo
 # Expected response:
 # HTTP/1.1 200 OK
 # Set-Cookie: admin_auth=<token>; Max-Age=604800; Path=/; Domain=.ledger-mind.org; HttpOnly; Secure; SameSite=None
-# 
+#
 # {"ok": true, "email": "you@yourdomain.com"}
 ```
 
@@ -636,11 +636,11 @@ def _verify(token: str) -> Optional[Dict[str, Any]]:
         if not hmac.compare_digest(want, got):
             logger.warning(f"Invalid HMAC signature: {token[:20]}...")
             return None
-        
+
         if data.get("exp", 0) < int(time.time()) - 300:
             logger.info(f"Expired token: {data.get('email')}")
             return None
-        
+
         return data
     except Exception as e:
         logger.error(f"Token verification failed: {e}")
@@ -678,5 +678,5 @@ def layout_reset(user: dict = Depends(require_admin)):
 
 ---
 
-**Last Updated**: October 13, 2025  
+**Last Updated**: October 13, 2025
 **Status**: Production-ready implementation guide
