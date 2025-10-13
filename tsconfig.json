@@ -31,10 +31,13 @@
   "exclude": [
     "node_modules",
     "dist",
+    "dist-portfolio",
+    "dist-siteagent",
     "coverage/lcov-report",
     "**/*.md",
     "public/assets/js/**/*.js",
     "assistant_api/**",
-    "scripts/seo.tune.mjs"
+    "scripts/seo.tune.mjs",
+    "test-script.js"
   ]
 }
