@@ -19,7 +19,8 @@ const wfDir = path.join(repoRoot, ".github", "workflows");
 const allowlist = new Set([
   ".github/workflows/ci.yml",
   ".github/workflows/release.yml",
-  ".github/workflows/docs-audit.yml" // New audit workflow
+  ".github/workflows/docs-audit.yml",
+  ".github/workflows/deploy.yml" // GitHub Pages deployment
 ]);
 
 if (!fs.existsSync(wfDir)) {

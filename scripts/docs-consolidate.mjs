@@ -20,6 +20,7 @@ const repoRoot = process.cwd();
 const docsDir = path.join(repoRoot, "docs");
 const cfgPath = path.join(docsDir, "docs.config.json");
 const APPLY = process.argv.includes("--apply");
+const GRACE_DAYS = Number(process.env.DOCS_DELETE_GRACE_DAYS || 14);
 
 function loadCfg() {
   if (!fs.existsSync(cfgPath)) {
@@ -129,15 +130,15 @@ function main() {
       // Delete only if explicitly allowed by rules
       const okToDelete = (cfg.delete || []).includes(r) || matchesAny(r, cfg.deletePatterns);
       if (okToDelete) {
-        // Time-based safeguard: don't delete files modified in last 14 days
+        // Time-based safeguard: don't delete files modified within grace period
         const stat = fs.statSync(f);
         const daysSinceModified = (Date.now() - stat.mtimeMs) / (1000 * 60 * 60 * 24);
 
-        if (daysSinceModified < 14) {
+        if (daysSinceModified < GRACE_DAYS) {
           report.flagged.push({
             file: r,
             reason: "recent_change",
-            details: `Modified ${Math.floor(daysSinceModified)} days ago - skipping delete`
+            details: `Modified ${Math.floor(daysSinceModified)} days ago (grace period: ${GRACE_DAYS} days)`
           });
         } else {
           report.removed.push(r);
