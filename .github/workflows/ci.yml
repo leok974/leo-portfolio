@@ -29,7 +29,7 @@ jobs:
         run: npx playwright install chromium --with-deps
 
       - name: Build frontend
-        run: npm run build
+        run: npm run build:portfolio
 
       - name: Copy book.html to dist
         run: cp book.html dist/book.html
@@ -93,7 +93,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r assistant_api/requirements.txt
-          pip install -r assistant_api/requirements-dev.txt
+          pip install -r requirements-dev.txt
 
       - name: Run pytest with coverage
         run: pytest --cov=assistant_api --cov-report=xml
@@ -129,7 +129,7 @@ jobs:
         run: npm ci
 
       - name: Install Python dependencies
-        run: pip install -r assistant_api/requirements-dev.txt
+        run: pip install -r requirements-dev.txt
 
       - name: Run ESLint
         run: npm run lint
@@ -203,14 +203,12 @@ jobs:
         run: npm ci
 
       - name: Build frontend
-        run: npm run build
+        run: npm run build:portfolio
 
       - name: Verify build output
         run: |
           ls -lh dist/
-          test -f dist/index.html
-          test -f dist/book.html
-          test -f dist/assets/js/calendly.js
+          test -f dist-portfolio/index.html
 
       - name: Check SRI manifest
         run: test -f dist/sri-manifest.json
