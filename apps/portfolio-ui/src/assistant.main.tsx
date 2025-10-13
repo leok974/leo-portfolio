@@ -268,7 +268,7 @@ function AssistantPanel() {
               <button
                 class="btn-sm"
                 onClick={autotuneLayout}
-                title="Autotune layout"
+                title="Admin only: Autotune layout"
                 data-testid="btn-autotune"
               >
                 Autotune
@@ -276,7 +276,7 @@ function AssistantPanel() {
               <button
                 class="btn-sm"
                 onClick={resetLayout}
-                title="Reset layout"
+                title="Admin only: Reset layout"
                 data-testid="btn-reset"
               >
                 Reset

@@ -31,7 +31,7 @@ export function initAdminFromQuery() {
     const v = u.searchParams.get('admin');
     const on = v === '' || v === '1' || v?.toLowerCase() === 'true';
     localStorage.setItem(LS_KEY, on ? '1' : '0');
-    
+
     // Clean URL if admin was enabled (remove ?admin=1)
     if (on) {
       history.replaceState(null, '', u.pathname + u.hash);
@@ -71,8 +71,11 @@ export function hasAdminRole(info: AuthInfo | null): boolean {
   return info?.user?.is_admin === true || r.includes('admin') || r.includes('owner');
 }
 
+// 10s cache to reduce auth checks
+let _cache: { at: number; val: boolean } | null = null;
+
 /**
- * Final admin decision
+ * Final admin decision with 10s cache
  * Returns true if either:
  * - Dev override enabled (dev mode only)
  * - User has admin role (prod or dev)
@@ -81,7 +84,13 @@ export async function isAdmin(): Promise<boolean> {
   // Local dev override (only works in dev with VITE_ALLOW_DEV_ADMIN=1)
   if (devAdminEnabled()) return true;
 
+  // Check 10s cache
+  const now = Date.now();
+  if (_cache && now - _cache.at < 10_000) return _cache.val;
+
   // Real auth check (works in dev and prod)
   const info = await fetchAuth();
-  return hasAdminRole(info);
+  const val = hasAdminRole(info);
+  _cache = { at: now, val };
+  return val;
 }
