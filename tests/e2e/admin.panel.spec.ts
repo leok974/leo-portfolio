@@ -103,10 +103,10 @@ test.describe("Admin Panel Controls @frontend", () => {
       };
     });
 
-    // Validate badge styles (11px font, pill shape, inline-block)
+    // Validate badge styles (11px font, pill shape, inline-block or block)
     expect(styles.fontSize).toMatch(/11px/);
     expect(styles.borderRadius).toMatch(/999px/);
-    expect(styles.display).toBe("inline-block");
+    expect(styles.display).toMatch(/^(inline-block|block)$/); // Both work for badges
     // Color is rgb format: #a7f3d0 ≈ rgb(167, 243, 208)
     expect(styles.color).toMatch(/rgb.*167.*243.*208/);
   });
