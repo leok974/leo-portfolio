@@ -224,12 +224,12 @@ The audit workflow is already in place and will report on future PRs.
 
 ## Safety Features
 
-✅ **All mutations require --apply flag**  
-✅ **JSON reports for every operation**  
-✅ **Link fixing prevents broken references**  
-✅ **Frontmatter enforcement ensures consistency**  
-✅ **CI audit never blocks PRs**  
-✅ **Explicit deletion lists (no wildcards)**  
+✅ **All mutations require --apply flag**
+✅ **JSON reports for every operation**
+✅ **Link fixing prevents broken references**
+✅ **Frontmatter enforcement ensures consistency**
+✅ **CI audit never blocks PRs**
+✅ **Explicit deletion lists (no wildcards)**
 ✅ **Duplicate detection uses content signatures**
 
 ## Files Created
