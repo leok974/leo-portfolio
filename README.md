@@ -77,6 +77,20 @@ curl -X POST http://127.0.0.1:8001/agent/artifacts/pr \
 
 ---
 
+## 📚 Documentation
+
+Complete documentation with organized guides and references:
+
+- **[Documentation Index](docs/INDEX.md)** — Organized access to all docs
+- **[Architecture](docs/ARCHITECTURE.md)** — System design and data flow
+- **[Deployment](docs/DEPLOY.md)** — Deployment topology and guides  
+- **[Development](docs/DEVELOPMENT.md)** — Setup, testing, and workflows
+- **[API Reference](docs/API.md)** — Backend endpoints and examples
+- **[Security](docs/SECURITY.md)** — Security headers, auth, and hardening
+- **[Consolidation System](docs/CONSOLIDATION_SYSTEM.md)** — Docs & workflows tooling
+
+---
+
 ## SEO Validation (Agents)
 
 The `seo.validate` agent runs two steps and writes artifacts to `artifacts/<task_id>/`:
