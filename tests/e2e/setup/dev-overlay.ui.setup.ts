@@ -37,7 +37,10 @@ export default async function globalSetup(_: FullConfig) {
 
   // Skip backend-dependent setup if BACKEND_REQUIRED=0
   if (process.env.BACKEND_REQUIRED === '0' || process.env.BACKEND_REQUIRED === 'false') {
-    console.log('⏭️  Skipping dev overlay setup (BACKEND_REQUIRED=0)');
+    console.log('⏭️  Skipping dev overlay setup (BACKEND_REQUIRED=0), creating dummy auth state...');
+    // Create empty auth state so tests don't fail looking for file
+    await fs.mkdir(STATE_PATH.split('/').slice(0, -1).join('/'), { recursive: true });
+    await fs.writeFile(STATE_PATH, JSON.stringify({ cookies: [], origins: [] }));
     return;
   }
 
