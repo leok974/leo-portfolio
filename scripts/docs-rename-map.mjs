@@ -16,16 +16,16 @@ try {
   // Get rename history from git log
   const out = execSync('git log --name-status --diff-filter=R --pretty=""', { encoding: "utf8" });
   const map = {};
-  
+
   out.split("\n").forEach(line => {
     // Format: R100\told\tnew (or similar)
     if (!line.startsWith("R")) return;
     const parts = line.split("\t");
     if (parts.length < 3) return;
-    
+
     const oldPath = parts[1];
     const newPath = parts[2];
-    
+
     // Only track doc file renames
     if (oldPath && newPath && (oldPath.endsWith(".md") || newPath.endsWith(".md"))) {
       map[oldPath] = newPath;
@@ -34,13 +34,13 @@ try {
 
   // Load existing config
   const cfg = JSON.parse(fs.readFileSync(cfgPath, "utf8"));
-  
+
   // Merge with existing renameMap (new entries take precedence)
   cfg.renameMap = Object.assign({}, cfg.renameMap || {}, map);
-  
+
   // Write back
   fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + "\n");
-  
+
   console.log("✅ Updated renameMap with", Object.keys(map).length, "rename entries from git history");
   if (Object.keys(map).length > 0) {
     console.log("\nRecent renames:");

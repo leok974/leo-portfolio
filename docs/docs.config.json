@@ -19,10 +19,36 @@
   ],
   "renameMap": {},
   "indexGroups": [
-    { "title": "Overview", "items": ["README.md", "docs/ARCHITECTURE.md", "docs/DEVELOPMENT.md"] },
-    { "title": "Deploy & Security", "items": ["docs/DEPLOY.md", "docs/SECURITY.md"] },
-    { "title": "API", "items": ["docs/API.md"] },
-    { "title": "Project Meta", "items": ["docs/CHANGELOG.md", "CONTRIBUTING.md", "GIT_WORKFLOW.md", "docs/INDEX.md"] }
+    {
+      "title": "Overview",
+      "items": [
+        "README.md",
+        "docs/ARCHITECTURE.md",
+        "docs/DEVELOPMENT.md"
+      ]
+    },
+    {
+      "title": "Deploy & Security",
+      "items": [
+        "docs/DEPLOY.md",
+        "docs/SECURITY.md"
+      ]
+    },
+    {
+      "title": "API",
+      "items": [
+        "docs/API.md"
+      ]
+    },
+    {
+      "title": "Project Meta",
+      "items": [
+        "docs/CHANGELOG.md",
+        "CONTRIBUTING.md",
+        "GIT_WORKFLOW.md",
+        "docs/INDEX.md"
+      ]
+    }
   ],
   "deprecatedPatterns": [
     "docs/**/drafts/**",
