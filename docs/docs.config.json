@@ -1,0 +1,58 @@
+{
+  "required": [
+    "docs/ARCHITECTURE.md",
+    "docs/DEPLOY.md",
+    "docs/DEVELOPMENT.md",
+    "docs/API.md",
+    "docs/SECURITY.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md"
+  ],
+  "keep": [
+    "docs/PHASE_0.3.0.md",
+    "README.md",
+    "docs/a11y.md",
+    "docs/BACKEND_QUICKSTART.md"
+  ],
+  "deprecated": [],
+  "delete": [],
+  "renameMap": {},
+  "indexGroups": [
+    {
+      "title": "Overview",
+      "items": [
+        "README.md",
+        "docs/ARCHITECTURE.md",
+        "docs/DEPLOY.md",
+        "docs/DEVELOPMENT.md",
+        "docs/a11y.md"
+      ]
+    },
+    {
+      "title": "API & Backend",
+      "items": [
+        "docs/API.md",
+        "docs/BACKEND_QUICKSTART.md"
+      ]
+    },
+    {
+      "title": "Security",
+      "items": [
+        "docs/SECURITY.md"
+      ]
+    },
+    {
+      "title": "Phases & Changelog",
+      "items": [
+        "docs/PHASE_0.3.0.md",
+        "CHANGELOG.md"
+      ]
+    },
+    {
+      "title": "Contributing",
+      "items": [
+        "CONTRIBUTING.md"
+      ]
+    }
+  ]
+}

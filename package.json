@@ -27,6 +27,10 @@
     "format:check": "prettier -l . > agent/artifacts/dx-integrate/prettier.list || true",
     "docs:lint": "markdownlint \"**/*.md\" -o agent/artifacts/dx-integrate/markdownlint.json -j || true",
     "docs:links": "markdown-link-check -q -c .mlc.json docs/**/*.md > agent/artifacts/dx-integrate/mlc.txt || true",
+    "docs:audit": "node scripts/docs-consolidate.mjs",
+    "docs:apply": "node scripts/docs-consolidate.mjs --apply",
+    "wf:audit": "node scripts/workflows-consolidate.mjs",
+    "wf:apply": "node scripts/workflows-consolidate.mjs --apply",
     "ts:check": "tsc -p tsconfig.json --noEmit || true",
     "storybook:build": "build-storybook -o storybook-static --quiet || true",
     "dx:prepare": "node -e \"require('fs').mkdirSync('agent/artifacts/dx-integrate',{recursive:true})\"",
@@ -266,6 +270,7 @@
     "typescript-eslint": "^8.0.0",
     "vite": "^5.4.0",
     "vitest": "^1.6.0",
+    "yaml": "^2.8.1",
     "yaml-eslint-parser": "^1.3.0"
   },
   "lint-staged": {

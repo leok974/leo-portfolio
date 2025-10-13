@@ -1,0 +1,33 @@
+name: Docs & Workflows Audit
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci || npm i
+      
+      - name: Docs audit (dry-run)
+        run: npm run docs:audit
+      
+      - name: Workflows audit (dry-run)
+        run: npm run wf:audit
+      
+      - name: Upload audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-workflows-audit
+          path: |
+            docs/consolidation-report*.json
