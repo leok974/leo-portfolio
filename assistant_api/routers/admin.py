@@ -8,6 +8,7 @@ Endpoints:
 - POST /api/admin/uploads        - Upload images/videos with optional gallery card
 - POST /api/admin/gallery/add    - Add gallery item with metadata
 """
+
 import os
 from typing import Optional
 
@@ -28,13 +29,14 @@ from assistant_api.utils.cf_access import require_cf_access
 router = APIRouter(
     prefix="/api/admin",
     tags=["admin"],
-    dependencies=[Depends(require_cf_access)]  # <- Guard applied globally
+    dependencies=[Depends(require_cf_access)],  # <- Guard applied globally
 )
 
 
 # ============================================================================
 # Smoke Test / Identity
 # ============================================================================
+
 
 @router.get("/whoami")
 def whoami(request: Request, principal: str = Depends(require_cf_access)):
@@ -57,6 +59,7 @@ def whoami(request: Request, principal: str = Depends(require_cf_access)):
 # File Uploads
 # ============================================================================
 
+
 @router.post("/uploads")
 async def upload_file(
     file: UploadFile = File(...),
@@ -64,7 +67,7 @@ async def upload_file(
     title: str | None = Form(None),
     description: str | None = Form(None),
     tools: str | None = Form(None),  # comma-separated
-    tags: str | None = Form(None),   # comma-separated
+    tags: str | None = Form(None),  # comma-separated
 ):
     """
     Upload image or video file.
@@ -89,80 +92,82 @@ async def upload_file(
     size_mb = len(content) / (1024 * 1024)
 
     # Detect file type
-    ext = (file.filename or '').lower()
-    is_video = ext.endswith(('.mp4', '.mov', '.webm', '.mkv', '.m4v'))
+    ext = (file.filename or "").lower()
+    is_video = ext.endswith((".mp4", ".mov", ".webm", ".mkv", ".m4v"))
 
     # Size validation
     if (is_video and size_mb > MAX_VID_MB) or (not is_video and size_mb > MAX_IMG_MB):
         raise HTTPException(
             status_code=413,
-            detail=f"File too large: {size_mb:.1f}MB (max: {MAX_VID_MB if is_video else MAX_IMG_MB}MB)"
+            detail=f"File too large: {size_mb:.1f}MB (max: {MAX_VID_MB if is_video else MAX_IMG_MB}MB)",
         )
 
     # MIME type validation for images
-    if not is_video and not ext.endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.svg')):
+    if not is_video and not ext.endswith(
+        (".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".svg")
+    ):
         raise HTTPException(
             status_code=415,
-            detail=f"Unsupported media type: {ext}. Allowed: png, jpg, jpeg, gif, webp, avif, svg, mp4, mov, webm, mkv, m4v"
+            detail=f"Unsupported media type: {ext}. Allowed: png, jpg, jpeg, gif, webp, avif, svg, mp4, mov, webm, mkv, m4v",
         )
 
     # Save file
-    kind = 'video' if is_video else 'image'
-    saved = save_upload(content, file.filename or 'upload.bin', kind)
+    kind = "video" if is_video else "image"
+    saved = save_upload(content, file.filename or "upload.bin", kind)
 
     if not make_card:
-        return JSONResponse({
-            'ok': True,
-            'url': saved['url'],
-            'kind': kind
-        })
+        return JSONResponse({"ok": True, "url": saved["url"], "kind": kind})
 
     # Build gallery item
-    if kind == 'image':
+    if kind == "image":
         item = add_gallery_item(
-            title=title or file.filename or 'Untitled',
-            description=description or '',
-            typ='image',
-            src=saved['url'],
-            tools=(tools or '').split(',') if tools else None,
-            tags=(tags or '').split(',') if tags else None,
+            title=title or file.filename or "Untitled",
+            description=description or "",
+            typ="image",
+            src=saved["url"],
+            tools=(tools or "").split(",") if tools else None,
+            tags=(tags or "").split(",") if tags else None,
         )
     else:
         # Generate poster for video
-        poster_url = ffmpeg_poster(saved['path'])
+        poster_url = ffmpeg_poster(saved["path"])
         item = add_gallery_item(
-            title=title or file.filename or 'Untitled',
-            description=description or '',
-            typ='video-local',
-            src=saved['url'],
+            title=title or file.filename or "Untitled",
+            description=description or "",
+            typ="video-local",
+            src=saved["url"],
             poster=poster_url,
-            mime='video/mp4',
-            tools=(tools or '').split(',') if tools else None,
-            tags=(tags or '').split(',') if tags else None,
+            mime="video/mp4",
+            tools=(tools or "").split(",") if tools else None,
+            tags=(tags or "").split(",") if tags else None,
         )
 
     # Refresh sitemap and validate
     run_sitemap_refresh()
     lint_ok = run_media_lint(strict=False)
 
-    return JSONResponse({
-        'ok': True,
-        'url': saved['url'],
-        'kind': kind,
-        'item': item,
-        'lint_ok': lint_ok
-    })
+    return JSONResponse(
+        {
+            "ok": True,
+            "url": saved["url"],
+            "kind": kind,
+            "item": item,
+            "lint_ok": lint_ok,
+        }
+    )
 
 
 # ============================================================================
 # Gallery Management
 # ============================================================================
 
+
 class AddItemRequest(BaseModel):
     """Request body for adding gallery item."""
+
     title: str
-    description: str = ''
-    type: str = Field(pattern=r'^(image|video-local|youtube|vimeo)$')
+    description: str = ""
+    type: str = Field(pattern=r"^(image|video-local|youtube|vimeo)$")
     src: str
     poster: str | None = None
     mime: str | None = None
@@ -206,8 +211,4 @@ async def gallery_add(body: AddItemRequest):
     run_sitemap_refresh()
     lint_ok = run_media_lint(strict=False)
 
-    return {
-        'ok': True,
-        'item': item,
-        'lint_ok': lint_ok
-    }
+    return {"ok": True, "item": item, "lint_ok": lint_ok}

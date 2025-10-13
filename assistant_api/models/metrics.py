@@ -27,13 +27,19 @@ class MetricIngestRequest(BaseModel):
 
 
 # Phase 50.8 - Behavior Analytics models
-EventName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=64)]
-VisitorID = Annotated[str, StringConstraints(strip_whitespace=True, min_length=6, max_length=64)]
+EventName = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=64)
+]
+VisitorID = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=6, max_length=64)
+]
 
 
 class BehaviorEvent(BaseModel):
     visitor_id: VisitorID = Field(..., description="Anonymous sticky ID (hash)")
-    event: EventName = Field(..., description="Event name, e.g., 'page_view', 'link_click'")
+    event: EventName = Field(
+        ..., description="Event name, e.g., 'page_view', 'link_click'"
+    )
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     metadata: dict[str, Any] = Field(default_factory=dict)
     user_agent: str | None = None
@@ -55,4 +61,3 @@ class BehaviorSnapshot(BaseModel):
     by_event: list[BehaviorAggBucket]
     last_events: list[BehaviorEvent]
     file_size_bytes: int | None = None
-

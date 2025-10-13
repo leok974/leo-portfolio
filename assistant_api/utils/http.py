@@ -1,4 +1,5 @@
 """Lightweight HTTP utility for internal service calls."""
+
 from __future__ import annotations
 
 import json

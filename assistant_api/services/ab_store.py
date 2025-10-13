@@ -3,6 +3,7 @@ A/B Testing Event Store
 
 Stores view/click events in JSONL format with daily aggregation for analytics.
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -28,21 +29,15 @@ def _daykey(ts: int) -> str:
 
 
 def append_event(
-    bucket: Literal["A", "B"],
-    event: Literal["view", "click"],
-    ts: int | None = None
+    bucket: Literal["A", "B"], event: Literal["view", "click"], ts: int | None = None
 ):
     """Append an event to the JSONL log."""
     ts = ts or _ts()
     EVENTS.parent.mkdir(parents=True, exist_ok=True)
     with EVENTS.open("a", encoding="utf-8") as f:
         f.write(
-            json.dumps({
-                "ts": ts,
-                "day": _daykey(ts),
-                "bucket": bucket,
-                "event": event
-            }) + "\n"
+            json.dumps({"ts": ts, "day": _daykey(ts), "bucket": bucket, "event": event})
+            + "\n"
         )
 
 
@@ -89,10 +84,9 @@ def summary(from_day: str | None = None, to_day: str | None = None) -> dict[str,
         ev = e["event"]
 
         # Initialize day if needed
-        daily.setdefault(d, {
-            "A": {"views": 0, "clicks": 0},
-            "B": {"views": 0, "clicks": 0}
-        })
+        daily.setdefault(
+            d, {"A": {"views": 0, "clicks": 0}, "B": {"views": 0, "clicks": 0}}
+        )
 
         # Increment counts
         if ev == "view":
@@ -110,23 +104,33 @@ def summary(from_day: str | None = None, to_day: str | None = None) -> dict[str,
         b = daily[d]["B"]
         ctrA = (a["clicks"] / a["views"]) if a["views"] else 0.0
         ctrB = (b["clicks"] / b["views"]) if b["views"] else 0.0
-        series.append({
-            "day": d,
-            "A_views": a["views"],
-            "A_clicks": a["clicks"],
-            "A_ctr": ctrA,
-            "B_views": b["views"],
-            "B_clicks": b["clicks"],
-            "B_ctr": ctrB
-        })
+        series.append(
+            {
+                "day": d,
+                "A_views": a["views"],
+                "A_clicks": a["clicks"],
+                "A_ctr": ctrA,
+                "B_views": b["views"],
+                "B_clicks": b["clicks"],
+                "B_ctr": ctrB,
+            }
+        )
 
     # Overall stats
     overall = {
-        "A_ctr": (totals["A"]["clicks"] / totals["A"]["views"]) if totals["A"]["views"] else 0.0,
-        "B_ctr": (totals["B"]["clicks"] / totals["B"]["views"]) if totals["B"]["views"] else 0.0,
+        "A_ctr": (
+            (totals["A"]["clicks"] / totals["A"]["views"])
+            if totals["A"]["views"]
+            else 0.0
+        ),
+        "B_ctr": (
+            (totals["B"]["clicks"] / totals["B"]["views"])
+            if totals["B"]["views"]
+            else 0.0
+        ),
         "A": totals["A"],
         "B": totals["B"],
-        "days": len(days_sorted)
+        "days": len(days_sorted),
     }
 
     return {"series": series, "overall": overall}

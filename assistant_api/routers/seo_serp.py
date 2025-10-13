@@ -13,19 +13,22 @@ from starlette.responses import JSONResponse
 try:
     from assistant_api.settings import settings
 except Exception:
+
     class _S:
         ARTIFACTS_ROOT: str = "agent/artifacts"
         SERP_ARTIFACTS_DIR: str = "seo-serp"
         GSC_PROPERTY: str = ""  # e.g., "https://leok974.github.io/leo-portfolio/"
-        GSC_SA_JSON: str = ""   # optional: full JSON string of a service account
-        GSC_SA_FILE: str = ""   # optional: path to service account file
+        GSC_SA_JSON: str = ""  # optional: full JSON string of a service account
+        GSC_SA_FILE: str = ""  # optional: path to service account file
         ALLOW_DEV_ROUTES: int = 1
+
     settings = _S()
 
 ART_DIR = Path(settings.ARTIFACTS_ROOT).joinpath(settings.SERP_ARTIFACTS_DIR)
 ART_DIR.mkdir(parents=True, exist_ok=True)
 
 router = APIRouter(prefix="/agent/seo/serp", tags=["seo-serp"])
+
 
 # ---------------- Models ----------------
 class SerpRow(BaseModel):
@@ -36,70 +39,98 @@ class SerpRow(BaseModel):
     ctr: float
     position: float
 
+
 class FetchReq(BaseModel):
     start_date: str | None = None  # YYYY-MM-DD
-    end_date: str | None = None    # YYYY-MM-DD
+    end_date: str | None = None  # YYYY-MM-DD
     property_url: str | None = None
     limit: int = 200
     dry_run: bool = True
+
 
 class AnalyzeReq(BaseModel):
     rows: list[SerpRow]
     min_impressions: int = 50
     low_ctr_factor: float = 0.5  # flag pages < (factor * median ctr)
 
+
 class PingReq(BaseModel):
     sitemap_urls: list[HttpUrl]
     dry_run: bool = True
 
+
 class RemediateReq(BaseModel):
-    day: str | None = None     # default: latest
-    limit: int = 10               # max anomalies to act on
+    day: str | None = None  # default: latest
+    limit: int = 10  # max anomalies to act on
     dry_run: bool = True
+
 
 # ---------------- Helpers ----------------
 def _today_utc() -> date:
     return datetime.now(UTC).date()
 
+
 def _dates_from_req(req: FetchReq) -> tuple[str, str]:
     end_d = date.fromisoformat(req.end_date) if req.end_date else _today_utc()
-    start_d = date.fromisoformat(req.start_date) if req.start_date else (end_d - timedelta(days=1))
+    start_d = (
+        date.fromisoformat(req.start_date)
+        if req.start_date
+        else (end_d - timedelta(days=1))
+    )
     return (start_d.isoformat(), end_d.isoformat())
+
 
 def _folder_for(day: str) -> Path:
     p = ART_DIR.joinpath(day)
     p.mkdir(parents=True, exist_ok=True)
     return p
 
+
 def _write_jsonl(p: Path, rows: list[dict[str, Any]]):
     with p.open("w", encoding="utf-8") as f:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
+
 def _load_previous_day(day: str) -> list[dict[str, Any]]:
     prev = (date.fromisoformat(day) - timedelta(days=1)).isoformat()
     f = ART_DIR.joinpath(prev, "gsc.jsonl")
-    if not f.exists(): return []
+    if not f.exists():
+        return []
     rows: list[dict[str, Any]] = []
     with f.open("r", encoding="utf-8") as fh:
         for line in fh:
-            try: rows.append(json.loads(line))
-            except: pass
+            try:
+                rows.append(json.loads(line))
+            except:
+                pass
     return rows
 
+
 def _median(values: list[float]) -> float:
-    if not values: return 0.0
+    if not values:
+        return 0.0
     v = sorted(values)
     n = len(v)
     mid = n // 2
-    if n % 2: return float(v[mid])
+    if n % 2:
+        return float(v[mid])
     return float((v[mid - 1] + v[mid]) / 2.0)
+
 
 # ---------------- Data sources ----------------
 def _gsc_configured() -> bool:
-    return bool(getattr(settings, "GSC_PROPERTY", "") and (getattr(settings, "GSC_SA_JSON", "") or getattr(settings, "GSC_SA_FILE", "")))
+    return bool(
+        getattr(settings, "GSC_PROPERTY", "")
+        and (
+            getattr(settings, "GSC_SA_JSON", "") or getattr(settings, "GSC_SA_FILE", "")
+        )
+    )
 
-def _fetch_gsc_real(property_url: str, start_date: str, end_date: str, limit: int) -> list[SerpRow]:
+
+def _fetch_gsc_real(
+    property_url: str, start_date: str, end_date: str, limit: int
+) -> list[SerpRow]:
     """
     Real Search Console fetch. Requires google-api-python-client in env and service account with Search Console access.
     This function is guarded and not executed unless configured.
@@ -108,7 +139,9 @@ def _fetch_gsc_real(property_url: str, start_date: str, end_date: str, limit: in
         from google.oauth2 import service_account
         from googleapiclient.discovery import build
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"google-api-python-client not installed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"google-api-python-client not installed: {e}"
+        )
 
     sa_info: dict[str, Any] = {}
     if getattr(settings, "GSC_SA_JSON", ""):
@@ -119,7 +152,9 @@ def _fetch_gsc_real(property_url: str, start_date: str, end_date: str, limit: in
     else:
         raise HTTPException(status_code=500, detail="Service account not provided")
 
-    creds = service_account.Credentials.from_service_account_info(sa_info, scopes=["https://www.googleapis.com/auth/webmasters.readonly"])
+    creds = service_account.Credentials.from_service_account_info(
+        sa_info, scopes=["https://www.googleapis.com/auth/webmasters.readonly"]
+    )
     svc = build("searchconsole", "v1", credentials=creds)
     body = {
         "startDate": start_date,
@@ -135,26 +170,67 @@ def _fetch_gsc_real(property_url: str, start_date: str, end_date: str, limit: in
         impressions = int(r.get("impressions", 0))
         ctr = float(r.get("ctr", 0.0))
         pos = float(r.get("position", 0.0))
-        rows.append(SerpRow(date=end_date, page=page, clicks=clicks, impressions=impressions, ctr=ctr, position=pos))
+        rows.append(
+            SerpRow(
+                date=end_date,
+                page=page,
+                clicks=clicks,
+                impressions=impressions,
+                ctr=ctr,
+                position=pos,
+            )
+        )
     return rows
 
-def _fetch_gsc_mock(property_url: str, start_date: str, end_date: str, limit: int) -> list[SerpRow]:
+
+def _fetch_gsc_mock(
+    property_url: str, start_date: str, end_date: str, limit: int
+) -> list[SerpRow]:
     origin = property_url.rstrip("/")
-    paths = ["/", "/projects/ledgermind", "/projects/datapipe", "/posts/agentic-portfolio"]
+    paths = [
+        "/",
+        "/projects/ledgermind",
+        "/projects/datapipe",
+        "/posts/agentic-portfolio",
+    ]
     rows: list[SerpRow] = []
     rnd = random.Random(42)  # stable
     for p in paths:
         imps = rnd.randint(60, 400)
-        clicks = rnd.randint(int(imps*0.05), int(imps*0.25))
+        clicks = rnd.randint(int(imps * 0.05), int(imps * 0.25))
         ctr = clicks / imps
         pos = rnd.uniform(1.8, 18.0)
-        rows.append(SerpRow(date=end_date, page=f"{origin}{p}", clicks=clicks, impressions=imps, ctr=ctr, position=pos))
+        rows.append(
+            SerpRow(
+                date=end_date,
+                page=f"{origin}{p}",
+                clicks=clicks,
+                impressions=imps,
+                ctr=ctr,
+                position=pos,
+            )
+        )
     # Inject an anomaly: very low CTR on one page
-    rows.append(SerpRow(date=end_date, page=f"{origin}/projects/terminality", clicks=2, impressions=500, ctr=0.004, position=35.0))
+    rows.append(
+        SerpRow(
+            date=end_date,
+            page=f"{origin}/projects/terminality",
+            clicks=2,
+            impressions=500,
+            ctr=0.004,
+            position=35.0,
+        )
+    )
     return rows[:limit]
 
+
 # ---------------- Analysis ----------------
-def _analyze(rows: list[SerpRow], min_impressions: int, low_ctr_factor: float, previous_rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+def _analyze(
+    rows: list[SerpRow],
+    min_impressions: int,
+    low_ctr_factor: float,
+    previous_rows: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     prev_by_page: dict[str, dict[str, Any]] = {}
     if previous_rows:
         for r in previous_rows:
@@ -164,40 +240,52 @@ def _analyze(rows: list[SerpRow], min_impressions: int, low_ctr_factor: float, p
     med_ctr = _median(ctrs)
     anomalies: list[dict[str, Any]] = []
     for r in rows:
-        if r.impressions < min_impressions: continue
+        if r.impressions < min_impressions:
+            continue
         flag_low = med_ctr > 0 and r.ctr < (low_ctr_factor * med_ctr)
         delta = None
         reason = []
         if flag_low:
-            reason.append(f"ctr<{low_ctr_factor}×median ({r.ctr:.3f} < {low_ctr_factor*med_ctr:.3f})")
+            reason.append(
+                f"ctr<{low_ctr_factor}×median ({r.ctr:.3f} < {low_ctr_factor*med_ctr:.3f})"
+            )
         if prev_by_page:
             prev = prev_by_page.get(str(r.page))
             if prev and prev.get("impressions", 0) >= min_impressions:
                 prev_ctr = float(prev.get("ctr") or 0.0)
                 delta = r.ctr - prev_ctr
                 if prev_ctr > 0 and (r.ctr < prev_ctr * low_ctr_factor):
-                    reason.append(f"ctr drop vs prev ({r.ctr:.3f} < {low_ctr_factor}×{prev_ctr:.3f})")
+                    reason.append(
+                        f"ctr drop vs prev ({r.ctr:.3f} < {low_ctr_factor}×{prev_ctr:.3f})"
+                    )
         if reason:
-            anomalies.append({
-                "page": str(r.page),
-                "impressions": r.impressions,
-                "ctr": round(r.ctr, 4),
-                "position": round(r.position, 2),
-                "prev_ctr": None if not prev_by_page else float(prev_by_page.get(str(r.page),{}).get("ctr") or 0.0),
-                "delta_ctr": delta,
-                "reasons": reason,
-                "suggestions": [
-                    "Run seo.rewrite on H1/description.",
-                    "Validate JSON-LD types for this route.",
-                    "Check internal links/anchor text.",
-                    "Consider new thumbnail/OG image test."
-                ]
-            })
+            anomalies.append(
+                {
+                    "page": str(r.page),
+                    "impressions": r.impressions,
+                    "ctr": round(r.ctr, 4),
+                    "position": round(r.position, 2),
+                    "prev_ctr": (
+                        None
+                        if not prev_by_page
+                        else float(prev_by_page.get(str(r.page), {}).get("ctr") or 0.0)
+                    ),
+                    "delta_ctr": delta,
+                    "reasons": reason,
+                    "suggestions": [
+                        "Run seo.rewrite on H1/description.",
+                        "Validate JSON-LD types for this route.",
+                        "Check internal links/anchor text.",
+                        "Consider new thumbnail/OG image test.",
+                    ],
+                }
+            )
     return {
         "median_ctr": round(med_ctr, 4),
         "total_pages": len(rows),
         "anomalies": anomalies,
     }
+
 
 # ---------------- Endpoints ----------------
 @router.post("/fetch")
@@ -206,7 +294,9 @@ def fetch(req: FetchReq):
     prop = req.property_url or getattr(settings, "GSC_PROPERTY", "")
     if not prop:
         # No property configured → return mock (dev convenience)
-        rows = _fetch_gsc_mock("http://localhost:5173/", start_date, end_date, req.limit)
+        rows = _fetch_gsc_mock(
+            "http://localhost:5173/", start_date, end_date, req.limit
+        )
         report = {"source": "mock", "note": "GSC_PROPERTY not configured"}
     else:
         if _gsc_configured():
@@ -225,11 +315,23 @@ def fetch(req: FetchReq):
         summary = {
             "window": {"start": start_date, "end": end_date},
             "fetched": len(rows),
-            **report
+            **report,
         }
-        folder.joinpath("summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2))
-        artifacts = {"jsonl": str(data_path), "summary": str(folder.joinpath("summary.json"))}
-    return JSONResponse({"rows": [r.model_dump() for r in rows], "report": report, "artifacts": artifacts})
+        folder.joinpath("summary.json").write_text(
+            json.dumps(summary, ensure_ascii=False, indent=2)
+        )
+        artifacts = {
+            "jsonl": str(data_path),
+            "summary": str(folder.joinpath("summary.json")),
+        }
+    return JSONResponse(
+        {
+            "rows": [r.model_dump() for r in rows],
+            "report": report,
+            "artifacts": artifacts,
+        }
+    )
+
 
 @router.post("/analyze")
 def analyze(req: AnalyzeReq):
@@ -242,28 +344,43 @@ def analyze(req: AnalyzeReq):
             prev_rows = _load_previous_day(any_day)
         except Exception:
             prev_rows = []
-    result = _analyze(rows, req.min_impressions, req.low_ctr_factor, previous_rows=prev_rows)
+    result = _analyze(
+        rows, req.min_impressions, req.low_ctr_factor, previous_rows=prev_rows
+    )
     return JSONResponse(result)
+
 
 @router.get("/report")
 def report(day: str | None = Query(None, description="YYYY-MM-DD or omit for latest")):
     # choose latest folder
     if not day:
         subdirs = [p for p in ART_DIR.iterdir() if p.is_dir()]
-        if not subdirs: raise HTTPException(status_code=404, detail="No SERP artifacts")
+        if not subdirs:
+            raise HTTPException(status_code=404, detail="No SERP artifacts")
         day = sorted([p.name for p in subdirs])[-1]
     folder = ART_DIR.joinpath(day)
-    if not folder.exists(): raise HTTPException(status_code=404, detail="Day not found")
+    if not folder.exists():
+        raise HTTPException(status_code=404, detail="Day not found")
     jsonl = folder.joinpath("gsc.jsonl")
     rows: list[dict[str, Any]] = []
     if jsonl.exists():
         for line in jsonl.read_text(encoding="utf-8").splitlines():
-            try: rows.append(json.loads(line))
-            except: pass
-    analysis = _analyze([SerpRow(**r) for r in rows], min_impressions=50, low_ctr_factor=0.5, previous_rows=_load_previous_day(day))
+            try:
+                rows.append(json.loads(line))
+            except:
+                pass
+    analysis = _analyze(
+        [SerpRow(**r) for r in rows],
+        min_impressions=50,
+        low_ctr_factor=0.5,
+        previous_rows=_load_previous_day(day),
+    )
     summary_path = folder.joinpath("summary.json")
     summary = json.loads(summary_path.read_text()) if summary_path.exists() else {}
-    return JSONResponse({"day": day, "count": len(rows), "summary": summary, "analysis": analysis})
+    return JSONResponse(
+        {"day": day, "count": len(rows), "summary": summary, "analysis": analysis}
+    )
+
 
 @router.post("/ping-sitemaps")
 def ping_sitemaps(req: PingReq):
@@ -276,6 +393,7 @@ def ping_sitemaps(req: PingReq):
     if not req.dry_run:
         # fire-and-forget, but we still make requests in backend only if explicitly allowed
         import urllib.request
+
         for u in ping_urls:
             try:
                 with urllib.request.urlopen(u) as _:
@@ -285,8 +403,10 @@ def ping_sitemaps(req: PingReq):
         result["performed"] = True
     return JSONResponse(result)
 
+
 # Dev-only fixture to create artifacts with anomalies for tests/CI
 if getattr(settings, "ALLOW_DEV_ROUTES", 0):
+
     @router.post("/mock/populate")
     def mock_populate(days: int = Body(2, embed=True)):
         prop = getattr(settings, "GSC_PROPERTY", "") or "http://localhost:5173/"
@@ -296,38 +416,61 @@ if getattr(settings, "ALLOW_DEV_ROUTES", 0):
             rows = _fetch_gsc_mock(prop, day, day, 200)
             folder = _folder_for(day)
             _write_jsonl(folder.joinpath("gsc.jsonl"), [r.model_dump() for r in rows])
-            folder.joinpath("summary.json").write_text(json.dumps({"window":{"start":day,"end":day},"fetched":len(rows),"source":"mock"}, indent=2))
+            folder.joinpath("summary.json").write_text(
+                json.dumps(
+                    {
+                        "window": {"start": day, "end": day},
+                        "fetched": len(rows),
+                        "source": "mock",
+                    },
+                    indent=2,
+                )
+            )
         latest = end.isoformat()
         # last day with worse CTR on one page (already in mock)
         rows = _fetch_gsc_mock(prop, latest, latest, 200)
         folder = _folder_for(latest)
         _write_jsonl(folder.joinpath("gsc.jsonl"), [r.model_dump() for r in rows])
-        folder.joinpath("summary.json").write_text(json.dumps({"window":{"start":latest,"end":latest},"fetched":len(rows),"source":"mock-latest"}, indent=2))
-        return {"ok": True, "days": days+1}
+        folder.joinpath("summary.json").write_text(
+            json.dumps(
+                {
+                    "window": {"start": latest, "end": latest},
+                    "fetched": len(rows),
+                    "source": "mock-latest",
+                },
+                indent=2,
+            )
+        )
+        return {"ok": True, "days": days + 1}
+
 
 @router.post("/remediate")
 def remediate(req: RemediateReq):
     """Create a remediation plan from latest (or specified) anomalies.
-       Optionally POST each item to an external rewrite endpoint."""
+    Optionally POST each item to an external rewrite endpoint."""
     # choose day/report
     if not req.day:
         subdirs = [p for p in ART_DIR.iterdir() if p.is_dir()]
-        if not subdirs: raise HTTPException(status_code=404, detail="No SERP artifacts")
+        if not subdirs:
+            raise HTTPException(status_code=404, detail="No SERP artifacts")
         req.day = sorted([p.name for p in subdirs])[-1]
     rep = report(req.day)  # reuse existing logic
     data = rep.body if hasattr(rep, "body") else rep
-    if hasattr(data, "body"): data = data.body
+    if hasattr(data, "body"):
+        data = data.body
     analysis = data.get("analysis", {})
     anomalies = analysis.get("anomalies", [])
     plan = []
     for a in anomalies[: req.limit]:
-        plan.append({
-            "action": "seo.rewrite",
-            "url": a["page"],
-            "reason": "; ".join(a.get("reasons", [])),
-            "suggestions": a.get("suggestions", []),
-            "inputs": {"modes": ["title","description","h1"], "dry_run": True}
-        })
+        plan.append(
+            {
+                "action": "seo.rewrite",
+                "url": a["page"],
+                "reason": "; ".join(a.get("reasons", [])),
+                "suggestions": a.get("suggestions", []),
+                "inputs": {"modes": ["title", "description", "h1"], "dry_run": True},
+            }
+        )
     # persist plan
     folder = ART_DIR.joinpath(req.day)
     actions_path = folder.joinpath("actions.jsonl")
@@ -337,11 +480,26 @@ def remediate(req: RemediateReq):
     endpoint = getattr(settings, "REWRITE_ENDPOINT", "")
     if endpoint and not req.dry_run:
         import urllib.request
+
         for item in plan:
             payload = json.dumps({"url": item["url"], **item["inputs"]}).encode("utf-8")
             try:
-                urllib.request.urlopen(urllib.request.Request(endpoint, data=payload, headers={"Content-Type":"application/json"}))
+                urllib.request.urlopen(
+                    urllib.request.Request(
+                        endpoint,
+                        data=payload,
+                        headers={"Content-Type": "application/json"},
+                    )
+                )
                 called += 1
             except Exception:
                 pass
-    return JSONResponse({"day": req.day, "count": len(plan), "plan": plan, "artifacts": {"actions": str(actions_path)}, "dispatched": called})
+    return JSONResponse(
+        {
+            "day": req.day,
+            "count": len(plan),
+            "plan": plan,
+            "artifacts": {"actions": str(actions_path)},
+            "dispatched": called,
+        }
+    )

@@ -32,12 +32,17 @@ def projects_sync(run_id, params):
     Pull repo metadata → update /assets/data/projects.json
     """
     repos = (
-        os.environ.get("SITEAGENT_REPOS")
-        or "leok974/ledger-mind,leok974/leo-portfolio"
+        os.environ.get("SITEAGENT_REPOS") or "leok974/ledger-mind,leok974/leo-portfolio"
     ).split(",")
     results = []
     for repo in [r.strip() for r in repos if r.strip()]:
-        meta = {"name": repo.split("/")[-1], "description": "", "stargazerCount": 0, "updatedAt": "", "topics": []}
+        meta = {
+            "name": repo.split("/")[-1],
+            "description": "",
+            "stargazerCount": 0,
+            "updatedAt": "",
+            "topics": [],
+        }
         try:
             if shutil.which("gh"):
                 out = subprocess.check_output(
@@ -54,11 +59,19 @@ def projects_sync(run_id, params):
                 data = json.loads(out)
                 # Extract topic names from repositoryTopics
                 if "repositoryTopics" in data:
-                    data["topics"] = [t["topic"]["name"] for t in data.get("repositoryTopics", {}).get("nodes", [])]
+                    data["topics"] = [
+                        t["topic"]["name"]
+                        for t in data.get("repositoryTopics", {}).get("nodes", [])
+                    ]
                     del data["repositoryTopics"]
                 meta = data
         except Exception as e:
-            emit(run_id, "warn", "projects.sync.repo_failed", {"repo": repo, "err": str(e)})
+            emit(
+                run_id,
+                "warn",
+                "projects.sync.repo_failed",
+                {"repo": repo, "err": str(e)},
+            )
         results.append(meta)
 
     dst = "./assets/data/projects.json"
@@ -106,19 +119,33 @@ def og_generate(run_id, params):
     script = "./scripts/og-render.mjs"
     template = "./public/og/template.html"
     projects_json = "./assets/data/projects.json"
-    if not os.path.exists(script) or not os.path.exists(template) or not os.path.exists(projects_json):
-        emit(run_id, "warn", "og.generate.skipped", {"reason": "missing_script_or_template_or_projects"})
+    if (
+        not os.path.exists(script)
+        or not os.path.exists(template)
+        or not os.path.exists(projects_json)
+    ):
+        emit(
+            run_id,
+            "warn",
+            "og.generate.skipped",
+            {"reason": "missing_script_or_template_or_projects"},
+        )
         return {"generated": 0, "dir": out_dir, "skipped": True}
     try:
         out = subprocess.check_output(
             [
-                "node", script,
-                "--input", projects_json,
-                "--out", out_dir,
-                "--template", template,
-                "--overrides", "./assets/data/og-overrides.json",
+                "node",
+                script,
+                "--input",
+                projects_json,
+                "--out",
+                out_dir,
+                "--template",
+                template,
+                "--overrides",
+                "./assets/data/og-overrides.json",
             ],
-            text=True
+            text=True,
         ).strip()
         # script prints a single JSON line with {generated, existing, dir}
         meta = json.loads(out) if out.startswith("{") else {"note": out}
@@ -127,7 +154,12 @@ def og_generate(run_id, params):
         emit(run_id, "warn", "og.generate.node_missing", {})
         return {"generated": 0, "dir": out_dir, "skipped": True}
     except subprocess.CalledProcessError as e:
-        emit(run_id, "error", "og.generate.failed", {"code": e.returncode, "out": e.output})
+        emit(
+            run_id,
+            "error",
+            "og.generate.failed",
+            {"code": e.returncode, "out": e.output},
+        )
         return {"generated": 0, "dir": out_dir, "error": True}
 
 
@@ -143,6 +175,7 @@ def status_write(run_id, params):
         ov_path = "./assets/data/og-overrides.json"
         if os.path.exists(ov_path):
             import json as _json
+
             with open(ov_path, encoding="utf-8") as f:
                 ov = _json.load(f)
                 if isinstance(ov, dict) and ov.get("brand"):
@@ -217,8 +250,12 @@ def overrides_update(run_id, params):
             cur["title_alias"][rn["from"].strip()] = new_name
             changed.setdefault("title_alias", {})[rn["from"].strip()] = new_name
         else:
-            emit(run_id, "warn", "overrides.update.rename_ignored",
-                 {"reason": "need repo or from", "rename": rn})
+            emit(
+                run_id,
+                "warn",
+                "overrides.update.rename_ignored",
+                {"reason": "need repo or from", "rename": rn},
+            )
     # logo assignment/removal:
     # params.logo = { repo?: str, title?: str, path?: str, remove?: bool }
     lg = params.get("logo") or {}
@@ -231,8 +268,12 @@ def overrides_update(run_id, params):
                 del cur["title_logo"][lg["title"].strip()]
                 changed.setdefault("title_logo", {})[lg["title"].strip()] = None
             else:
-                emit(run_id, "warn", "overrides.update.logo_remove_ignored",
-                     {"reason": "not found", "logo": lg})
+                emit(
+                    run_id,
+                    "warn",
+                    "overrides.update.logo_remove_ignored",
+                    {"reason": "not found", "logo": lg},
+                )
         elif isinstance(lg.get("path"), str) and lg["path"].strip():
             pth = lg["path"].strip()
             if lg.get("repo"):
@@ -242,8 +283,12 @@ def overrides_update(run_id, params):
                 cur["title_logo"][lg["title"].strip()] = pth
                 changed.setdefault("title_logo", {})[lg["title"].strip()] = pth
             else:
-                emit(run_id, "warn", "overrides.update.logo_ignored",
-                     {"reason": "need repo or title", "logo": lg})
+                emit(
+                    run_id,
+                    "warn",
+                    "overrides.update.logo_ignored",
+                    {"reason": "need repo or title", "logo": lg},
+                )
     # write
     with open(dst, "w", encoding="utf-8") as f:
         json.dump(cur, f, indent=2)
@@ -269,39 +314,63 @@ def logo_fetch(run_id, params):
         raise ValueError("logo.fetch: 'url' must be http(s)")
     repo = (params.get("repo") or "").strip()
     title = (params.get("title") or "").strip()
-    name = (params.get("name") or title or (repo.split("/")[-1] if repo else "")) or "logo"
+    name = (
+        params.get("name") or title or (repo.split("/")[-1] if repo else "")
+    ) or "logo"
     max_mb = float(os.environ.get("SITEAGENT_LOGO_MAX_MB", "3"))
     max_bytes = int(params.get("max_bytes") or (max_mb * 1024 * 1024))
     require_https = not bool(os.environ.get("SITEAGENT_LOGO_ALLOW_HTTP"))
     if require_https and url.lower().startswith("http://"):
-        raise ValueError("logo.fetch: plain HTTP disabled (set SITEAGENT_LOGO_ALLOW_HTTP=1 to allow)")
+        raise ValueError(
+            "logo.fetch: plain HTTP disabled (set SITEAGENT_LOGO_ALLOW_HTTP=1 to allow)"
+        )
 
     # SSRF guard: resolve host and block private/loopback/link-local
     from urllib.parse import urlparse
+
     u = urlparse(url)
     host = u.hostname or ""
     try:
         infos = socket.getaddrinfo(host, None)
         for _family, _type, _proto, _canon, sockaddr in infos:
             ip = ipaddress.ip_address(sockaddr[0])
-            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+            if (
+                ip.is_private
+                or ip.is_loopback
+                or ip.is_link_local
+                or ip.is_reserved
+                or ip.is_multicast
+            ):
                 raise ValueError(f"logo.fetch: blocked non-public IP {ip}")
     except socket.gaierror as e:
         raise ValueError(f"logo.fetch: cannot resolve host {host}: {e}")
 
     # Optional host allowlist (suffix match)
-    allow_hosts = [h.strip().lower() for h in os.environ.get("SITEAGENT_LOGO_HOSTS", "").split(",") if h.strip()]
+    allow_hosts = [
+        h.strip().lower()
+        for h in os.environ.get("SITEAGENT_LOGO_HOSTS", "").split(",")
+        if h.strip()
+    ]
     if allow_hosts and not any(host.lower().endswith(suf) for suf in allow_hosts):
-        raise ValueError(f"logo.fetch: host not allowed by SITEAGENT_LOGO_HOSTS: {host}")
+        raise ValueError(
+            f"logo.fetch: host not allowed by SITEAGENT_LOGO_HOSTS: {host}"
+        )
 
     def slug(s: str) -> str:
-        return re.sub(r"-{2,}", "-", re.sub(r"[^a-z0-9-]+", "-", s.lower())).strip("-") or "logo"
+        return (
+            re.sub(r"-{2,}", "-", re.sub(r"[^a-z0-9-]+", "-", s.lower())).strip("-")
+            or "logo"
+        )
 
     # Fetch
-    req = urllib.request.Request(url, headers={"User-Agent": "siteAgent/1.0 (+logo.fetch)"})
+    req = urllib.request.Request(
+        url, headers={"User-Agent": "siteAgent/1.0 (+logo.fetch)"}
+    )
     try:
         with urllib.request.urlopen(req, timeout=20) as resp:
-            ctype = (resp.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+            ctype = (
+                (resp.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+            )
             clen = resp.headers.get("Content-Length")
             if clen and int(clen) > max_bytes:
                 raise ValueError(f"logo.fetch: remote file too large ({clen} bytes)")
@@ -331,7 +400,7 @@ def logo_fetch(run_id, params):
     if not ext:
         # Fall back to URL suffix
         m = re.search(r"\.([a-z0-9]{3,4})(?:\?|#|$)", url, re.I)
-        ext = (m.group(1).lower() if m else "png")
+        ext = m.group(1).lower() if m else "png"
         if ext not in {"png", "jpg", "jpeg", "webp", "svg", "gif"}:
             ext = "png"
 
@@ -348,7 +417,12 @@ def logo_fetch(run_id, params):
             try:
                 txt = data.decode("utf-8", errors="ignore")
                 # Remove script/foreignObject
-                txt = re.sub(r"<\s*(script|foreignObject)[\s\S]*?<\s*/\s*\1\s*>", "", txt, flags=re.I)
+                txt = re.sub(
+                    r"<\s*(script|foreignObject)[\s\S]*?<\s*/\s*\1\s*>",
+                    "",
+                    txt,
+                    flags=re.I,
+                )
                 # Remove on* event attributes
                 txt = re.sub(r"\son[a-zA-Z]+\s*=\s*\"[^\"]*\"", "", txt)
                 txt = re.sub(r"\son[\w-]+\s*=\s*'[^']*'", "", txt)
@@ -362,6 +436,7 @@ def logo_fetch(run_id, params):
         elif ext in {"jpg", "jpeg", "webp", "gif"}:
             try:
                 from PIL import Image  # type: ignore
+
                 img = Image.open(io.BytesIO(data)).convert("RGBA")
                 final_path = os.path.join(logos_dir, f"{base}.png")
                 img.save(final_path, format="PNG")
@@ -416,7 +491,7 @@ def media_scan(run_id, params):
     Records: path, bytes, width/height (if available), ext, sha1 (first 32 hex), mtime.
     """
     roots = ["./public", "./assets"]
-    exts = {".png",".jpg",".jpeg",".webp",".gif",".svg",".bmp",".tiff"}
+    exts = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".bmp", ".tiff"}
     items: list[dict[str, Any]] = []
     have_pil = False
     try:
@@ -424,59 +499,66 @@ def media_scan(run_id, params):
     except Exception:
         pass
 
-    def get_dims(p: str, ext: str) -> tuple[int,int]:
+    def get_dims(p: str, ext: str) -> tuple[int, int]:
         if ext == ".svg":
             try:
-                txt = open(p,encoding="utf-8",errors="ignore").read()
-                m = re.search(r'\bwidth="?(\d+)', txt) and re.search(r'\bheight="?(\d+)', txt)
+                txt = open(p, encoding="utf-8", errors="ignore").read()
+                m = re.search(r'\bwidth="?(\d+)', txt) and re.search(
+                    r'\bheight="?(\d+)', txt
+                )
             except Exception:
-                m=None
+                m = None
             if m:
                 w = int(re.search(r'\bwidth="?(\d+)', txt).group(1))
                 h = int(re.search(r'\bheight="?(\d+)', txt).group(1))
-                return w,h
-            return (0,0)
+                return w, h
+            return (0, 0)
         if have_pil:
             try:
                 from PIL import Image  # type: ignore
+
                 with Image.open(p) as im:
                     return int(im.width), int(im.height)
             except Exception:
-                return (0,0)
-        return (0,0)
+                return (0, 0)
+        return (0, 0)
 
     for root in roots:
         if not os.path.isdir(root):
             continue
-        for r,_,files in os.walk(root):
+        for r, _, files in os.walk(root):
             for fn in files:
                 ext = os.path.splitext(fn)[1].lower()
-                if ext not in exts: continue
-                path = os.path.join(r,fn)
+                if ext not in exts:
+                    continue
+                path = os.path.join(r, fn)
                 try:
                     st = os.stat(path)
                 except FileNotFoundError:
                     continue
-                w,h = get_dims(path, ext)
-                rel = path.replace("\\","/")
+                w, h = get_dims(path, ext)
+                rel = path.replace("\\", "/")
                 sha1 = ""
                 try:
-                    with open(path,"rb") as f:
+                    with open(path, "rb") as f:
                         sha1 = hashlib.sha1(f.read(65536)).hexdigest()[:32]
                 except Exception:
                     pass
-                items.append({
-                    "path": rel,
-                    "bytes": int(st.st_size),
-                    "width": w, "height": h,
-                    "ext": ext[1:],
-                    "sha1": sha1,
-                    "mtime": int(st.st_mtime),
-                })
+                items.append(
+                    {
+                        "path": rel,
+                        "bytes": int(st.st_size),
+                        "width": w,
+                        "height": h,
+                        "ext": ext[1:],
+                        "sha1": sha1,
+                        "mtime": int(st.st_mtime),
+                    }
+                )
     items.sort(key=lambda x: (-x["bytes"], x["path"]))
     dst = "./assets/data/media-index.json"
     os.makedirs(os.path.dirname(dst), exist_ok=True)
-    with open(dst,"w",encoding="utf-8") as f:
+    with open(dst, "w", encoding="utf-8") as f:
         json.dump({"count": len(items), "items": items}, f, indent=2)
     emit(run_id, "info", "media.scan.ok", {"count": len(items)})
     return {"file": dst, "count": len(items)}
@@ -497,7 +579,7 @@ def media_optimize(run_id, params):
     if not os.path.exists(idx_path):
         emit(run_id, "warn", "media.optimize.no_index", {})
         return {"skipped": True, "reason": "no_index"}
-    idx = json.loads(open(idx_path,encoding="utf-8").read())
+    idx = json.loads(open(idx_path, encoding="utf-8").read())
     items = idx.get("items", [])
     outdir = "./assets/derived"
     os.makedirs(outdir, exist_ok=True)
@@ -507,16 +589,21 @@ def media_optimize(run_id, params):
     done = 0
     made = []
     for it in items:
-        if done >= limit: break
-        ext = it.get("ext","").lower()
-        if ext in {"svg","gif"}: continue
-        p = it.get("path","")
-        if not p or not os.path.exists(p): continue
+        if done >= limit:
+            break
+        ext = it.get("ext", "").lower()
+        if ext in {"svg", "gif"}:
+            continue
+        p = it.get("path", "")
+        if not p or not os.path.exists(p):
+            continue
         base, _ = os.path.splitext(os.path.basename(p))
         target_webp = os.path.join(outdir, base + ".webp")
         thumb_480 = os.path.join(outdir, base + ".480w.webp")
         thumb_960 = os.path.join(outdir, base + ".960w.webp")
-        if not overwrite and all(os.path.exists(x) for x in [target_webp, thumb_480, thumb_960]):
+        if not overwrite and all(
+            os.path.exists(x) for x in [target_webp, thumb_480, thumb_960]
+        ):
             continue
         try:
             with Image.open(p) as im:
@@ -524,14 +611,14 @@ def media_optimize(run_id, params):
                 # main webp
                 if overwrite or not os.path.exists(target_webp):
                     im.save(target_webp, "WEBP", quality=q, method=6)
-                    made.append(target_webp.replace("\\","/"))
+                    made.append(target_webp.replace("\\", "/"))
                 # thumbs
                 for size, dest in [(480, thumb_480), (960, thumb_960)]:
                     if overwrite or not os.path.exists(dest):
                         rim = im.copy()
-                        rim.thumbnail((size, size*10_000), Image.LANCZOS)
+                        rim.thumbnail((size, size * 10_000), Image.LANCZOS)
                         rim.save(dest, "WEBP", quality=q, method=6)
-                        made.append(dest.replace("\\","/"))
+                        made.append(dest.replace("\\", "/"))
                 done += 1
         except Exception as e:
             emit(run_id, "warn", "media.optimize.fail", {"path": p, "err": str(e)})
@@ -550,23 +637,29 @@ def links_suggest(run_id, params):
     if not os.path.exists(lc):
         emit(run_id, "warn", "links.suggest.no_report", {})
         return {"skipped": True}
-    data = json.loads(open(lc,encoding="utf-8").read())
-    missing = [m["url"] for m in data.get("missing", []) if isinstance(m.get("url"), str)]
+    data = json.loads(open(lc, encoding="utf-8").read())
+    missing = [
+        m["url"] for m in data.get("missing", []) if isinstance(m.get("url"), str)
+    ]
     # candidate corpus: all local files
     corpus: list[str] = []
-    for root in ["./public","./assets"]:
-        if not os.path.isdir(root): continue
-        for r,_,files in os.walk(root):
+    for root in ["./public", "./assets"]:
+        if not os.path.isdir(root):
+            continue
+        for r, _, files in os.walk(root):
             for fn in files:
-                corpus.append(os.path.join(r,fn).replace("\\","/"))
+                corpus.append(os.path.join(r, fn).replace("\\", "/"))
     import difflib
+
     def base(u: str) -> str:
-        u = u.split("#",1)[0].split("?",1)[0]
+        u = u.split("#", 1)[0].split("?", 1)[0]
         return os.path.basename(u)
+
     suggestions: dict[str, list[str]] = {}
     for miss in missing:
         b = base(miss)
-        if not b: continue
+        if not b:
+            continue
         # quick extension-aware filter
         ext = os.path.splitext(b)[1].lower()
         candidates = [c for c in corpus if (not ext or c.lower().endswith(ext))]
@@ -584,8 +677,8 @@ def links_suggest(run_id, params):
     out = {"count": len(suggestions), "suggestions": suggestions}
     dst = "./assets/data/link-suggest.json"
     os.makedirs(os.path.dirname(dst), exist_ok=True)
-    with open(dst,"w",encoding="utf-8") as f:
-        json.dump(out,f,indent=2)
+    with open(dst, "w", encoding="utf-8") as f:
+        json.dump(out, f, indent=2)
     emit(run_id, "info", "links.suggest.ok", {"count": out["count"]})
     return {"file": dst, "count": out["count"]}
 
@@ -597,8 +690,7 @@ def news_sync(run_id, params):
     Prefers `gh api` when available, falls back to minimal metadata.
     """
     repos = (
-        os.environ.get("SITEAGENT_REPOS")
-        or "leok974/ledger-mind,leok974/leo-portfolio"
+        os.environ.get("SITEAGENT_REPOS") or "leok974/ledger-mind,leok974/leo-portfolio"
     ).split(",")
     items: list[dict] = []
     have_gh = bool(shutil.which("gh"))
@@ -608,9 +700,16 @@ def news_sync(run_id, params):
             # Try releases first
             try:
                 rel = subprocess.check_output(
-                    ["gh", "api", f"/repos/{repo}/releases", "--paginate", "-q", ".[0:5]"],
+                    [
+                        "gh",
+                        "api",
+                        f"/repos/{repo}/releases",
+                        "--paginate",
+                        "-q",
+                        ".[0:5]",
+                    ],
                     text=True,
-                    stderr=subprocess.DEVNULL
+                    stderr=subprocess.DEVNULL,
                 )
                 feed = [{"repo": repo, "type": "release", **r} for r in json.loads(rel)]
             except Exception:
@@ -621,18 +720,24 @@ def news_sync(run_id, params):
                     com = subprocess.check_output(
                         ["gh", "api", f"/repos/{repo}/commits", "-q", ".[0:5]"],
                         text=True,
-                        stderr=subprocess.DEVNULL
+                        stderr=subprocess.DEVNULL,
                     )
                     commits = json.loads(com)
                     for c in commits:
-                        feed.append({
-                            "repo": repo,
-                            "type": "commit",
-                            "sha": c.get("sha"),
-                            "message": (c.get("commit", {}).get("message") or "").split("\n")[0],
-                            "date": c.get("commit", {}).get("committer", {}).get("date"),
-                            "html_url": c.get("html_url"),
-                        })
+                        feed.append(
+                            {
+                                "repo": repo,
+                                "type": "commit",
+                                "sha": c.get("sha"),
+                                "message": (
+                                    c.get("commit", {}).get("message") or ""
+                                ).split("\n")[0],
+                                "date": c.get("commit", {})
+                                .get("committer", {})
+                                .get("date"),
+                                "html_url": c.get("html_url"),
+                            }
+                        )
                 except Exception:
                     pass
         if not feed:
@@ -672,7 +777,11 @@ def links_validate(run_id, params):
             continue
         for url in href_re.findall(content):
             checked += 1
-            if re.match(r"^(https?:)?//", url) or url.startswith("mailto:") or url.startswith("data:"):
+            if (
+                re.match(r"^(https?:)?//", url)
+                or url.startswith("mailto:")
+                or url.startswith("data:")
+            ):
                 continue
             # Normalize local path
             local = url
@@ -685,10 +794,12 @@ def links_validate(run_id, params):
                 local = local.split("#", 1)[0]
             if local and not os.path.splitext(local)[1] and not local.endswith("/"):
                 # If it's a no-extension path, allow implicit directory index
-                if os.path.isdir(local) and os.path.exists(os.path.join(local, "index.html")):
+                if os.path.isdir(local) and os.path.exists(
+                    os.path.join(local, "index.html")
+                ):
                     continue
             if local and not os.path.exists(local):
-                missing.append((html.replace("\\","/"), url))
+                missing.append((html.replace("\\", "/"), url))
     out = {
         "checked": checked,
         "html_files": len(html_paths),
@@ -737,12 +848,14 @@ def seo_tune(run_id, params):
     Note: Auto-downgrades to mock when SEO_LLM_ENABLED=0 for seamless local/CI testing.
     """
     from ..settings import get_settings
+
     settings = get_settings()
 
     # Auto-downgrade to mock when LLM disabled
     if not settings.get("SEO_LLM_ENABLED"):
         emit(run_id, "info", "seo.tune.auto_mock", {"reason": "SEO_LLM_ENABLED=0"})
         from ..routers.agent_run_mock import run_mock_plan
+
         # Use mock implementation (will write deterministic artifacts)
         try:
             result = run_mock_plan(body=params, principal="agent-task")

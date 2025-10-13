@@ -37,7 +37,12 @@ def route_query(question: str) -> RouteOut:
     # 1) try FAQ (fast exact-ish match)
     f = faq_search_best(question)
     if f and f.score >= FAQ_MIN_SCORE:
-        return RouteOut(route="faq", reason=f"faq({f.score:.2f})", project_id=f.project_id, score=f.score)
+        return RouteOut(
+            route="faq",
+            reason=f"faq({f.score:.2f})",
+            project_id=f.project_id,
+            score=f.score,
+        )
 
     # 2) try BM25 over chunks (cheap; we already have FTS)
     try:
@@ -53,4 +58,6 @@ def route_query(question: str) -> RouteOut:
         )
 
     # 3) default chit-chat
-    return RouteOut(route="chitchat", reason="no strong faq/rag signal", project_id=None, score=0.0)
+    return RouteOut(
+        route="chitchat", reason="no strong faq/rag signal", project_id=None, score=0.0
+    )

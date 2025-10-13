@@ -16,10 +16,13 @@ from pydantic import BaseModel, Field
 from assistant_api.utils.auth import get_current_user
 
 RAG_DB = os.environ.get("RAG_DB") or os.path.join(os.getcwd(), "data", "rag.sqlite")
-PROJECTS_JSON = os.environ.get("PROJECTS_JSON") or os.path.join(os.getcwd(), "data", "projects_knowledge.json")
+PROJECTS_JSON = os.environ.get("PROJECTS_JSON") or os.path.join(
+    os.getcwd(), "data", "projects_knowledge.json"
+)
 
 router = APIRouter(prefix="/api/rag", tags=["rag-projects"])
 DEBUG_ERRORS = os.environ.get("DEBUG_ERRORS", "0") == "1"
+
 
 # ---- Models
 class ProjectPatch(BaseModel):
@@ -33,8 +36,13 @@ class ProjectPatch(BaseModel):
     tags: list[str] | None = None
     key_features: list[str] | None = None
 
+
 class NLUpdate(BaseModel):
-    instruction: str = Field(..., description="Natural-language instruction, e.g. 'mark clarity-companion completed and add tag Accessibility' ")
+    instruction: str = Field(
+        ...,
+        description="Natural-language instruction, e.g. 'mark clarity-companion completed and add tag Accessibility' ",
+    )
+
 
 # ---- SQL helpers
 SCHEMA_SQL = """
@@ -53,6 +61,7 @@ ON CONFLICT(id) DO UPDATE SET
   text=excluded.text,
   meta=excluded.meta;
 """
+
 
 def _connect() -> sqlite3.Connection:
     return sqlite3.connect(RAG_DB, isolation_level=None)
@@ -113,9 +122,13 @@ def list_projects(include_unknown: bool = False):
     try:
         cur = con.cursor()
         if include_unknown:
-            rows = cur.execute("SELECT project_id, COUNT(*) as chunks FROM chunks GROUP BY project_id ORDER BY project_id").fetchall()
+            rows = cur.execute(
+                "SELECT project_id, COUNT(*) as chunks FROM chunks GROUP BY project_id ORDER BY project_id"
+            ).fetchall()
         else:
-            rows = cur.execute("SELECT project_id, COUNT(*) as chunks FROM chunks WHERE project_id IS NOT NULL GROUP BY project_id ORDER BY project_id").fetchall()
+            rows = cur.execute(
+                "SELECT project_id, COUNT(*) as chunks FROM chunks WHERE project_id IS NOT NULL GROUP BY project_id ORDER BY project_id"
+            ).fetchall()
         projects = [{"id": r[0], "chunks": r[1]} for r in rows]
         return {"ok": True, "projects": projects}
     finally:
@@ -145,7 +158,7 @@ def _project_doc(p: dict[str, Any]) -> str:
     ]
     links = p.get("links") or {}
     if links:
-        lines.append("Links: " + ", ".join(f"{k}={v}" for k,v in links.items()))
+        lines.append("Links: " + ", ".join(f"{k}={v}" for k, v in links.items()))
     return "\n".join(lines)
 
 
@@ -159,18 +172,22 @@ def _ingest_projects(projects: list[dict[str, Any]]) -> int:
             pid = p["slug"]
             rid = f"project:{pid}"
             text = _project_doc(p)
-            meta = json.dumps({
-                "slug": p.get("slug"),
-                "title": p.get("title"),
-                "status": p.get("status"),
-                "tags": p.get("tags"),
-                "tech_stack": p.get("tech_stack"),
-                "links": p.get("links"),
-                "source": "projects_knowledge.json",
-                # Use timezone-aware UTC to avoid deprecation warnings
-                "ingested_at": datetime.datetime.now(datetime.UTC).isoformat(),
-            })
-            cur.execute(UPSERT_SQL, {"id": rid, "project_id": pid, "text": text, "meta": meta})
+            meta = json.dumps(
+                {
+                    "slug": p.get("slug"),
+                    "title": p.get("title"),
+                    "status": p.get("status"),
+                    "tags": p.get("tags"),
+                    "tech_stack": p.get("tech_stack"),
+                    "links": p.get("links"),
+                    "source": "projects_knowledge.json",
+                    # Use timezone-aware UTC to avoid deprecation warnings
+                    "ingested_at": datetime.datetime.now(datetime.UTC).isoformat(),
+                }
+            )
+            cur.execute(
+                UPSERT_SQL, {"id": rid, "project_id": pid, "text": text, "meta": meta}
+            )
             count += 1
         con.commit()
         return count
@@ -193,7 +210,16 @@ def _apply_patch(patch: ProjectPatch, user: dict):
         if p.get("slug") == patch.slug:
             # merge
             upd = p.copy()
-            for field in ("title","status","summary","value","links","tech_stack","tags","key_features"):
+            for field in (
+                "title",
+                "status",
+                "summary",
+                "value",
+                "links",
+                "tech_stack",
+                "tags",
+                "key_features",
+            ):
                 v = getattr(patch, field)
                 if v is not None:
                     upd[field] = v
@@ -208,7 +234,9 @@ def _apply_patch(patch: ProjectPatch, user: dict):
 
 
 # ---- Routes
-@router.post("/ingest/projects", summary="Ingest projects_knowledge.json into RAG (admin only)")
+@router.post(
+    "/ingest/projects", summary="Ingest projects_knowledge.json into RAG (admin only)"
+)
 def ingest_projects(user=Depends(_require_admin)):
     try:
         data = _load_projects()
@@ -216,26 +244,44 @@ def ingest_projects(user=Depends(_require_admin)):
         return {"ok": True, "ingested": n, "by": user.get("email")}
     except Exception as e:
         if DEBUG_ERRORS:
-            raise HTTPException(status_code=500, detail=f"ingest failed: {type(e).__name__}: {e}")
+            raise HTTPException(
+                status_code=500, detail=f"ingest failed: {type(e).__name__}: {e}"
+            )
         raise
 
 
-@router.post("/projects/update", summary="Update a project entry via structured JSON and re-ingest (admin only)")
+@router.post(
+    "/projects/update",
+    summary="Update a project entry via structured JSON and re-ingest (admin only)",
+)
 def update_project(patch: ProjectPatch, user=Depends(_require_admin)):
     try:
         return _apply_patch(patch, user)
     except Exception as e:
         if DEBUG_ERRORS:
-            raise HTTPException(status_code=500, detail=f"update failed: {type(e).__name__}: {e}")
+            raise HTTPException(
+                status_code=500, detail=f"update failed: {type(e).__name__}: {e}"
+            )
         raise
 
 
 # Simple deterministic NL → patch parser for common intents
-_NL_STATUS = re.compile(r"\b(mark|set|make)\s+(?P<slug>[a-z0-9-]+)\s+(as\s+)?(?P<status>completed|in[- ]?progress)\b", re.I)
-_NL_SUMMARY = re.compile(r"\bupdate\s+summary\s+for\s+(?P<slug>[a-z0-9-]+)\s+to\s+\"(?P<text>.+?)\"", re.I)
-_NL_TAG_ADD = re.compile(r"\badd\s+tag\s+\"(?P<tag>[^\"]+)\"\s+to\s+(?P<slug>[a-z0-9-]+)\b", re.I)
+_NL_STATUS = re.compile(
+    r"\b(mark|set|make)\s+(?P<slug>[a-z0-9-]+)\s+(as\s+)?(?P<status>completed|in[- ]?progress)\b",
+    re.I,
+)
+_NL_SUMMARY = re.compile(
+    r"\bupdate\s+summary\s+for\s+(?P<slug>[a-z0-9-]+)\s+to\s+\"(?P<text>.+?)\"", re.I
+)
+_NL_TAG_ADD = re.compile(
+    r"\badd\s+tag\s+\"(?P<tag>[^\"]+)\"\s+to\s+(?P<slug>[a-z0-9-]+)\b", re.I
+)
 
-@router.post("/projects/update_nl", summary="Natural-language update → patch + re-ingest (admin only)")
+
+@router.post(
+    "/projects/update_nl",
+    summary="Natural-language update → patch + re-ingest (admin only)",
+)
 def update_project_nl(cmd: NLUpdate, user=Depends(_require_admin)):
     text = cmd.instruction.strip()
     data = _load_projects()
@@ -264,7 +310,10 @@ def update_project_nl(cmd: NLUpdate, user=Depends(_require_admin)):
                 return _apply_patch(patch, user)
         raise HTTPException(status_code=404, detail=f"Project not found: {slug}")
 
-    raise HTTPException(status_code=400, detail="No supported instruction found. Try: 'mark clarity-companion completed', 'update summary for ledger-mind to \"...\"', 'add tag \"RAG\" to datapipe-ai'.")
+    raise HTTPException(
+        status_code=400,
+        detail="No supported instruction found. Try: 'mark clarity-companion completed', 'update summary for ledger-mind to \"...\"', 'add tag \"RAG\" to datapipe-ai'.",
+    )
 
 
 @router.get("/diag/rag", summary="RAG diagnostics (admin only)")
@@ -274,7 +323,9 @@ def rag_diag(user=Depends(_require_admin)):
     """
     cwd = os.getcwd()
     rag_db = os.environ.get("RAG_DB") or os.path.join(cwd, "data", "rag.sqlite")
-    projects_json = os.environ.get("PROJECTS_JSON") or os.path.join(cwd, "data", "projects_knowledge.json")
+    projects_json = os.environ.get("PROJECTS_JSON") or os.path.join(
+        cwd, "data", "projects_knowledge.json"
+    )
 
     def fstat(p: str):
         try:
@@ -284,7 +335,8 @@ def rag_diag(user=Depends(_require_admin)):
             size = path.stat().st_size if (exists and is_file) else None
             mtime = (
                 time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(path.stat().st_mtime))
-                if exists else None
+                if exists
+                else None
             )
             return {
                 "path": str(path),
@@ -326,7 +378,9 @@ def _get_user_version(db_path: str) -> int:
         return -1
 
 
-@router.post("/admin/migrate", summary="Ensure RAG schema; returns user_version (admin only)")
+@router.post(
+    "/admin/migrate", summary="Ensure RAG schema; returns user_version (admin only)"
+)
 def rag_admin_migrate(user=Depends(_require_admin)):
     con = sqlite3.connect(RAG_DB)
     try:

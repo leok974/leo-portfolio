@@ -14,15 +14,18 @@ from typing import List, Optional, Tuple
 # Root guess (repo root where backend runs). Adjust if needed.
 ROOT = Path(".").resolve()
 
+
 def _split_env_paths(name: str) -> list[Path]:
     """Parse comma-separated paths from environment variable."""
     raw = os.environ.get(name, "").strip()
     return [Path(p).resolve() for p in raw.split(",") if p.strip()]
 
+
 def _split_env_globs(name: str) -> list[str]:
     """Parse comma-separated glob patterns from environment variable."""
     raw = os.environ.get(name, "").strip()
     return [g.strip() for g in raw.split(",") if g.strip()]
+
 
 def get_public_dirs() -> list[Path]:
     """Get public directories from env or defaults."""
@@ -32,10 +35,11 @@ def get_public_dirs() -> list[Path]:
         return [p for p in env_dirs if p.exists() and p.is_dir()]
     # Default fallback
     return [
-        ROOT / "public",              # vite/public
-        ROOT / "dist",                # vite build
-        ROOT,                         # fallback: repo root (index.html in root)
+        ROOT / "public",  # vite/public
+        ROOT / "dist",  # vite build
+        ROOT,  # fallback: repo root (index.html in root)
     ]
+
 
 PUBLIC_DIRS = get_public_dirs()
 
@@ -56,17 +60,20 @@ DESC_RE = re.compile(
 )
 HREF_HOST_RE = re.compile(r"^https?://[^/]+")
 
+
 @dataclass
 class PageMeta:
-    path: str           # URL path like "/agent.html"
+    path: str  # URL path like "/agent.html"
     title: str | None
     desc: str | None
+
 
 def _read_text(p: Path) -> str:
     try:
         return p.read_text(encoding="utf-8", errors="ignore")
     except Exception:
         return ""
+
 
 def _extract_title_desc(html: str) -> tuple[str | None, str | None]:
     title = None
@@ -79,10 +86,12 @@ def _extract_title_desc(html: str) -> tuple[str | None, str | None]:
         desc = re.sub(r"\s+", " ", m.group(1)).strip()
     return title or None, desc or None
 
+
 def _to_rel_url(path: Path, base: Path) -> str:
     """Convert filesystem path to site-relative URL (supports nested paths)."""
     rel = path.relative_to(base)
     return "/" + str(rel).replace("\\", "/")
+
 
 def _dedupe_keep_first(items: Iterable[PageMeta]) -> list[PageMeta]:
     seen = set()
@@ -93,6 +102,7 @@ def _dedupe_keep_first(items: Iterable[PageMeta]) -> list[PageMeta]:
         seen.add(it.path)
         out.append(it)
     return out
+
 
 def _apply_globs(paths: list[str]) -> list[str]:
     """Apply include/exclude glob patterns from env to URL paths."""
@@ -105,6 +115,7 @@ def _apply_globs(paths: list[str]) -> list[str]:
         paths = [p for p in paths if not any(fnmatch.fnmatch(p, g) for g in excludes)]
 
     return list(dict.fromkeys(paths))  # dedupe, preserve order
+
 
 def _cache_write(pages: list[PageMeta]) -> None:
     """Optionally cache discovered pages to agent/artifacts/status.json."""
@@ -120,7 +131,9 @@ def _cache_write(pages: list[PageMeta]) -> None:
     }
     status.write_text(json.dumps(blob, indent=2), encoding="utf-8")
 
+
 # -------- Sources --------
+
 
 def load_from_sitemap_files() -> list[str]:
     """Return URL list from any discovered sitemap.xml (absolute or site-relative)."""
@@ -142,6 +155,7 @@ def load_from_sitemap_files() -> list[str]:
             continue
     return _apply_globs(list(dict.fromkeys(urls)))  # dedupe, filter, preserve order
 
+
 def load_from_public_dirs() -> list[Path]:
     """Scan PUBLIC_DIRS for *.html files (supports nested paths up to 3 levels)."""
     candidates: list[Path] = []
@@ -149,7 +163,11 @@ def load_from_public_dirs() -> list[Path]:
         if not base.exists() or not base.is_dir():
             continue
         # Support nested paths: top-level, 1-level deep, 2-levels deep
-        for p in list(base.glob("*.html")) + list(base.glob("*/*.html")) + list(base.glob("*/*/*.html")):
+        for p in (
+            list(base.glob("*.html"))
+            + list(base.glob("*/*.html"))
+            + list(base.glob("*/*/*.html"))
+        ):
             candidates.append(p)
 
     # dedupe by path
@@ -158,7 +176,9 @@ def load_from_public_dirs() -> list[Path]:
         unique[p] = True
     return list(unique.keys())
 
+
 # -------- Orchestrator --------
+
 
 def discover_pages() -> list[PageMeta]:
     """
@@ -237,6 +257,7 @@ def discover_pages() -> list[PageMeta]:
 
 
 # --- File resolver (dev-only helpers) ---
+
 
 def resolve_file_for_url_path(url_path: str) -> Path | None:
     """

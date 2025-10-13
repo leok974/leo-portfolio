@@ -1,4 +1,5 @@
 """PR utilities for creating GitHub pull requests."""
+
 from __future__ import annotations
 
 import os
@@ -19,18 +20,12 @@ def git_commit(file_path: str, message: str) -> str:
     """
     subprocess.run(["git", "add", file_path], check=False)
     result = subprocess.run(
-        ["git", "commit", "-m", message],
-        check=False,
-        capture_output=True,
-        text=True
+        ["git", "commit", "-m", message], check=False, capture_output=True, text=True
     )
 
     # Get commit hash
     hash_result = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        capture_output=True,
-        text=True,
-        check=False
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
     )
     return (hash_result.stdout or "").strip()
 
@@ -52,42 +47,35 @@ def open_pr_via_cli(branch: str, title: str, body: str) -> dict[str, Any]:
         ["git", "push", "-u", "origin", branch],
         check=False,
         capture_output=True,
-        text=True
+        text=True,
     )
 
     if push_result.returncode != 0:
-        return {
-            "ok": False,
-            "error": "git_push_failed",
-            "details": push_result.stderr
-        }
+        return {"ok": False, "error": "git_push_failed", "details": push_result.stderr}
 
     # Create PR via gh CLI
     pr_result = subprocess.run(
         ["gh", "pr", "create", "--fill", "--title", title, "--body", body],
         check=False,
         capture_output=True,
-        text=True
+        text=True,
     )
 
     if pr_result.returncode != 0:
         return {
             "ok": False,
             "error": "gh_pr_create_failed",
-            "details": pr_result.stderr
+            "details": pr_result.stderr,
         }
 
-    return {
-        "ok": True,
-        "url": pr_result.stdout.strip()
-    }
+    return {"ok": True, "url": pr_result.stdout.strip()}
 
 
 def open_pr_via_api(
     base_branch: str = "main",
     head_branch: str | None = None,
     title: str = "",
-    body: str = ""
+    body: str = "",
 ) -> dict[str, Any]:
     """
     Open a PR using GitHub API.
@@ -110,7 +98,7 @@ def open_pr_via_api(
         return {
             "ok": False,
             "reason": "missing_token_or_repo",
-            "details": f"token={bool(token)}, repo={bool(repo)}, head_branch={bool(head_branch)}"
+            "details": f"token={bool(token)}, repo={bool(repo)}, head_branch={bool(head_branch)}",
         }
 
     # Push branch first
@@ -118,28 +106,24 @@ def open_pr_via_api(
         ["git", "push", "-u", "origin", head_branch],
         check=False,
         capture_output=True,
-        text=True
+        text=True,
     )
 
     if push_result.returncode != 0:
-        return {
-            "ok": False,
-            "error": "git_push_failed",
-            "details": push_result.stderr
-        }
+        return {"ok": False, "error": "git_push_failed", "details": push_result.stderr}
 
     # Create PR via API
     url = f"https://api.github.com/repos/{repo}/pulls"
     headers = {
         "Authorization": f"token {token}",
-        "Accept": "application/vnd.github.v3+json"
+        "Accept": "application/vnd.github.v3+json",
     }
     data = {
         "title": title,
         "body": body,
         "head": head_branch,
         "base": base_branch,
-        "maintainer_can_modify": True
+        "maintainer_can_modify": True,
     }
 
     try:
@@ -152,12 +136,16 @@ def open_pr_via_api(
             "status": response.status_code,
             "pr_number": pr_data.get("number"),
             "pr_url": pr_data.get("html_url"),
-            "pr_data": pr_data
+            "pr_data": pr_data,
         }
     except requests.RequestException as e:
         return {
             "ok": False,
             "error": "api_request_failed",
             "details": str(e),
-            "status": getattr(e.response, "status_code", None) if hasattr(e, "response") else None
+            "status": (
+                getattr(e.response, "status_code", None)
+                if hasattr(e, "response")
+                else None
+            ),
         }

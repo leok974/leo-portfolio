@@ -12,6 +12,7 @@ def _read_secret_file(path: str) -> str | None:
         return None
     return None
 
+
 def is_openai_configured() -> bool:
     if os.getenv("OPENAI_API_KEY"):
         return True

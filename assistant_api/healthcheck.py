@@ -5,6 +5,7 @@ import urllib.request
 
 URL = os.environ.get("HEALTH_URL", "http://127.0.0.1:8000/ready")
 
+
 def main():
     try:
         with urllib.request.urlopen(URL, timeout=5) as r:
@@ -19,6 +20,7 @@ def main():
         sys.exit(0 if r.status == 200 else 1)
     except Exception:
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

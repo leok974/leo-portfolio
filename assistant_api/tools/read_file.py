@@ -9,7 +9,7 @@ from .base import ToolSpec, _safe_join, persist_audit, register
 def run_read_file(args: dict[str, Any]) -> dict[str, Any]:
     rel = (args.get("path") or "").strip()
     start = int(args.get("start") or 1)
-    end   = int(args.get("end")   or (start + 80))
+    end = int(args.get("end") or (start + 80))
     p: pathlib.Path = _safe_join(rel)
     if not p.exists() or not p.is_file():
         return {"ok": False, "error": "not found"}
@@ -19,18 +19,35 @@ def run_read_file(args: dict[str, Any]) -> dict[str, Any]:
         return {"ok": False, "error": f"read error: {e}"}
     if not text:
         return {"ok": True, "path": rel, "start": 0, "end": 0, "content": ""}
-    start = max(1, start); end = min(len(text), max(start, end))
-    lines = text[start-1:end]
+    start = max(1, start)
+    end = min(len(text), max(start, end))
+    lines = text[start - 1 : end]
     persist_audit({"tool": "read_file", "path": rel, "start": start, "end": end})
-    return {"ok": True, "path": rel, "start": start, "end": end, "content": "\n".join(lines)}
+    return {
+        "ok": True,
+        "path": rel,
+        "start": start,
+        "end": end,
+        "content": "\n".join(lines),
+    }
 
-register(ToolSpec(
-    name="read_file",
-    desc="Read a small slice of a file by line numbers.",
-    schema={"type":"object","properties":{
-      "path":{"type":"string","description":"Relative path (inside repo)"},
-      "start":{"type":"integer","minimum":1},
-      "end":{"type":"integer","minimum":1}
-    },"required":["path"]},
-    run=run_read_file
-))
+
+register(
+    ToolSpec(
+        name="read_file",
+        desc="Read a small slice of a file by line numbers.",
+        schema={
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Relative path (inside repo)",
+                },
+                "start": {"type": "integer", "minimum": 1},
+                "end": {"type": "integer", "minimum": 1},
+            },
+            "required": ["path"],
+        },
+        run=run_read_file,
+    )
+)

@@ -1,4 +1,5 @@
 """SQLAlchemy models for agent task tracking."""
+
 from sqlalchemy import JSON, Boolean, Column, DateTime, String, Text, func
 from sqlalchemy.orm import declarative_base
 
@@ -7,6 +8,7 @@ Base = declarative_base()
 
 class AgentTask(Base):
     """Agent task with approval workflow."""
+
     __tablename__ = "agents_tasks"
 
     id = Column(String(36), primary_key=True)  # uuid4 string
@@ -16,7 +18,9 @@ class AgentTask(Base):
     # Status values: queued|running|awaiting_approval|succeeded|failed|rejected|canceled
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     inputs = Column(JSON, nullable=True)
     outputs_uri = Column(String(512), nullable=True)

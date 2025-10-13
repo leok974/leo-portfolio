@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 try:
     # Initialize uptime start timestamp early
     from .routes.status import set_start_time  # type: ignore
+
     set_start_time(_time.time())
 except Exception:  # pragma: no cover
     pass
@@ -17,7 +18,10 @@ import time
 PRIMARY_POLL_INTERVAL_S = float(os.getenv("PRIMARY_POLL_INTERVAL_S", "5"))  # default 5s
 PRIMARY_POLL_MAX_S = float(os.getenv("PRIMARY_POLL_MAX_S", "600"))  # 10 minutes
 
-async def _poll_primary_models(stopper: asyncio.Event) -> None:  # pragma: no cover (timing heavy)
+
+async def _poll_primary_models(
+    stopper: asyncio.Event,
+) -> None:  # pragma: no cover (timing heavy)
     """Background task: poll /models (primary_list_models) until model present or timeout.
     Promotes llm.path warming→primary automatically without manual refresh calls.
     Exits early when stopper is set or model detected.
@@ -48,11 +52,16 @@ async def _poll_primary_models(stopper: asyncio.Event) -> None:  # pragma: no co
         try:
             models = await primary_list_models()
             # mark_primary_models already updates presence; ensure call occurs
-            if models and any((m or '').lower().startswith((PRIMARY_MODEL or '').lower()) for m in models):
+            if models and any(
+                (m or "").lower().startswith((PRIMARY_MODEL or "").lower())
+                for m in models
+            ):
                 _log(f"primary: detected model match; models_count={len(models)}")
                 break
             else:
-                _log(f"primary: probe ok; models_count={(len(models) if models else 0)}")
+                _log(
+                    f"primary: probe ok; models_count={(len(models) if models else 0)}"
+                )
         except Exception as e:
             # transient errors tolerated
             _log(f"primary: probe error (tolerated): {e}")
@@ -64,7 +73,6 @@ async def _poll_primary_models(stopper: asyncio.Event) -> None:  # pragma: no co
         except TimeoutError:
             # timeout means continue polling
             pass
-
 
 
 def _log(msg: str) -> None:
@@ -80,6 +88,7 @@ async def lifespan(app) -> AsyncIterator[None]:  # type: ignore[override]
         from pathlib import Path
 
         from .settings import get_settings
+
         settings = get_settings()
         geo_path = settings.get("GEOIP_DB_PATH")
         geo_exists = bool(geo_path and Path(geo_path).exists())
@@ -106,9 +115,11 @@ async def lifespan(app) -> AsyncIterator[None]:  # type: ignore[override]
     # Optional: create analytics SQL views if persistence enabled
     try:
         from .settings import ANALYTICS_PERSIST
+
         if ANALYTICS_PERSIST:
             from .db import get_conn
             from .sql_views import ensure_views
+
             con = get_conn()
             ensure_views(con)
     except Exception:
@@ -124,6 +135,7 @@ async def lifespan(app) -> AsyncIterator[None]:  # type: ignore[override]
     # Start scheduler if enabled
     try:
         from .services.scheduler import scheduler_loop
+
         scheduler_task = asyncio.create_task(scheduler_loop())
         _log("startup: scheduler task created")
     except Exception as exc:

@@ -7,19 +7,27 @@ import sys
 import time
 from typing import Any, Dict, List
 
-from .base import BASE_DIR, ToolSpec, _safe_join, is_allow_tools, persist_audit, register
+from .base import (
+    BASE_DIR,
+    ToolSpec,
+    _safe_join,
+    is_allow_tools,
+    persist_audit,
+    register,
+)
 
 # Default allowlist for UI display when ALLOW_SCRIPTS is unset (does not affect enforcement)
 DEFAULT_ALLOW = [
     "scripts/rag-build-index.ps1",
 ]
 
+
 def _allowed(script_rel: str) -> bool:
     allow = os.getenv("ALLOW_SCRIPTS", "").strip()
     if not allow:
         return False
     parts: list[str] = []
-    for sep in (';', ','):
+    for sep in (";", ","):
         if sep in allow:
             parts = [p.strip() for p in allow.split(sep)]
             break
@@ -27,6 +35,7 @@ def _allowed(script_rel: str) -> bool:
         parts = [allow]
     norm = script_rel.replace("\\", "/").strip()
     return any(norm.lower() == p.replace("\\", "/").strip().lower() for p in parts if p)
+
 
 def _build_argv(path: pathlib.Path, args: list[str]) -> list[str]:
     s = str(path)
@@ -46,6 +55,7 @@ def _build_argv(path: pathlib.Path, args: list[str]) -> list[str]:
         py = sys.executable or os.getenv("PYTHON") or "python"
         return [py, s] + args
     return [s] + args
+
 
 def run_run_script(args: dict[str, Any]) -> dict[str, Any]:
     if not is_allow_tools():
@@ -89,24 +99,35 @@ def run_run_script(args: dict[str, Any]) -> dict[str, Any]:
             "stdout_tail": (p.stdout or "")[-4000:],
             "stderr_tail": (p.stderr or "")[-4000:],
         }
-        persist_audit({"tool": "run_script", "script": script_rel, "code": p.returncode, "ms": dt})
+        persist_audit(
+            {"tool": "run_script", "script": script_rel, "code": p.returncode, "ms": dt}
+        )
         return out
     except subprocess.TimeoutExpired:
         dt = int((time.time() - t0) * 1000)
-        persist_audit({"tool": "run_script", "script": script_rel, "error": "timeout", "ms": dt})
+        persist_audit(
+            {"tool": "run_script", "script": script_rel, "error": "timeout", "ms": dt}
+        )
         return {"ok": False, "error": "timeout"}
     except Exception as e:
         persist_audit({"tool": "run_script", "script": script_rel, "error": str(e)})
         return {"ok": False, "error": str(e)}
 
-register(ToolSpec(
-    name="run_script",
-    desc="Execute an allowed local script with arguments. Requires ALLOW_TOOLS=1 and ALLOW_SCRIPTS allowlist.",
-    schema={"type": "object", "properties": {
-        "script": {"type": "string"},
-        "args": {"type": "array", "items": {"type": "string"}},
-        "timeout_s": {"type": "integer", "minimum": 1}
-    }, "required": ["script"]},
-    run=run_run_script,
-    dangerous=True,
-))
+
+register(
+    ToolSpec(
+        name="run_script",
+        desc="Execute an allowed local script with arguments. Requires ALLOW_TOOLS=1 and ALLOW_SCRIPTS allowlist.",
+        schema={
+            "type": "object",
+            "properties": {
+                "script": {"type": "string"},
+                "args": {"type": "array", "items": {"type": "string"}},
+                "timeout_s": {"type": "integer", "minimum": 1},
+            },
+            "required": ["script"],
+        },
+        run=run_run_script,
+        dangerous=True,
+    )
+)

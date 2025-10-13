@@ -1,10 +1,16 @@
 """A/B testing router for layout optimization."""
+
 from typing import Optional
 
 from fastapi import APIRouter, Header, Query
 
 from ..services import ab_store
-from ..services.layout_ab import assign_bucket, record_event, reset_metrics, suggest_weights
+from ..services.layout_ab import (
+    assign_bucket,
+    record_event,
+    reset_metrics,
+    suggest_weights,
+)
 
 router = APIRouter(prefix="/agent/ab", tags=["ab-testing"])
 
@@ -12,7 +18,7 @@ router = APIRouter(prefix="/agent/ab", tags=["ab-testing"])
 @router.get("/assign")
 def ab_assign(
     visitor_id: str | None = None,
-    x_visitor_id: str | None = Header(None, alias="X-Visitor-Id")
+    x_visitor_id: str | None = Header(None, alias="X-Visitor-Id"),
 ):
     """
     Assign visitor to A or B bucket.
@@ -42,7 +48,7 @@ def ab_event(bucket: str, event: str):
         Updated state dict
     """
     result = record_event(bucket, event)  # existing counters
-    ab_store.append_event(bucket, event)   # new JSONL log
+    ab_store.append_event(bucket, event)  # new JSONL log
     return result
 
 
@@ -71,7 +77,7 @@ def ab_reset():
 @router.get("/summary")
 def ab_summary(
     frm: str | None = Query(default=None, alias="from"),
-    to: str | None = Query(default=None)
+    to: str | None = Query(default=None),
 ):
     """
     Get aggregated A/B testing analytics.

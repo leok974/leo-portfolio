@@ -2,6 +2,7 @@
 
 Uses SQLite with SQLAlchemy, aligned with the existing RAG_DB pattern.
 """
+
 import os
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -19,12 +20,9 @@ DB_PATH = os.environ.get("AGENTS_DB") or os.environ.get("RAG_DB", "./data/rag.sq
 # Create engine with SQLite settings similar to db.py
 engine = create_engine(
     f"sqlite:///{DB_PATH}",
-    connect_args={
-        "check_same_thread": False,
-        "timeout": 30.0
-    },
+    connect_args={"check_same_thread": False, "timeout": 30.0},
     poolclass=StaticPool,  # Single connection pool for SQLite
-    echo=False
+    echo=False,
 )
 
 # Session factory

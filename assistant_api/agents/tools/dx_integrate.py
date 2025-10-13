@@ -1,4 +1,5 @@
 """DX integration tool - checks dev experience health (storybook/docs/lint)."""
+
 import json
 import pathlib
 import shlex
@@ -14,10 +15,7 @@ def _run(cmd: str, timeout: int) -> tuple[int, str, str, float]:
     t0 = time.time()
     try:
         p = subprocess.Popen(
-            shlex.split(cmd),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
+            shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
         out, err = p.communicate(timeout=timeout)
         return p.returncode, out, err, time.time() - t0
@@ -41,8 +39,10 @@ def run_dx_integrate(artifact_dir: pathlib.Path) -> dict[str, Any]:
     """
     artifact_dir.mkdir(parents=True, exist_ok=True)
 
-    rc, out, err, dur = _run(settings.DX_INTEGRATE_CMD, settings.DX_INTEGRATE_TIMEOUT_SECS)
-    skipped = (rc == 127)
+    rc, out, err, dur = _run(
+        settings.DX_INTEGRATE_CMD, settings.DX_INTEGRATE_TIMEOUT_SECS
+    )
+    skipped = rc == 127
 
     # Try to parse JSON output
     report = None
@@ -64,7 +64,7 @@ def run_dx_integrate(artifact_dir: pathlib.Path) -> dict[str, Any]:
         "duration_sec": dur,
         "artifacts": {
             "report_json": str((artifact_dir / "report.json").resolve()),
-            "dx_integrate_json": str((artifact_dir / "dx_integrate.json").resolve())
+            "dx_integrate_json": str((artifact_dir / "dx_integrate.json").resolve()),
         },
     }
 

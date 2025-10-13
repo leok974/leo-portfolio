@@ -11,9 +11,11 @@ class CTRRowIn(BaseModel):
     impressions: int = Field(ge=0)
     clicks: int = Field(ge=0)
 
+
 class IngestPayload(BaseModel):
     source: Literal["search_console", "ga4", "manual"] = "search_console"
     rows: list[CTRRowIn]
+
 
 class IngestResult(BaseModel):
     inserted_or_updated: int

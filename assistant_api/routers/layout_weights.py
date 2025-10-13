@@ -1,9 +1,16 @@
 """Layout weights management router."""
+
 from typing import Dict
 
 from fastapi import APIRouter, Body
 
-from ..services.layout_weights import approve_weights, clear_proposed, propose_weights, read_active, read_proposed
+from ..services.layout_weights import (
+    approve_weights,
+    clear_proposed,
+    propose_weights,
+    read_active,
+    read_proposed,
+)
 
 router = APIRouter(prefix="/agent/layout", tags=["layout-weights"])
 
@@ -16,10 +23,7 @@ def get_weights():
     Returns:
         Dict with active and proposed weights
     """
-    return {
-        "active": read_active(),
-        "proposed": read_proposed()
-    }
+    return {"active": read_active(), "proposed": read_proposed()}
 
 
 @router.post("/weights/propose")

@@ -22,12 +22,14 @@ SECRET_PATTERNS: list[str] = [
     r"sk-[A-Za-z0-9]{32,}",  # generic API key-ish
 ]
 
+
 def detect_injection(text: str) -> tuple[bool, list[str]]:
     hits: list[str] = []
     for pat in INJECTION_PATTERNS:
         if re.search(pat, text, flags=re.I | re.S):
             hits.append(pat)
     return (len(hits) > 0, hits)
+
 
 def detect_secrets(text: str) -> tuple[bool, list[str]]:
     hits: list[str] = []
@@ -36,11 +38,13 @@ def detect_secrets(text: str) -> tuple[bool, list[str]]:
             hits.append(pat)
     return (len(hits) > 0, hits)
 
+
 def sanitize_snippet(s: str) -> str:
     # Redact matched secrets with a placeholder token.
     for pat in SECRET_PATTERNS:
         s = re.sub(pat, "[REDACTED]", s, flags=re.I | re.S)
     return s
+
 
 def should_enforce() -> bool:
     # GUARDRAILS_MODE: "enforce" (default) or "log"

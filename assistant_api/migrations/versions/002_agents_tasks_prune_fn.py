@@ -5,6 +5,7 @@ Revises: 001_agents_tasks
 Create Date: 2025-10-10
 
 """
+
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -19,7 +20,8 @@ def upgrade():
     # Only create function for PostgreSQL (SQLite doesn't support CREATE FUNCTION)
     bind = op.get_bind()
     if bind.dialect.name == "postgresql":
-        op.execute("""
+        op.execute(
+            """
         CREATE OR REPLACE FUNCTION agents_tasks_prune(before_ts timestamptz)
         RETURNS integer
         LANGUAGE plpgsql
@@ -31,7 +33,8 @@ def upgrade():
           RETURN v_count;
         END;
         $$;
-        """)
+        """
+        )
 
 
 def downgrade():

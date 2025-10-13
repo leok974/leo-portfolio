@@ -6,26 +6,30 @@ Allows agent to:
 - Trigger sitemap refresh
 - Validate media assets
 """
+
 from typing import Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
-from assistant_api.services.gallery_service import add_gallery_item, run_media_lint, run_sitemap_refresh
+from assistant_api.services.gallery_service import (
+    add_gallery_item,
+    run_media_lint,
+    run_sitemap_refresh,
+)
 from assistant_api.utils.cf_access import require_cf_access
 
 router = APIRouter(
-    prefix='/api/gallery',
-    tags=['gallery'],
-    dependencies=[Depends(require_cf_access)]
+    prefix="/api/gallery", tags=["gallery"], dependencies=[Depends(require_cf_access)]
 )
 
 
 class AddItemRequest(BaseModel):
     """Request body for adding gallery item."""
+
     title: str
-    description: str = ''
-    type: str = Field(pattern=r'^(image|video-local|youtube|vimeo)$')
+    description: str = ""
+    type: str = Field(pattern=r"^(image|video-local|youtube|vimeo)$")
     src: str
     poster: str | None = None
     mime: str | None = None
@@ -34,7 +38,7 @@ class AddItemRequest(BaseModel):
     tags: list[str] | None = None
 
 
-@router.post('/add')
+@router.post("/add")
 async def add_card(body: AddItemRequest):
     """
     Add new gallery item (agent-callable).
@@ -69,8 +73,4 @@ async def add_card(body: AddItemRequest):
     run_sitemap_refresh()
     lint_ok = run_media_lint(strict=False)
 
-    return {
-        'ok': True,
-        'item': item,
-        'lint_ok': lint_ok
-    }
+    return {"ok": True, "item": item, "lint_ok": lint_ok}

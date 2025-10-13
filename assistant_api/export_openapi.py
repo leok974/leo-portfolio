@@ -6,6 +6,7 @@ Usage (from repo root):
 
 This avoids needing a running server: it imports the app object and calls app.openapi().
 """
+
 from __future__ import annotations
 
 import json

@@ -23,12 +23,15 @@ RAG_ENABLE_CACHE: bool = os.getenv("RAG_ENABLE_CACHE", "1") != "0"
 RAG_ENABLE_FUSION: bool = os.getenv("RAG_ENABLE_FUSION", "1") != "0"
 MAX_LIMIT: int = int(os.getenv("RAG_MAX_LIMIT", "100"))
 
+
 class QueryIn(BaseModel):
     question: str
     k: int = 8
     project_id: str | None = None
 
+
 # Auto-match the query embedder to the stored index dimension
+
 
 def _read_openai_key() -> str | None:
     key = os.getenv("OPENAI_API_KEY")
@@ -55,14 +58,21 @@ def _hash_embed(text: str, dim: int | None) -> np.ndarray:
     return vec
 
 
-async def embed_query_matching_dim(text: str, dim: int | None) -> tuple[np.ndarray, str]:
+async def embed_query_matching_dim(
+    text: str, dim: int | None
+) -> tuple[np.ndarray, str]:
     if dim in (1536, 3072, None):
         api_key = _read_openai_key()
         if not api_key:
             return _hash_embed(text, dim), "local-fallback"
         from openai import OpenAI
+
         client = OpenAI(api_key=api_key)
-        model = "text-embedding-3-small" if dim in (1536, None) else "text-embedding-3-large"
+        model = (
+            "text-embedding-3-small"
+            if dim in (1536, None)
+            else "text-embedding-3-large"
+        )
         try:
             r = client.embeddings.create(model=model, input=[text])
             vec = np.array(r.data[0].embedding, dtype=np.float32)
@@ -71,6 +81,7 @@ async def embed_query_matching_dim(text: str, dim: int | None) -> tuple[np.ndarr
             return _hash_embed(text, dim), "local-fallback"
     elif dim in (384, 768):
         from sentence_transformers import SentenceTransformer
+
         model_id = "intfloat/e5-small-v2" if dim == 384 else "intfloat/e5-base-v2"
         model = SentenceTransformer(model_id)
         vec = model.encode([text], normalize_embeddings=True)[0]
@@ -85,12 +96,17 @@ def _qkey(project_ids: list[str], q: str) -> tuple[str, str]:
 
 
 def _get_cache(con, pj: str, h: str):
-    row = con.execute("SELECT answer FROM answers_cache WHERE project_id=? AND query_hash=?", (pj, h)).fetchone()
+    row = con.execute(
+        "SELECT answer FROM answers_cache WHERE project_id=? AND query_hash=?", (pj, h)
+    ).fetchone()
     return row and json.loads(row[0])
 
 
 def _put_cache(con, pj: str, h: str, ans: dict) -> None:
-    con.execute("REPLACE INTO answers_cache(project_id,query_hash,answer) VALUES (?,?,?)", (pj, h, json.dumps(ans)))
+    con.execute(
+        "REPLACE INTO answers_cache(project_id,query_hash,answer) VALUES (?,?,?)",
+        (pj, h, json.dumps(ans)),
+    )
     try:
         con.commit()
     except Exception:
@@ -173,7 +189,12 @@ async def rag_query(
             return {
                 "ok": True,
                 "matches": [
-                    {"repo": h["repo"], "path": h["path"], "score": round(h["score"], 4), "snippet": sanitize_snippet(h["text"][:600])}
+                    {
+                        "repo": h["repo"],
+                        "path": h["path"],
+                        "score": round(h["score"], 4),
+                        "snippet": sanitize_snippet(h["text"][:600]),
+                    }
                     for h in hits
                 ],
                 "mode": mode,
@@ -182,15 +203,41 @@ async def rag_query(
         # 2) Load texts from chunks; map metadata via docs when possible
         doc_rows: list[dict] = []
         for cid in pool_ids:
-            c = con.execute("SELECT id, content, title, source_path, text FROM chunks WHERE id= ?", (cid,)).fetchone()
+            c = con.execute(
+                "SELECT id, content, title, source_path, text FROM chunks WHERE id= ?",
+                (cid,),
+            ).fetchone()
             if not c:
                 continue
             # Try to find a docs row to enrich repo/path/title; fallback to chunk fields
-            d = con.execute("SELECT repo, path, title, text FROM docs WHERE path=? LIMIT 1", (c[3],)).fetchone() if c[3] else None
+            d = (
+                con.execute(
+                    "SELECT repo, path, title, text FROM docs WHERE path=? LIMIT 1",
+                    (c[3],),
+                ).fetchone()
+                if c[3]
+                else None
+            )
             if d:
-                doc_rows.append({"id": c[0], "repo": d[0], "path": d[1], "title": d[2] or c[2], "text": d[3] or (c[4] or c[1])})
+                doc_rows.append(
+                    {
+                        "id": c[0],
+                        "repo": d[0],
+                        "path": d[1],
+                        "title": d[2] or c[2],
+                        "text": d[3] or (c[4] or c[1]),
+                    }
+                )
             else:
-                doc_rows.append({"id": c[0], "repo": None, "path": c[3], "title": c[2], "text": (c[4] or c[1])})
+                doc_rows.append(
+                    {
+                        "id": c[0],
+                        "repo": None,
+                        "path": c[3],
+                        "title": c[2],
+                        "text": (c[4] or c[1]),
+                    }
+                )
 
         # 3) Rerank by cross-encoder; if unavailable, keep order
         pairs = [(str(d["id"]), d.get("text") or "") for d in doc_rows]
@@ -198,7 +245,7 @@ async def rag_query(
         order = {cid: i for i, (cid, _) in enumerate(ranked)}
         final = [d for d in doc_rows if str(d["id"]) in order]
         final.sort(key=lambda d: order[str(d["id"])])
-        final = final[:q.k]
+        final = final[: q.k]
         # Also compute fused scores via simple rewrite on chunks_fts for snippet-highlights and experimentation
         base = q.question.strip()
         variants: list[tuple[str, float]] = []
@@ -216,7 +263,9 @@ async def rag_query(
                 and_proj = ""
                 proj_params: list[str] = []
                 if projects:
-                    and_proj = " AND c.project_id IN (" + ",".join(["?"] * len(projects)) + ")"
+                    and_proj = (
+                        " AND c.project_id IN (" + ",".join(["?"] * len(projects)) + ")"
+                    )
                     proj_params = list(projects)
                 for expr, w in variants:
                     sql = (
@@ -246,8 +295,11 @@ async def rag_query(
             # Check if created_at exists
             has_created = False
             try:
-                cols = {row[1] for row in con.execute("PRAGMA table_info('chunks')").fetchall()}
-                has_created = 'created_at' in cols
+                cols = {
+                    row[1]
+                    for row in con.execute("PRAGMA table_info('chunks')").fetchall()
+                }
+                has_created = "created_at" in cols
             except Exception:
                 has_created = False
             placeholders = ",".join(["?"] * len(ids_all))
@@ -257,11 +309,14 @@ async def rag_query(
                     ids_all,
                 ).fetchall()
                 for r in rows_meta:
-                    cid = int(r[0]); ord_map[cid] = r[1]
+                    cid = int(r[0])
+                    ord_map[cid] = r[1]
                     ts = 0.0
                     try:
                         if r[2]:
-                            ts = datetime.strptime(str(r[2]), "%Y-%m-%d %H:%M:%S").timestamp()
+                            ts = datetime.strptime(
+                                str(r[2]), "%Y-%m-%d %H:%M:%S"
+                            ).timestamp()
                     except Exception:
                         ts = 0.0
                     ts_map[cid] = ts
@@ -271,17 +326,20 @@ async def rag_query(
                     ids_all,
                 ).fetchall()
                 for r in rows_meta:
-                    cid = int(r[0]); ord_map[cid] = r[1]
+                    cid = int(r[0])
+                    ord_map[cid] = r[1]
                     ts_map[cid] = 0.0
+
         def _sort_key(cid: int):
             score = scores.get(cid, 0.0)
             ordv = ord_map.get(cid)
             ordv_num = ordv if (isinstance(ordv, int)) else 1_000_000_000
             tsv = ts_map.get(cid, 0.0)
             return (-float(score), ordv_num, -float(tsv))
+
         ids_sorted = sorted(ids_all, key=_sort_key)
         # Pagination
-        paged_ids = ids_sorted[offset: offset + limit]
+        paged_ids = ids_sorted[offset : offset + limit]
         rows = (
             con.execute(
                 "SELECT id, project_id, doc_id, COALESCE(text, content) FROM chunks WHERE id IN ("
@@ -308,13 +366,22 @@ async def rag_query(
         resp = {
             "ok": True,
             "matches": [
-                {"repo": d["repo"], "path": d["path"], "title": d.get("title"), "snippet": sanitize_snippet((d.get("text") or "")[:600])}
+                {
+                    "repo": d["repo"],
+                    "path": d["path"],
+                    "title": d.get("title"),
+                    "snippet": sanitize_snippet((d.get("text") or "")[:600]),
+                }
                 for d in final
             ],
             "hits": hits,
             "count": len(hits),
             "next_offset": (offset + len(hits)) if len(hits) == limit else None,
-            "meta": {"elapsed_ms": round(elapsed_ms, 2), "variants": len(variants or []), "candidates": k},
+            "meta": {
+                "elapsed_ms": round(elapsed_ms, 2),
+                "variants": len(variants or []),
+                "candidates": k,
+            },
         }
         if RAG_ENABLE_CACHE:
             try:

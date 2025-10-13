@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Tuple
 
 Row = dict[str, Any]
 
+
 def _norm_url(url: str) -> str:
     if not url:
         return url
@@ -16,6 +17,7 @@ def _norm_url(url: str) -> str:
     try:
         if "://" in url:
             from urllib.parse import urlparse
+
             p = urlparse(url)
             url = p.path or "/"
     except Exception:
@@ -23,6 +25,7 @@ def _norm_url(url: str) -> str:
     if not url.startswith("/"):
         url = "/" + url
     return url
+
 
 def from_internal_json(payload: dict[str, Any]) -> tuple[str, list[Row]]:
     """
@@ -40,6 +43,7 @@ def from_internal_json(payload: dict[str, Any]) -> tuple[str, list[Row]]:
             continue
         rows.append({"url": url, "impressions": imp, "clicks": clk})
     return src, rows
+
 
 def from_gsc_api(payload: dict[str, Any]) -> tuple[str, list[Row]]:
     """
@@ -59,6 +63,7 @@ def from_gsc_api(payload: dict[str, Any]) -> tuple[str, list[Row]]:
         out.append({"url": url, "impressions": imp, "clicks": clk})
     return src, out
 
+
 def from_gsc_csv(text: str) -> tuple[str, list[Row]]:
     """
     GSC UI CSV export (typical headers):
@@ -68,12 +73,15 @@ def from_gsc_csv(text: str) -> tuple[str, list[Row]]:
     f = io.StringIO(text)
     reader = csv.DictReader(f)
     out: list[Row] = []
+
     # Normalize header variants
     def get_num(d: dict[str, str], *keys: str) -> int:
         for k in keys:
             if k in d and d[k] != "":
                 try:
-                    return int(float(d[k]))  # CSV may have "1,234" → this will fail; strip commas:
+                    return int(
+                        float(d[k])
+                    )  # CSV may have "1,234" → this will fail; strip commas:
                 except Exception:
                     try:
                         return int(float(d[k].replace(",", "")))
@@ -90,6 +98,7 @@ def from_gsc_csv(text: str) -> tuple[str, list[Row]]:
         imp = get_num(row, "Impressions", "impressions")
         out.append({"url": url, "impressions": imp, "clicks": clk})
     return src, out
+
 
 def from_ga4_json(payload: dict[str, Any]) -> tuple[str, list[Row]]:
     """
@@ -127,13 +136,18 @@ def from_ga4_json(payload: dict[str, Any]) -> tuple[str, list[Row]]:
     guess = payload.get("rows") if isinstance(payload.get("rows"), list) else payload
     if isinstance(guess, list):
         for r in guess:
-            url = _norm_url(str(r.get("pagePath") or r.get("url") or r.get("path") or "/"))
+            url = _norm_url(
+                str(r.get("pagePath") or r.get("url") or r.get("path") or "/")
+            )
             imp = int(r.get("impressions") or r.get("pageViews") or r.get("views") or 0)
             clk = int(r.get("clicks") or r.get("events") or 0)
             out.append({"url": url, "impressions": imp, "clicks": clk})
     return src, out
 
-def detect_and_parse(payload: Any, content_type: str | None, raw_text: str | None) -> tuple[str, list[Row]]:
+
+def detect_and_parse(
+    payload: Any, content_type: str | None, raw_text: str | None
+) -> tuple[str, list[Row]]:
     """
     Try formats in order:
       1) Our internal {source, rows:[{url,impressions,clicks}]}
@@ -166,8 +180,22 @@ def detect_and_parse(payload: Any, content_type: str | None, raw_text: str | Non
         for r in payload:
             if not isinstance(r, dict):
                 continue
-            url = _norm_url(str(r.get("url") or r.get("Page") or r.get("pagePath") or r.get("path") or ""))
-            imp = int(r.get("impressions") or r.get("Impressions") or r.get("pageViews") or r.get("views") or 0)
+            url = _norm_url(
+                str(
+                    r.get("url")
+                    or r.get("Page")
+                    or r.get("pagePath")
+                    or r.get("path")
+                    or ""
+                )
+            )
+            imp = int(
+                r.get("impressions")
+                or r.get("Impressions")
+                or r.get("pageViews")
+                or r.get("views")
+                or 0
+            )
             clk = int(r.get("clicks") or r.get("Clicks") or r.get("events") or 0)
             if url:
                 rows.append({"url": url, "impressions": imp, "clicks": clk})

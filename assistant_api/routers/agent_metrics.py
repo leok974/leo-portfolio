@@ -32,12 +32,17 @@ async def geoip_status(request: Request):
     settings = get_settings()
     ensure_dev_access(request, settings)
     from ..services.geo import geoip2, get_geo_reader
+
     return {
         "LOG_IP_ENABLED": settings["LOG_IP_ENABLED"],
         "GEOIP_DB_PATH": settings["GEOIP_DB_PATH"],
         "geoip2_available": geoip2 is not None,
         "reader_cached": get_geo_reader(settings["GEOIP_DB_PATH"]) is not None,
-        "db_exists": Path(settings["GEOIP_DB_PATH"]).exists() if settings["GEOIP_DB_PATH"] else False,
+        "db_exists": (
+            Path(settings["GEOIP_DB_PATH"]).exists()
+            if settings["GEOIP_DB_PATH"]
+            else False
+        ),
     }
 
 
@@ -67,8 +72,12 @@ async def ingest(
     if fwd and "for=" in fwd:
         try:
             # Forwarded: for=1.2.3.4 or for="[2001:db8::1]"
-            part = [p for p in fwd.split(";")[0].split(",")[0].split() if p.lower().startswith("for=")][0]
-            v = part.split("=",1)[1].strip().strip('"').strip("[]")
+            part = [
+                p
+                for p in fwd.split(";")[0].split(",")[0].split()
+                if p.lower().startswith("for=")
+            ][0]
+            v = part.split("=", 1)[1].strip().strip('"').strip("[]")
             client_ip = v or client_ip
         except Exception:
             pass
@@ -77,7 +86,11 @@ async def ingest(
         client_ip = xff.split(",")[0].strip() or client_ip
 
     anon_prefix = anonymize_prefix(client_ip) if settings["LOG_IP_ENABLED"] else None
-    country = lookup_country(client_ip, settings["GEOIP_DB_PATH"]) if settings["LOG_IP_ENABLED"] else None
+    country = (
+        lookup_country(client_ip, settings["GEOIP_DB_PATH"])
+        if settings["LOG_IP_ENABLED"]
+        else None
+    )
 
     for e in payload.events:
         d = e.model_dump()
@@ -204,8 +217,9 @@ async def metrics_summary(store: AnalyticsStore = Depends(get_store)):
 
 
 @router.get("/metrics/countries")
-async def metrics_countries(days: int = 14, top: int = 10,
-                            store: AnalyticsStore = Depends(get_store)):
+async def metrics_countries(
+    days: int = 14, top: int = 10, store: AnalyticsStore = Depends(get_store)
+):
     """Top countries by events (14d by default)."""
     settings = get_settings()
     days = max(1, min(days, settings["METRICS_EXPORT_MAX_DAYS"]))
@@ -223,7 +237,7 @@ async def metrics_countries(days: int = 14, top: int = 10,
                     counts[ctry] += 1
     rows = [{"country": k, "events": v} for k, v in counts.items()]
     rows.sort(key=lambda r: -r["events"])
-    return {"updated": datetime.now(UTC).isoformat(), "rows": rows[:max(1, top)]}
+    return {"updated": datetime.now(UTC).isoformat(), "rows": rows[: max(1, top)]}
 
 
 @router.post("/metrics/retention/run")
@@ -238,7 +252,12 @@ async def metrics_retention_run(request: Request, settings=Depends(get_settings)
 
 
 @router.get("/metrics/debug")
-async def metrics_debug(request: Request, store: AnalyticsStore = Depends(lambda: AnalyticsStore(get_settings()["ANALYTICS_DIR"]))):
+async def metrics_debug(
+    request: Request,
+    store: AnalyticsStore = Depends(
+        lambda: AnalyticsStore(get_settings()["ANALYTICS_DIR"])
+    ),
+):
     """
     Guarded debug status for telemetry. Does NOT expose secrets.
     """
@@ -530,7 +549,9 @@ async def metrics_dashboard(
   </script>
 </body></html>
 """
-        return HTMLResponse(content=html, status_code=status, media_type="text/html; charset=utf-8")
+        return HTMLResponse(
+            content=html, status_code=status, media_type="text/html; charset=utf-8"
+        )
 
     # Prefer repo path admin_assets/metrics.html; fallback to public/metrics.html if present
     candidates = [

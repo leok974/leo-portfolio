@@ -1,4 +1,5 @@
 """SEO validation tool: runs guardrails + lighthouse, merges reports."""
+
 import json
 import os
 import pathlib
@@ -12,6 +13,7 @@ from ...settings import settings
 
 class StepResult(dict[str, Any]):
     """Typed dict for step results."""
+
     pass
 
 
@@ -49,11 +51,17 @@ def run_guardrails(pages_hint: str | None = None) -> StepResult:
         # Allow passing a pages hint to your script (no-op if script ignores it)
         cmd = f"{cmd} --pages {shlex.quote(pages_hint)}"
 
-    rc, out, err, dur = _run_cmd(cmd, cwd=None, timeout=settings.SEO_VALIDATE_TIMEOUT_SECS)
+    rc, out, err, dur = _run_cmd(
+        cmd, cwd=None, timeout=settings.SEO_VALIDATE_TIMEOUT_SECS
+    )
     if rc != 0:
         return StepResult(
-            ok=False, step="guardrails", rc=rc, duration_sec=dur,
-            stderr=err, note="guardrails failed"
+            ok=False,
+            step="guardrails",
+            rc=rc,
+            duration_sec=dur,
+            stderr=err,
+            note="guardrails failed",
         )
     data = _safe_json_parse(out)
     return StepResult(ok=True, step="guardrails", rc=rc, duration_sec=dur, report=data)
@@ -71,19 +79,24 @@ def run_lighthouse_batch(pages_hint: str | None = None) -> StepResult:
         else:
             cmd = f"{cmd} --pages {shlex.quote(pages_hint)}"
 
-    rc, out, err, dur = _run_cmd(cmd, cwd=None, timeout=settings.SEO_VALIDATE_TIMEOUT_SECS)
+    rc, out, err, dur = _run_cmd(
+        cmd, cwd=None, timeout=settings.SEO_VALIDATE_TIMEOUT_SECS
+    )
     if rc != 0:
         return StepResult(
-            ok=False, step="lighthouse", rc=rc, duration_sec=dur,
-            stderr=err, note="lighthouse failed"
+            ok=False,
+            step="lighthouse",
+            rc=rc,
+            duration_sec=dur,
+            stderr=err,
+            note="lighthouse failed",
         )
     data = _safe_json_parse(out)
     return StepResult(ok=True, step="lighthouse", rc=rc, duration_sec=dur, report=data)
 
 
 def seo_validate_to_artifacts(
-    artifact_dir: pathlib.Path,
-    pages_hint: str | None = None
+    artifact_dir: pathlib.Path, pages_hint: str | None = None
 ) -> dict[str, Any]:
     """
     Runs both guardrails + lighthouse, writes:
@@ -100,8 +113,13 @@ def seo_validate_to_artifacts(
         g = run_guardrails(pages_hint)
     except FileNotFoundError as e:
         g = StepResult(
-            ok=False, step="guardrails", rc=127, duration_sec=0.0,
-            stderr=str(e), note="script not found", skipped=True
+            ok=False,
+            step="guardrails",
+            rc=127,
+            duration_sec=0.0,
+            stderr=str(e),
+            note="script not found",
+            skipped=True,
         )
     steps.append(g)
 
@@ -110,8 +128,13 @@ def seo_validate_to_artifacts(
         lh = run_lighthouse_batch(pages_hint)
     except FileNotFoundError as e:
         lh = StepResult(
-            ok=False, step="lighthouse", rc=127, duration_sec=0.0,
-            stderr=str(e), note="script not found", skipped=True
+            ok=False,
+            step="lighthouse",
+            rc=127,
+            duration_sec=0.0,
+            stderr=str(e),
+            note="script not found",
+            skipped=True,
         )
     steps.append(lh)
 
@@ -155,10 +178,16 @@ def seo_validate_to_artifacts(
         "pages": pages_hint or "sitemap://current",
         "artifacts": {
             "report_json": str((artifact_dir / "report.json").resolve()),
-            "guardrails_json": str((artifact_dir / "guardrails.json").resolve())
-                if steps[0].get("report") else None,
-            "lighthouse_json": str((artifact_dir / "lighthouse.json").resolve())
-                if steps[1].get("report") else None,
+            "guardrails_json": (
+                str((artifact_dir / "guardrails.json").resolve())
+                if steps[0].get("report")
+                else None
+            ),
+            "lighthouse_json": (
+                str((artifact_dir / "lighthouse.json").resolve())
+                if steps[1].get("report")
+                else None
+            ),
         },
         "skipped_all": skipped,
         "step_status": [
@@ -166,7 +195,7 @@ def seo_validate_to_artifacts(
                 "step": s.get("step"),
                 "ok": s.get("ok"),
                 "rc": s.get("rc"),
-                "skipped": s.get("skipped", False)
+                "skipped": s.get("skipped", False),
             }
             for s in steps
         ],

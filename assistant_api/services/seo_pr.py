@@ -2,6 +2,7 @@
 
 Creates GitHub PRs with SEO tune changes using git worktree isolation.
 """
+
 from __future__ import annotations
 
 import os
@@ -16,12 +17,14 @@ from assistant_api.services.seo_tune import ARTIFACTS_DIR
 try:
     from assistant_api.services.agent_events import emit_event
 except Exception:  # pragma: no cover
+
     def emit_event(**kwargs):
         print("[agent_event]", kwargs)
 
 
 class SeoPRConfigError(RuntimeError):
     """Raised when PR creation fails due to configuration issues."""
+
     pass
 
 
@@ -29,14 +32,9 @@ def _run(cmd: list[str], cwd: str | None = None) -> str:
     """Execute git command and return combined output."""
     try:
         p = subprocess.run(
-            cmd,
-            cwd=cwd,
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=30
+            cmd, cwd=cwd, check=True, capture_output=True, text=True, timeout=30
         )
-        return (p.stdout or '') + (p.stderr or '')
+        return (p.stdout or "") + (p.stderr or "")
     except subprocess.CalledProcessError as e:
         error_msg = f"Command failed: {' '.join(cmd)}\n{e.stderr}"
         raise RuntimeError(error_msg) from e
@@ -44,10 +42,7 @@ def _run(cmd: list[str], cwd: str | None = None) -> str:
         raise RuntimeError(f"Command timed out: {' '.join(cmd)}") from e
 
 
-def open_seo_pr(
-    base_branch: str = "main",
-    branch_prefix: str = "seo/tune-"
-) -> dict:
+def open_seo_pr(base_branch: str = "main", branch_prefix: str = "seo/tune-") -> dict:
     """Create a GitHub PR with SEO tune changes.
 
     Args:
@@ -75,12 +70,10 @@ def open_seo_pr(
     diff_path = ARTIFACTS_DIR / "seo-tune.diff"
     reason_path = ARTIFACTS_DIR / "seo-tune.md"
     if not diff_path.exists():
-        raise FileNotFoundError(
-            "seo-tune.diff not found; run seo.tune first"
-        )
+        raise FileNotFoundError("seo-tune.diff not found; run seo.tune first")
 
     # Generate PR metadata
-    timestamp = datetime.utcnow().strftime('%Y-%m-%d')
+    timestamp = datetime.utcnow().strftime("%Y-%m-%d")
     title = f"SEO Tune — {timestamp}"
     body = (
         reason_path.read_text(encoding="utf-8")
@@ -129,8 +122,7 @@ def open_seo_pr(
             # Inject token for HTTPS push
             if origin_url.startswith("https://") and "@" not in origin_url:
                 origin_url = origin_url.replace(
-                    "https://",
-                    f"https://x-access-token:{token}@"
+                    "https://", f"https://x-access-token:{token}@"
                 )
                 _run(["git", "remote", "set-url", "origin", origin_url], cwd=tmp)
 
@@ -146,19 +138,23 @@ def open_seo_pr(
 
     # Create PR via gh CLI if available
     try:
-        pr_out = _run([
-            "gh", "pr", "create",
-            "--base", base_branch,
-            "--head", branch,
-            "--title", title,
-            "--body", body
-        ])
+        pr_out = _run(
+            [
+                "gh",
+                "pr",
+                "create",
+                "--base",
+                base_branch,
+                "--head",
+                branch,
+                "--title",
+                title,
+                "--body",
+                body,
+            ]
+        )
         emit_event(task="seo.pr", phase="created", pr=pr_out)
-        return {
-            "ok": True,
-            "branch": branch,
-            "pr": pr_out.strip()
-        }
+        return {"ok": True, "branch": branch, "pr": pr_out.strip()}
     except Exception:
         # gh CLI not present or failed
         emit_event(task="seo.pr", phase="pushed", branch=branch)
@@ -166,5 +162,5 @@ def open_seo_pr(
             "ok": True,
             "branch": branch,
             "pr": None,
-            "detail": "PR not created (gh missing or failed); branch pushed"
+            "detail": "PR not created (gh missing or failed); branch pushed",
         }

@@ -13,6 +13,7 @@ _repo_root = _here.parent
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
+
 def main():
     # Force Windows selector loop (safe no-op elsewhere)
     try:
@@ -42,9 +43,13 @@ def main():
             http="h11",
         )
     except SystemExit as e:  # surface cause when shell kills process
-        print(f"[run_cmddev] uvicorn exited (SystemExit code={getattr(e,'code',None)})", file=sys.stderr)
+        print(
+            f"[run_cmddev] uvicorn exited (SystemExit code={getattr(e,'code',None)})",
+            file=sys.stderr,
+        )
         time.sleep(0.25)
         raise
+
 
 if __name__ == "__main__":
     main()

@@ -7,6 +7,7 @@ Sets up test environment with:
 - Mocked external dependencies
 - FastAPI TestClient
 """
+
 import os
 
 import pytest
@@ -17,7 +18,9 @@ os.environ.setdefault("APP_ENV", "test")
 os.environ.setdefault("RAG_DB_PATH", ":memory:")
 os.environ.setdefault("PRIMARY_MODEL", "qwen2.5:7b-instruct-q4_K_M")
 os.environ.setdefault("FALLBACK_MODEL", "gpt-4o-mini")
-os.environ.setdefault("ENABLE_RAG", "false")  # Disable RAG in tests unless explicitly enabled
+os.environ.setdefault(
+    "ENABLE_RAG", "false"
+)  # Disable RAG in tests unless explicitly enabled
 
 
 @pytest.fixture(scope="session")
@@ -27,6 +30,7 @@ def client():
     Uses in-memory database and test configuration.
     """
     from assistant_api.main import app
+
     return TestClient(app)
 
 
@@ -36,16 +40,18 @@ def mock_llm_generate(monkeypatch):
     Mock LLM generate calls to avoid real model inference.
     Automatically applied to all tests.
     """
+
     def fake_generate(*args, **kwargs):
         return {
             "text": "Test response from mocked LLM",
             "tokens_in": 10,
             "tokens_out": 8,
-            "model": "test-model"
+            "model": "test-model",
         }
 
     try:
         import assistant_api.llm
+
         monkeypatch.setattr("assistant_api.llm.generate", fake_generate)
     except (ImportError, AttributeError):
         # llm module may not have generate function, skip
@@ -58,6 +64,7 @@ def mock_ollama_client(monkeypatch):
     Mock Ollama client to avoid real API calls.
     Automatically applied to all tests.
     """
+
     class FakeOllamaClient:
         def generate(self, **kwargs):
             return {"response": "Test response"}
@@ -80,11 +87,16 @@ def mock_openai_client(monkeypatch):
     Mock OpenAI client to avoid real API calls.
     Automatically applied to all tests.
     """
+
     class FakeOpenAIResponse:
         def __init__(self, content="Test OpenAI response"):
-            self.choices = [type('obj', (object,), {
-                'message': type('obj', (object,), {'content': content})()
-            })()]
+            self.choices = [
+                type(
+                    "obj",
+                    (object,),
+                    {"message": type("obj", (object,), {"content": content})()},
+                )()
+            ]
 
     class FakeOpenAIClient:
         class chat:

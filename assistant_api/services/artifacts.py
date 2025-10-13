@@ -1,4 +1,5 @@
 """Artifact writing utilities for agent tasks."""
+
 from __future__ import annotations
 
 import json

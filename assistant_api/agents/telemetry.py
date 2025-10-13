@@ -1,4 +1,5 @@
 """Agent task telemetry - push events to /metrics for dashboards."""
+
 import asyncio
 from datetime import datetime
 from typing import Any, Dict
@@ -13,7 +14,7 @@ async def push_event(
     task: str,
     task_id: str,
     status: str,
-    metadata: dict[str, Any] = None
+    metadata: dict[str, Any] = None,
 ):
     """Push agent task event to metrics endpoint (non-blocking)."""
     try:
@@ -21,24 +22,30 @@ async def push_event(
             await client.post(
                 "http://localhost:8001/agent/metrics/ingest",
                 json={
-                    "events": [{
-                        "timestamp": datetime.utcnow().isoformat(),
-                        "event_type": event_type,
-                        "category": "agent_task",
-                        "agent": agent,
-                        "task": task,
-                        "task_id": task_id,
-                        "status": status,
-                        "metadata": metadata or {}
-                    }]
+                    "events": [
+                        {
+                            "timestamp": datetime.utcnow().isoformat(),
+                            "event_type": event_type,
+                            "category": "agent_task",
+                            "agent": agent,
+                            "task": task,
+                            "task_id": task_id,
+                            "status": status,
+                            "metadata": metadata or {},
+                        }
+                    ]
                 },
-                headers={"Origin": "http://localhost:5173"}
+                headers={"Origin": "http://localhost:5173"},
             )
     except Exception:
         # Silently ignore telemetry failures - never impact task execution
         pass
 
 
-def track_status_change(agent: str, task: str, task_id: str, status: str, metadata: dict[str, Any] = None):
+def track_status_change(
+    agent: str, task: str, task_id: str, status: str, metadata: dict[str, Any] = None
+):
     """Fire-and-forget status change event."""
-    asyncio.create_task(push_event("status_change", agent, task, task_id, status, metadata))
+    asyncio.create_task(
+        push_event("status_change", agent, task, task_id, status, metadata)
+    )

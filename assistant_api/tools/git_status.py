@@ -21,6 +21,7 @@ def _run(argv: list[str], timeout: int = 8) -> str:
         raise RuntimeError(p.stderr.strip() or f"git failed: {argv}")
     return (p.stdout or "").strip()
 
+
 def _parse_porcelain(s: str):
     # https://git-scm.com/docs/git-status#_porcelain_format_version_1
     modified = added = deleted = renamed = untracked = 0
@@ -52,6 +53,7 @@ def _parse_porcelain(s: str):
         "status_sample": sample[:20],
     }
 
+
 def run_git_status(args: dict[str, Any]) -> dict[str, Any]:
     base_remote = (args.get("base") or os.getenv("GIT_BASE") or "origin/main").strip()
     start = time.time()
@@ -74,26 +76,60 @@ def run_git_status(args: dict[str, Any]) -> dict[str, Any]:
         por = _run(["git", "status", "--porcelain=v1"])
         dirty = _parse_porcelain(por)
     except Exception:
-        dirty = {"modified": 0, "added": 0, "deleted": 0, "renamed": 0, "untracked": 0, "status_sample": []}
+        dirty = {
+            "modified": 0,
+            "added": 0,
+            "deleted": 0,
+            "renamed": 0,
+            "untracked": 0,
+            "status_sample": [],
+        }
 
     ahead_behind = {"ahead": 0, "behind": 0, "base": base_remote}
     try:
         # origin/main...HEAD => "<behind> <ahead>" with --left-right --count (left is base)
-        ab = _run(["git", "rev-list", "--left-right", "--count", f"{base_remote}...HEAD"])
+        ab = _run(
+            ["git", "rev-list", "--left-right", "--count", f"{base_remote}...HEAD"]
+        )
         left, right = ab.split()
         ahead_behind = {"ahead": int(right), "behind": int(left), "base": base_remote}
     except Exception:
         pass
 
     dt_ms = int((time.time() - start) * 1000)
-    out = {"ok": True, "branch": branch, "dirty": dirty, "ahead_behind": ahead_behind, "last_commit": last, "duration_ms": dt_ms}
-    persist_audit({"tool": "git_status", "branch": branch, "dirty": dirty, "ahead_behind": ahead_behind})
+    out = {
+        "ok": True,
+        "branch": branch,
+        "dirty": dirty,
+        "ahead_behind": ahead_behind,
+        "last_commit": last,
+        "duration_ms": dt_ms,
+    }
+    persist_audit(
+        {
+            "tool": "git_status",
+            "branch": branch,
+            "dirty": dirty,
+            "ahead_behind": ahead_behind,
+        }
+    )
     return out
 
-register(ToolSpec(
-    name="git_status",
-    desc="Read-only summary of the repository: branch, dirty files, ahead/behind vs base (default origin/main), last commit.",
-    schema={"type": "object", "properties": {"base": {"type": "string", "description": "Compare base, e.g. origin/main"}}},
-    run=run_git_status,
-    dangerous=False
-))
+
+register(
+    ToolSpec(
+        name="git_status",
+        desc="Read-only summary of the repository: branch, dirty files, ahead/behind vs base (default origin/main), last commit.",
+        schema={
+            "type": "object",
+            "properties": {
+                "base": {
+                    "type": "string",
+                    "description": "Compare base, e.g. origin/main",
+                }
+            },
+        },
+        run=run_git_status,
+        dangerous=False,
+    )
+)

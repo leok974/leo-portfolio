@@ -8,6 +8,7 @@ Features:
 - Updates existing PRs instead of creating duplicates
 - Single-commit rolling branches for clean history
 """
+
 from __future__ import annotations
 
 import json
@@ -26,8 +27,10 @@ ARTIFACTS_DIR = Path("agent/artifacts")
 
 # ============ Models ============
 
+
 class PRCreateInput(BaseModel):
     """Input for PR creation."""
+
     branch: str | None = None
     title: str | None = None
     body: str | None = None
@@ -44,6 +47,7 @@ class PRCreateInput(BaseModel):
 
 class PRCreateResponse(BaseModel):
     """Response from PR creation."""
+
     status: str
     branch: str | None = None
     pr: str | None = None
@@ -54,16 +58,18 @@ class PRCreateResponse(BaseModel):
 
 # ============ Guards ============
 
+
 def _dev_guard():
     """Verify SITEAGENT_ENABLE_WRITE=1 is set."""
     if os.getenv("SITEAGENT_ENABLE_WRITE") != "1":
         raise HTTPException(
             status_code=403,
-            detail="Write actions disabled. Set SITEAGENT_ENABLE_WRITE=1 to enable."
+            detail="Write actions disabled. Set SITEAGENT_ENABLE_WRITE=1 to enable.",
         )
 
 
 # ============ Helpers ============
+
 
 def _run(cmd: str, env: dict | None = None) -> str:
     """Run shell command and return stdout."""
@@ -72,7 +78,7 @@ def _run(cmd: str, env: dict | None = None) -> str:
         shell=True,
         capture_output=True,
         text=True,
-        env={**os.environ, **(env or {})}
+        env={**os.environ, **(env or {})},
     )
     if result.returncode != 0:
         raise Exception(
@@ -90,7 +96,7 @@ def _ensure_gh():
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail="GitHub CLI (gh) not found. Install from https://cli.github.com/"
+            detail="GitHub CLI (gh) not found. Install from https://cli.github.com/",
         ) from e
 
 
@@ -100,7 +106,7 @@ def _require_token() -> str:
     if not tok:
         raise HTTPException(
             status_code=500,
-            detail="GITHUB_TOKEN or GH_TOKEN environment variable required"
+            detail="GITHUB_TOKEN or GH_TOKEN environment variable required",
         )
     return tok
 
@@ -126,7 +132,7 @@ def _repo_slug() -> str:
 
     raise HTTPException(
         status_code=500,
-        detail="Could not determine repository slug. Set GITHUB_REPOSITORY env var."
+        detail="Could not determine repository slug. Set GITHUB_REPOSITORY env var.",
     )
 
 
@@ -155,15 +161,24 @@ def _branch_for_category(payload: PRCreateInput) -> str:
     """Determine branch name from category or explicit branch."""
     if payload.branch:
         return payload.branch
-    cat = (payload.category or _category_from_labels(payload.labels)).strip().replace(" ", "-")
+    cat = (
+        (payload.category or _category_from_labels(payload.labels))
+        .strip()
+        .replace(" ", "-")
+    )
     return f"siteagent/{cat or 'misc'}"
 
 
-def _find_open_pr_for_branch(repo: str, branch: str, token: str) -> tuple[int | None, str | None]:
+def _find_open_pr_for_branch(
+    repo: str, branch: str, token: str
+) -> tuple[int | None, str | None]:
     """Find open PR with given head branch. Returns (pr_number, pr_url) or (None, None)."""
     try:
         env = {"GH_TOKEN": token}
-        out = _run(f'gh pr list --repo {repo} --state open --head "{branch}" --json number,url', env=env)
+        out = _run(
+            f'gh pr list --repo {repo} --state open --head "{branch}" --json number,url',
+            env=env,
+        )
         arr = json.loads(out)
         if arr and len(arr) > 0:
             return arr[0]["number"], arr[0]["url"]
@@ -178,7 +193,9 @@ def _comment_on_pr(repo: str, pr_number: int, comment: str, token: str):
         env = {"GH_TOKEN": token}
         # Escape double quotes in comment
         safe_comment = comment.replace('"', '\\"')
-        _run(f'gh pr comment {pr_number} --repo {repo} --body "{safe_comment}"', env=env)
+        _run(
+            f'gh pr comment {pr_number} --repo {repo} --body "{safe_comment}"', env=env
+        )
     except Exception:
         pass
 
@@ -252,11 +269,9 @@ def _llm_title_body(diff_summary: str, insights: str = "") -> tuple[str, str]:
 
 # ============ Routes ============
 
+
 @router.post("/act", dependencies=[Depends(_dev_guard)])
-def agent_act(
-    task: str,
-    payload: PRCreateInput = Body(default=PRCreateInput())
-):
+def agent_act(task: str, payload: PRCreateInput = Body(default=PRCreateInput())):
     """
     Agent action dispatcher.
 
@@ -266,10 +281,7 @@ def agent_act(
     if task == "pr.create":
         return create_pr(payload)
 
-    raise HTTPException(
-        status_code=400,
-        detail=f"Unknown task: {task}"
-    )
+    raise HTTPException(status_code=400, detail=f"Unknown task: {task}")
 
 
 @router.post("/artifacts/pr", dependencies=[Depends(_dev_guard)])
@@ -311,8 +323,7 @@ def create_pr(payload: PRCreateInput) -> dict:
         _run(f"git checkout -B {branch} origin/{payload.base}")
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to checkout branch {branch}: {str(e)}"
+            status_code=500, detail=f"Failed to checkout branch {branch}: {str(e)}"
         ) from e
 
     # Collect and copy artifacts
@@ -320,7 +331,7 @@ def create_pr(payload: PRCreateInput) -> dict:
     if not files:
         raise HTTPException(
             status_code=400,
-            detail=f"No artifacts found in {ARTIFACTS_DIR}. Nothing to commit."
+            detail=f"No artifacts found in {ARTIFACTS_DIR}. Nothing to commit.",
         )
 
     repo_root = Path(".").resolve()
@@ -334,8 +345,7 @@ def create_pr(payload: PRCreateInput) -> dict:
             out.write_bytes(f.read_bytes())
         except Exception as e:
             raise HTTPException(
-                status_code=500,
-                detail=f"Failed to copy artifact {f}: {str(e)}"
+                status_code=500, detail=f"Failed to copy artifact {f}: {str(e)}"
             ) from e
 
     # Stage changes and get diff summary
@@ -354,13 +364,9 @@ def create_pr(payload: PRCreateInput) -> dict:
                 "status": "noop",
                 "message": "No changes to commit.",
                 "branch": branch,
-                "open_pr": pr_url
+                "open_pr": pr_url,
             }
-        return {
-            "status": "noop",
-            "message": "No changes to commit.",
-            "branch": branch
-        }
+        return {"status": "noop", "message": "No changes to commit.", "branch": branch}
 
     # Generate PR title and body (LLM or default)
     insights_md = _read_insights_md() if payload.attach_insights else ""
@@ -387,11 +393,13 @@ def create_pr(payload: PRCreateInput) -> dict:
             "diff": diff_summary,
             "suggested_title": title,
             "suggested_body": body,
-            "labels": payload.labels or ["auto", "siteagent"]
+            "labels": payload.labels or ["auto", "siteagent"],
         }
 
     # Commit changes (single rolling commit or append)
-    commit_msg = payload.commit_message or f"chore(siteagent): update {branch.split('/', 1)[-1]}"
+    commit_msg = (
+        payload.commit_message or f"chore(siteagent): update {branch.split('/', 1)[-1]}"
+    )
     safe_msg = commit_msg.replace('"', '\\"')
 
     if payload.single_commit:
@@ -401,8 +409,7 @@ def create_pr(payload: PRCreateInput) -> dict:
             _run(f'git commit -m "{safe_msg}"')
         except Exception as e:
             raise HTTPException(
-                status_code=500,
-                detail=f"Failed to create single commit: {str(e)}"
+                status_code=500, detail=f"Failed to create single commit: {str(e)}"
             ) from e
     else:
         # Normal append commit
@@ -410,18 +417,20 @@ def create_pr(payload: PRCreateInput) -> dict:
             _run(f'git commit -m "{safe_msg}"')
         except Exception as e:
             raise HTTPException(
-                status_code=500,
-                detail=f"Failed to commit changes: {str(e)}"
+                status_code=500, detail=f"Failed to commit changes: {str(e)}"
             ) from e
 
     # Push branch (force-with-lease for single-commit, normal for append)
     try:
-        push_flags = "--force-with-lease" if payload.single_commit and payload.force_with_lease else ""
+        push_flags = (
+            "--force-with-lease"
+            if payload.single_commit and payload.force_with_lease
+            else ""
+        )
         _run(f"git push -u origin {branch} {push_flags}".strip(), env=env)
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to push branch {branch}: {str(e)}"
+            status_code=500, detail=f"Failed to push branch {branch}: {str(e)}"
         ) from e
 
     # Check if PR already exists for this branch
@@ -435,7 +444,9 @@ def create_pr(payload: PRCreateInput) -> dict:
         # Update existing PR: add labels and comment with diff summary
         try:
             label_str = ",".join(labels)
-            _run(f'gh pr edit {pr_num} --repo {repo} --add-label "{label_str}"', env=env)
+            _run(
+                f'gh pr edit {pr_num} --repo {repo} --add-label "{label_str}"', env=env
+            )
         except Exception:
             pass  # Labels may already exist
 
@@ -451,27 +462,26 @@ def create_pr(payload: PRCreateInput) -> dict:
             "pr": pr_url,
             "labels": labels,
             "diff": diff_summary,
-            "message": f"Updated existing PR #{pr_num}"
+            "message": f"Updated existing PR #{pr_num}",
         }
 
     # Create new PR
     try:
         safe_title = title.replace('"', '\\"')
-        safe_body = body.replace('"', '\\"').replace('\n', '\\n')
+        safe_body = body.replace('"', '\\"').replace("\n", "\\n")
 
         # Check if 'draft' label is present to open PR as draft
         is_draft = any(lbl.lower() == "draft" for lbl in labels)
         draft_flag = "--draft" if is_draft else ""
 
         pr_url = _run(
-            f'gh pr create --repo {repo} --base {payload.base} --head {branch} '
+            f"gh pr create --repo {repo} --base {payload.base} --head {branch} "
             f'--title "{safe_title}" --body "{safe_body}" {draft_flag}'.strip(),
-            env=env
+            env=env,
         )
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to create PR: {str(e)}"
+            status_code=500, detail=f"Failed to create PR: {str(e)}"
         ) from e
 
     # Add labels to new PR
@@ -487,5 +497,5 @@ def create_pr(payload: PRCreateInput) -> dict:
         "pr": pr_url,
         "labels": labels,
         "diff": diff_summary,
-        "message": "Created new PR"
+        "message": "Created new PR",
     }

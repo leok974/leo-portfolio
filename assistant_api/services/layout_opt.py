@@ -1,4 +1,5 @@
 """Layout optimization service for project ordering."""
+
 from __future__ import annotations
 
 import json
@@ -20,9 +21,9 @@ LAYOUT_PATH = pathlib.Path("assets/layout.json")
 # ---- Scoring knobs (tweak later or expose via config) ----
 WEIGHTS = {
     "freshness": 0.35,  # recently updated projects → up
-    "signal": 0.35,     # stars, forks, mentions, demo views
-    "fit": 0.20,        # matches target roles / keywords
-    "media": 0.10,      # has hi-quality cover / og
+    "signal": 0.35,  # stars, forks, mentions, demo views
+    "fit": 0.20,  # matches target roles / keywords
+    "media": 0.10,  # has hi-quality cover / og
 }
 
 DECAY_HALF_LIFE_DAYS = 30  # freshness decay half-life
@@ -64,6 +65,7 @@ def select_preset(name: str | None) -> dict[str, Any]:
 @dataclass
 class ProjectScore:
     """Score data for a single project."""
+
     slug: str
     score: float
     contributions: dict[str, float]
@@ -173,7 +175,9 @@ def _media_score(p: dict[str, Any]) -> float:
         return 0.2
 
 
-def score_projects(projects: list[dict[str, Any]], roles: set, weights: dict[str, float]) -> list[ProjectScore]:
+def score_projects(
+    projects: list[dict[str, Any]], roles: set, weights: dict[str, float]
+) -> list[ProjectScore]:
     """
     Score all projects and sort by descending score.
 
@@ -192,10 +196,7 @@ def score_projects(projects: list[dict[str, Any]], roles: set, weights: dict[str
 
         # Get timestamp (support multiple field names)
         updated_ts = _safe_float(
-            p.get("updated_ts") or
-            p.get("updated_at_epoch") or
-            p.get("updated_at") or
-            0
+            p.get("updated_ts") or p.get("updated_at_epoch") or p.get("updated_at") or 0
         )
 
         # Calculate component scores
@@ -206,10 +207,10 @@ def score_projects(projects: list[dict[str, Any]], roles: set, weights: dict[str
 
         # Weighted total using provided weights
         score = (
-            freshness * weights["freshness"] +
-            signal * weights["signal"] +
-            fit * weights["fit"] +
-            media * weights["media"]
+            freshness * weights["freshness"]
+            + signal * weights["signal"]
+            + fit * weights["fit"]
+            + media * weights["media"]
         )
 
         # Build rationale
@@ -218,27 +219,31 @@ def score_projects(projects: list[dict[str, Any]], roles: set, weights: dict[str
             f"signal={signal:.2f}",
             f"fit={fit:.2f}",
             f"media={media:.2f}",
-            *fit_rationale[:3]  # keep it short
+            *fit_rationale[:3],  # keep it short
         ]
 
-        out.append(ProjectScore(
-            slug=slug,
-            score=score,
-            contributions={
-                "freshness": freshness,
-                "signal": signal,
-                "fit": fit,
-                "media": media
-            },
-            rationale=rationale
-        ))
+        out.append(
+            ProjectScore(
+                slug=slug,
+                score=score,
+                contributions={
+                    "freshness": freshness,
+                    "signal": signal,
+                    "fit": fit,
+                    "media": media,
+                },
+                rationale=rationale,
+            )
+        )
 
     # Sort by score descending
     out.sort(key=lambda s: s.score, reverse=True)
     return out
 
 
-def to_sections(scores: list[ProjectScore], featured_count: int) -> dict[str, list[str]]:
+def to_sections(
+    scores: list[ProjectScore], featured_count: int
+) -> dict[str, list[str]]:
     """
     Split ordered projects into sections.
 
@@ -258,7 +263,9 @@ def to_sections(scores: list[ProjectScore], featured_count: int) -> dict[str, li
     }
 
 
-def propose_layout(scores: list[ProjectScore], featured_count: int = 3, preset_name: str = "default") -> dict[str, Any]:
+def propose_layout(
+    scores: list[ProjectScore], featured_count: int = 3, preset_name: str = "default"
+) -> dict[str, Any]:
     """
     Generate layout proposal from scores.
 
@@ -276,16 +283,16 @@ def propose_layout(scores: list[ProjectScore], featured_count: int = 3, preset_n
         "version": 2,
         "preset": preset_name,
         "generated_at": int(time.time()),
-        "order": [s.slug for s in scores],   # flat order for legacy readers
-        "sections": sections,                # new: sections
+        "order": [s.slug for s in scores],  # flat order for legacy readers
+        "sections": sections,  # new: sections
         "explain": {
             s.slug: {
                 "score": round(s.score, 3),
                 "why": s.rationale,
-                "parts": s.contributions
+                "parts": s.contributions,
             }
             for s in scores
-        }
+        },
     }
 
 
@@ -309,7 +316,9 @@ def run_layout_optimize(payload: dict[str, Any] | None = None) -> dict[str, Any]
     # Weight precedence: payload.weights > active weights > preset weights
     weights = payload.get("weights") or read_active() or preset["weights"]
 
-    featured_count = int(payload.get("featured_count") or preset["sections"]["featured"])
+    featured_count = int(
+        payload.get("featured_count") or preset["sections"]["featured"]
+    )
 
     # Read projects
     projects_data = _read_json(PROJECTS_PATH) or []
@@ -331,7 +340,7 @@ def run_layout_optimize(payload: dict[str, Any] | None = None) -> dict[str, Any]
         return {
             "task": "layout.optimize",
             "error": "no_projects",
-            "summary": "No projects found in projects.json"
+            "summary": "No projects found in projects.json",
         }
 
     # Score and propose layout
@@ -346,8 +355,7 @@ def run_layout_optimize(payload: dict[str, Any] | None = None) -> dict[str, Any]
 
     # Write proposed layout
     LAYOUT_PATH.write_text(
-        json.dumps(layout, indent=2, ensure_ascii=False),
-        encoding="utf-8"
+        json.dumps(layout, indent=2, ensure_ascii=False), encoding="utf-8"
     )
 
     # Generate diff if possible
@@ -371,5 +379,5 @@ def run_layout_optimize(payload: dict[str, Any] | None = None) -> dict[str, Any]
             slug: layout["explain"][slug]
             for slug in layout["order"][:5]
             if slug in layout["explain"]
-        }
+        },
     }

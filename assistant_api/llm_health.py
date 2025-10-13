@@ -26,7 +26,11 @@ def _desired_model() -> str:
 
 @router.get("/health")
 async def llm_health():
-    status = {"ollama": "down", "openai": "not_configured", "primary_model_present": False}
+    status = {
+        "ollama": "down",
+        "openai": "not_configured",
+        "primary_model_present": False,
+    }
     model = _desired_model()
     try:
         url = _ollama_tags_url()

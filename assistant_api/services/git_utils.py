@@ -1,4 +1,5 @@
 """Git utilities for agent tasks."""
+
 from __future__ import annotations
 
 import pathlib
@@ -26,7 +27,7 @@ def make_diff(path: str) -> str:
             capture_output=True,
             text=True,
             check=False,
-            cwd=file_path.parent if file_path.is_absolute() else None
+            cwd=file_path.parent if file_path.is_absolute() else None,
         )
         return result.stdout
     except Exception:

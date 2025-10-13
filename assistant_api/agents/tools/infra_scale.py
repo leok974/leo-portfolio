@@ -1,4 +1,5 @@
 """Infrastructure scaling tool - plans docker/k8s scaling actions."""
+
 import json
 import pathlib
 import shlex
@@ -14,10 +15,7 @@ def _run(cmd: str, timeout: int) -> tuple[int, str, str, float]:
     t0 = time.time()
     try:
         p = subprocess.Popen(
-            shlex.split(cmd),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
+            shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
         out, err = p.communicate(timeout=timeout)
         return p.returncode, out, err, time.time() - t0
@@ -41,8 +39,10 @@ def run_infra_scale(artifact_dir: pathlib.Path) -> dict[str, Any]:
     """
     artifact_dir.mkdir(parents=True, exist_ok=True)
 
-    rc, out, err, dur = _run(settings.INFRA_SCALE_CMD, settings.INFRA_SCALE_TIMEOUT_SECS)
-    skipped = (rc == 127)
+    rc, out, err, dur = _run(
+        settings.INFRA_SCALE_CMD, settings.INFRA_SCALE_TIMEOUT_SECS
+    )
+    skipped = rc == 127
 
     # Try to parse JSON output
     try:
@@ -63,7 +63,7 @@ def run_infra_scale(artifact_dir: pathlib.Path) -> dict[str, Any]:
         "duration_sec": dur,
         "artifacts": {
             "report_json": str((artifact_dir / "report.json").resolve()),
-            "infra_scale_json": str((artifact_dir / "infra_scale.json").resolve())
+            "infra_scale_json": str((artifact_dir / "infra_scale.json").resolve()),
         },
     }
 

@@ -1,4 +1,5 @@
 """SQLAlchemy model for agents_tasks table."""
+
 from sqlalchemy import JSON, Column, DateTime, Index, Integer, String, Text
 
 try:
@@ -15,12 +16,17 @@ class AgentTask(Base):
     Statuses: queued | running | succeeded | failed | awaiting_approval | skipped
     Approval states: pending | approved | rejected
     """
+
     __tablename__ = "agents_tasks"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     task = Column(String(64), nullable=False)  # e.g., "seo.validate", "code.review"
-    run_id = Column(String(64), nullable=False, index=True)  # e.g., "nightly-2025-01-15"
-    status = Column(String(32), nullable=False)  # queued | running | succeeded | failed | awaiting_approval | skipped
+    run_id = Column(
+        String(64), nullable=False, index=True
+    )  # e.g., "nightly-2025-01-15"
+    status = Column(
+        String(32), nullable=False
+    )  # queued | running | succeeded | failed | awaiting_approval | skipped
     started_at = Column(DateTime, nullable=True)
     finished_at = Column(DateTime, nullable=True)
     duration_ms = Column(Integer, nullable=True)
@@ -39,9 +45,13 @@ class AgentTask(Base):
     log_excerpt = Column(Text, nullable=True)  # First/last N lines of stdout/stderr
 
     # Approval workflow
-    approval_state = Column(String(32), nullable=True)  # pending | approved | rejected | cancelled
+    approval_state = Column(
+        String(32), nullable=True
+    )  # pending | approved | rejected | cancelled
     approver = Column(String(128), nullable=True)  # User who approved/rejected
-    approval_note = Column(Text, nullable=True)  # Approval/rejection/cancellation reason
+    approval_note = Column(
+        Text, nullable=True
+    )  # Approval/rejection/cancellation reason
     webhook_notified_at = Column(DateTime, nullable=True)  # When Slack/Email sent
 
     __table_args__ = (

@@ -11,9 +11,10 @@ import httpx
 def _now_iso() -> str:
     return datetime.datetime.utcnow().isoformat() + "Z"
 
+
 async def _chat_case(base: str, row: dict[str, Any]) -> dict[str, Any]:
     q = row["question"]
-    body = {"messages":[{"role":"user","content":q}], "include_sources": True}
+    body = {"messages": [{"role": "user", "content": q}], "include_sources": True}
     t0 = time.time()
     async with httpx.AsyncClient(timeout=120) as c:
         r = await c.post(f"{base}/chat", json=body)
@@ -30,7 +31,7 @@ async def _chat_case(base: str, row: dict[str, Any]) -> dict[str, Any]:
     route = scope.get("route")
 
     errors: list[str] = []
-    for s in (row.get("expect_contains") or []):
+    for s in row.get("expect_contains") or []:
         if s.lower() not in content.lower():
             errors.append(f'missing expected text: "{s}"')
     ms = int(row.get("min_sources") or 0)
@@ -51,6 +52,7 @@ async def _chat_case(base: str, row: dict[str, Any]) -> dict[str, Any]:
         "errors": errors,
     }
 
+
 async def _plan_case(base: str, row: dict[str, Any]) -> dict[str, Any]:
     q = row["question"]
     t0 = time.time()
@@ -68,8 +70,10 @@ async def _plan_case(base: str, row: dict[str, Any]) -> dict[str, Any]:
         errors.append(f'expected tool "{exp_tool}" not in plan')
     exp_first = row.get("expect_first_tool")
     if exp_first and (steps[0].get("tool") if steps else None) != exp_first:
-        errors.append(f'expected first step "{exp_first}", got "{(steps[0].get("tool") if steps else None)}"')
-    for needle in (row.get("expect_args_contains") or []):
+        errors.append(
+            f'expected first step "{exp_first}", got "{(steps[0].get("tool") if steps else None)}"'
+        )
+    for needle in row.get("expect_args_contains") or []:
         args_str = json.dumps(steps[0].get("args") or {}) if steps else "{}"
         if needle not in args_str:
             errors.append(f'expected args to contain "{needle}"')
@@ -83,14 +87,17 @@ async def _plan_case(base: str, row: dict[str, Any]) -> dict[str, Any]:
         "errors": errors,
     }
 
+
 def _load_jsonl(path: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
-            if not line: continue
+            if not line:
+                continue
             rows.append(json.loads(line))
     return rows
+
 
 async def run_eval_inprocess(
     base: str,
@@ -113,7 +120,9 @@ async def run_eval_inprocess(
     ratio = (passed / total) if total else 0.0
     return {
         "ok": ratio >= fail_under,
-        "pass": passed, "total": total, "ratio": round(ratio, 3),
+        "pass": passed,
+        "total": total,
+        "ratio": round(ratio, 3),
         "ts": _now_iso(),
         "files": files,
         "results": results,

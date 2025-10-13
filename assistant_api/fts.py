@@ -12,17 +12,21 @@ def _db():
     con.execute("PRAGMA journal_mode=WAL")
     return con
 
+
 def ensure_fts_schema():
     con = _db()
     try:
-        con.execute("""
+        con.execute(
+            """
           CREATE VIRTUAL TABLE IF NOT EXISTS fts_chunks USING fts5(
             content, title, source_path, project_id, chunk_id UNINDEXED, tokenize = 'porter'
           );
-        """)
+        """
+        )
         con.execute("CREATE INDEX IF NOT EXISTS ix_chunks_id ON chunks(id)")
     finally:
         con.close()
+
 
 def backfill_chunks_from_docs():
     """Populate chunks from docs if chunks is empty. Extract project_id from docs.meta.
@@ -37,22 +41,23 @@ def backfill_chunks_from_docs():
             return {"ok": True, "skipped": True, "count": int(n)}
         rows = cur.execute("SELECT id, path, title, text, meta FROM docs").fetchall()
         to_ins = []
-        for (_id, path, title, text, meta_json) in rows:
+        for _id, path, title, text, meta_json in rows:
             proj = None
             try:
-                meta = __import__('json').loads(meta_json or "{}")
+                meta = __import__("json").loads(meta_json or "{}")
                 proj = meta.get("project_id")
             except Exception:
                 proj = None
             to_ins.append((text or "", path, title, proj))
         cur.executemany(
             "INSERT INTO chunks(content, source_path, title, project_id) VALUES(?,?,?,?)",
-            to_ins
+            to_ins,
         )
         con.commit()
         return {"ok": True, "inserted": len(to_ins)}
     finally:
         con.close()
+
 
 def rebuild_fts():
     con = _db()
@@ -62,10 +67,12 @@ def rebuild_fts():
     rows = cur.fetchall()
     cur.executemany(
         "INSERT INTO fts_chunks(content, title, source_path, project_id, chunk_id) VALUES(?,?,?,?,?)",
-        [(r[1] or "", r[2] or "", r[3] or "", r[4] or "", r[0]) for r in rows]
+        [(r[1] or "", r[2] or "", r[3] or "", r[4] or "", r[0]) for r in rows],
     )
-    con.commit(); con.close()
+    con.commit()
+    con.close()
     return {"ok": True, "count": len(rows)}
+
 
 def _sanitize_match_query(q: str) -> str:
     """Very small sanitizer for FTS MATCH. We cannot use bound parameters with MATCH
@@ -74,16 +81,25 @@ def _sanitize_match_query(q: str) -> str:
     toks = re.findall(r"[\w-]+", q.lower())
     return " ".join(toks) or "*"
 
+
 def bm25_search(query: str, topk: int = 50) -> list[int]:
     con = _db()
     try:
         q = _sanitize_match_query(query)
+
         # Prefer legacy fts_chunks when present; else use chunks_fts (rowid maps to chunks.id)
         def _exists(name: str) -> bool:
             try:
-                return con.execute("SELECT 1 FROM sqlite_master WHERE type IN ('table','view') AND name=?", (name,)).fetchone() is not None
+                return (
+                    con.execute(
+                        "SELECT 1 FROM sqlite_master WHERE type IN ('table','view') AND name=?",
+                        (name,),
+                    ).fetchone()
+                    is not None
+                )
             except Exception:
                 return False
+
         if _exists("fts_chunks"):
             sql = f"SELECT chunk_id FROM fts_chunks WHERE fts_chunks MATCH '{q}' ORDER BY rank LIMIT ?"
             rows = list(con.execute(sql, (topk,)))
@@ -106,12 +122,20 @@ def bm25_search_scored(query: str, topk: int = 50) -> list[dict]:
     con = _db()
     try:
         q = _sanitize_match_query(query)
+
         # Support both legacy fts_chunks and new chunks_fts
         def _exists(name: str) -> bool:
             try:
-                return con.execute("SELECT 1 FROM sqlite_master WHERE type IN ('table','view') AND name=?", (name,)).fetchone() is not None
+                return (
+                    con.execute(
+                        "SELECT 1 FROM sqlite_master WHERE type IN ('table','view') AND name=?",
+                        (name,),
+                    ).fetchone()
+                    is not None
+                )
             except Exception:
                 return False
+
         out: list[dict] = []
         if _exists("fts_chunks"):
             sql = (
@@ -157,7 +181,9 @@ def ensure_chunk_indexes(conn=None):
 
     con = conn or connect()
     try:
-        con.execute("CREATE INDEX IF NOT EXISTS idx_chunks_project ON chunks(project_id)")
+        con.execute(
+            "CREATE INDEX IF NOT EXISTS idx_chunks_project ON chunks(project_id)"
+        )
         con.commit()
     finally:
         if conn is None:
@@ -183,7 +209,9 @@ def fts_offsets_to_hits(offsets_str: str) -> list[tuple[int, int]]:
         return []
 
 
-def highlight_snippet(text: str, hits: list[tuple[int, int]], max_marks: int = 6) -> str:
+def highlight_snippet(
+    text: str, hits: list[tuple[int, int]], max_marks: int = 6
+) -> str:
     markers: list[tuple[int, str]] = []
     for start, length in hits[:max_marks]:
         markers.append((start, "<mark>"))

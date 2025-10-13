@@ -28,15 +28,17 @@ def _load_projects() -> list[dict]:
             # normalize shape: expect [{slug,title,summary,tags,cats,links,year?}, ...]
             out = []
             for p in data:
-                out.append({
-                    "title": p.get("title") or p.get("name") or "Untitled Project",
-                    "slug": p.get("slug") or "",
-                    "summary": p.get("summary") or "",
-                    "tags": p.get("tags") or p.get("labels") or [],
-                    "cats": p.get("cats") or p.get("categories") or [],
-                    "links": p.get("links") or p.get("sources") or [],
-                    "year": p.get("year") or p.get("date") or "2025",
-                })
+                out.append(
+                    {
+                        "title": p.get("title") or p.get("name") or "Untitled Project",
+                        "slug": p.get("slug") or "",
+                        "summary": p.get("summary") or "",
+                        "tags": p.get("tags") or p.get("labels") or [],
+                        "cats": p.get("cats") or p.get("categories") or [],
+                        "links": p.get("links") or p.get("sources") or [],
+                        "year": p.get("year") or p.get("date") or "2025",
+                    }
+                )
             return out
         except Exception:
             pass
@@ -46,22 +48,30 @@ def _load_projects() -> list[dict]:
         return []
     html = SITE_INDEX.read_text(encoding="utf-8")
     # naive capture: card blocks with data-title="..." or <h3>...</h3>
-    titles = re.findall(r'data-title="([^"]+)"', html) or re.findall(r"<h3[^>]*>([^<]+)</h3>", html)
+    titles = re.findall(r'data-title="([^"]+)"', html) or re.findall(
+        r"<h3[^>]*>([^<]+)</h3>", html
+    )
     # tags from data-tags='ai,ml,...'
     tag_groups = re.findall(r"data-tags=['\"]([^'\"]+)['\"]", html)
     summaries = re.findall(r'data-summary="([^"]+)"', html)
     out = []
     for i, t in enumerate(titles):
-        tags = [x.strip() for x in (tag_groups[i] if i < len(tag_groups) else "").split(",") if x.strip()]
-        out.append({
-            "title": t.strip(),
-            "slug": "",
-            "summary": (summaries[i] if i < len(summaries) else "").strip(),
-            "tags": tags,
-            "cats": [],
-            "links": [],
-            "year": "2025",
-        })
+        tags = [
+            x.strip()
+            for x in (tag_groups[i] if i < len(tag_groups) else "").split(",")
+            if x.strip()
+        ]
+        out.append(
+            {
+                "title": t.strip(),
+                "slug": "",
+                "summary": (summaries[i] if i < len(summaries) else "").strip(),
+                "tags": tags,
+                "cats": [],
+                "links": [],
+                "year": "2025",
+            }
+        )
     return out
 
 
@@ -74,10 +84,26 @@ def _skills_from_projects(projects: list[dict]) -> list[str]:
                 bag.add(t.lower())
     # add core stack keywords you consistently use
     core = {
-        "AI Engineering", "FastAPI", "Python", "Postgres", "Docker", "Nginx",
-        "Ollama", "OpenAI", "RAG", "Playwright", "Vite/React", "Tailwind",
-        "Cloudflare", "KMS", "GitHub Actions", "Testing/CI", "Prometheus",
-        "Generative AI", "3D/Blender", "ZBrush"
+        "AI Engineering",
+        "FastAPI",
+        "Python",
+        "Postgres",
+        "Docker",
+        "Nginx",
+        "Ollama",
+        "OpenAI",
+        "RAG",
+        "Playwright",
+        "Vite/React",
+        "Tailwind",
+        "Cloudflare",
+        "KMS",
+        "GitHub Actions",
+        "Testing/CI",
+        "Prometheus",
+        "Generative AI",
+        "3D/Blender",
+        "ZBrush",
     }
     return sorted({*bag, *{c.lower() for c in core}})
 
@@ -130,13 +156,21 @@ def _tune(roles: list[str], seniority: str | None) -> tuple[str, str, list[str]]
     # About tuning (append; keep core paragraph intact)
     about_tail = []
     if "ml" in roles or "ai" in roles:
-        about_tail.append("Comfortable with local-first inference (Ollama), vector search (SQLite/pgvector), and latency/throughput trade-offs.")
+        about_tail.append(
+            "Comfortable with local-first inference (Ollama), vector search (SQLite/pgvector), and latency/throughput trade-offs."
+        )
     if "swe" in roles:
-        about_tail.append("Strong DX mindset: CI/CD, coverage gates, CSP/security headers, and Playwright/Vitest suites.")
+        about_tail.append(
+            "Strong DX mindset: CI/CD, coverage gates, CSP/security headers, and Playwright/Vitest suites."
+        )
     if seniority == "senior":
-        about_tail.append("Lead-friendly: scoping, simplifying, and shipping increments with measurable outcomes.")
+        about_tail.append(
+            "Lead-friendly: scoping, simplifying, and shipping increments with measurable outcomes."
+        )
     elif seniority == "junior":
-        about_tail.append("Hands-on learner: bias toward iteration, measurable improvements, and code quality.")
+        about_tail.append(
+            "Hands-on learner: bias toward iteration, measurable improvements, and code quality."
+        )
     return headline, " ".join(about_tail), roles
 
 
@@ -165,17 +199,25 @@ def _load_achievements() -> list[str]:
         if ttfb:
             bullets.append(f"Reduced TTFB by {ttfb:.0f}% via caching & CSP tuning.")
         if p95:
-            bullets.append(f"Cut streaming p95 latency to {int(p95)} ms with SSE optimizations.")
+            bullets.append(
+                f"Cut streaming p95 latency to {int(p95)} ms with SSE optimizations."
+            )
         if cov:
             bullets.append(f"Increased test coverage to {cov:.0f}%.")
         if users:
-            bullets.append(f"Supported {int(users):,} total sessions (stable under load).")
+            bullets.append(
+                f"Supported {int(users):,} total sessions (stable under load)."
+            )
         if savings:
-            bullets.append(f"Lowered LLM costs by {savings:.0f}% through local-first inference.")
+            bullets.append(
+                f"Lowered LLM costs by {savings:.0f}% through local-first inference."
+            )
     return bullets
 
 
-def _make_markdown(projects: list[dict], roles: list[str] = None, seniority: str | None = None) -> str:
+def _make_markdown(
+    projects: list[dict], roles: list[str] = None, seniority: str | None = None
+) -> str:
     """Generate complete Markdown resume with optional role/seniority tuning."""
     if roles is None:
         roles = []
@@ -226,9 +268,11 @@ def _make_markdown(projects: list[dict], roles: list[str] = None, seniority: str
     # light role bias (bubble up ai/swe/ml keywords first)
     bias = {"ai", "swe", "ml"}.intersection(roles)
     if bias:
+
         def _prior(s):
             s2 = s.lower()
             return 0 if any(b in s2 for b in bias) else 1
+
         skills = sorted(set(skills), key=_prior)
     lines.append(", ".join(sorted(set(s.capitalize() for s in skills))))
     lines.append("")
@@ -260,7 +304,9 @@ def _render_pdf(md_text: str) -> bytes:
         from reportlab.lib.units import inch
         from reportlab.pdfgen import canvas
     except Exception:
-        raise HTTPException(status_code=503, detail="pdf_unavailable: install reportlab")
+        raise HTTPException(
+            status_code=503, detail="pdf_unavailable: install reportlab"
+        )
 
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=letter)
@@ -312,7 +358,9 @@ def _render_pdf(md_text: str) -> bytes:
 
 
 @router.get("/generate.md", response_class=PlainTextResponse)
-def resume_markdown(roles: str | None = Query(None), seniority: str | None = Query(None)):
+def resume_markdown(
+    roles: str | None = Query(None), seniority: str | None = Query(None)
+):
     """Public endpoint that returns LinkedIn-optimized Markdown resume derived from site content."""
     projects = _load_projects()
     if not projects:
@@ -326,7 +374,7 @@ def resume_markdown(roles: str | None = Query(None), seniority: str | None = Que
 def resume_copy(
     limit: int = Query(2600, ge=200, le=10000),
     roles: str | None = Query(None),
-    seniority: str | None = Query(None)
+    seniority: str | None = Query(None),
 ):
     """Compact LinkedIn-ready text within character limit."""
     projects = _load_projects()
@@ -349,6 +397,8 @@ def resume_pdf(roles: str | None = Query(None), seniority: str | None = Query(No
     pdf_bytes = _render_pdf(md)
     headers = {"Content-Disposition": 'inline; filename="Leo_Klemet_LinkedIn.pdf"'}
     return Response(content=pdf_bytes, media_type="application/pdf", headers=headers)
+
+
 @router.get("/generate.json")
 def resume_json():
     """Same content in JSON for programmatic use (e.g., page export, future PDF)."""
@@ -356,10 +406,12 @@ def resume_json():
     if not projects:
         raise HTTPException(status_code=404, detail="no_site_content")
     md = _make_markdown(projects)
-    return JSONResponse({
-        "headline": _linkedin_headline(),
-        "about": _about_blurb(),
-        "projects": projects,
-        "markdown": md,
-        "year": dt.date.today().year
-    })
+    return JSONResponse(
+        {
+            "headline": _linkedin_headline(),
+            "about": _about_blurb(),
+            "projects": projects,
+            "markdown": md,
+            "year": dt.date.today().year,
+        }
+    )

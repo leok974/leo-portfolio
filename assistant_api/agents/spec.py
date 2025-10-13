@@ -1,4 +1,5 @@
 """Agent specification and registry loading."""
+
 import pathlib
 from typing import Dict, List, Optional
 
@@ -10,6 +11,7 @@ REGISTRY_PATH = pathlib.Path(__file__).resolve().parents[2] / "agents.yml"
 
 class AgentSpec(BaseModel):
     """Specification for an autonomous agent."""
+
     name: str
     goals: list[str]
     tools: list[str]

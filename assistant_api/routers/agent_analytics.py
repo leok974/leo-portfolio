@@ -13,8 +13,13 @@ from ..utils.cf_access import require_cf_access
 
 router = APIRouter(prefix="/agent/analytics", tags=["agent-analytics"])
 
+
 @router.post("/ingest", response_model=IngestResult)
-async def ingest_analytics(request: Request, principal: str = Depends(require_cf_access), settings=Depends(get_settings)):
+async def ingest_analytics(
+    request: Request,
+    principal: str = Depends(require_cf_access),
+    settings=Depends(get_settings),
+):
     """
     Ingest CTR analytics data from search console, GA4, or manual sources.
 
@@ -51,6 +56,7 @@ async def ingest_analytics(request: Request, principal: str = Depends(require_cf
     if "json" in ctype.lower() and raw_text:
         try:
             import json
+
             payload = json.loads(raw_text)
         except Exception:
             payload = None
@@ -59,7 +65,7 @@ async def ingest_analytics(request: Request, principal: str = Depends(require_cf
     if not parsed_rows:
         raise HTTPException(
             status_code=400,
-            detail="No rows detected. Provide internal JSON, GSC API JSON, GA4 JSON, or GSC CSV export."
+            detail="No rows detected. Provide internal JSON, GSC API JSON, GA4 JSON, or GSC CSV export.",
         )
 
     now = datetime.now(UTC).isoformat()
@@ -68,7 +74,16 @@ async def ingest_analytics(request: Request, principal: str = Depends(require_cf
         imp = int(r.get("impressions", 0))
         clk = int(r.get("clicks", 0))
         ctr = (clk / imp) if imp > 0 else 0.0
-        ctr_rows.append(CTRRow(url=r["url"], impressions=imp, clicks=clk, ctr=ctr, last_seen=now, source=source))
+        ctr_rows.append(
+            CTRRow(
+                url=r["url"],
+                impressions=imp,
+                clicks=clk,
+                ctr=ctr,
+                last_seen=now,
+                source=source,
+            )
+        )
 
     changed = upsert_ctr_rows(db_path, ctr_rows)
     return IngestResult(inserted_or_updated=changed, rows=len(ctr_rows), source=source)

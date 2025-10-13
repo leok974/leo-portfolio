@@ -7,6 +7,7 @@ Provides endpoints to preview and commit SEO meta changes with:
 - Timestamped backups
 - SHA-256 integrity on artifacts
 """
+
 from __future__ import annotations
 
 import difflib
@@ -30,7 +31,9 @@ ART_DIR = Path("agent") / "artifacts" / "seo-meta-apply"
 ART_DIR.mkdir(parents=True, exist_ok=True)
 
 # Regex patterns for HTML manipulation
-TITLE_RE = re.compile(r"(<\s*title[^>]*>)(.*?)(</\s*title\s*>)", re.IGNORECASE | re.DOTALL)
+TITLE_RE = re.compile(
+    r"(<\s*title[^>]*>)(.*?)(</\s*title\s*>)", re.IGNORECASE | re.DOTALL
+)
 HEAD_RE = re.compile(r"<\s*head[^>]*>", re.IGNORECASE)
 DESC_RE = re.compile(
     r'(<\s*meta[^>]+name\s*=\s*["\']description["\'][^>]*content\s*=\s*["\'])(.*?)((["\'][^>]*>))',
@@ -99,7 +102,10 @@ def _set_meta_desc(html_src: str, new_desc: str | None) -> tuple[str, bool]:
     safe = html.escape(new_desc, quote=True)
     if DESC_RE.search(html_src):
         # use callable to avoid backref escapes
-        return DESC_RE.sub(lambda m: f"{m.group(1)}{safe}{m.group(3)}", html_src, count=1), True
+        return (
+            DESC_RE.sub(lambda m: f"{m.group(1)}{safe}{m.group(3)}", html_src, count=1),
+            True,
+        )
     # Add meta description near the top of <head>
     html2 = _ensure_head_wrapped(html_src)
     return (
@@ -228,8 +234,12 @@ def commit_meta(
     path: str = Query(...),
     payload: dict[str, str | None] = Body(...),
     confirm: int = Query(0, description="Set to 1 to actually write changes"),
-    expect_mtime: float = Query(None, description="Optional: expected source file mtime"),
-    expect_sha256: str = Query(None, description="Optional: expected source file sha256"),
+    expect_mtime: float = Query(
+        None, description="Optional: expected source file mtime"
+    ),
+    expect_sha256: str = Query(
+        None, description="Optional: expected source file sha256"
+    ),
     settings: dict = Depends(get_settings),
 ):
     """
@@ -248,11 +258,15 @@ def commit_meta(
     orig_html = f.read_text(encoding="utf-8", errors="ignore")
     st = f.stat()
     if expect_mtime is not None and abs(st.st_mtime - float(expect_mtime)) > 1e-6:
-        raise HTTPException(status_code=409, detail="Source modified since preview (mtime mismatch)")
+        raise HTTPException(
+            status_code=409, detail="Source modified since preview (mtime mismatch)"
+        )
     if expect_sha256:
         orig_digest = _sha256_bytes(orig_html.encode("utf-8"))
         if orig_digest != expect_sha256:
-            raise HTTPException(status_code=409, detail="Source modified since preview (hash mismatch)")
+            raise HTTPException(
+                status_code=409, detail="Source modified since preview (hash mismatch)"
+            )
 
     new_html, changed = _apply_changes(
         orig_html, payload.get("title"), payload.get("desc")

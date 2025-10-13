@@ -3,6 +3,7 @@
 Generates deterministic keyword artifacts instantly without LLM dependencies.
 Useful for CI smoke tests and local development verification.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -47,7 +48,7 @@ def _write_mock_keywords(settings: dict) -> dict:
         "mode": "mock",
         "inputs": {
             "analytics": "underperformers (mock)",
-            "source": "sitemap|defaults (mock)"
+            "source": "sitemap|defaults (mock)",
         },
         "items": [
             {
@@ -78,12 +79,14 @@ def _write_mock_keywords(settings: dict) -> dict:
     }
 
     # Compute integrity on base payload (before adding integrity field)
-    encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode(
+        "utf-8"
+    )
     digest = _sha256_bytes(encoded)
     payload["integrity"] = {
         "algo": "sha256",
         "value": digest,
-        "size": str(len(encoded))
+        "size": str(len(encoded)),
     }
 
     # Write pretty JSON
@@ -95,7 +98,7 @@ def _write_mock_keywords(settings: dict) -> dict:
         f"- **Generated:** {payload['generated_at']}",
         f"- **Mode:** {payload['mode']}",
         f"- **Integrity:** `sha256:{digest}` ({payload['integrity']['size']} bytes)",
-        ""
+        "",
     ]
     for page in payload["items"]:
         lines.append(f"## {page['page']}")
@@ -130,7 +133,7 @@ def run_mock() -> dict:
     if not settings.get("ALLOW_TEST_ROUTES"):
         raise HTTPException(
             status_code=403,
-            detail="Test routes disabled. Set ALLOW_TEST_ROUTES=1 to enable."
+            detail="Test routes disabled. Set ALLOW_TEST_ROUTES=1 to enable.",
         )
 
     payload = _write_mock_keywords(settings)
@@ -142,14 +145,11 @@ def run_mock() -> dict:
             {
                 "file": str(art_dir / "seo-keywords.json"),
                 "type": "json",
-                "integrity": payload["integrity"]
+                "integrity": payload["integrity"],
             },
-            {
-                "file": str(art_dir / "seo-keywords.md"),
-                "type": "markdown"
-            }
+            {"file": str(art_dir / "seo-keywords.md"), "type": "markdown"},
         ],
-        "payload": payload
+        "payload": payload,
     }
 
 
@@ -163,7 +163,7 @@ def get_mock() -> dict:
     if not art_json.exists():
         raise HTTPException(
             status_code=404,
-            detail="No seo-keywords.json found. Run POST /agent/seo/keywords/mock first."
+            detail="No seo-keywords.json found. Run POST /agent/seo/keywords/mock first.",
         )
 
     return json.loads(art_json.read_text(encoding="utf-8"))

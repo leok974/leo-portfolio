@@ -27,9 +27,10 @@ if not DATABASE_URL:
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
-    pool_pre_ping=True
+    pool_pre_ping=True,
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 def get_db() -> Generator:
     """FastAPI dependency for SQLAlchemy database sessions."""
@@ -38,6 +39,7 @@ def get_db() -> Generator:
         yield db
     finally:
         db.close()
+
 
 _LOCK_MSG = "database is locked"
 
@@ -92,18 +94,22 @@ def connect(retries: int = 5, base_sleep: float = 0.2) -> sqlite3.Connection:
             )
             # Extend chunks schema for direct ingest if columns are missing (safe ALTERs)
             try:
-                cols = {r[1] for r in conn.execute("PRAGMA table_info('chunks')").fetchall()}
+                cols = {
+                    r[1] for r in conn.execute("PRAGMA table_info('chunks')").fetchall()
+                }
                 to_add = []
-                if 'doc_id' not in cols:
+                if "doc_id" not in cols:
                     to_add.append("ALTER TABLE chunks ADD COLUMN doc_id TEXT")
-                if 'ordinal' not in cols:
+                if "ordinal" not in cols:
                     to_add.append("ALTER TABLE chunks ADD COLUMN ordinal INTEGER")
-                if 'text' not in cols:
+                if "text" not in cols:
                     to_add.append("ALTER TABLE chunks ADD COLUMN text TEXT")
-                if 'meta' not in cols:
+                if "meta" not in cols:
                     to_add.append("ALTER TABLE chunks ADD COLUMN meta TEXT")
-                if 'created_at' not in cols:
-                    to_add.append("ALTER TABLE chunks ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP")
+                if "created_at" not in cols:
+                    to_add.append(
+                        "ALTER TABLE chunks ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+                    )
                 for stmt in to_add:
                     try:
                         conn.execute(stmt)
@@ -113,8 +119,12 @@ def connect(retries: int = 5, base_sleep: float = 0.2) -> sqlite3.Connection:
                 pass
             # Helpful indexes
             try:
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_chunks_project ON chunks(project_id)")
-                conn.execute("CREATE INDEX IF NOT EXISTS idx_chunks_doc ON chunks(doc_id)")
+                conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_chunks_project ON chunks(project_id)"
+                )
+                conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_chunks_doc ON chunks(doc_id)"
+                )
             except Exception:
                 pass
             # Lightweight FTS5 virtual table over chunks.text for offsets() highlighting
@@ -168,11 +178,13 @@ def connect(retries: int = 5, base_sleep: float = 0.2) -> sqlite3.Connection:
         except sqlite3.OperationalError as exc:
             if _LOCK_MSG not in str(exc) or attempt >= retries:
                 raise
-            time.sleep(base_sleep * (2 ** attempt))
+            time.sleep(base_sleep * (2**attempt))
             attempt += 1
 
 
-def commit_with_retry(conn: sqlite3.Connection, retries: int = 5, base_sleep: float = 0.2) -> None:
+def commit_with_retry(
+    conn: sqlite3.Connection, retries: int = 5, base_sleep: float = 0.2
+) -> None:
     """Attempt to commit with exponential backoff when the DB is locked."""
     for attempt in range(retries):
         try:
@@ -181,7 +193,8 @@ def commit_with_retry(conn: sqlite3.Connection, retries: int = 5, base_sleep: fl
         except sqlite3.OperationalError as exc:
             if _LOCK_MSG not in str(exc) or attempt == retries - 1:
                 raise
-            time.sleep(base_sleep * (2 ** attempt))
+            time.sleep(base_sleep * (2**attempt))
+
 
 def upsert_doc(conn, row):
     conn.execute(
@@ -197,15 +210,27 @@ def upsert_doc(conn, row):
         ),
     )
 
-def upsert_vec(conn, id, emb: np.ndarray):
-    conn.execute("REPLACE INTO vecs(id,embedding) VALUES(?,?)", (id, emb.astype(np.float32).tobytes()))
 
-def insert_chunk(conn, content: str, source_path: str | None, title: str | None, project_id: str | None) -> int:
+def upsert_vec(conn, id, emb: np.ndarray):
+    conn.execute(
+        "REPLACE INTO vecs(id,embedding) VALUES(?,?)",
+        (id, emb.astype(np.float32).tobytes()),
+    )
+
+
+def insert_chunk(
+    conn,
+    content: str,
+    source_path: str | None,
+    title: str | None,
+    project_id: str | None,
+) -> int:
     cur = conn.execute(
         "INSERT INTO chunks(content, source_path, title, project_id) VALUES(?,?,?,?)",
-        (content or "", source_path, title, project_id)
+        (content or "", source_path, title, project_id),
     )
     return int(cur.lastrowid)
+
 
 def search(conn, query_vec: np.ndarray, k=8):
     # brute-force cosine (fast enough <50k chunks). Swap later for FAISS index table.
@@ -223,7 +248,9 @@ def search(conn, query_vec: np.ndarray, k=8):
     for i in top:
         did = ids[int(i)]
         sim = float(sims[int(i)])
-        d = conn.execute("SELECT repo,path,title,text,meta FROM docs WHERE id=?", (did,)).fetchone()
+        d = conn.execute(
+            "SELECT repo,path,title,text,meta FROM docs WHERE id=?", (did,)
+        ).fetchone()
         if d:
             res.append(
                 {
@@ -237,6 +264,7 @@ def search(conn, query_vec: np.ndarray, k=8):
                 }
             )
     return res
+
 
 def index_dim(conn) -> int | None:
     """Return the dominant embedding dimension stored in the index, or None if empty.
@@ -263,4 +291,6 @@ def get_conn() -> sqlite3.Connection:
 def rebuild_fts(conn: sqlite3.Connection) -> None:
     with conn:
         conn.execute("DELETE FROM chunks_fts;")
-        conn.execute("INSERT INTO chunks_fts(rowid, text) SELECT id, COALESCE(text, content) FROM chunks;")
+        conn.execute(
+            "INSERT INTO chunks_fts(rowid, text) SELECT id, COALESCE(text, content) FROM chunks;"
+        )

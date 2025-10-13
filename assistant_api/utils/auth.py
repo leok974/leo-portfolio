@@ -8,6 +8,7 @@ from fastapi import Request
 # - DEV override: ALLOW_TOOLS=1 → treat as admin
 # - PROD: require X-Admin-Token header matching ADMIN_TOKEN env
 
+
 def get_current_user(request: Request):
     if os.environ.get("ALLOW_TOOLS", "0") == "1":
         return {"role": "admin", "email": "local@dev"}

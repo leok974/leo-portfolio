@@ -28,6 +28,7 @@ load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
 _model = None
 MODEL_I = "intfloat/e5-base-v2"
 
+
 def _hash_embed(texts: list[str], dim: int = 256):
     def one(t: str) -> np.ndarray:
         v = np.zeros(dim, dtype=np.float32)
@@ -38,7 +39,9 @@ def _hash_embed(texts: list[str], dim: int = 256):
         n = np.linalg.norm(v) or 1.0
         v /= n
         return v
+
     return [one(t) for t in texts]
+
 
 async def embed(texts: list[str]):
     """Prefer local SentenceTransformer; fallback to deterministic hash embedding."""
@@ -46,11 +49,13 @@ async def embed(texts: list[str]):
     try:
         if _model is None:
             from sentence_transformers import SentenceTransformer
+
             _model = SentenceTransformer(MODEL_I)
         vecs = _model.encode(texts, normalize_embeddings=True)
         return [np.array(v, dtype=np.float32) for v in vecs]
     except Exception:
         return _hash_embed(texts)
+
 
 def file_list(repo_dir):
     for root, _, files in os.walk(repo_dir):
@@ -63,6 +68,7 @@ def file_list(repo_dir):
             if sz > 0 and sz < 2_000_000:
                 yield p
 
+
 def _reset_index():
     # Remove DB file to clear incompatible schemas/dimensions
     try:
@@ -70,6 +76,7 @@ def _reset_index():
             os.remove(DB_PATH)
     except Exception:
         pass
+
 
 def _collect_fs_files(base: str, includes: list[str]) -> list[str]:
     files: list[str] = []
@@ -85,8 +92,10 @@ def _collect_fs_files(base: str, includes: list[str]) -> list[str]:
     out: list[str] = []
     for p in files:
         if p not in seen:
-            seen.add(p); out.append(p)
+            seen.add(p)
+            out.append(p)
     return out
+
 
 def _open_db(path: str):
     con = sqlite3.connect(path, timeout=30.0, check_same_thread=False)
@@ -97,6 +106,7 @@ def _open_db(path: str):
     except Exception:
         pass
     return con
+
 
 def _ensure_kb_schema(con: sqlite3.Connection):
     con.execute(
@@ -116,26 +126,32 @@ def _ensure_kb_schema(con: sqlite3.Connection):
     )
     commit_with_retry(con, retries=6)
 
+
 def _load_projects_yaml(path: str) -> list[dict[str, Any]]:
     if not os.path.exists(path):
         return []
     if yaml is None:
-        raise RuntimeError("PyYAML not installed. `pip install pyyaml` to use projects.yaml")
+        raise RuntimeError(
+            "PyYAML not installed. `pip install pyyaml` to use projects.yaml"
+        )
     with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f) or []
     out: list[dict[str, Any]] = []
     for p in data:
-        out.append({
-            "id": p.get("id"),
-            "name": p.get("name"),
-            "one_liner": p.get("one_liner"),
-            "stack": json.dumps(p.get("stack", []), ensure_ascii=False),
-            "highlights": json.dumps(p.get("highlights", []), ensure_ascii=False),
-            "links": json.dumps(p.get("links", {}), ensure_ascii=False),
-            "tags": json.dumps(p.get("tags", []), ensure_ascii=False),
-            "paths": json.dumps(p.get("paths", []), ensure_ascii=False),
-        })
+        out.append(
+            {
+                "id": p.get("id"),
+                "name": p.get("name"),
+                "one_liner": p.get("one_liner"),
+                "stack": json.dumps(p.get("stack", []), ensure_ascii=False),
+                "highlights": json.dumps(p.get("highlights", []), ensure_ascii=False),
+                "links": json.dumps(p.get("links", {}), ensure_ascii=False),
+                "tags": json.dumps(p.get("tags", []), ensure_ascii=False),
+                "paths": json.dumps(p.get("paths", []), ensure_ascii=False),
+            }
+        )
     return out
+
 
 def _upsert_kb_projects(con: sqlite3.Connection, projects: list[dict[str, Any]]):
     if not projects:
@@ -158,7 +174,17 @@ def _upsert_kb_projects(con: sqlite3.Connection, projects: list[dict[str, Any]])
             paths=excluded.paths,
             updated_at=excluded.updated_at
         """,
-                (p["id"], p["name"], p["one_liner"], p["stack"], p["highlights"], p["links"], p["tags"], p["paths"], now),
+                (
+                    p["id"],
+                    p["name"],
+                    p["one_liner"],
+                    p["stack"],
+                    p["highlights"],
+                    p["links"],
+                    p["tags"],
+                    p["paths"],
+                    now,
+                ),
             )
         commit_with_retry(con, retries=6)
     finally:
@@ -166,6 +192,7 @@ def _upsert_kb_projects(con: sqlite3.Connection, projects: list[dict[str, Any]])
             con.close()
         except Exception:
             pass
+
 
 def _match_project_id(projects: list[dict[str, Any]], file_path: str) -> str:
     norm = file_path.replace("\\", "/").lower()
@@ -181,6 +208,7 @@ def _match_project_id(projects: list[dict[str, Any]], file_path: str) -> str:
             except Exception:
                 continue
     return ""
+
 
 async def ingest(req: dict | None = None):
     """Flexible ingest.
@@ -210,9 +238,17 @@ async def ingest(req: dict | None = None):
                 base = os.path.abspath(r.get("path") or ".")
                 includes = r.get("include") or []
                 files = _collect_fs_files(base, includes)
-                preview.append({"type": "fs", "path": base, "files": [os.path.relpath(f, base) for f in files]})
+                preview.append(
+                    {
+                        "type": "fs",
+                        "path": base,
+                        "files": [os.path.relpath(f, base) for f in files],
+                    }
+                )
             elif (r or {}).get("type") == "git":
-                preview.append({"type": "git", "url": r.get("url"), "ref": r.get("ref", "HEAD")})
+                preview.append(
+                    {"type": "git", "url": r.get("url"), "ref": r.get("ref", "HEAD")}
+                )
         return {"ok": True, "dry_run": True, "preview": preview}
 
     conn = connect()
@@ -221,11 +257,23 @@ async def ingest(req: dict | None = None):
     try:
         # If no repos provided, use RAG_REPOS (git shorthand)
         if not repos:
-            env_repos = [r.strip() for r in os.getenv("RAG_REPOS", "").split(",") if r.strip()]
+            env_repos = [
+                r.strip() for r in os.getenv("RAG_REPOS", "").split(",") if r.strip()
+            ]
             for repo in env_repos:
                 with tempfile.TemporaryDirectory() as tmp:
                     dst = os.path.join(tmp, repo.replace("/", "__"))
-                    subprocess.run(["git", "clone", "--depth", "1", f"https://github.com/{repo}.git", dst], check=True)
+                    subprocess.run(
+                        [
+                            "git",
+                            "clone",
+                            "--depth",
+                            "1",
+                            f"https://github.com/{repo}.git",
+                            dst,
+                        ],
+                        check=True,
+                    )
                     for p in file_list(dst):
                         rel = os.path.relpath(p, dst)
                         try:
@@ -238,7 +286,18 @@ async def ingest(req: dict | None = None):
                         embs = await embed(chunks)
                         for i, (ck, em) in enumerate(zip(chunks, embs)):
                             did = hashlib.sha1(f"{repo}:{rel}:{i}".encode()).hexdigest()
-                            upsert_doc(conn, {"id": did, "repo": repo, "path": rel, "sha": "head", "title": rel, "text": ck, "meta": {"repo": repo, "path": rel, "i": i}})
+                            upsert_doc(
+                                conn,
+                                {
+                                    "id": did,
+                                    "repo": repo,
+                                    "path": rel,
+                                    "sha": "head",
+                                    "title": rel,
+                                    "text": ck,
+                                    "meta": {"repo": repo, "path": rel, "i": i},
+                                },
+                            )
                             upsert_vec(conn, did, em)
                             total_chunks += 1
                     used.append({"type": "git", "repo": repo})
@@ -253,18 +312,34 @@ async def ingest(req: dict | None = None):
                 if rtype == "kb":
                     # Load structured KB definitions and optionally persist to DB
                     try:
-                        kb_projects = _load_projects_yaml(r.get("path") or "data/projects.yaml")
-                        used.append({"type": "kb", "path": r.get("path"), "count": len(kb_projects)})
+                        kb_projects = _load_projects_yaml(
+                            r.get("path") or "data/projects.yaml"
+                        )
+                        used.append(
+                            {
+                                "type": "kb",
+                                "path": r.get("path"),
+                                "count": len(kb_projects),
+                            }
+                        )
                         try:
                             _upsert_kb_projects(_open_db(DB_PATH), kb_projects)
                         except Exception:
                             pass
                     except Exception as e:
-                        used.append({"type": "kb", "path": r.get("path"), "error": str(e)})
+                        used.append(
+                            {"type": "kb", "path": r.get("path"), "error": str(e)}
+                        )
                     continue
                 if rtype == "fs":
                     base = os.path.abspath(r.get("path") or ".")
-                    includes = r.get("include") or ["README.md", "docs/**/*.md", "SECURITY.md", "docs/DEPLOY.md", "docs/ARCHITECTURE.md"]
+                    includes = r.get("include") or [
+                        "README.md",
+                        "docs/**/*.md",
+                        "SECURITY.md",
+                        "docs/DEPLOY.md",
+                        "docs/ARCHITECTURE.md",
+                    ]
                     files = _collect_fs_files(base, includes)
                     for fp in files:
                         rel = os.path.relpath(fp, base)
@@ -281,34 +356,58 @@ async def ingest(req: dict | None = None):
                             chunk_objs = list(chunk_markdown(txt))
                         else:
                             parts_fallback = chunk_for_path(rel, content) or []
-                            chunk_objs = [{"title": rel, "content": ck} for ck in parts_fallback]
+                            chunk_objs = [
+                                {"title": rel, "content": ck} for ck in parts_fallback
+                            ]
                         if not chunk_objs:
                             continue
                         parts = [c.get("content", "") for c in chunk_objs]
                         titles = [c.get("title") or rel for c in chunk_objs]
                         embs = await embed(parts)
                         # Optional project tagging based on KB patterns
-                        project_id = _match_project_id(kb_projects, rel) if kb_projects else ""
+                        project_id = (
+                            _match_project_id(kb_projects, rel) if kb_projects else ""
+                        )
                         for i, (ck, em, ttl) in enumerate(zip(parts, embs, titles)):
-                            did = hashlib.sha1(f"fs:{base}:{rel}:{i}".encode()).hexdigest()
+                            did = hashlib.sha1(
+                                f"fs:{base}:{rel}:{i}".encode()
+                            ).hexdigest()
                             meta = {"path": rel, "base": base, "i": i}
                             if project_id:
                                 meta["project_id"] = project_id
-                            upsert_doc(conn, {"id": did, "repo": "local-fs", "path": rel, "sha": "fs", "title": ttl, "text": ck, "meta": meta})
+                            upsert_doc(
+                                conn,
+                                {
+                                    "id": did,
+                                    "repo": "local-fs",
+                                    "path": rel,
+                                    "sha": "fs",
+                                    "title": ttl,
+                                    "text": ck,
+                                    "meta": meta,
+                                },
+                            )
                             upsert_vec(conn, did, em)
                             total_chunks += 1
                     used.append({"type": "fs", "path": base, "count": len(files)})
                 elif rtype == "git":
-                    url = r.get("url"); ref = r.get("ref") or "HEAD"
+                    url = r.get("url")
+                    ref = r.get("ref") or "HEAD"
                     if not url:
                         continue
                     dst = os.path.join(tmp, hashlib.sha1(url.encode()).hexdigest()[:8])
                     try:
-                        subprocess.run(["git", "clone", "--depth", "1", url, dst], check=True)
+                        subprocess.run(
+                            ["git", "clone", "--depth", "1", url, dst], check=True
+                        )
                         if ref and ref not in ("HEAD", "head"):
-                            subprocess.run(["git", "-C", dst, "checkout", ref], check=True)
+                            subprocess.run(
+                                ["git", "-C", dst, "checkout", ref], check=True
+                            )
                     except Exception as e:
-                        used.append({"type": "git", "url": url, "ref": ref, "error": str(e)})
+                        used.append(
+                            {"type": "git", "url": url, "ref": ref, "error": str(e)}
+                        )
                         continue
                     includes = r.get("include") or ["**/*.md"]
                     files = _collect_fs_files(dst, includes)
@@ -323,11 +422,26 @@ async def ingest(req: dict | None = None):
                             continue
                         embs = await embed(chunks)
                         for i, (ck, em) in enumerate(zip(chunks, embs)):
-                            did = hashlib.sha1(f"git:{url}:{rel}:{i}".encode()).hexdigest()
-                            upsert_doc(conn, {"id": did, "repo": url, "path": rel, "sha": ref, "title": rel, "text": ck, "meta": {"url": url, "path": rel, "i": i}})
+                            did = hashlib.sha1(
+                                f"git:{url}:{rel}:{i}".encode()
+                            ).hexdigest()
+                            upsert_doc(
+                                conn,
+                                {
+                                    "id": did,
+                                    "repo": url,
+                                    "path": rel,
+                                    "sha": ref,
+                                    "title": rel,
+                                    "text": ck,
+                                    "meta": {"url": url, "path": rel, "i": i},
+                                },
+                            )
                             upsert_vec(conn, did, em)
                             total_chunks += 1
-                    used.append({"type": "git", "url": url, "ref": ref, "count": len(files)})
+                    used.append(
+                        {"type": "git", "url": url, "ref": ref, "count": len(files)}
+                    )
             commit_with_retry(conn, retries=6)
         return {"ok": True, "chunks": total_chunks, "sources": used}
     finally:

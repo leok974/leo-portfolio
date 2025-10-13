@@ -1,4 +1,5 @@
 """Agent system API routes."""
+
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,8 +17,10 @@ router = APIRouter(prefix="/agents", tags=["agents"])
 
 # --- Request/Response Models ---
 
+
 class RunReq(BaseModel):
     """Request to run an agent task."""
+
     agent: str
     task: str
     inputs: dict[str, Any] | None = None
@@ -25,11 +28,13 @@ class RunReq(BaseModel):
 
 class ApproveReq(BaseModel):
     """Request to approve/reject a task."""
+
     task_id: str
     note: str | None = None
 
 
 # --- Helper: Get Current User (Optional Auth) ---
+
 
 def get_current_user_optional():
     """Get current user for approval attribution.
@@ -42,6 +47,7 @@ def get_current_user_optional():
 
 # --- Routes ---
 
+
 @router.get("/registry")
 def get_registry(user=Depends(get_current_user_optional)):
     """Get agent registry with goals, tools, and policies."""
@@ -51,9 +57,7 @@ def get_registry(user=Depends(get_current_user_optional)):
 
 @router.post("/run")
 async def run(
-    req: RunReq,
-    db: Session = Depends(get_db),
-    user=Depends(get_current_user_optional)
+    req: RunReq, db: Session = Depends(get_db), user=Depends(get_current_user_optional)
 ):
     """
     Run an agent task.
@@ -75,15 +79,13 @@ async def run(
         "task_id": t.id,
         "status": t.status,
         "needs_approval": t.needs_approval,
-        "outputs_uri": t.outputs_uri
+        "outputs_uri": t.outputs_uri,
     }
 
 
 @router.get("/status")
 def status(
-    task_id: str,
-    db: Session = Depends(get_db),
-    user=Depends(get_current_user_optional)
+    task_id: str, db: Session = Depends(get_db), user=Depends(get_current_user_optional)
 ):
     """Get task status and details."""
     t = db.get(AgentTask, task_id)
@@ -107,7 +109,7 @@ def status(
 def approve(
     req: ApproveReq,
     db: Session = Depends(get_db),
-    user=Depends(get_current_user_optional)
+    user=Depends(get_current_user_optional),
 ):
     """Approve a task waiting for approval."""
     t = db.get(AgentTask, req.task_id)
@@ -122,7 +124,9 @@ def approve(
     t.approval_note = req.note
     db.commit()
 
-    track_status_change(t.agent, t.task, t.id, "succeeded", {"approved_by": t.approved_by})
+    track_status_change(
+        t.agent, t.task, t.id, "succeeded", {"approved_by": t.approved_by}
+    )
 
     return {"ok": True, "task_id": t.id, "status": t.status}
 
@@ -131,7 +135,7 @@ def approve(
 def reject(
     req: ApproveReq,
     db: Session = Depends(get_db),
-    user=Depends(get_current_user_optional)
+    user=Depends(get_current_user_optional),
 ):
     """Reject a task."""
     t = db.get(AgentTask, req.task_id)
@@ -146,7 +150,9 @@ def reject(
     t.approval_note = req.note
     db.commit()
 
-    track_status_change(t.agent, t.task, t.id, "rejected", {"rejected_by": t.approved_by})
+    track_status_change(
+        t.agent, t.task, t.id, "rejected", {"rejected_by": t.approved_by}
+    )
 
     return {"ok": True, "task_id": t.id, "status": t.status}
 
@@ -155,7 +161,7 @@ def reject(
 def cancel(
     req: ApproveReq,
     db: Session = Depends(get_db),
-    user=Depends(get_current_user_optional)
+    user=Depends(get_current_user_optional),
 ):
     """
     Abort a running/queued task by marking it as 'canceled'.
@@ -174,6 +180,8 @@ def cancel(
     t.approval_note = (req.note or "").strip() or "Canceled by user"
     db.commit()
 
-    track_status_change(t.agent, t.task, t.id, "canceled", {"canceled_by": t.approved_by})
+    track_status_change(
+        t.agent, t.task, t.id, "canceled", {"canceled_by": t.approved_by}
+    )
 
     return {"ok": True, "task_id": t.id, "status": t.status}

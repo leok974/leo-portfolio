@@ -1,4 +1,5 @@
 """Nightly scheduler service for automated layout optimization."""
+
 from __future__ import annotations
 
 import asyncio
@@ -80,10 +81,7 @@ def _next_run(now: dt.datetime | None = None) -> dt.datetime:
 
     # Set target to today at specified time
     target = now.replace(
-        hour=target_time.hour,
-        minute=target_time.minute,
-        second=0,
-        microsecond=0
+        hour=target_time.hour, minute=target_time.minute, second=0, microsecond=0
     )
 
     # If we've already passed target time today, move to tomorrow
@@ -138,11 +136,14 @@ async def scheduler_loop():
             result = run_layout_optimize({"preset": preset})
 
             # Log event for audit trail
-            log_event("scheduler.optimize", {
-                "preset": preset,
-                "summary": result.get("summary"),
-                "status": result.get("status")
-            })
+            log_event(
+                "scheduler.optimize",
+                {
+                    "preset": preset,
+                    "summary": result.get("summary"),
+                    "status": result.get("status"),
+                },
+            )
 
             logger.info(f"Scheduler completed: {result.get('status')}")
 

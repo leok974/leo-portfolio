@@ -9,6 +9,7 @@ try:
 except Exception:
     geoip2 = None  # optional dependency
 
+
 def anonymize_prefix(ip: str | None) -> str | None:
     """IPv4 -> /24, IPv6 -> /48. Returns CIDR string or None."""
     if not ip:
@@ -24,6 +25,7 @@ def anonymize_prefix(ip: str | None) -> str | None:
     except Exception:
         return None
 
+
 @lru_cache(maxsize=1)
 def get_geo_reader(db_path: str | None):
     """Cache the GeoIP reader so we don't reopen per request."""
@@ -33,6 +35,7 @@ def get_geo_reader(db_path: str | None):
         return geoip2.database.Reader(db_path)
     except Exception:
         return None
+
 
 def lookup_country(ip: str | None, db_path: str | None) -> str | None:
     reader = get_geo_reader(db_path)

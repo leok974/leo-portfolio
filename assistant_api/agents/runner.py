@@ -1,4 +1,5 @@
 """Agent task runner with sub-agent dispatch."""
+
 import asyncio
 import json
 import pathlib
@@ -26,7 +27,9 @@ def _artifact_path(task_id: str) -> pathlib.Path:
     return p
 
 
-def create_task(db: Session, agent: str, task: str, inputs: dict[str, Any]) -> AgentTask:
+def create_task(
+    db: Session, agent: str, task: str, inputs: dict[str, Any]
+) -> AgentTask:
     """Create a new agent task."""
     reg = load_registry()
     if agent not in reg:
@@ -38,14 +41,17 @@ def create_task(db: Session, agent: str, task: str, inputs: dict[str, Any]) -> A
         task=task,
         inputs=inputs or {},
         status="queued",
-        needs_approval=not reg[agent].allow_auto or task not in ("validate",),  # example policy
+        needs_approval=not reg[agent].allow_auto
+        or task not in ("validate",),  # example policy
     )
     db.add(t)
     db.commit()
     db.refresh(t)
 
     # Track task creation
-    track_status_change(agent, task, t.id, "queued", {"needs_approval": t.needs_approval})
+    track_status_change(
+        agent, task, t.id, "queued", {"needs_approval": t.needs_approval}
+    )
 
     return t
 
@@ -67,11 +73,17 @@ async def run_task(db: Session, t: AgentTask) -> AgentTask:
         outputs, logs = await _dispatch_to_agent(t.agent, t.task, _inputs)
 
         # Save artifacts
-        (task_art_dir / "outputs.json").write_text(json.dumps(outputs, indent=2), encoding="utf-8")
+        (task_art_dir / "outputs.json").write_text(
+            json.dumps(outputs, indent=2), encoding="utf-8"
+        )
         (task_art_dir / "logs.txt").write_text(logs or "", encoding="utf-8")
 
         # Prefer the merged report if present; else point at the task folder
-        report_json = outputs.get("artifacts", {}).get("report_json") if isinstance(outputs, dict) else None
+        report_json = (
+            outputs.get("artifacts", {}).get("report_json")
+            if isinstance(outputs, dict)
+            else None
+        )
         t.outputs_uri = report_json or str(task_art_dir.resolve())
         t.logs = logs
 
@@ -95,7 +107,10 @@ async def run_task(db: Session, t: AgentTask) -> AgentTask:
 
 # ---- Sub-agent dispatch (stubs - replace with real tools later) ----
 
-async def _dispatch_to_agent(agent: str, task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any], str]:
+
+async def _dispatch_to_agent(
+    agent: str, task: str, inputs: dict[str, Any]
+) -> tuple[dict[str, Any], str]:
     """Route task to appropriate agent implementation."""
     if agent == "projects":
         return await _agent_projects(task, inputs)
@@ -120,7 +135,10 @@ async def _dispatch_to_agent(agent: str, task: str, inputs: dict[str, Any]) -> t
 
 # --- Example stub implementations (replace later with real tools) ---
 
-async def _agent_projects(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any], str]:
+
+async def _agent_projects(
+    task: str, inputs: dict[str, Any]
+) -> tuple[dict[str, Any], str]:
     """Projects agent - GitHub sync and project curation."""
     await asyncio.sleep(0)  # yield
 
@@ -128,7 +146,7 @@ async def _agent_projects(task: str, inputs: dict[str, Any]) -> tuple[dict[str, 
         repos = inputs.get("repos", [])
         return {
             "synced_repos": repos,
-            "curated": False
+            "curated": False,
         }, f"[projects.sync] simulated sync of {len(repos)} repos"
 
     if task == "curate":
@@ -148,7 +166,9 @@ async def _agent_seo(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any],
         # Artifact folder will be created in run_task(); we re-open it here
         # by computing the parent from inputs if provided, else the runner will write after.
         # The runner guarantees artifacts/<task_id> exists before writing outputs.json/logs.txt.
-        artifact_hint = inputs.get("_artifact_dir")  # internal hint injected by run_task
+        artifact_hint = inputs.get(
+            "_artifact_dir"
+        )  # internal hint injected by run_task
         if not artifact_hint:
             # Safe fallback: local scratch; the caller run_task will still save outputs.json/logs.txt into the canonical dir.
             artifact_dir = pathlib.Path("./artifacts").joinpath("tmp-seo-validate")
@@ -162,13 +182,15 @@ async def _agent_seo(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any],
     if task == "tune":
         return {
             "patch": "git://branch/seo-autofix-<hash>",
-            "changes": ["meta descriptions optimized", "alt text added"]
+            "changes": ["meta descriptions optimized", "alt text added"],
         }, "[seo.tune] autofix simulated"
 
     return {"ok": True}, f"[seo.{task}] no-op"
 
 
-async def _agent_branding(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any], str]:
+async def _agent_branding(
+    task: str, inputs: dict[str, Any]
+) -> tuple[dict[str, Any], str]:
     """Branding agent - logo and theme generation."""
     await asyncio.sleep(0)
 
@@ -185,7 +207,9 @@ async def _agent_branding(task: str, inputs: dict[str, Any]) -> tuple[dict[str, 
     return {"ok": True}, f"[branding.{task}] no-op"
 
 
-async def _agent_content(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any], str]:
+async def _agent_content(
+    task: str, inputs: dict[str, Any]
+) -> tuple[dict[str, Any], str]:
     """Content agent - summarization and rewriting."""
     await asyncio.sleep(0)
 
@@ -194,7 +218,7 @@ async def _agent_content(task: str, inputs: dict[str, Any]) -> tuple[dict[str, A
         return {
             "drafts": [
                 {"variant": "short", "text": "Summary...", "length": 100},
-                {"variant": "long", "text": "Detailed summary...", "length": 300}
+                {"variant": "long", "text": "Detailed summary...", "length": 300},
             ]
         }, f"[content.summarize] simulated for {source}"
 
@@ -202,28 +226,30 @@ async def _agent_content(task: str, inputs: dict[str, Any]) -> tuple[dict[str, A
         return {
             "variants": [
                 {"style": "professional", "text": "Rewritten in professional tone..."},
-                {"style": "casual", "text": "Rewritten in casual tone..."}
+                {"style": "casual", "text": "Rewritten in casual tone..."},
             ]
         }, "[content.rewrite] simulated rewrite"
 
     return {"ok": True}, f"[content.{task}] no-op"
 
 
-async def _agent_orchestrator(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any], str]:
+async def _agent_orchestrator(
+    task: str, inputs: dict[str, Any]
+) -> tuple[dict[str, Any], str]:
     """Orchestrator agent - scheduling and routing."""
     await asyncio.sleep(0)
 
     if task == "schedule":
         return {
             "scheduled_tasks": inputs.get("tasks", []),
-            "next_run": "2025-01-01T00:00:00Z"
+            "next_run": "2025-01-01T00:00:00Z",
         }, "[orchestrator.schedule] simulated scheduling"
 
     if task == "route":
         query = inputs.get("query", "")
         return {
             "routed_to": "seo",
-            "reason": "Query matches SEO patterns"
+            "reason": "Query matches SEO patterns",
         }, f"[orchestrator.route] routed query: {query}"
 
     return {"ok": True}, f"[orchestrator.{task}] no-op"
@@ -234,7 +260,9 @@ async def _agent_code(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any]
     await asyncio.sleep(0)
 
     if task == "review":
-        artifact_dir = pathlib.Path(inputs.get("_artifact_dir") or "./artifacts/tmp-code-review")
+        artifact_dir = pathlib.Path(
+            inputs.get("_artifact_dir") or "./artifacts/tmp-code-review"
+        )
         summary = run_code_review(artifact_dir)
         return summary, "[code.review] executed"
 
@@ -246,7 +274,9 @@ async def _agent_dx(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any], 
     await asyncio.sleep(0)
 
     if task == "integrate":
-        artifact_dir = pathlib.Path(inputs.get("_artifact_dir") or "./artifacts/tmp-dx-integrate")
+        artifact_dir = pathlib.Path(
+            inputs.get("_artifact_dir") or "./artifacts/tmp-dx-integrate"
+        )
         summary = run_dx_integrate(artifact_dir)
         return summary, "[dx.integrate] executed"
 
@@ -258,7 +288,9 @@ async def _agent_infra(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any
     await asyncio.sleep(0)
 
     if task == "scale":
-        artifact_dir = pathlib.Path(inputs.get("_artifact_dir") or "./artifacts/tmp-infra-scale")
+        artifact_dir = pathlib.Path(
+            inputs.get("_artifact_dir") or "./artifacts/tmp-infra-scale"
+        )
         summary = run_infra_scale(artifact_dir)
         return summary, "[infra.scale] executed"
 

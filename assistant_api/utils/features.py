@@ -18,7 +18,11 @@ from .auth import get_current_user
 
 def is_dev() -> bool:
     """Check if running in development mode."""
-    return os.getenv("ALLOW_TOOLS", "0") == "1" or os.getenv("ENV", "").lower() in ("dev", "development", "local")
+    return os.getenv("ALLOW_TOOLS", "0") == "1" or os.getenv("ENV", "").lower() in (
+        "dev",
+        "development",
+        "local",
+    )
 
 
 def uploads_enabled_env() -> bool:
@@ -51,5 +55,5 @@ async def require_uploads_enabled(request: Request):
 
     raise HTTPException(
         status_code=403,
-        detail="Uploads are disabled. Set FEATURE_UPLOADS=1 or contact admin."
+        detail="Uploads are disabled. Set FEATURE_UPLOADS=1 or contact admin.",
     )

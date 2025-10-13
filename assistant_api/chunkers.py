@@ -10,7 +10,22 @@ def split_markdown(text: str):
             chunks.append(b[i : i + 1500])
     return chunks
 
-CODE_EXTS = {".ts", ".tsx", ".js", ".py", ".md", ".mdx", ".yml", ".yaml", ".json", ".html", ".css", ".sql"}
+
+CODE_EXTS = {
+    ".ts",
+    ".tsx",
+    ".js",
+    ".py",
+    ".md",
+    ".mdx",
+    ".yml",
+    ".yaml",
+    ".json",
+    ".html",
+    ".css",
+    ".sql",
+}
+
 
 def chunk_for_path(path: str, content: str):
     ext = pathlib.Path(path).suffix.lower()

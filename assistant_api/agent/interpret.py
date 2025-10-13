@@ -40,7 +40,11 @@ def parse_command(cmd: str) -> tuple[list[str], dict[str, Any]]:
         params = {"brand": m.group(1).strip()}
         return plan, params
     # (fetch|set) logo for repo
-    m = re.search(r"(?:fetch|set)\s+logo\s+for\s+repo\s+([\w.-]+/[\w.-]+)\s+(?:from|to)\s+(.+)$", c, re.I)
+    m = re.search(
+        r"(?:fetch|set)\s+logo\s+for\s+repo\s+([\w.-]+/[\w.-]+)\s+(?:from|to)\s+(.+)$",
+        c,
+        re.I,
+    )
     if m:
         target = m.group(2).strip()
         if re.match(r"^https?://", target, re.I):
@@ -97,7 +101,11 @@ def parse_command(cmd: str) -> tuple[list[str], dict[str, Any]]:
         roles_match = re.search(r"for\s+([\w\s,]+)$", c, re.I)
         if roles_match:
             roles_text = roles_match.group(1)
-            roles = [r.strip().lower() for r in re.split(r"[\s,]+and[\s,]+|[\s,]+", roles_text) if r.strip()]
+            roles = [
+                r.strip().lower()
+                for r in re.split(r"[\s,]+and[\s,]+|[\s,]+", roles_text)
+                if r.strip()
+            ]
             params = {"roles": roles}
         return plan, params
 

@@ -6,6 +6,7 @@ Generates keyword recommendations per page with:
 - CTR underperformer bias for broader exploration
 - SHA-256 integrity checksums in artifacts
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -34,11 +35,13 @@ router = APIRouter(prefix="/agent/seo", tags=["agent", "seo"])
 # Reuse existing artifacts directory
 ART_DIR = None  # Will be set on first use from settings
 
+
 # ----------------------------
 # Models
 # ----------------------------
 class KeywordItem(BaseModel):
     """Single keyword with confidence score and trend interest."""
+
     term: str
     # 0..1 confidence from generator (LLM or heuristic)
     score: float
@@ -48,6 +51,7 @@ class KeywordItem(BaseModel):
 
 class PageKeywords(BaseModel):
     """Keyword recommendations for a single page."""
+
     page: str
     title: str | None = None
     desc: str | None = None
@@ -56,6 +60,7 @@ class PageKeywords(BaseModel):
 
 class KeywordsReport(BaseModel):
     """Complete keyword intelligence report with integrity."""
+
     generated_at: str
     mode: str  # "llm" | "heuristic"
     inputs: dict[str, str]  # e.g., source sitemap/analytics pointers
@@ -81,7 +86,9 @@ def _normalize_text(s: str) -> str:
     return re.sub(r"\s+", " ", s or "").strip()
 
 
-def _extract_candidates_heuristic(title: str, desc: str, extra: str = "") -> list[tuple[str, float]]:
+def _extract_candidates_heuristic(
+    title: str, desc: str, extra: str = ""
+) -> list[tuple[str, float]]:
     """
     Lightweight candidate extractor:
     - Favors title bigrams/trigrams
@@ -95,7 +102,7 @@ def _extract_candidates_heuristic(title: str, desc: str, extra: str = "") -> lis
     extra = _normalize_text(extra)
 
     def grams(tokens: list[str], n: int) -> list[str]:
-        return [" ".join(tokens[i:i+n]) for i in range(len(tokens)-n+1)]
+        return [" ".join(tokens[i : i + n]) for i in range(len(tokens) - n + 1)]
 
     t_tokens = [w.lower() for w in WORD_RE.findall(title)]
     d_tokens = [w.lower() for w in WORD_RE.findall(desc + " " + extra)]
@@ -119,11 +126,19 @@ def _extract_candidates_heuristic(title: str, desc: str, extra: str = "") -> lis
 
     # Domain-specific boosts for portfolio/agent keywords
     boosts = {
-        "autonomous": 0.85, "automation": 0.85, "portfolio": 0.85,
-        "siteagent": 0.9, "ai": 0.9, "website builder": 0.9,
-        "agentic": 0.85, "seo": 0.8, "keywords": 0.7,
-        "resume generator": 0.88, "self-updating": 0.87,
-        "agent": 0.82, "builder": 0.75,
+        "autonomous": 0.85,
+        "automation": 0.85,
+        "portfolio": 0.85,
+        "siteagent": 0.9,
+        "ai": 0.9,
+        "website builder": 0.9,
+        "agentic": 0.85,
+        "seo": 0.8,
+        "keywords": 0.7,
+        "resume generator": 0.88,
+        "self-updating": 0.87,
+        "agent": 0.82,
+        "builder": 0.75,
     }
     for k, v in boosts.items():
         cand[k] = max(cand.get(k, 0.0), v)
@@ -166,9 +181,7 @@ def _load_analytics_summary(backend_url: str) -> dict:
 
 
 def _rank_and_limit(
-    cands: list[tuple[str, float]],
-    trends: dict[str, int],
-    bias: float = 0.0
+    cands: list[tuple[str, float]], trends: dict[str, int], bias: float = 0.0
 ) -> list[KeywordItem]:
     """
     Combine confidence and trend interest with optional bias for underperformers.
@@ -210,18 +223,13 @@ def _write_artifacts(report: KeywordsReport, settings: dict) -> KeywordsReport:
 
     # Compute integrity on stable JSON (compact format)
     encoded = json.dumps(
-        report.model_dump(exclude_none=True),
-        ensure_ascii=False,
-        separators=(",", ":")
+        report.model_dump(exclude_none=True), ensure_ascii=False, separators=(",", ":")
     ).encode("utf-8")
     digest = _sha256_bytes(encoded)
     report.integrity = {"algo": "sha256", "value": digest, "size": str(len(encoded))}
 
     # Write pretty JSON
-    art_json.write_text(
-        json.dumps(report.model_dump(), indent=2),
-        encoding="utf-8"
-    )
+    art_json.write_text(json.dumps(report.model_dump(), indent=2), encoding="utf-8")
 
     # Write Markdown
     lines = [
@@ -229,7 +237,7 @@ def _write_artifacts(report: KeywordsReport, settings: dict) -> KeywordsReport:
         f"- **Generated:** {report.generated_at}",
         f"- **Mode:** {report.mode}",
         f"- **Integrity:** `{report.integrity['algo']}:{report.integrity['value']}` ({report.integrity['size']} bytes)",
-        ""
+        "",
     ]
 
     for item in report.items:
@@ -237,12 +245,18 @@ def _write_artifacts(report: KeywordsReport, settings: dict) -> KeywordsReport:
         if item.title:
             lines.append(f"**Title:** {item.title}")
         if item.desc:
-            lines.append(f"**Description:** {item.desc[:120]}..." if len(item.desc) > 120 else f"**Description:** {item.desc}")
+            lines.append(
+                f"**Description:** {item.desc[:120]}..."
+                if len(item.desc) > 120
+                else f"**Description:** {item.desc}"
+            )
         lines.append("")
 
         for kw in item.keywords:
             eff = round(kw.score * (kw.trend / 100.0), 3)
-            lines.append(f"- `{kw.term}` — score **{kw.score}**, trend **{kw.trend}**, effectiveness **{eff}**")
+            lines.append(
+                f"- `{kw.term}` — score **{kw.score}**, trend **{kw.trend}**, effectiveness **{eff}**"
+            )
         lines.append("")
 
     art_md.write_text("\n".join(lines).strip() + "\n", encoding="utf-8")
@@ -252,7 +266,10 @@ def _write_artifacts(report: KeywordsReport, settings: dict) -> KeywordsReport:
 # ----------------------------
 # Public Routes
 # ----------------------------
-@router.post("/keywords", summary="Generate keyword intelligence artifacts (auto-mock if SEO_LLM_ENABLED=0)")
+@router.post(
+    "/keywords",
+    summary="Generate keyword intelligence artifacts (auto-mock if SEO_LLM_ENABLED=0)",
+)
 def generate_keywords(
     principal: str = Depends(require_cf_access),
 ) -> KeywordsReport:
@@ -320,12 +337,9 @@ def generate_keywords(
         bias = 0.15 if path in low_ctr_pages else 0.0
         ranked = _rank_and_limit(candidates, trends, bias=bias)
 
-        out_items.append(PageKeywords(
-            page=path,
-            title=title,
-            desc=desc,
-            keywords=ranked
-        ))
+        out_items.append(
+            PageKeywords(page=path, title=title, desc=desc, keywords=ranked)
+        )
 
     # 6) Build and write artifacts
     report = KeywordsReport(
@@ -347,7 +361,7 @@ def get_keywords() -> KeywordsReport:
     if not art_json.exists():
         raise HTTPException(
             status_code=404,
-            detail="No seo-keywords.json found. Run POST /agent/seo/keywords first."
+            detail="No seo-keywords.json found. Run POST /agent/seo/keywords first.",
         )
 
     data = json.loads(art_json.read_text(encoding="utf-8"))

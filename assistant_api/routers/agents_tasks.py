@@ -1,4 +1,5 @@
 """FastAPI router for agents_tasks orchestration API."""
+
 import base64
 import csv
 import io
@@ -16,7 +17,12 @@ from assistant_api.db import get_db
 from assistant_api.metrics import emit as emit_metric
 from assistant_api.models.agents_tasks import AgentTask
 from assistant_api.rbac import require_admin
-from assistant_api.schemas.agents_tasks import AgentTaskCreate, AgentTaskListOut, AgentTaskOut, AgentTaskUpdate
+from assistant_api.schemas.agents_tasks import (
+    AgentTaskCreate,
+    AgentTaskListOut,
+    AgentTaskOut,
+    AgentTaskUpdate,
+)
 
 router = APIRouter(prefix="/agents/tasks", tags=["agents"])
 
@@ -41,12 +47,15 @@ def create_agent_task(task_data: AgentTaskCreate, db: Session = Depends(get_db))
 
     # Emit metric
     try:
-        emit_metric("agent.task_created", {
-            "task": db_task.task,
-            "run_id": db_task.run_id,
-            "status": db_task.status,
-            "id": db_task.id,
-        })
+        emit_metric(
+            "agent.task_created",
+            {
+                "task": db_task.task,
+                "run_id": db_task.run_id,
+                "status": db_task.status,
+                "id": db_task.id,
+            },
+        )
     except Exception:
         pass  # Don't let metrics failures affect the API
 
@@ -54,7 +63,9 @@ def create_agent_task(task_data: AgentTaskCreate, db: Session = Depends(get_db))
 
 
 @router.patch("/{task_id}", response_model=AgentTaskOut)
-def update_agent_task(task_id: int, task_update: AgentTaskUpdate, db: Session = Depends(get_db)):
+def update_agent_task(
+    task_id: int, task_update: AgentTaskUpdate, db: Session = Depends(get_db)
+):
     """
     Update an existing agent task record.
 
@@ -74,15 +85,18 @@ def update_agent_task(task_id: int, task_update: AgentTaskUpdate, db: Session = 
 
     # Emit metric
     try:
-        emit_metric("agent.task_updated", {
-            "task": db_task.task,
-            "run_id": db_task.run_id,
-            "status": db_task.status,
-            "id": db_task.id,
-            "approval_state": db_task.approval_state,
-            "duration_ms": db_task.duration_ms,
-            "outputs_uri": db_task.outputs_uri,
-        })
+        emit_metric(
+            "agent.task_updated",
+            {
+                "task": db_task.task,
+                "run_id": db_task.run_id,
+                "status": db_task.status,
+                "id": db_task.id,
+                "approval_state": db_task.approval_state,
+                "duration_ms": db_task.duration_ms,
+                "outputs_uri": db_task.outputs_uri,
+            },
+        )
     except Exception:
         pass  # Don't let metrics failures affect the API
 
@@ -94,7 +108,7 @@ def list_agent_tasks_legacy(
     run_id: str | None = None,
     status: str | None = None,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     List agent tasks with optional filters (legacy endpoint for backward compatibility).
@@ -124,7 +138,9 @@ def _encode_cursor(cur: dict) -> str:
 def _decode_cursor(token: str) -> dict | None:
     """Decode opaque cursor token to dict."""
     try:
-        return json.loads(base64.urlsafe_b64decode(token.encode("ascii")).decode("utf-8"))
+        return json.loads(
+            base64.urlsafe_b64decode(token.encode("ascii")).decode("utf-8")
+        )
     except Exception:
         return None
 
@@ -133,10 +149,18 @@ def _decode_cursor(token: str) -> dict | None:
 def list_tasks_paged(
     db: Session = Depends(get_db),
     limit: int = Query(50, ge=1, le=200),
-    since: datetime | None = Query(None, description="Return tasks with started_at >= this UTC datetime (ISO-8601)"),
-    cursor: str | None = Query(None, description="Opaque pagination token from previous page"),
-    status: list[str] = Query([], description="Filter by status (can be specified multiple times)"),
-    task: list[str] = Query([], description="Filter by task name (can be specified multiple times)"),
+    since: datetime | None = Query(
+        None, description="Return tasks with started_at >= this UTC datetime (ISO-8601)"
+    ),
+    cursor: str | None = Query(
+        None, description="Opaque pagination token from previous page"
+    ),
+    status: list[str] = Query(
+        [], description="Filter by status (can be specified multiple times)"
+    ),
+    task: list[str] = Query(
+        [], description="Filter by task name (can be specified multiple times)"
+    ),
 ):
     """
     Keyset pagination ordered by (started_at DESC, id DESC).
@@ -162,17 +186,23 @@ def list_tasks_paged(
         q = q.filter(
             or_(
                 AgentTask.started_at < tok["started_at"],
-                and_(AgentTask.started_at == tok["started_at"], AgentTask.id < tok["id"]),
+                and_(
+                    AgentTask.started_at == tok["started_at"], AgentTask.id < tok["id"]
+                ),
             )
         )
 
-    rows = (q.order_by(desc(AgentTask.started_at), desc(AgentTask.id)).limit(limit + 1)).all()
+    rows = (
+        q.order_by(desc(AgentTask.started_at), desc(AgentTask.id)).limit(limit + 1)
+    ).all()
     has_more = len(rows) > limit
     items = rows[:limit]
     next_cursor = None
     if has_more and items:
         last = items[-1]
-        next_cursor = _encode_cursor({"started_at": last.started_at.isoformat(), "id": last.id})
+        next_cursor = _encode_cursor(
+            {"started_at": last.started_at.isoformat(), "id": last.id}
+        )
 
     return AgentTaskListOut(items=items, next_cursor=next_cursor)
 
@@ -181,9 +211,15 @@ def list_tasks_paged(
 def list_tasks_paged_csv(
     db: Session = Depends(get_db),
     limit: int = Query(1000, ge=1, le=10000),
-    since: datetime | None = Query(None, description="Return tasks with started_at >= this UTC datetime (ISO-8601)"),
-    status: list[str] = Query([], description="Filter by status (can be specified multiple times)"),
-    task: list[str] = Query([], description="Filter by task name (can be specified multiple times)"),
+    since: datetime | None = Query(
+        None, description="Return tasks with started_at >= this UTC datetime (ISO-8601)"
+    ),
+    status: list[str] = Query(
+        [], description="Filter by status (can be specified multiple times)"
+    ),
+    task: list[str] = Query(
+        [], description="Filter by task name (can be specified multiple times)"
+    ),
 ):
     """
     Export tasks as CSV with filters.
@@ -206,25 +242,43 @@ def list_tasks_paged_csv(
     # Build CSV in memory
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["id", "task", "run_id", "status", "started_at", "finished_at", "duration_ms", "outputs_uri", "log_excerpt"])
+    writer.writerow(
+        [
+            "id",
+            "task",
+            "run_id",
+            "status",
+            "started_at",
+            "finished_at",
+            "duration_ms",
+            "outputs_uri",
+            "log_excerpt",
+        ]
+    )
     for row in rows:
-        writer.writerow([
-            row.id,
-            row.task,
-            row.run_id,
-            row.status,
-            row.started_at.isoformat() if row.started_at else "",
-            row.finished_at.isoformat() if row.finished_at else "",
-            row.duration_ms,
-            row.outputs_uri or "",
-            (row.log_excerpt[:100] + "...") if row.log_excerpt and len(row.log_excerpt) > 100 else (row.log_excerpt or ""),
-        ])
+        writer.writerow(
+            [
+                row.id,
+                row.task,
+                row.run_id,
+                row.status,
+                row.started_at.isoformat() if row.started_at else "",
+                row.finished_at.isoformat() if row.finished_at else "",
+                row.duration_ms,
+                row.outputs_uri or "",
+                (
+                    (row.log_excerpt[:100] + "...")
+                    if row.log_excerpt and len(row.log_excerpt) > 100
+                    else (row.log_excerpt or "")
+                ),
+            ]
+        )
 
     output.seek(0)
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=agent_tasks.csv"}
+        headers={"Content-Disposition": "attachment; filename=agent_tasks.csv"},
     )
 
 
@@ -241,13 +295,17 @@ def prune_before(
         raise HTTPException(status_code=403, detail="Forbidden")
 
     # Use a single SQL statement for speed
-    res = db.execute(text("DELETE FROM agents_tasks WHERE started_at < :cutoff RETURNING 1"), {"cutoff": date})
+    res = db.execute(
+        text("DELETE FROM agents_tasks WHERE started_at < :cutoff RETURNING 1"),
+        {"cutoff": date},
+    )
     count = len(res.fetchall())
     db.commit()
     return {"deleted": count, "cutoff": date.isoformat()}
 
 
 # --- Approval actions (admin only) ---
+
 
 @router.post("/{task_id}/approve", response_model=AgentTaskOut)
 def approve_task(
@@ -277,19 +335,24 @@ def approve_task(
     if not obj.finished_at:
         obj.finished_at = now
         if obj.started_at:
-            obj.duration_ms = obj.duration_ms or int((now - obj.started_at).total_seconds() * 1000)
+            obj.duration_ms = obj.duration_ms or int(
+                (now - obj.started_at).total_seconds() * 1000
+            )
 
     db.commit()
     db.refresh(obj)
 
     # Emit metrics (non-blocking)
     try:
-        emit_metric("agent.task_approved", {
-            "id": obj.id,
-            "task": obj.task,
-            "run_id": obj.run_id,
-            "approver": obj.approver,
-        })
+        emit_metric(
+            "agent.task_approved",
+            {
+                "id": obj.id,
+                "task": obj.task,
+                "run_id": obj.run_id,
+                "approver": obj.approver,
+            },
+        )
     except Exception:
         pass  # Don't fail the request if metrics fail
 
@@ -324,19 +387,24 @@ def reject_task(
     if not obj.finished_at:
         obj.finished_at = now
         if obj.started_at:
-            obj.duration_ms = obj.duration_ms or int((now - obj.started_at).total_seconds() * 1000)
+            obj.duration_ms = obj.duration_ms or int(
+                (now - obj.started_at).total_seconds() * 1000
+            )
 
     db.commit()
     db.refresh(obj)
 
     # Emit metrics (non-blocking)
     try:
-        emit_metric("agent.task_rejected", {
-            "id": obj.id,
-            "task": obj.task,
-            "run_id": obj.run_id,
-            "approver": obj.approver,
-        })
+        emit_metric(
+            "agent.task_rejected",
+            {
+                "id": obj.id,
+                "task": obj.task,
+                "run_id": obj.run_id,
+                "approver": obj.approver,
+            },
+        )
     except Exception:
         pass  # Don't fail the request if metrics fail
 
@@ -371,21 +439,25 @@ def cancel_task(
     if not obj.finished_at:
         obj.finished_at = now
         if obj.started_at:
-            obj.duration_ms = obj.duration_ms or int((now - obj.started_at).total_seconds() * 1000)
+            obj.duration_ms = obj.duration_ms or int(
+                (now - obj.started_at).total_seconds() * 1000
+            )
 
     db.commit()
     db.refresh(obj)
 
     # Emit metrics (non-blocking)
     try:
-        emit_metric("agent.task_cancelled", {
-            "id": obj.id,
-            "task": obj.task,
-            "run_id": obj.run_id,
-            "approver": obj.approver,
-        })
+        emit_metric(
+            "agent.task_cancelled",
+            {
+                "id": obj.id,
+                "task": obj.task,
+                "run_id": obj.run_id,
+                "approver": obj.approver,
+            },
+        )
     except Exception:
         pass  # Don't fail the request if metrics fail
 
     return obj
-

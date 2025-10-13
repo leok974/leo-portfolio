@@ -3,6 +3,7 @@
 Generates SEO-optimized title and description suggestions using discovered keywords.
 Phase 50.7 seed implementation.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -42,7 +43,7 @@ def _limit(s: str, n: int) -> str:
     s = re.sub(r"\s+", " ", s or "").strip()
     if len(s) <= n:
         return s
-    return (s[:n-1]).rstrip() + "…"
+    return (s[: n - 1]).rstrip() + "…"
 
 
 def _load_keywords_index() -> dict[str, list[str]]:
@@ -57,7 +58,9 @@ def _load_keywords_index() -> dict[str, list[str]]:
             data = json.loads(p.read_text(encoding="utf-8"))
             for item in data.get("items", []):
                 path = item.get("page", "")
-                keywords = [k.get("term", "") for k in item.get("keywords", []) if k.get("term")]
+                keywords = [
+                    k.get("term", "") for k in item.get("keywords", []) if k.get("term")
+                ]
                 idx[path] = keywords
         except Exception:
             pass
@@ -96,7 +99,7 @@ def _craft_desc(base_desc: str, kws: list[str]) -> str:
 @router.get("/suggest", summary="Suggest SEO title/description for a page")
 def suggest_meta(
     path: str = Query(..., description="Site-relative path like /index.html"),
-    settings: dict = Depends(get_settings)
+    settings: dict = Depends(get_settings),
 ):
     """
     Generate SEO-optimized title and description suggestions.
@@ -138,8 +141,8 @@ def suggest_meta(
         "suggestion": {
             "title": title_suggestion,
             "desc": desc_suggestion,
-            "limits": {"title_max": 60, "desc_max": 155}
-        }
+            "limits": {"title_max": 60, "desc_max": 155},
+        },
     }
 
     # Write artifact with integrity checksum

@@ -8,6 +8,7 @@ from ..llm_client import get_primary_base_url, ping_primary_once
 
 router = APIRouter(prefix="/llm/primary", tags=["llm"])
 
+
 def _percentile(values: list[float], p: float) -> float:
     if not values:
         return 0.0
@@ -19,11 +20,18 @@ def _percentile(values: list[float], p: float) -> float:
         return values[f]
     return values[f] + (values[c] - values[f]) * (k - f)
 
+
 @router.get("/latency")
 async def primary_latency(
-    count: int = Query(15, ge=1, le=200, description="Total probes (including warmup)."),
-    warmup: int = Query(2, ge=0, le=50, description="Warmup probes not counted in stats."),
-    timeout_ms: int = Query(500, ge=50, le=5000, description="Per-probe timeout in ms."),
+    count: int = Query(
+        15, ge=1, le=200, description="Total probes (including warmup)."
+    ),
+    warmup: int = Query(
+        2, ge=0, le=50, description="Warmup probes not counted in stats."
+    ),
+    timeout_ms: int = Query(
+        500, ge=50, le=5000, description="Per-probe timeout in ms."
+    ),
 ) -> dict[str, object]:
     """Low-overhead latency sampling hitting the primary /models endpoint directly."""
     timeout_s = timeout_ms / 1000.0
@@ -43,7 +51,9 @@ async def primary_latency(
     eff_statuses = statuses[warmup:] if warmup < len(statuses) else []
     stats = {
         "count": len(eff),
-        "ok_rate": (sum(1 for s in eff_statuses if s == 200) / len(eff)) if eff else 0.0,
+        "ok_rate": (
+            (sum(1 for s in eff_statuses if s == 200) / len(eff)) if eff else 0.0
+        ),
         "min_ms": min(eff) if eff else 0.0,
         "p50_ms": _percentile(eff, 50.0),
         "p95_ms": _percentile(eff, 95.0),

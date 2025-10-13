@@ -1,4 +1,5 @@
 """Role-Based Access Control (RBAC) helper for admin-only operations."""
+
 import os
 
 from fastapi import Header, HTTPException

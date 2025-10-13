@@ -18,12 +18,14 @@ from .llm_client import (
 from .metrics import primary_fail_reason, providers
 
 
-def _llm_path(ollama_state: str | None, primary_present: bool, openai_state: str | None) -> str:
-    if ollama_state == 'up':
-        return 'primary' if primary_present else 'warming'
-    if openai_state == 'configured':
-        return 'fallback'
-    return 'down'
+def _llm_path(
+    ollama_state: str | None, primary_present: bool, openai_state: str | None
+) -> str:
+    if ollama_state == "up":
+        return "primary" if primary_present else "warming"
+    if openai_state == "configured":
+        return "fallback"
+    return "down"
 
 
 async def build_status(base: str) -> dict:
@@ -40,8 +42,8 @@ async def build_status(base: str) -> dict:
             if health_resp.status_code == 200:
                 health_json = health_resp.json()
                 if isinstance(health_json, dict):
-                    llm_status = health_json.get('status', {}) or {}
-                    primary_model = health_json.get('primary_model', OPENAI_MODEL)
+                    llm_status = health_json.get("status", {}) or {}
+                    primary_model = health_json.get("primary_model", OPENAI_MODEL)
         except Exception:
             llm_status = {}
 
@@ -51,9 +53,11 @@ async def build_status(base: str) -> dict:
                 _shim = _llm_client.llm_health()
                 if _shim:
                     llm_status = {
-                        'ollama': getattr(_shim, 'ollama', None),
-                        'primary_model_present': bool(getattr(_shim, 'primary_model_present', False)),
-                        'openai': getattr(_shim, 'openai', None),
+                        "ollama": getattr(_shim, "ollama", None),
+                        "primary_model_present": bool(
+                            getattr(_shim, "primary_model_present", False)
+                        ),
+                        "openai": getattr(_shim, "openai", None),
                     }
             except Exception:
                 llm_status = {}
@@ -62,8 +66,8 @@ async def build_status(base: str) -> dict:
         rag_ok = False
         rag_mode = None
         rag_http_error = None
-        rag_timeout = float(os.getenv('RAG_PROBE_TIMEOUT', '3'))
-        force_http = os.getenv('STATUS_RAG_VIA_HTTP', '0') == '1'
+        rag_timeout = float(os.getenv("RAG_PROBE_TIMEOUT", "3"))
+        force_http = os.getenv("STATUS_RAG_VIA_HTTP", "0") == "1"
 
         def _direct_rag() -> tuple[bool, str | None]:
             conn = None
@@ -74,11 +78,11 @@ async def build_status(base: str) -> dict:
                     return False, None
                 # Heuristic mode inference (matches embed_query logic)
                 if dim in (1536, 3072):
-                    mode = 'openai' if is_openai_configured() else 'local-fallback'
+                    mode = "openai" if is_openai_configured() else "local-fallback"
                 elif dim in (384, 768):
-                    mode = 'local-model'
+                    mode = "local-model"
                 else:
-                    mode = 'local-fallback'
+                    mode = "local-fallback"
                 return True, mode
             except Exception:
                 return False, None
@@ -97,7 +101,7 @@ async def build_status(base: str) -> dict:
             try:
                 rag_resp = await client.post(
                     f"{base}/api/rag/query",
-                    json={'question': 'ping', 'k': 1},
+                    json={"question": "ping", "k": 1},
                     timeout=rag_timeout,
                 )
                 if rag_resp.status_code == 200:
@@ -106,64 +110,70 @@ async def build_status(base: str) -> dict:
                     except Exception:
                         rag_json = {}
                     rag_ok = True
-                    rag_mode = (rag_json.get('mode') if isinstance(rag_json, dict) else rag_mode) or rag_mode
+                    rag_mode = (
+                        rag_json.get("mode") if isinstance(rag_json, dict) else rag_mode
+                    ) or rag_mode
                 else:
                     rag_http_error = f"status:{rag_resp.status_code}"
             except Exception as e:
                 rag_http_error = str(e)
 
-    rag_db = os.getenv('RAG_DB', './data/rag.sqlite')
+    rag_db = os.getenv("RAG_DB", "./data/rag.sqlite")
     openai_flag = is_openai_configured()
 
-    ollama_state = llm_status.get('ollama') if isinstance(llm_status, dict) else None
-    openai_state = 'configured' if openai_flag else 'not_configured'
-    primary_present = bool(llm_status.get('primary_model_present')) if isinstance(llm_status, dict) else False
+    ollama_state = llm_status.get("ollama") if isinstance(llm_status, dict) else None
+    openai_state = "configured" if openai_flag else "not_configured"
+    primary_present = (
+        bool(llm_status.get("primary_model_present"))
+        if isinstance(llm_status, dict)
+        else False
+    )
     llm_path = _llm_path(ollama_state, primary_present, openai_state)
-    ready = (ollama_state == 'up') and primary_present and rag_ok
+    ready = (ollama_state == "up") and primary_present and rag_ok
 
     llm_info = {
-        'path': llm_path,
-        'model': primary_model,
-        'ollama': ollama_state,
-        'openai': openai_state,
-        'primary_model_present': primary_present,
-        'ready_probe': ready_probe,
+        "path": llm_path,
+        "model": primary_model,
+        "ollama": ollama_state,
+        "openai": openai_state,
+        "primary_model_present": primary_present,
+        "ready_probe": ready_probe,
     }
 
-    rag_info = {'ok': rag_ok, 'db': rag_db}
+    rag_info = {"ok": rag_ok, "db": rag_db}
     if rag_mode:
-        rag_info['mode'] = rag_mode
+        rag_info["mode"] = rag_mode
     if rag_http_error:
-        rag_info['http_error'] = rag_http_error
+        rag_info["http_error"] = rag_http_error
 
     primary_block = {
-        'base_url': PRIMARY_BASE,
-        'model': OPENAI_MODEL,
-        'enabled': not DISABLE_PRIMARY,
+        "base_url": PRIMARY_BASE,
+        "model": OPENAI_MODEL,
+        "enabled": not DISABLE_PRIMARY,
         # Normalize: prefer live llm_status-derived primary_present over possibly stale global
-        'model_present': primary_present,
-        'models_sample': PRIMARY_MODELS[:8],
-        'last_error': LAST_PRIMARY_ERROR,
-        'last_status': LAST_PRIMARY_STATUS,
+        "model_present": primary_present,
+        "models_sample": PRIMARY_MODELS[:8],
+        "last_error": LAST_PRIMARY_ERROR,
+        "last_status": LAST_PRIMARY_STATUS,
     }
 
     return {
-        'ok': bool(ready),
-        'llm': llm_info,
-        'openai_configured': openai_flag,
-        'rag': rag_info,
-        'ready': ready,
-        'primary': primary_block,
-        'build': {
-            'sha': os.getenv('BACKEND_BUILD_SHA', 'local'),
-            'time': datetime.now(UTC).isoformat(timespec='seconds')
+        "ok": bool(ready),
+        "llm": llm_info,
+        "openai_configured": openai_flag,
+        "rag": rag_info,
+        "ready": ready,
+        "primary": primary_block,
+        "build": {
+            "sha": os.getenv("BACKEND_BUILD_SHA", "local"),
+            "time": datetime.now(UTC).isoformat(timespec="seconds"),
         },
-        'metrics_hint': {
-            'providers': dict(providers),
-            'primary_fail_reason': dict(primary_fail_reason),
-            'fields': ['req', '5xx', 'p95_ms', 'tok_in', 'tok_out'],
+        "metrics_hint": {
+            "providers": dict(providers),
+            "primary_fail_reason": dict(primary_fail_reason),
+            "fields": ["req", "5xx", "p95_ms", "tok_in", "tok_out"],
         },
-        'tooltip': (
+        "tooltip": (
             f"Ollama/OpenAI configured: {bool(openai_flag)}. "
             f"RAG DB: {rag_db}. "
             f"LLM path: {llm_path}"

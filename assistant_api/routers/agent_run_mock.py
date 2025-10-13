@@ -1,4 +1,5 @@
 """Test-only mock route for fast E2E tests."""
+
 from __future__ import annotations
 
 import hashlib
@@ -34,8 +35,7 @@ def run_mock_plan(
 
     if not settings.get("ALLOW_TEST_ROUTES"):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Test routes disabled"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Test routes disabled"
         )
 
     ensure_artifacts_dir(settings["ARTIFACTS_DIR"])
@@ -54,7 +54,7 @@ def run_mock_plan(
                 "old_description": "Welcome",
                 "new_title": "Boost Results with Home — AI Automation",
                 "new_description": "Fast load, clear value, and real outcomes. Learn how this project improves workflow and reliability.",
-                "notes": "mock"
+                "notes": "mock",
             },
             {
                 "url": "/projects/siteagent",
@@ -63,23 +63,21 @@ def run_mock_plan(
                 "old_description": "Self-updating portfolio site",
                 "new_title": "SiteAgent — AI Automation for Self-Updating Portfolios",
                 "new_description": "See how SiteAgent automates SEO tags and cards to keep your portfolio fresh.",
-                "notes": "mock"
-            }
-        ]
+                "notes": "mock",
+            },
+        ],
     }
 
     # Compute integrity hash on stable JSON (no spaces for size consistency)
-    encoded = json.dumps(base_fake, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    encoded = json.dumps(base_fake, ensure_ascii=False, separators=(",", ":")).encode(
+        "utf-8"
+    )
     digest = _sha256_bytes(encoded)
 
     # Add integrity field to final payload
     fake = {
         **base_fake,
-        "integrity": {
-            "algo": "sha256",
-            "value": digest,
-            "size": len(encoded)
-        }
+        "integrity": {"algo": "sha256", "value": digest, "size": len(encoded)},
     }
 
     md = [
@@ -96,19 +94,15 @@ def run_mock_plan(
             f"**New title:** {p['new_title']}",
             f"**Old description:** {p['old_description'] or '—'}",
             f"**New description:** {p['new_description']}",
-            ""
+            "",
         ]
 
     json_path = write_artifact(
         settings["ARTIFACTS_DIR"],
         "seo-tune.json",
-        json.dumps(fake, ensure_ascii=False, indent=2)
+        json.dumps(fake, ensure_ascii=False, indent=2),
     )
-    md_path = write_artifact(
-        settings["ARTIFACTS_DIR"],
-        "seo-tune.md",
-        "\n".join(md)
-    )
+    md_path = write_artifact(settings["ARTIFACTS_DIR"], "seo-tune.md", "\n".join(md))
 
     return {
         "ok": True,
@@ -116,5 +110,5 @@ def run_mock_plan(
         "json": json_path,
         "md": md_path,
         "count": fake["count"],
-        "integrity": fake["integrity"]
+        "integrity": fake["integrity"],
     }

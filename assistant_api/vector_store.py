@@ -12,9 +12,16 @@ from .embeddings import embed_texts, embed_texts_openai
 from .metrics import timer
 
 IDX_DIR = os.getenv("RAG_INDEX_DIR", "data")
-_DENSE_DISABLED = os.getenv("RAG_DENSE_DISABLE", "0") in {"1","true","TRUE","yes","on"}
+_DENSE_DISABLED = os.getenv("RAG_DENSE_DISABLE", "0") in {
+    "1",
+    "true",
+    "TRUE",
+    "yes",
+    "on",
+}
 IDX_PATH = os.path.join(IDX_DIR, "index.faiss")
 MAP_PATH = os.path.join(IDX_DIR, "index.map.json")  # [{rowid, chunk_id}]
+
 
 def _connect_db() -> sqlite3.Connection:
     path = os.environ.get("RAG_DB")
@@ -24,6 +31,7 @@ def _connect_db() -> sqlite3.Connection:
     con.execute("PRAGMA journal_mode=WAL")
     return con
 
+
 def _fetch_chunks(con, project_id: str | None = None) -> list[tuple[int, str]]:
     q = "SELECT id, content FROM chunks"
     args = []
@@ -31,6 +39,7 @@ def _fetch_chunks(con, project_id: str | None = None) -> list[tuple[int, str]]:
         q += " WHERE project_id = ?"
         args = [project_id]
     return list(con.execute(q, args))
+
 
 def build_index(project_id: str | None = None) -> dict:
     os.makedirs(IDX_DIR, exist_ok=True)
@@ -45,19 +54,23 @@ def build_index(project_id: str | None = None) -> dict:
         return {"ok": False, "reason": "faiss not installed"}
 
     ids, texts = zip(*rows)
-    ids = list(ids); texts = list(texts)
+    ids = list(ids)
+    texts = list(texts)
     # Batch with per-batch fallback
     B = int(os.getenv("EMBED_BATCH", "256"))
     vec_list = []
     for i in range(0, len(texts), B):
-        batch = texts[i:i+B]
+        batch = texts[i : i + B]
         try:
             v = embed_texts(batch)
         except Exception as e:
-            print(f"[index] local embed batch failed ({i}:{i+len(batch)}), using OpenAI: {e}")
+            print(
+                f"[index] local embed batch failed ({i}:{i+len(batch)}), using OpenAI: {e}"
+            )
             v = embed_texts_openai(batch)
         vec_list.append(v)
     import numpy as np
+
     vecs = np.concatenate(vec_list, axis=0)
     d = vecs.shape[1]
     index = faiss.IndexFlatIP(d)  # type: ignore  # cosine with normalized vectors
@@ -68,6 +81,7 @@ def build_index(project_id: str | None = None) -> dict:
     with open(MAP_PATH, "w", encoding="utf-8") as f:
         json.dump([{"rowid": i, "chunk_id": int(cid)} for i, cid in enumerate(ids)], f)
     return {"ok": True, "count": len(ids), "index": IDX_PATH}
+
 
 def dense_search(query: str, topk: int = 50) -> list[int]:
     if _DENSE_DISABLED or faiss is None:
@@ -81,6 +95,7 @@ def dense_search(query: str, topk: int = 50) -> list[int]:
     D, I = index.search(qv, topk)  # ignore scores here (we’ll rerank later)
     ids = []
     for idx in I[0]:
-        if idx < 0: continue
+        if idx < 0:
+            continue
         ids.append(mapping[idx]["chunk_id"])
     return ids

@@ -113,12 +113,14 @@ def query_events(level: str | None = None, run_id: str | None = None, limit: int
             data_dict = json.loads(r[4]) if r[4] else {}
         except:
             data_dict = {}
-        events.append({
-            "run_id": r[0],
-            "ts": r[1],
-            "level": r[2],
-            "event": r[3],
-            "data": data_dict
-        })
+        events.append(
+            {
+                "run_id": r[0],
+                "ts": r[1],
+                "level": r[2],
+                "event": r[3],
+                "data": data_dict,
+            }
+        )
 
     return events

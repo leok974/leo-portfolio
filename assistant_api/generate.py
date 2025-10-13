@@ -4,6 +4,7 @@ SYS = "You are a concise assistant. Reply in 2–4 sentences unless asked otherw
 async def generate_brief_answer(prompt: str) -> tuple[str, str]:
     """Return a concise answer and the provider tag ("primary"|"fallback")."""
     from .llm_client import chat as _chat
+
     msgs = [
         {"role": "system", "content": SYS},
         {"role": "user", "content": prompt},

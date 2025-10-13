@@ -4,10 +4,14 @@ from collections import Counter, defaultdict, deque
 from typing import Deque, Tuple
 
 _lock = threading.Lock()
-_events: deque[tuple[float, int, float, str, int, int]] = deque(maxlen=5000)  # (ts, status, ms, provider, in_toks, out_toks)
+_events: deque[tuple[float, int, float, str, int, int]] = deque(
+    maxlen=5000
+)  # (ts, status, ms, provider, in_toks, out_toks)
 # Recent latency window (lightweight) for status summary (default ~ last 200 requests)
 _recent_lat: deque[float] = deque(maxlen=200)
-_recent_lat_by_provider: dict[str, deque[float]] = defaultdict(lambda: deque(maxlen=200))
+_recent_lat_by_provider: dict[str, deque[float]] = defaultdict(
+    lambda: deque(maxlen=200)
+)
 _totals = defaultdict(int)
 router_route_total = Counter()
 
@@ -22,25 +26,38 @@ try:
 except Exception:
     pass
 
+
 class RollingP95:
     """Lightweight rolling P95 window for optional per-route latencies."""
+
     def __init__(self, n: int = 50):
         self.n = n
         self.samples: list[float] = []
+
     def observe(self, v: float):
         self.samples.append(v)
         if len(self.samples) > self.n:
-            self.samples = self.samples[-self.n:]
+            self.samples = self.samples[-self.n :]
+
     def value(self) -> float:
         if not self.samples:
             return 0.0
         arr = sorted(self.samples)
-        idx = int(0.95 * (len(arr)-1))
+        idx = int(0.95 * (len(arr) - 1))
         return float(arr[idx])
+
 
 route_p95 = defaultdict(lambda: RollingP95(50))
 
-def record(status: int, ms: float, provider: str | None = None, in_toks: int = 0, out_toks: int = 0, route: str | None = None):
+
+def record(
+    status: int,
+    ms: float,
+    provider: str | None = None,
+    in_toks: int = 0,
+    out_toks: int = 0,
+    route: str | None = None,
+):
     with _lock:
         prov = provider or "-"
         _events.append((time.time(), status, ms, prov, in_toks, out_toks))
@@ -61,6 +78,7 @@ def record(status: int, ms: float, provider: str | None = None, in_toks: int = 0
             except Exception:
                 pass
 
+
 def snapshot():
     with _lock:
         latencies = [ms for _, _, ms, _, _, _ in _events]
@@ -69,8 +87,11 @@ def snapshot():
             s = sorted(latencies)
             idx = max(0, int(0.95 * len(s)) - 1)
             p95 = s[idx]
-        providers_legacy = {k.split("by_provider:")[1].split(":")[0]: v
-                            for k, v in _totals.items() if k.startswith("by_provider:")}
+        providers_legacy = {
+            k.split("by_provider:")[1].split(":")[0]: v
+            for k, v in _totals.items()
+            if k.startswith("by_provider:")
+        }
         # Merge legacy provider counts with new counter (favor new if drift)
         merged_providers = dict(providers_legacy)
         for k, v in providers.items():
@@ -88,13 +109,23 @@ def snapshot():
             "router": dict(router_route_total),
         }
 
+
 def recent_latency_stats() -> dict:
     """Return rolling latency distribution for last N requests (cheap computation)."""
     with _lock:
         data = list(_recent_lat)
     if not data:
-        return {"count": 0, "min_ms": 0.0, "p50_ms": 0.0, "p95_ms": 0.0, "p99_ms": 0.0, "max_ms": 0.0, "avg_ms": 0.0}
+        return {
+            "count": 0,
+            "min_ms": 0.0,
+            "p50_ms": 0.0,
+            "p95_ms": 0.0,
+            "p99_ms": 0.0,
+            "max_ms": 0.0,
+            "avg_ms": 0.0,
+        }
     s = sorted(data)
+
     def _pct(p: float):
         if not s:
             return 0.0
@@ -104,7 +135,9 @@ def recent_latency_stats() -> dict:
         if f == c:
             return s[f]
         return s[f] + (s[c] - s[f]) * (k - f)
+
     import statistics as _st
+
     return {
         "count": len(s),
         "min_ms": s[0],
@@ -115,20 +148,33 @@ def recent_latency_stats() -> dict:
         "avg_ms": _st.fmean(s),
     }
 
+
 def recent_latency_stats_by_provider() -> dict:
     """Return rolling latency stats split by provider (primary, fallback, etc.)."""
     with _lock:
         snap = {k: list(v) for k, v in _recent_lat_by_provider.items()}
     out: dict[str, dict] = {}
     import statistics as _st
+
     def _dist(arr: list[float]):
         if not arr:
-            return {"count":0,"min_ms":0.0,"p50_ms":0.0,"p95_ms":0.0,"p99_ms":0.0,"max_ms":0.0,"avg_ms":0.0}
+            return {
+                "count": 0,
+                "min_ms": 0.0,
+                "p50_ms": 0.0,
+                "p95_ms": 0.0,
+                "p99_ms": 0.0,
+                "max_ms": 0.0,
+                "avg_ms": 0.0,
+            }
         s = sorted(arr)
+
         def _pct(p: float):
             k = (len(s) - 1) * (p / 100.0)
-            f = int(k); c = min(f+1, len(s)-1)
-            return s[f] if f==c else s[f] + (s[c]-s[f])*(k-f)
+            f = int(k)
+            c = min(f + 1, len(s) - 1)
+            return s[f] if f == c else s[f] + (s[c] - s[f]) * (k - f)
+
         return {
             "count": len(s),
             "min_ms": s[0],
@@ -138,10 +184,12 @@ def recent_latency_stats_by_provider() -> dict:
             "max_ms": s[-1],
             "avg_ms": _st.fmean(s),
         }
+
     for prov, arr in snap.items():
         if prov != "-":
             out[prov] = _dist(arr)
     return out
+
 
 # ---------------- Stage metrics (embeddings/rerank/gen) -----------------------
 # Lightweight counters and last-latency per stage with backend label
@@ -149,18 +197,23 @@ from contextlib import contextmanager
 
 _STAGE_METRICS = {
     "embeddings": {"count": 0, "last_ms": None, "last_backend": None},
-    "rerank":     {"count": 0, "last_ms": None, "last_backend": None},
-    "gen":        {"count": 0, "last_ms": None, "last_backend": None},
+    "rerank": {"count": 0, "last_ms": None, "last_backend": None},
+    "gen": {"count": 0, "last_ms": None, "last_backend": None},
 }
+
 
 def stage_snapshot():
     return {k: dict(v) for k, v in _STAGE_METRICS.items()}
 
+
 def _stage_record(stage: str, backend: str, ms: float):
-    m = _STAGE_METRICS.setdefault(stage, {"count": 0, "last_ms": None, "last_backend": None})
+    m = _STAGE_METRICS.setdefault(
+        stage, {"count": 0, "last_ms": None, "last_backend": None}
+    )
     m["count"] += 1
     m["last_ms"] = round(float(ms), 1)
     m["last_backend"] = str(backend)
+
 
 def stage_record_ms(stage: str, backend: str, ms: float) -> None:
     """Public helper to stamp a stage metric with a measured duration (ms).
@@ -170,6 +223,7 @@ def stage_record_ms(stage: str, backend: str, ms: float) -> None:
         _stage_record(stage, backend, ms)
     except Exception:
         pass
+
 
 @contextmanager
 def timer(stage: str, backend: str):
@@ -228,7 +282,7 @@ def emit(event: str, payload: dict):
                 data=json.dumps(data).encode("utf-8"),
                 headers={
                     "content-type": "application/json",
-                    **({"x-metrics-key": METRICS_KEY} if METRICS_KEY else {})
+                    **({"x-metrics-key": METRICS_KEY} if METRICS_KEY else {}),
                 },
                 method="POST",
             )

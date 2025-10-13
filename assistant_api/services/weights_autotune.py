@@ -3,6 +3,7 @@ Adaptive Agentic Feedback Loop (Phase 50.3)
 
 Automatically tunes layout weights based on A/B testing results.
 """
+
 from __future__ import annotations
 
 from typing import Dict
@@ -14,9 +15,7 @@ from .layout_weights import approve_weights, propose_weights, read_active
 
 
 def _apply_hint(
-    base: dict[str, float],
-    hint: dict[str, float],
-    alpha: float = 1.0
+    base: dict[str, float], hint: dict[str, float], alpha: float = 1.0
 ) -> dict[str, float]:
     """
     Apply A/B testing hint to base weights with learning rate alpha.
@@ -86,20 +85,23 @@ def run_autotune(alpha: float = 0.5) -> dict:
     )
 
     # Log for audit
-    log_event("autotune.optimize", {
-        "alpha": alpha,
-        "winner": winner,
-        "ctr_a": ctr_a,
-        "ctr_b": ctr_b,
-        "old_weights": base_weights,
-        "new_weights": new_weights,
-        "summary": summary
-    })
+    log_event(
+        "autotune.optimize",
+        {
+            "alpha": alpha,
+            "winner": winner,
+            "ctr_a": ctr_a,
+            "ctr_b": ctr_b,
+            "old_weights": base_weights,
+            "new_weights": new_weights,
+            "summary": summary,
+        },
+    )
 
     return {
         "ok": True,
         "message": message,
         "weights": new_weights,
         "ab_suggestion": ab_suggestion,
-        "optimize": opt_result
+        "optimize": opt_result,
     }

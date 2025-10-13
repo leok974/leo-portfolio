@@ -1,4 +1,5 @@
 """Dev overlay router for enabling/disabling admin UI via cookie."""
+
 import os
 
 from fastapi import APIRouter, HTTPException, Request, Response, status
@@ -33,7 +34,7 @@ def enable_overlay(response: Response):
         # This prevents unauthorized access to admin features
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Dev overlay disabled in production. Use Cloudflare Access or set ALLOW_DEV_OVERLAY_IN_PROD=1"
+            detail="Dev overlay disabled in production. Use Cloudflare Access or set ALLOW_DEV_OVERLAY_IN_PROD=1",
         )
 
     response.set_cookie(

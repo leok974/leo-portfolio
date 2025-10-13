@@ -4,6 +4,7 @@ Agent Events Logging
 Logs significant agent actions (scheduler runs, manual optimizations, autotuning)
 for audit trail and "Last Actions" feed.
 """
+
 import json
 import pathlib
 import time
@@ -26,11 +27,7 @@ def log_event(kind: str, meta: dict[str, Any]):
         EVENTS.write_text("", encoding="utf-8")
 
     with EVENTS.open("a", encoding="utf-8") as f:
-        f.write(json.dumps({
-            "ts": int(time.time()),
-            "kind": kind,
-            "meta": meta
-        }) + "\n")
+        f.write(json.dumps({"ts": int(time.time()), "kind": kind, "meta": meta}) + "\n")
 
 
 def recent_events(limit: int = 50) -> list[dict[str, Any]]:

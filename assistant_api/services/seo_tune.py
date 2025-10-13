@@ -12,13 +12,16 @@ from typing import Dict, List, Tuple
 try:
     from assistant_api.services.agent_events import emit_event
 except Exception:  # pragma: no cover
+
     def emit_event(**kwargs):
         print("[agent_event]", kwargs)
+
 
 ARTIFACTS_DIR = Path(os.environ.get("AGENT_ARTIFACTS_DIR", "agent/artifacts"))
 OG_DIR = Path("assets/og")
 SITEMAP_PATH = Path("sitemap.xml")
 SITEMAP_MEDIA_PATH = Path("sitemap-media.xml")
+
 
 @dataclass
 class SeoProposal:
@@ -115,7 +118,11 @@ def _write_diff_and_reason(proposals: list[SeoProposal]) -> tuple[Path, Path]:
 def _regenerate_og(slug: str) -> tuple[str | None, str | None]:
     """Call your real OG generator; return (before, after) paths as strings.
     Replace stub with import of your existing service."""
-    before = str((OG_DIR / f"{slug}.png").as_posix()) if (OG_DIR / f"{slug}.png").exists() else None
+    before = (
+        str((OG_DIR / f"{slug}.png").as_posix())
+        if (OG_DIR / f"{slug}.png").exists()
+        else None
+    )
     # Stub: touch/update a file to simulate regen
     out = OG_DIR / f"{slug}.png"
     out.write_bytes(b"PNGSTUB")
@@ -125,8 +132,13 @@ def _regenerate_og(slug: str) -> tuple[str | None, str | None]:
 
 def _regenerate_sitemaps() -> None:
     # Replace with real sitemap generator(s)
-    SITEMAP_PATH.write_text("""<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- stub sitemap regenerated -->\n""", encoding="utf-8")
-    SITEMAP_MEDIA_PATH.write_text("<!-- stub media sitemap regenerated -->\n", encoding="utf-8")
+    SITEMAP_PATH.write_text(
+        """<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- stub sitemap regenerated -->\n""",
+        encoding="utf-8",
+    )
+    SITEMAP_MEDIA_PATH.write_text(
+        "<!-- stub media sitemap regenerated -->\n", encoding="utf-8"
+    )
 
 
 def run_seo_tune(dry_run: bool = False) -> dict:
@@ -156,9 +168,18 @@ def run_seo_tune(dry_run: bool = False) -> dict:
     diff_path, md_path = _write_diff_and_reason(proposals)
 
     if dry_run:
-        emit_event(task="seo.tune", phase="dry_run", diff=str(diff_path), md=str(md_path))
-        return {"ok": True, "dry_run": True, "diff": str(diff_path), "log": str(md_path)}
+        emit_event(
+            task="seo.tune", phase="dry_run", diff=str(diff_path), md=str(md_path)
+        )
+        return {
+            "ok": True,
+            "dry_run": True,
+            "diff": str(diff_path),
+            "log": str(md_path),
+        }
 
     # TODO: apply changes to real meta sources (files or DB) before writing diff
-    emit_event(task="seo.tune", phase="commit_ready", diff=str(diff_path), md=str(md_path))
+    emit_event(
+        task="seo.tune", phase="commit_ready", diff=str(diff_path), md=str(md_path)
+    )
     return {"ok": True, "dry_run": False, "diff": str(diff_path), "log": str(md_path)}

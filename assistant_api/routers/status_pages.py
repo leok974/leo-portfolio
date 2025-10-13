@@ -2,6 +2,7 @@
 
 Provides cached or on-demand page discovery status with integrity checksums.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -49,6 +50,7 @@ def _sha256_bytes(b: bytes) -> str:
     h.update(b)
     return h.hexdigest()
 
+
 @router.get("/pages", summary="Discovered pages (title/desc) from sitemap/public")
 def pages_status():
     """
@@ -77,31 +79,19 @@ def pages_status():
         payload = {
             "generated_at": datetime.now(UTC).isoformat(),
             "pages": [
-                {"path": p.path, "title": p.title, "desc": p.desc}
-                for p in items
+                {"path": p.path, "title": p.title, "desc": p.desc} for p in items
             ],
         }
         STATUS.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     # Compute integrity checksum
-    compact = json.dumps(
-        payload,
-        ensure_ascii=False,
-        separators=(",", ":")
-    ).encode("utf-8")
+    compact = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode(
+        "utf-8"
+    )
 
-    integ = {
-        "algo": "sha256",
-        "value": _sha256_bytes(compact),
-        "size": len(compact)
-    }
+    integ = {"algo": "sha256", "value": _sha256_bytes(compact), "size": len(compact)}
 
-    return {
-        "ok": True,
-        "count": len(payload["pages"]),
-        "integrity": integ,
-        **payload
-    }
+    return {"ok": True, "count": len(payload["pages"]), "integrity": integ, **payload}
 
 
 MAX_RAW_BYTES = 2 * 1024 * 1024  # 2MB safety cap
@@ -134,21 +124,33 @@ def open_file(
         raise HTTPException(status_code=403, detail="Dev routes are disabled")
 
     if not path.startswith("/"):
-        raise HTTPException(status_code=400, detail="Path must be site-relative (start with /)")
+        raise HTTPException(
+            status_code=400, detail="Path must be site-relative (start with /)"
+        )
 
     f = resolve_file_for_url_path(path)
     if not f:
-        raise HTTPException(status_code=404, detail=f"Not found under {get_public_dirs()}")
+        raise HTTPException(
+            status_code=404, detail=f"Not found under {get_public_dirs()}"
+        )
 
     # Raw mode: stream HTML (size-capped)
     if raw:
         size = f.stat().st_size
         if size > MAX_RAW_BYTES:
-            raise HTTPException(status_code=413, detail=f"File too large for raw view ({size} bytes)")
+            raise HTTPException(
+                status_code=413, detail=f"File too large for raw view ({size} bytes)"
+            )
         # Use plaintext if not html extension to avoid odd MIME surprises
-        mime = "text/html; charset=utf-8" if f.suffix.lower() in (".html", ".htm") else "text/plain; charset=utf-8"
+        mime = (
+            "text/html; charset=utf-8"
+            if f.suffix.lower() in (".html", ".htm")
+            else "text/plain; charset=utf-8"
+        )
         text = f.read_text(encoding="utf-8", errors="ignore")
-        return PlainTextResponse(text, media_type=mime, headers={"X-Resolved-Path": str(f)})
+        return PlainTextResponse(
+            text, media_type=mime, headers={"X-Resolved-Path": str(f)}
+        )
 
     # Metadata JSON
     st = f.stat()
@@ -163,7 +165,11 @@ def open_file(
 
 
 @router.get("/sitemap", summary="Sitemap URLs and integrity (if sitemap.xml present)")
-def sitemap_status(raw: int = Query(0, description="1 to stream the first discovered sitemap.xml as text")):
+def sitemap_status(
+    raw: int = Query(
+        0, description="1 to stream the first discovered sitemap.xml as text"
+    )
+):
     """
     Returns sitemap URLs with integrity checksums, or streams raw sitemap.xml.
 
@@ -193,27 +199,21 @@ def sitemap_status(raw: int = Query(0, description="1 to stream the first discov
         return PlainTextResponse(
             text,
             media_type="application/xml; charset=utf-8",
-            headers={"X-Resolved-Path": files[0]}
+            headers={"X-Resolved-Path": files[0]},
         )
 
     # Metadata mode: return URLs and integrity
     urls = load_from_sitemap_files()
     compact = json.dumps(
-        {"files": files, "urls": urls},
-        ensure_ascii=False,
-        separators=(",", ":")
+        {"files": files, "urls": urls}, ensure_ascii=False, separators=(",", ":")
     ).encode("utf-8")
 
-    integ = {
-        "algo": "sha256",
-        "value": _sha256_bytes(compact),
-        "size": len(compact)
-    }
+    integ = {"algo": "sha256", "value": _sha256_bytes(compact), "size": len(compact)}
 
     return {
         "ok": True,
         "files": files,
         "count": len(urls),
         "urls": urls,
-        "integrity": integ
+        "integrity": integ,
     }

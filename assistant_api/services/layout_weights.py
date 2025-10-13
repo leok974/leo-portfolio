@@ -1,4 +1,5 @@
 """Weight management service for layout optimization."""
+
 from __future__ import annotations
 
 import json

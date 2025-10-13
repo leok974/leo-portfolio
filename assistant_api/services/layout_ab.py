@@ -1,4 +1,5 @@
 """A/B testing service for layout optimization."""
+
 from __future__ import annotations
 
 import hashlib
@@ -23,18 +24,17 @@ def _load() -> dict[str, Any]:
         return json.loads(STATE_PATH.read_text(encoding="utf-8"))
     return {
         "weights": {"A": None, "B": None},
-        "metrics": {
-            "A": {"clicks": 0, "views": 0},
-            "B": {"clicks": 0, "views": 0}
-        },
-        "last_update": 0
+        "metrics": {"A": {"clicks": 0, "views": 0}, "B": {"clicks": 0, "views": 0}},
+        "last_update": 0,
     }
 
 
 def _save(state: dict[str, Any]) -> dict[str, Any]:
     """Save A/B testing state to disk."""
     _ensure_state_dir()
-    STATE_PATH.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
+    STATE_PATH.write_text(
+        json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
     return state
 
 
@@ -98,26 +98,16 @@ def suggest_weights() -> dict[str, Any]:
 
     # Naive rule: if B wins, bump 'signal' & 'media' slightly; else bump 'fit' & 'freshness'
     if better == "B":
-        hint = {
-            "signal": +0.05,
-            "media": +0.02,
-            "fit": -0.03,
-            "freshness": -0.04
-        }
+        hint = {"signal": +0.05, "media": +0.02, "fit": -0.03, "freshness": -0.04}
     else:
-        hint = {
-            "fit": +0.05,
-            "freshness": +0.02,
-            "signal": -0.03,
-            "media": -0.04
-        }
+        hint = {"fit": +0.05, "freshness": +0.02, "signal": -0.03, "media": -0.04}
 
     return {
         "better": better,
         "ctr_a": round(ctr_a, 4),
         "ctr_b": round(ctr_b, 4),
         "hint": hint,
-        "metrics": state["metrics"]
+        "metrics": state["metrics"],
     }
 
 
@@ -130,10 +120,7 @@ def reset_metrics() -> dict[str, Any]:
     """
     state = {
         "weights": {"A": None, "B": None},
-        "metrics": {
-            "A": {"clicks": 0, "views": 0},
-            "B": {"clicks": 0, "views": 0}
-        },
-        "last_update": int(time.time())
+        "metrics": {"A": {"clicks": 0, "views": 0}, "B": {"clicks": 0, "views": 0}},
+        "last_update": int(time.time()),
     }
     return _save(state)

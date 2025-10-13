@@ -1,4 +1,5 @@
 """Text utilities for assistant API."""
+
 from __future__ import annotations
 
 import re
@@ -24,12 +25,12 @@ def slugify(text: str) -> str:
     text = text.lower()
 
     # Replace non-alphanumeric with hyphens
-    text = re.sub(r'[^a-z0-9]+', '-', text)
+    text = re.sub(r"[^a-z0-9]+", "-", text)
 
     # Remove leading/trailing hyphens
-    text = text.strip('-')
+    text = text.strip("-")
 
     # Collapse multiple hyphens
-    text = re.sub(r'-+', '-', text)
+    text = re.sub(r"-+", "-", text)
 
     return text

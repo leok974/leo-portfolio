@@ -18,6 +18,7 @@ Usage:
         dependencies=[Depends(require_cf_access)]
     )
 """
+
 from __future__ import annotations
 
 import json
@@ -32,9 +33,17 @@ from fastapi import HTTPException, Request
 logger = logging.getLogger(__name__)
 
 TEAM_DOMAIN = os.getenv("CF_ACCESS_TEAM_DOMAIN")  # e.g. yourteam.cloudflareaccess.com
-AUD = os.getenv("CF_ACCESS_AUD")                  # CF Access app AUD tag
-ALLOWED_EMAILS = {e.strip().lower() for e in os.getenv("ACCESS_ALLOWED_EMAILS", "").split(",") if e.strip()}
-ALLOWED_SERVICE_SUBS = {s.strip() for s in os.getenv("ACCESS_ALLOWED_SERVICE_SUBS", "").split(",") if s.strip()}
+AUD = os.getenv("CF_ACCESS_AUD")  # CF Access app AUD tag
+ALLOWED_EMAILS = {
+    e.strip().lower()
+    for e in os.getenv("ACCESS_ALLOWED_EMAILS", "").split(",")
+    if e.strip()
+}
+ALLOWED_SERVICE_SUBS = {
+    s.strip()
+    for s in os.getenv("ACCESS_ALLOWED_SERVICE_SUBS", "").split(",")
+    if s.strip()
+}
 
 _JWKS_CACHE = {"ts": 0, "keys": {}}
 
@@ -88,6 +97,7 @@ def require_cf_access(request: Request) -> str:
     """
     # Test mode bypass
     from ..util.testmode import is_test_mode
+
     if is_test_mode():
         # Allow test header bypass
         if request.headers.get("x-test-auth") == "ok":
@@ -97,9 +107,12 @@ def require_cf_access(request: Request) -> str:
 
     # Dev bypass — keeps prod behavior unchanged
     from ..settings import get_settings
+
     settings = get_settings()
     if settings.get("ALLOW_DEV_AUTH"):
-        auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
+        auth_header = request.headers.get("authorization") or request.headers.get(
+            "Authorization"
+        )
         if auth_header:
             expected = f"bearer {settings.get('DEV_BEARER_TOKEN', 'dev')}"
             if auth_header.strip().lower() == expected.lower():
@@ -114,8 +127,12 @@ def require_cf_access(request: Request) -> str:
     # DEBUG: Log JWT claims without verification to see what CF is sending
     try:
         unverified_claims = jwt.decode(token, options={"verify_signature": False})
-        logger.info(f"🔍 JWT Debug - sub: {unverified_claims.get('sub')}, email: {unverified_claims.get('email')}, aud: {unverified_claims.get('aud')}, iss: {unverified_claims.get('iss')}")
-        logger.info(f"🔍 Backend expects - AUD: {AUD}, ALLOWED_SERVICE_SUBS: {ALLOWED_SERVICE_SUBS}, ALLOWED_EMAILS: {ALLOWED_EMAILS}")
+        logger.info(
+            f"🔍 JWT Debug - sub: {unverified_claims.get('sub')}, email: {unverified_claims.get('email')}, aud: {unverified_claims.get('aud')}, iss: {unverified_claims.get('iss')}"
+        )
+        logger.info(
+            f"🔍 Backend expects - AUD: {AUD}, ALLOWED_SERVICE_SUBS: {ALLOWED_SERVICE_SUBS}, ALLOWED_EMAILS: {ALLOWED_EMAILS}"
+        )
     except Exception as e:
         logger.warning(f"⚠️ Could not decode JWT for debugging: {e}")
 
@@ -138,11 +155,11 @@ def require_cf_access(request: Request) -> str:
     # Accept either end-user SSO (email) or service token (subject/common_name)
     # For service tokens, CF Access puts the client ID in 'common_name', not token name in 'sub'
     principal = (
-        claims.get("email") or
-        claims.get("identity") or
-        claims.get("sub") or
-        claims.get("common_name") or
-        ""
+        claims.get("email")
+        or claims.get("identity")
+        or claims.get("sub")
+        or claims.get("common_name")
+        or ""
     ).strip()
 
     if not principal:
@@ -153,7 +170,9 @@ def require_cf_access(request: Request) -> str:
     if "@" in principal:
         principal_lower = principal.lower()
         if ALLOWED_EMAILS and principal_lower not in ALLOWED_EMAILS:
-            logger.error(f"❌ Email not allowed: {principal_lower}, allowed: {ALLOWED_EMAILS}")
+            logger.error(
+                f"❌ Email not allowed: {principal_lower}, allowed: {ALLOWED_EMAILS}"
+            )
             raise HTTPException(403, "Not allowed (email)")
         logger.info(f"✅ Email authenticated: {principal_lower}")
         return principal_lower
@@ -161,7 +180,9 @@ def require_cf_access(request: Request) -> str:
         # For service tokens, principal will be the client ID (common_name)
         # Check if it's in the allowed list (can be client ID or token name)
         if ALLOWED_SERVICE_SUBS and principal not in ALLOWED_SERVICE_SUBS:
-            logger.error(f"❌ Service token not allowed: {principal}, allowed: {ALLOWED_SERVICE_SUBS}")
+            logger.error(
+                f"❌ Service token not allowed: {principal}, allowed: {ALLOWED_SERVICE_SUBS}"
+            )
             raise HTTPException(403, "Not allowed (service)")
         logger.info(f"✅ Service token authenticated: {principal}")
         return principal

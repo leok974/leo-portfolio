@@ -1,4 +1,5 @@
 """SEO JSON-LD Router - Generate, validate, and report on JSON-LD structured data."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timezone
@@ -27,12 +28,14 @@ except Exception:
         BRAND_LOGO: str = "https://assistant.ledger-mind.org/assets/logo.png"
         PERSON_NAME: str = "Leo Klemet"
         PERSON_SAME_AS: str = "https://www.linkedin.com/in/leo-klemet/"
+
     settings = _S()
 
 ARTIFACTS_DIR = Path(settings.ARTIFACTS_ROOT).joinpath("seo-ld")
 ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
 router = APIRouter(prefix="/agent/seo/ld", tags=["seo-ld"])
+
 
 # ---------- Pydantic models (minimal, extend as needed) ----------
 class LDImageObject(BaseModel):
@@ -41,6 +44,7 @@ class LDImageObject(BaseModel):
     url: HttpUrl
     width: int | None = None
     height: int | None = None
+
 
 class LDVideoObject(BaseModel):
     model_config = {"populate_by_name": True}
@@ -52,6 +56,7 @@ class LDVideoObject(BaseModel):
     contentUrl: HttpUrl | None = None
     embedUrl: HttpUrl | None = None
 
+
 class LDBreadcrumbItem(BaseModel):
     model_config = {"populate_by_name": True}
     type: str = Field("ListItem", alias="@type")
@@ -59,11 +64,13 @@ class LDBreadcrumbItem(BaseModel):
     name: str
     item: HttpUrl | None = None
 
+
 class LDBreadcrumbList(BaseModel):
     model_config = {"populate_by_name": True}
     context: str = Field("https://schema.org", alias="@context")
     type: str = Field("BreadcrumbList", alias="@type")
     itemListElement: list[LDBreadcrumbItem]
+
 
 class LDOrganization(BaseModel):
     model_config = {"populate_by_name": True}
@@ -73,6 +80,7 @@ class LDOrganization(BaseModel):
     url: HttpUrl | None = None
     logo: HttpUrl | None = None
     sameAs: list[HttpUrl] | None = None
+
 
 class LDPerson(BaseModel):
     model_config = {"populate_by_name": True}
@@ -84,6 +92,7 @@ class LDPerson(BaseModel):
     sameAs: list[HttpUrl] | None = None
     affiliation: LDOrganization | None = None
 
+
 class LDWebSite(BaseModel):
     model_config = {"populate_by_name": True}
     context: str = Field("https://schema.org", alias="@context")
@@ -92,6 +101,7 @@ class LDWebSite(BaseModel):
     name: str
     inLanguage: str = "en"
     publisher: LDPerson | LDOrganization | None = None
+
 
 class LDWebPage(BaseModel):
     model_config = {"populate_by_name": True}
@@ -104,6 +114,7 @@ class LDWebPage(BaseModel):
     primaryImageOfPage: LDImageObject | None = None
     isPartOf: LDWebSite | None = None
 
+
 class LDCreativeWork(BaseModel):
     model_config = {"populate_by_name": True}
     context: str = Field("https://schema.org", alias="@context")
@@ -114,6 +125,7 @@ class LDCreativeWork(BaseModel):
     image: HttpUrl | list[HttpUrl] | list[LDImageObject] | None = None
     author: LDPerson | LDOrganization | None = None
     datePublished: str | None = None
+
 
 class LDArticle(BaseModel):
     model_config = {"populate_by_name": True}
@@ -127,11 +139,13 @@ class LDArticle(BaseModel):
     datePublished: str | None = None
     dateModified: str | None = None
 
+
 class LDFaqItem(BaseModel):
     model_config = {"populate_by_name": True}
     type: str = Field("Question", alias="@type")
     name: str
     acceptedAnswer: dict[str, Any]  # {"@type":"Answer","text":"..."}
+
 
 class LDFaqPage(BaseModel):
     model_config = {"populate_by_name": True}
@@ -139,11 +153,13 @@ class LDFaqPage(BaseModel):
     type: str = Field("FAQPage", alias="@type")
     mainEntity: list[LDFaqItem]
 
+
 class LDHowToStep(BaseModel):
     model_config = {"populate_by_name": True}
     type: str = Field("HowToStep", alias="@type")
     name: str
     text: str | None = None
+
 
 class LDHowTo(BaseModel):
     model_config = {"populate_by_name": True}
@@ -151,6 +167,7 @@ class LDHowTo(BaseModel):
     type: str = Field("HowTo", alias="@type")
     name: str
     step: list[LDHowToStep]
+
 
 # Union registry for schema checks
 LD_TYPE_REGISTRY = {
@@ -168,6 +185,7 @@ LD_TYPE_REGISTRY = {
 }
 ALLOWED_TYPES = {t.strip() for t in settings.SEO_LD_TYPES.split(",") if t.strip()}
 
+
 # ---------- IO helpers ----------
 def _slug_from_url(url: str) -> str:
     """Generate safe filesystem slug from URL."""
@@ -179,7 +197,10 @@ def _slug_from_url(url: str) -> str:
         .strip("_")
     )
 
-def _write_artifacts(slug: str, jsonld: list[dict[str, Any]], report: dict[str, Any]) -> dict[str, str]:
+
+def _write_artifacts(
+    slug: str, jsonld: list[dict[str, Any]], report: dict[str, Any]
+) -> dict[str, str]:
     """Write JSON-LD and validation report to artifacts directory."""
     ts = datetime.now(UTC).strftime("%Y-%m-%dT%H%M%SZ")
     folder = ARTIFACTS_DIR.joinpath(slug)
@@ -187,6 +208,7 @@ def _write_artifacts(slug: str, jsonld: list[dict[str, Any]], report: dict[str, 
     json_path = folder.joinpath(f"{ts}.jsonld")
     report_path = folder.joinpath(f"{ts}.report.json")
     import json
+
     json_path.write_text(json.dumps(jsonld, ensure_ascii=False, separators=(",", ":")))
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2))
     # Keep a shorthand "latest" pointer
@@ -194,9 +216,11 @@ def _write_artifacts(slug: str, jsonld: list[dict[str, Any]], report: dict[str, 
     folder.joinpath("latest.report.json").write_text(report_path.read_text())
     return {"json": str(json_path), "report": str(report_path)}
 
+
 def _load_latest(slug: str) -> dict[str, Any]:
     """Load latest JSON-LD and report for a URL slug."""
     import json
+
     folder = ARTIFACTS_DIR.joinpath(slug)
     latest = folder.joinpath("latest.jsonld")
     latest_report = folder.joinpath("latest.report.json")
@@ -207,8 +231,11 @@ def _load_latest(slug: str) -> dict[str, Any]:
         "report": json.loads(latest_report.read_text() or "{}"),
     }
 
+
 # ---------- Validation core ----------
-def _validate_jsonld(jsonld_any: dict[str, Any] | list[dict[str, Any]]) -> dict[str, Any]:
+def _validate_jsonld(
+    jsonld_any: dict[str, Any] | list[dict[str, Any]],
+) -> dict[str, Any]:
     """
     Validate JSON-LD structure and schema compliance.
     Returns validation result with 'errors' and 'warnings' lists.
@@ -232,7 +259,9 @@ def _validate_jsonld(jsonld_any: dict[str, Any] | list[dict[str, Any]]) -> dict[
             errors.append(f"[{i}] @type missing or not a string")
             continue
         if ALLOWED_TYPES and typ not in ALLOWED_TYPES:
-            warnings.append(f"[{i}] @type '{typ}' not in allowlist; allowed: {sorted(ALLOWED_TYPES)}")
+            warnings.append(
+                f"[{i}] @type '{typ}' not in allowlist; allowed: {sorted(ALLOWED_TYPES)}"
+            )
 
         # duplicate @id guard
         _id = obj.get("@id")
@@ -256,9 +285,12 @@ def _validate_jsonld(jsonld_any: dict[str, Any] | list[dict[str, Any]]) -> dict[
                     # ISO-ish format check; more precise parsing optional
                     datetime.fromisoformat(str(obj[date_field]).replace("Z", "+00:00"))
                 except Exception:
-                    warnings.append(f"[{i}] {date_field} not ISO-8601 (value={obj[date_field]!r})")
+                    warnings.append(
+                        f"[{i}] {date_field} not ISO-8601 (value={obj[date_field]!r})"
+                    )
 
     return {"count": len(jsonld_list), "errors": errors, "warnings": warnings}
+
 
 # ---------- Metadata collection stub ----------
 def _collect_metadata(url: str) -> dict[str, Any]:
@@ -267,6 +299,7 @@ def _collect_metadata(url: str) -> dict[str, Any]:
     For now, provides a safe baseline derived from settings & URL.
     """
     from urllib.parse import urlparse
+
     u = urlparse(url)
     origin = f"{u.scheme}://{u.netloc}"
     is_project = "/projects/" in u.path
@@ -275,11 +308,20 @@ def _collect_metadata(url: str) -> dict[str, Any]:
     description = "Self-updating portfolio powered by SiteAgent."
     og_image = settings.BRAND_LOGO
     breadcrumbs = [
-        {"@type":"ListItem","position":1,"name":"Home","item": origin},
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": origin},
     ]
     if is_project:
-        breadcrumbs.append({"@type":"ListItem","position":2,"name":"Projects","item": f"{origin}/projects"})
-        breadcrumbs.append({"@type":"ListItem","position":3,"name": slug.title(), "item": url})
+        breadcrumbs.append(
+            {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Projects",
+                "item": f"{origin}/projects",
+            }
+        )
+        breadcrumbs.append(
+            {"@type": "ListItem", "position": 3, "name": slug.title(), "item": url}
+        )
     return {
         "origin": origin,
         "url": url,
@@ -291,14 +333,17 @@ def _collect_metadata(url: str) -> dict[str, Any]:
         "published_iso": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
 
+
 # ---------- Request models ----------
 class GenerateReq(BaseModel):
     url: HttpUrl
     types: list[str] | None = None
     dry_run: bool = True
 
+
 class ValidateReq(BaseModel):
     jsonld: dict[str, Any] | list[dict[str, Any]]
+
 
 # ---------- Router endpoints ----------
 @router.post("/generate")
@@ -318,99 +363,190 @@ def generate_ld(req: GenerateReq):
     objs: list[dict[str, Any]] = []
 
     if "Organization" in want_types:
-        objs.append({
-            "@context":"https://schema.org","@type":"Organization",
-            "name": settings.BRAND_NAME, "url": meta["origin"], "logo": settings.BRAND_LOGO
-        })
+        objs.append(
+            {
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                "name": settings.BRAND_NAME,
+                "url": meta["origin"],
+                "logo": settings.BRAND_LOGO,
+            }
+        )
 
     if "Person" in want_types:
         person_obj: dict[str, Any] = {
-            "@context":"https://schema.org","@type":"Person",
-            "name": settings.PERSON_NAME, "url": meta["origin"],
+            "@context": "https://schema.org",
+            "@type": "Person",
+            "name": settings.PERSON_NAME,
+            "url": meta["origin"],
         }
         if settings.PERSON_SAME_AS:
             person_obj["sameAs"] = [settings.PERSON_SAME_AS]
         objs.append(person_obj)
 
     if "WebSite" in want_types:
-        objs.append({
-            "@context":"https://schema.org","@type":"WebSite",
-            "url": meta["origin"], "name": settings.BRAND_NAME, "inLanguage":"en",
-            "publisher": {"@context":"https://schema.org","@type":"Person","name": settings.PERSON_NAME}
-        })
+        objs.append(
+            {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "url": meta["origin"],
+                "name": settings.BRAND_NAME,
+                "inLanguage": "en",
+                "publisher": {
+                    "@context": "https://schema.org",
+                    "@type": "Person",
+                    "name": settings.PERSON_NAME,
+                },
+            }
+        )
 
     if "BreadcrumbList" in want_types and meta.get("breadcrumbs"):
-        objs.append({
-            "@context":"https://schema.org","@type":"BreadcrumbList",
-            "itemListElement": meta["breadcrumbs"]
-        })
+        objs.append(
+            {
+                "@context": "https://schema.org",
+                "@type": "BreadcrumbList",
+                "itemListElement": meta["breadcrumbs"],
+            }
+        )
 
     if "WebPage" in want_types:
         page: dict[str, Any] = {
-            "@context":"https://schema.org","@type":"WebPage",
-            "url": meta["url"], "name": meta["title"], "description": meta["description"],
-            "isPartOf": {"@context":"https://schema.org","@type":"WebSite","url": meta["origin"], "name": settings.BRAND_NAME},
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "url": meta["url"],
+            "name": meta["title"],
+            "description": meta["description"],
+            "isPartOf": {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "url": meta["origin"],
+                "name": settings.BRAND_NAME,
+            },
         }
         if meta.get("image"):
-            page["primaryImageOfPage"] = {"@type":"ImageObject","url": meta["image"]}
+            page["primaryImageOfPage"] = {"@type": "ImageObject", "url": meta["image"]}
         if meta.get("breadcrumbs"):
-            page["breadcrumb"] = {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement": meta["breadcrumbs"]}
+            page["breadcrumb"] = {
+                "@context": "https://schema.org",
+                "@type": "BreadcrumbList",
+                "itemListElement": meta["breadcrumbs"],
+            }
         objs.append(page)
 
     # Optional page-specific content shapes
     if "CreativeWork" in want_types and meta["is_project"]:
-        objs.append({
-            "@context":"https://schema.org","@type":"CreativeWork",
-            "name": meta["title"], "url": meta["url"], "description": meta["description"],
-            "image": [meta["image"]], "author": {"@context":"https://schema.org","@type":"Person","name": settings.PERSON_NAME},
-            "datePublished": meta["published_iso"]
-        })
+        objs.append(
+            {
+                "@context": "https://schema.org",
+                "@type": "CreativeWork",
+                "name": meta["title"],
+                "url": meta["url"],
+                "description": meta["description"],
+                "image": [meta["image"]],
+                "author": {
+                    "@context": "https://schema.org",
+                    "@type": "Person",
+                    "name": settings.PERSON_NAME,
+                },
+                "datePublished": meta["published_iso"],
+            }
+        )
 
     if "Article" in want_types and not meta["is_project"]:
-        objs.append({
-            "@context":"https://schema.org","@type":"Article",
-            "headline": meta["title"], "url": meta["url"], "description": meta["description"],
-            "image": [meta["image"]], "author": {"@context":"https://schema.org","@type":"Person","name": settings.PERSON_NAME},
-            "datePublished": meta["published_iso"], "dateModified": meta["published_iso"]
-        })
+        objs.append(
+            {
+                "@context": "https://schema.org",
+                "@type": "Article",
+                "headline": meta["title"],
+                "url": meta["url"],
+                "description": meta["description"],
+                "image": [meta["image"]],
+                "author": {
+                    "@context": "https://schema.org",
+                    "@type": "Person",
+                    "name": settings.PERSON_NAME,
+                },
+                "datePublished": meta["published_iso"],
+                "dateModified": meta["published_iso"],
+            }
+        )
 
     if "FAQPage" in want_types:
         # Generate example FAQ content
-        objs.append({
-            "@context":"https://schema.org","@type":"FAQPage",
-            "mainEntity":[
-                {
-                    "@type":"Question",
-                    "name":"What is SiteAgent?",
-                    "acceptedAnswer":{"@type":"Answer","text":"SiteAgent is a self-updating portfolio platform that automates SEO, content management, and deployment workflows."}
-                },
-                {
-                    "@type":"Question",
-                    "name":"Do I need to write code?",
-                    "acceptedAnswer":{"@type":"Answer","text":"Basic knowledge helps, but SiteAgent automates most technical tasks through FastAPI endpoints and GitHub Actions."}
-                },
-                {
-                    "@type":"Question",
-                    "name":"How does SEO monitoring work?",
-                    "acceptedAnswer":{"@type":"Answer","text":"SiteAgent fetches daily Google Search Console data, detects CTR anomalies, and files GitHub Issues automatically."}
-                }
-            ]
-        })
+        objs.append(
+            {
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                "mainEntity": [
+                    {
+                        "@type": "Question",
+                        "name": "What is SiteAgent?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "SiteAgent is a self-updating portfolio platform that automates SEO, content management, and deployment workflows.",
+                        },
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Do I need to write code?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Basic knowledge helps, but SiteAgent automates most technical tasks through FastAPI endpoints and GitHub Actions.",
+                        },
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "How does SEO monitoring work?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "SiteAgent fetches daily Google Search Console data, detects CTR anomalies, and files GitHub Issues automatically.",
+                        },
+                    },
+                ],
+            }
+        )
 
     if "HowTo" in want_types and meta["is_project"]:
         # Generate step-by-step guide for project pages
-        project_name = meta["title"].split("—")[0].strip() if "—" in meta["title"] else meta["title"]
-        objs.append({
-            "@context":"https://schema.org","@type":"HowTo",
-            "name": f"How to build {project_name}",
-            "step":[
-                {"@type":"HowToStep","name":"Clone the repository","text": f"Get started by cloning the {project_name} repo from GitHub."},
-                {"@type":"HowToStep","name":"Install dependencies","text":"Run npm install or pip install to set up all required packages."},
-                {"@type":"HowToStep","name":"Configure environment","text":"Set up your .env file with API keys and configuration values."},
-                {"@type":"HowToStep","name":"Run development server","text":"Start the local dev server to test your changes in real-time."},
-                {"@type":"HowToStep","name":"Deploy to production","text":"Use GitHub Actions or manual deployment scripts to publish your changes."}
-            ]
-        })
+        project_name = (
+            meta["title"].split("—")[0].strip()
+            if "—" in meta["title"]
+            else meta["title"]
+        )
+        objs.append(
+            {
+                "@context": "https://schema.org",
+                "@type": "HowTo",
+                "name": f"How to build {project_name}",
+                "step": [
+                    {
+                        "@type": "HowToStep",
+                        "name": "Clone the repository",
+                        "text": f"Get started by cloning the {project_name} repo from GitHub.",
+                    },
+                    {
+                        "@type": "HowToStep",
+                        "name": "Install dependencies",
+                        "text": "Run npm install or pip install to set up all required packages.",
+                    },
+                    {
+                        "@type": "HowToStep",
+                        "name": "Configure environment",
+                        "text": "Set up your .env file with API keys and configuration values.",
+                    },
+                    {
+                        "@type": "HowToStep",
+                        "name": "Run development server",
+                        "text": "Start the local dev server to test your changes in real-time.",
+                    },
+                    {
+                        "@type": "HowToStep",
+                        "name": "Deploy to production",
+                        "text": "Use GitHub Actions or manual deployment scripts to publish your changes.",
+                    },
+                ],
+            }
+        )
 
     report = _validate_jsonld(objs)
     artifacts_paths = {}
@@ -418,7 +554,10 @@ def generate_ld(req: GenerateReq):
         slug = _slug_from_url(str(req.url))
         artifacts_paths = _write_artifacts(slug, objs, {"url": str(req.url), **report})
 
-    return JSONResponse({"jsonld": objs, "report": report, "artifacts": artifacts_paths})
+    return JSONResponse(
+        {"jsonld": objs, "report": report, "artifacts": artifacts_paths}
+    )
+
 
 @router.post("/validate")
 def validate_ld(req: ValidateReq):
@@ -432,8 +571,11 @@ def validate_ld(req: ValidateReq):
         raise HTTPException(status_code=422, detail=result)
     return JSONResponse(result)
 
+
 @router.get("/report")
-def ld_report(url: str = Query(..., description="Exact URL used when generating artifacts")):
+def ld_report(
+    url: str = Query(..., description="Exact URL used when generating artifacts")
+):
     """Get the latest JSON-LD and validation report for a URL."""
     slug = _slug_from_url(url)
     try:
@@ -442,12 +584,24 @@ def ld_report(url: str = Query(..., description="Exact URL used when generating 
         raise HTTPException(status_code=404, detail="No report found for URL")
     return JSONResponse({"url": url, **latest})
 
+
 # ---------- Optional test-only shortcut ----------
 if getattr(settings, "ALLOW_DEV_ROUTES", 0):
+
     @router.post("/mock")
     def mock_commit(url: str = Body(..., embed=True)):
         """Fast artifact generator for E2E/CI (no external fetch)."""
-        payload = GenerateReq(url=url, types=[
-            "WebSite","WebPage","BreadcrumbList","Person","Organization","CreativeWork","Article"
-        ], dry_run=False)
+        payload = GenerateReq(
+            url=url,
+            types=[
+                "WebSite",
+                "WebPage",
+                "BreadcrumbList",
+                "Person",
+                "Organization",
+                "CreativeWork",
+                "Article",
+            ],
+            dry_run=False,
+        )
         return generate_ld(payload)

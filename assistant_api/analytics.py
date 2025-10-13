@@ -42,6 +42,7 @@ if ZoneInfo:
         # tzdata not installed / unknown zone on this platform
         _TZ = None
 
+
 def _bucket_path(path: str) -> str:
     """
     Map arbitrary paths to a small, stable set of buckets to keep Prom labels low.
@@ -53,28 +54,48 @@ def _bucket_path(path: str) -> str:
     if p == "/":
         return "root"
     seg = p.split("/", 2)[1] if p.startswith("/") else p.split("/", 1)[0]
-    if seg in {"projects", "project"}:     return "projects"
-    if seg in {"cases", "case", "work"}:  return "cases"
-    if seg in {"blog", "posts"}:           return "blog"
-    if seg in {"docs", "documentation"}:   return "docs"
-    if seg in {"about"}:                     return "about"
-    if seg in {"contact"}:                   return "contact"
-    if seg in {"dl", "download"}:           return "downloads"
-    if seg in {"api"}:                       return "api"
-    if seg in {"chat", "agent"}:            return "agent"
-    if "resume" in p or "cv" in p:          return "resume"
+    if seg in {"projects", "project"}:
+        return "projects"
+    if seg in {"cases", "case", "work"}:
+        return "cases"
+    if seg in {"blog", "posts"}:
+        return "blog"
+    if seg in {"docs", "documentation"}:
+        return "docs"
+    if seg in {"about"}:
+        return "about"
+    if seg in {"contact"}:
+        return "contact"
+    if seg in {"dl", "download"}:
+        return "downloads"
+    if seg in {"api"}:
+        return "api"
+    if seg in {"chat", "agent"}:
+        return "agent"
+    if "resume" in p or "cv" in p:
+        return "resume"
     return "other"
+
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
+
 def _is_bot(ua: str) -> str:
     ua = (ua or "").lower()
-    return "1" if any(t in ua for t in ("bot","spider","crawl","preview","prerender")) else "0"
+    return (
+        "1"
+        if any(t in ua for t in ("bot", "spider", "crawl", "preview", "prerender"))
+        else "0"
+    )
+
 
 def _device(w: int) -> str:
-    if w < 640: return "mobile"
-    if w < 1024: return "tablet"
+    if w < 640:
+        return "mobile"
+    if w < 1024:
+        return "tablet"
     return "desktop"
+
 
 @router.post("/collect")
 async def collect(req: Request):
@@ -107,18 +128,29 @@ async def collect(req: Request):
     region = req.headers.get("CF-IPCountry", "ZZ")[:4]
 
     if et == "page_view":
-        page_views.labels(path=path, ref_host=ref_host, device=device, theme=theme, region=region, ua_is_bot=bot).inc()
+        page_views.labels(
+            path=path,
+            ref_host=ref_host,
+            device=device,
+            theme=theme,
+            region=region,
+            ua_is_bot=bot,
+        ).inc()
         # Day-of-week / hour-of-day bucketing in configured timezone
         try:
             dt = datetime.fromtimestamp(ts, _TZ) if _TZ else datetime.fromtimestamp(ts)
-            dow = str(dt.weekday())      # 0=Mon .. 6=Sun
-            hour = f"{dt.hour:02d}"      # 00..23
+            dow = str(dt.weekday())  # 0=Mon .. 6=Sun
+            hour = f"{dt.hour:02d}"  # 00..23
             page_view_by_dow_hour.labels(dow=dow, hour=hour).inc()
             # Path group bucketing
             path_group = _bucket_path(path)
-            page_view_by_dow_hour_path.labels(dow=dow, hour=hour, path_group=path_group).inc()
+            page_view_by_dow_hour_path.labels(
+                dow=dow, hour=hour, path_group=path_group
+            ).inc()
             # Device-split variant
-            page_view_by_dow_hour_path_device.labels(dow=dow, hour=hour, path_group=path_group, device=device).inc()
+            page_view_by_dow_hour_path_device.labels(
+                dow=dow, hour=hour, path_group=path_group, device=device
+            ).inc()
         except Exception:
             # fail-safe: don't block analytics on TZ/parse issues
             pass
@@ -139,18 +171,27 @@ async def collect(req: Request):
     elif et == "project_video_play":
         project_plays.labels(project_id=(data.get("project_id") or "unknown")).inc()
     elif et == "agent_request":
-        agent_requests.labels(intent=(data.get("intent") or "unknown"), project_id=(data.get("project_id") or "unknown")).inc()
+        agent_requests.labels(
+            intent=(data.get("intent") or "unknown"),
+            project_id=(data.get("project_id") or "unknown"),
+        ).inc()
     elif et == "agent_feedback":
-        agent_feedback.labels(sentiment=(data.get("sentiment") or "neutral"), intent=(data.get("intent") or "unknown")).inc()
+        agent_feedback.labels(
+            sentiment=(data.get("sentiment") or "neutral"),
+            intent=(data.get("intent") or "unknown"),
+        ).inc()
     elif et == "frontend_error":
         frontend_errors.labels(source=(data.get("source") or "unknown")).inc()
     elif et == "click_bin":
-        x = str(int(data.get("x", 0))); y = str(int(data.get("y", 0)))
+        x = str(int(data.get("x", 0)))
+        y = str(int(data.get("y", 0)))
         click_bins.labels(x_bin=x, y_bin=y, path=path).inc()
     elif et == "web_vitals":
         if data.get("name") == "LCP":
             try:
-                web_vitals_lcp.labels(path=path).observe(float(data.get("value", 0)) / 1000.0)
+                web_vitals_lcp.labels(path=path).observe(
+                    float(data.get("value", 0)) / 1000.0
+                )
             except Exception:
                 pass
     elif et == "session_start":

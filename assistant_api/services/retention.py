@@ -10,6 +10,7 @@ from .analytics_store import AnalyticsStore
 
 PATTERN = re.compile(r"^events-(\d{8})\.jsonl(\.gz)?$")
 
+
 def _parse_day(p: Path) -> date | None:
     m = PATTERN.match(p.name)
     if not m:
@@ -20,6 +21,7 @@ def _parse_day(p: Path) -> date | None:
     except Exception:
         return None
 
+
 def _gzip_file(src: Path, dst: Path) -> None:
     dst.parent.mkdir(parents=True, exist_ok=True)
     with src.open("rb") as f_in, gzip.open(dst, "wb") as f_out:
@@ -28,6 +30,7 @@ def _gzip_file(src: Path, dst: Path) -> None:
             if not chunk:
                 break
             f_out.write(chunk)
+
 
 def run_retention(settings: dict[str, Any]) -> dict[str, Any]:
     """
