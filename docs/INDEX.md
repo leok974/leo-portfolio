@@ -4,28 +4,20 @@
 
 - [README.md](README.md)
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- [DEPLOY.md](docs/DEPLOY.md)
 - [DEVELOPMENT.md](docs/DEVELOPMENT.md)
-- [a11y.md](docs/a11y.md)
 
-## API & Backend
+## Deploy & Security
 
-- [API.md](docs/API.md)
-- [BACKEND_QUICKSTART.md](docs/BACKEND_QUICKSTART.md)
-
-## Security
-
+- [DEPLOY.md](docs/DEPLOY.md)
 - [SECURITY.md](docs/SECURITY.md)
 
-## Phases & Changelog
+## API
 
-- [PHASE_0.3.0.md](docs/PHASE_0.3.0.md)
+- [API.md](docs/API.md)
+
+## Project Meta
+
 - [CHANGELOG.md](docs/CHANGELOG.md)
-
-## Tooling
-
-- [CONSOLIDATION_SYSTEM.md](docs/CONSOLIDATION_SYSTEM.md)
-
-## Contributing
-
 - [CONTRIBUTING.md](CONTRIBUTING.md)
+- [GIT_WORKFLOW.md](GIT_WORKFLOW.md)
+- [INDEX.md](docs/INDEX.md)

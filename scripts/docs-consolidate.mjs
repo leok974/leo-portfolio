@@ -14,6 +14,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { Minimatch } from "minimatch";
 
 const repoRoot = process.cwd();
 const docsDir = path.join(repoRoot, "docs");
@@ -46,6 +47,14 @@ function listFiles(dir) {
 
 function rel(p) {
   return path.relative(repoRoot, p).replaceAll("\\", "/");
+}
+
+function matchesAny(fileRel, patterns = []) {
+  return patterns.some(p => {
+    if (p.startsWith("re:")) return new RegExp(p.slice(3)).test(fileRel);
+    const mm = new Minimatch(p, { nocase: true, dot: true });
+    return mm.match(fileRel);
+  });
 }
 
 function ensureFrontmatter(md, title) {
@@ -113,21 +122,22 @@ function main() {
     }
 
     // handle deprecated / duplicates / extras
-    const isDeprecated = (cfg.deprecated || []).includes(r);
-    const isExtra = !(cfg.keep || []).includes(r);
+    const isKeptByPattern = matchesAny(r, cfg.keepPatterns);
+    const isDeprecated = (cfg.deprecated || []).includes(r) || matchesAny(r, cfg.deprecatedPatterns);
+    const isExtra = !(cfg.keep || []).includes(r) && !isKeptByPattern;
     if (isDeprecated || isExtra) {
       // Delete only if explicitly allowed by rules
-      const okToDelete = (cfg.delete || []).includes(r);
+      const okToDelete = (cfg.delete || []).includes(r) || matchesAny(r, cfg.deletePatterns);
       if (okToDelete) {
         // Time-based safeguard: don't delete files modified in last 14 days
         const stat = fs.statSync(f);
         const daysSinceModified = (Date.now() - stat.mtimeMs) / (1000 * 60 * 60 * 24);
-        
+
         if (daysSinceModified < 14) {
-          report.flagged.push({ 
-            file: r, 
-            reason: "recent_change", 
-            details: `Modified ${Math.floor(daysSinceModified)} days ago - skipping delete` 
+          report.flagged.push({
+            file: r,
+            reason: "recent_change",
+            details: `Modified ${Math.floor(daysSinceModified)} days ago - skipping delete`
           });
         } else {
           report.removed.push(r);
