@@ -22,7 +22,7 @@ curl -i -X POST "https://assistant.ledger-mind.org/api/auth/admin/login?email=yo
 # Expected response:
 # HTTP/1.1 200 OK
 # Set-Cookie: admin_auth=<token>; Max-Age=604800; Path=/; Domain=.ledger-mind.org; HttpOnly; Secure; SameSite=None
-# 
+#
 # {"ok": true, "email": "you@yourdomain.com"}
 ```
 
@@ -96,6 +96,273 @@ curl -i -H "Cookie: $ADMIN_COOKIE" -X POST "https://assistant.ledger-mind.org/ap
 - **HttpOnly**: JavaScript can't steal the cookie (XSS protection)
 - **Secure**: Only sent over HTTPS
 - **SameSite=None**: Works across subdomains (requires Secure=true)
+
+---
+
+## A2. 60-Second Smoke Test (curl)
+
+**Quick smoke test for staging/production** — replace `<site>` with your portfolio origin and `<email>` with your admin email.
+
+```bash
+# 1) Get admin cookie (HMAC-signed)
+curl -i -X POST "https://<site>/api/auth/admin/login?email=<email>" | sed -n '1,5p'
+
+# Copy the cookie value into $C (everything after "admin_auth=" up to the semicolon)
+C="<paste_cookie_value>"
+
+# 2) Verify /api/auth/me sees you as admin
+curl -s -H "Cookie: admin_auth=$C" "https://<site>/api/auth/me" | jq
+
+# 3) Protected actions: should be 200 with cookie, 401/403 without
+curl -i -H "Cookie: admin_auth=$C" -X POST "https://<site>/api/layout/reset"   | sed -n '1,2p'
+curl -i -H "Cookie: admin_auth=$C" -X POST "https://<site>/api/layout/autotune" | sed -n '1,2p'
+curl -i -X POST "https://<site>/api/layout/reset"   | sed -n '1,2p'  # expect 401/403
+
+# Optional (SSE + cookies pass through):
+curl -I -H "Cookie: admin_auth=$C" "https://<site>/agent/events" | sed -n '1,3p'
+```
+
+**Example (Production)**:
+```bash
+# Login
+curl -i -X POST "https://assistant.ledger-mind.org/api/auth/admin/login?email=leoklemet.pa@gmail.com" | sed -n '1,5p'
+
+# Expected:
+# HTTP/1.1 200 OK
+# Set-Cookie: admin_auth=eyJ...xyz; Max-Age=604800; Path=/; Domain=.ledger-mind.org; HttpOnly; Secure; SameSite=None
+# Content-Type: application/json
+# 
+# {"ok":true,"email":"leoklemet.pa@gmail.com"}
+
+# Extract cookie
+C="eyJ...xyz"  # Copy from Set-Cookie header
+
+# Verify admin
+curl -s -H "Cookie: admin_auth=$C" "https://assistant.ledger-mind.org/api/auth/me" | jq
+# {"user":{"email":"leoklemet.pa@gmail.com"},"roles":["admin"],"is_admin":true}
+
+# Test autotune (with cookie → 200)
+curl -i -H "Cookie: admin_auth=$C" -X POST "https://assistant.ledger-mind.org/api/layout/autotune" | sed -n '1,2p'
+# HTTP/1.1 200 OK
+# {"ok":true,"message":"Layout autotuned"}
+
+# Test autotune (without cookie → 401)
+curl -i -X POST "https://assistant.ledger-mind.org/api/layout/autotune" | sed -n '1,2p'
+# HTTP/1.1 401 Unauthorized
+# {"detail":"Authentication required"}
+```
+
+---
+
+## A3. PowerShell One-Shot Verifier
+
+**Copy/paste this into PowerShell** to verify all admin authentication in one go:
+
+```powershell
+# Save as: scripts/Test-PortfolioAdmin.ps1
+
+function Test-PortfolioAdmin {
+  param(
+    [Parameter(Mandatory=$true)][string]$Site,     # e.g. https://assistant.ledger-mind.org
+    [Parameter(Mandatory=$true)][string]$Email     # your admin email
+  )
+  $ProgressPreference = 'SilentlyContinue'
+  Write-Host "1) Logging in as admin..." -ForegroundColor Cyan
+  $resp = Invoke-WebRequest -Uri "$Site/api/auth/admin/login?email=$Email" -Method POST -UseBasicParsing
+  $cookie = ($resp.Headers.'Set-Cookie' | Select-String -Pattern 'admin_auth=([^;]+)').Matches.Groups[1].Value
+  if (-not $cookie) { throw "No admin_auth cookie in response." }
+  Write-Host "   ✓ Got cookie (len $($cookie.Length))"
+
+  $hdr = @{ Cookie = "admin_auth=$cookie" }
+
+  Write-Host "2) Checking /api/auth/me..." -ForegroundColor Cyan
+  $me = Invoke-WebRequest -Uri "$Site/api/auth/me" -Headers $hdr -UseBasicParsing
+  $json = $me.Content | ConvertFrom-Json
+  if (-not $json.is_admin) { throw "/api/auth/me did not return is_admin=true" }
+  Write-Host "   ✓ is_admin=true for $($json.user.email)"
+
+  Write-Host "3) Hitting protected endpoints..." -ForegroundColor Cyan
+  $ok1 = (Invoke-WebRequest -Uri "$Site/api/layout/reset" -Method POST -Headers $hdr -UseBasicParsing).StatusCode
+  $ok2 = (Invoke-WebRequest -Uri "$Site/api/layout/autotune" -Method POST -Headers $hdr -UseBasicParsing).StatusCode
+  $forbid = (Invoke-WebRequest -Uri "$Site/api/layout/reset" -Method POST -UseBasicParsing -ErrorAction SilentlyContinue)
+  if ($ok1 -ge 400 -or $ok2 -ge 400) { throw "Protected endpoints failed with admin cookie." }
+  if ($forbid.StatusCode -lt 400) { throw "Endpoint allowed without cookie." }
+  Write-Host "   ✓ Protected endpoints enforce admin correctly"
+
+  Write-Host "4) (Optional) SSE reachable..." -ForegroundColor Cyan
+  $head = Invoke-WebRequest -Method Head -Uri "$Site/agent/events" -Headers $hdr -UseBasicParsing
+  if ($head.StatusCode -lt 200 -or $head.StatusCode -ge 400) {
+    Write-Host "   ! SSE HEAD non-200 (ok on some backends)"
+  } else {
+    Write-Host "   ✓ SSE HEAD OK"
+  }
+
+  Write-Host "`nAll admin verifications passed ✅" -ForegroundColor Green
+}
+
+# Example:
+# Test-PortfolioAdmin -Site "https://assistant.ledger-mind.org" -Email "leoklemet.pa@gmail.com"
+```
+
+**Run locally**:
+```powershell
+.\scripts\Test-PortfolioAdmin.ps1 -Site "https://assistant.ledger-mind.org" -Email "leoklemet.pa@gmail.com"
+```
+
+**Run against local dev**:
+```powershell
+.\scripts\Test-PortfolioAdmin.ps1 -Site "http://127.0.0.1:5174" -Email "dev@localhost"
+```
+
+**Expected output**:
+```
+1) Logging in as admin...
+   Email: leoklemet.pa@gmail.com
+   Site:  https://assistant.ledger-mind.org
+   ✓ Got admin_auth cookie (length: 180)
+
+2) Checking /api/auth/me...
+   ✓ is_admin=true for leoklemet.pa@gmail.com
+   ✓ Roles: admin
+
+3) Testing protected endpoints...
+   a) With admin cookie:
+      ✓ POST /api/layout/reset → 200
+      ✓ POST /api/layout/autotune → 200
+   b) Without cookie (should fail):
+      ✓ POST /api/layout/reset → 401 (blocked)
+
+4) Testing SSE endpoint...
+   ✓ HEAD /agent/events → 200
+
+============================================================
+All admin authentication verifications passed ✅
+============================================================
+```
+
+---
+
+## A4. Playwright E2E Test
+
+**Full integration test** (saves cookie, checks UI + endpoints):
+
+**File**: `tests/e2e/admin.auth.spec.ts`
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+const SITE  = process.env.PW_SITE  || 'http://127.0.0.1:5174';
+const EMAIL = process.env.ADMIN_TEST_EMAIL || 'leoklemet.pa@gmail.com';
+
+test.describe('admin HMAC cookie + UI gating', () => {
+  test('login → /api/auth/me → protected endpoints → UI buttons visible', async ({ page, context }) => {
+    // 1) login to get Set-Cookie
+    const rlogin = await page.request.post(`${SITE}/api/auth/admin/login?email=${encodeURIComponent(EMAIL)}`);
+    expect(rlogin.ok()).toBeTruthy();
+    const setCookie = rlogin.headers()['set-cookie'] || rlogin.headers()['Set-Cookie'];
+    expect(setCookie).toBeTruthy();
+
+    // 2) Carry cookie into browser context
+    const cookieVal = /admin_auth=([^;]+)/.exec(setCookie!)?.[1];
+    expect(cookieVal).toBeTruthy();
+    await context.addCookies([{
+      name: 'admin_auth',
+      value: cookieVal!,
+      url: SITE,
+      httpOnly: true,
+      secure: SITE.startsWith('https'),
+      sameSite: 'None'
+    }]);
+
+    // 3) API says we are admin
+    const rme = await page.request.get(`${SITE}/api/auth/me`);
+    const me = await rme.json();
+    expect(me.is_admin).toBe(true);
+
+    // 4) Protected endpoints succeed
+    const r1 = await page.request.post(`${SITE}/api/layout/reset`);
+    const r2 = await page.request.post(`${SITE}/api/layout/autotune`);
+    expect(r1.ok()).toBeTruthy();
+    expect(r2.ok()).toBeTruthy();
+
+    // 5) UI shows admin-only controls (assistant island)
+    await page.goto(`${SITE}/`);
+    await expect(page.getByTestId('assistant-panel')).toBeVisible();
+    await expect(page.getByTestId('btn-autotune')).toBeVisible();
+    await expect(page.getByTestId('btn-reset')).toBeVisible();
+  });
+
+  test('protected endpoint blocks without cookie', async ({ request }) => {
+    const r = await request.post(`${SITE}/api/layout/reset`);
+    expect(r.status()).toBeGreaterThanOrEqual(400);
+  });
+});
+```
+
+**Run locally** (dev server on port 5174):
+```bash
+PW_APP=portfolio ADMIN_TEST_EMAIL=leoklemet.pa@gmail.com pnpm exec playwright test tests/e2e/admin.auth.spec.ts --project=chromium
+```
+
+**Run against staging/prod** (no dev server):
+```bash
+PW_SITE="https://assistant.ledger-mind.org" ADMIN_TEST_EMAIL=leoklemet.pa@gmail.com \
+  pnpm exec playwright test tests/e2e/admin.auth.spec.ts --project=chromium
+```
+
+**Note**: If portfolio & API are on different subdomains, ensure the cookie has `Domain=.ledger-mind.org; SameSite=None; Secure` so the browser sends it to the portfolio origin. Your backend should already do this.
+
+---
+
+## A5. CI Hook (GitHub Actions)
+
+**Only run when secret is available** — add to `.github/workflows/portfolio.yml`:
+
+```yaml
+env:
+  ADMIN_TEST_EMAIL: leoklemet.pa@gmail.com
+  PW_APP: portfolio
+
+jobs:
+  e2e-admin:
+    if: ${{ secrets.ADMIN_HMAC_SECRET != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - run: pnpm install --frozen-lockfile
+      
+      # Start your staging URL or hit an already deployed env:
+      - name: E2E admin auth (staging)
+        env:
+          PW_SITE: https://assistant.ledger-mind.org
+        run: pnpm exec playwright test tests/e2e/admin.auth.spec.ts --project=chromium
+```
+
+**Why the `if` condition?**
+- Prevents test failures in forks/PRs where `ADMIN_HMAC_SECRET` isn't available
+- Only runs when secret exists (main repo, after backend deployment)
+
+---
+
+## A6. What "Passing" Looks Like
+
+**Backend**:
+- ✅ `curl /api/auth/me` with cookie returns `{"is_admin":true, ...}`
+- ✅ `POST /api/layout/reset` and `/autotune`:
+  - **200** with admin cookie
+  - **401/403** without cookie
+- ✅ Logout deletes cookie (Set-Cookie with `Max-Age=0`)
+
+**Frontend**:
+- ✅ On homepage, **Autotune** and **Reset** buttons visible **without** `?admin=1` (because authenticated)
+- ✅ Admin badge (green pill) visible
+- ✅ Dev override `?admin=1` **disabled** in production (requires real auth)
+
+**SSE** (Optional):
+- ✅ `/agent/events` HEAD/GET returns 200 and streams
+- ✅ Cookie forwarded through nginx to backend
 
 ---
 
