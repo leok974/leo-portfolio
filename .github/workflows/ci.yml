@@ -146,6 +146,45 @@ jobs:
       - name: Run Python type check (mypy)
         run: mypy assistant_api/ --ignore-missing-imports
 
+      - name: Run security audit (pip-audit)
+        run: pip-audit -r requirements.txt
+
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          sudo apt-get update
+          sudo apt-get install -y curl jq
+
+      - name: Start backend service
+        run: |
+          python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 &
+          echo $! > backend.pid
+          sleep 10
+
+      - name: Run smoke tests
+        run: bash scripts/smoke-test.sh
+
+      - name: Stop backend service
+        if: always()
+        run: |
+          if [ -f backend.pid ]; then
+            kill $(cat backend.pid) || true
+          fi
+
   build:
     name: Build & Verify
     runs-on: ubuntu-latest

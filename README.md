@@ -15,6 +15,10 @@
 [![SEO JSON-LD](https://github.com/leok974/leo-portfolio/actions/workflows/seo-ld-validate.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/seo-ld-validate.yml)
 [![SEO SERP Nightly](https://github.com/leok974/leo-portfolio/actions/workflows/seo-serp-cron.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/seo-serp-cron.yml)
 
+[![CI](https://github.com/leok974/leo-portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/leok974/leo-portfolio/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-%E2%89%A590%25-brightgreen)](https://github.com/leok974/leo-portfolio)
+[![Release](https://img.shields.io/github/v/release/leok974/leo-portfolio)](https://github.com/leok974/leo-portfolio/releases)
+
 > Nightly auto-PR **skips** when no pages are selected or when all selected pages already meet title/description limits.
 
 ### Nightly Health Snapshot
@@ -23,9 +27,23 @@
 - **Latest PRs**: [automation+seo](https://github.com/leok974/leo-portfolio/pulls?q=is%3Apr+label%3Aautomation+label%3Aseo+sort%3Acreated-desc) — Auto-generated reports with actionable insights
 - **Includes**: SEO intelligence checks (14+), Playwright E2E tests (JSON reporter), autofix dry-run summaries, comprehensive artifacts
 
+### Portfolio Architecture
+
+**Hybrid Vanilla + Preact Islands** for optimal performance and developer experience:
+
+- **Vanilla HTML/CSS/TS Shell** - Fast, minimal JS for static content
+- **Preact Islands** - Modern components (assistant panel) where interactivity matters
+- **Context-Aware Layout System** - Framework-agnostic layout recipes applied via DOM hooks
+- **Strict CSP** - Nonce-based Content Security Policy maintained throughout
+
+📖 **Architecture Guide**: [`docs/HYBRID_ARCHITECTURE.md`](docs/HYBRID_ARCHITECTURE.md) — Complete system design, data flow, and migration path
+📊 **Implementation Summary**: [`docs/HYBRID_IMPLEMENTATION_SUMMARY.md`](docs/HYBRID_IMPLEMENTATION_SUMMARY.md) — Build output, metrics, and integration guide
+
 ---
 
-[![Release](https://img.shields.io/github/v/release/leok974> _"Copilot, audit the site for WCAG 2.1: focus states, ARIA labels, color contrast, and generate a checklist in `docs/a11y.md`."_
+### SiteAgent: Your AI Contributor
+
+> _"Copilot, audit the site for WCAG 2.1: focus states, ARIA labels, color contrast, and generate a checklist in `docs/a11y.md`."_
 
 ---
 

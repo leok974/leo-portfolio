@@ -520,7 +520,80 @@ Derivation rules:
 ### GET /metrics
 JSON metrics: request totals, 5xx, token in/out, latency buckets, provider distribution.
 
-Status response (fields excerpt):
+**Request:**
+```
+GET /metrics
+```
+
+**Response:**
+```json
+{
+  "requests_total": 1234,
+  "error_5xx_total": 5,
+  "token_in": 50000,
+  "token_out": 75000,
+  "latency_ms": {
+    "p50": 120,
+    "p95": 450,
+    "p99": 1200
+  },
+  "provider_distribution": {
+    "primary": 0.85,
+    "fallback": 0.15
+  }
+}
+```
+
+**Field Notes:**
+- `requests_total`: Total number of requests processed since startup
+- `error_5xx_total`: Count of 5xx errors
+- `token_in`: Total input tokens consumed
+- `token_out`: Total output tokens generated
+- `latency_ms`: Latency percentiles (p50/p95/p99) in milliseconds
+- `provider_distribution`: Proportion of requests handled by primary vs fallback LLM
+
+### GET /status/summary
+Complete system status including LLM, RAG, and uptime information.
+
+**Request:**
+```
+GET /status/summary
+```
+
+**Response:**
+```json
+{
+  "primary": "ok",
+  "fallback": "ready",
+  "models": ["qwen2.5:7b-instruct-q4_K_M"],
+  "rag_db": "ok",
+  "uptime_s": 12345,
+  "llm": {
+    "path": "primary",
+    "primary_model_present": true,
+    "ready_probe": true
+  },
+  "rag": {
+    "ok": true,
+    "db": "./data/rag.sqlite",
+    "mode": "local-model"
+  },
+  "ready": true,
+  "_source": "/status/summary"
+}
+```
+
+**Field Notes:**
+- `primary`: Primary LLM status (`ok` | `unavailable` | `error`)
+- `fallback`: Fallback LLM status (`ready` | `unavailable`)
+- `models`: List of available model tags from Ollama
+- `rag_db`: RAG database status (`ok` | `error`)
+- `uptime_s`: Seconds since service startup
+- `llm.path`: Current LLM provider (`primary` | `fallback`)
+- `rag.ok`: RAG system health check result
+- `ready`: Overall readiness status (true if primary LLM + RAG are healthy)
+
+Status response (fields excerpt - LEGACY):
 ```json
 {
   "llm": { "path": "fallback", "primary_model_present": false, "ready_probe": false },
