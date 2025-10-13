@@ -1,14 +1,15 @@
 """Infrastructure scaling tool - plans docker/k8s scaling actions."""
 import json
-import subprocess
-import shlex
 import pathlib
+import shlex
+import subprocess
 import time
 from typing import Any, Dict, Tuple
+
 from ...settings import settings
 
 
-def _run(cmd: str, timeout: int) -> Tuple[int, str, str, float]:
+def _run(cmd: str, timeout: int) -> tuple[int, str, str, float]:
     """Execute command with timeout, return (rc, stdout, stderr, duration)."""
     t0 = time.time()
     try:
@@ -27,7 +28,7 @@ def _run(cmd: str, timeout: int) -> Tuple[int, str, str, float]:
         return 124, "", "timeout", time.time() - t0
 
 
-def run_infra_scale(artifact_dir: pathlib.Path) -> Dict[str, Any]:
+def run_infra_scale(artifact_dir: pathlib.Path) -> dict[str, Any]:
     """
     Run infrastructure scaling plan and write artifacts.
 

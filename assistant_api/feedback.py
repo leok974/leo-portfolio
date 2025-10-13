@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import datetime as _dt
+import json
+from pathlib import Path
+from typing import Any
+
 from fastapi import APIRouter, Response
 from pydantic import BaseModel, Field
-from typing import Any
-from pathlib import Path
-import json, datetime as _dt
 
 router = APIRouter()
 
@@ -31,7 +33,7 @@ def _append_jsonl(path: Path, obj: dict[str, Any]) -> None:
 
 @router.post("/api/feedback")
 async def post_feedback(item: FeedbackIn):
-    ts = _dt.datetime.utcnow().replace(tzinfo=_dt.timezone.utc).isoformat()
+    ts = _dt.datetime.utcnow().replace(tzinfo=_dt.UTC).isoformat()
     rec = item.model_dump()
     rec["ts"] = ts
     try:

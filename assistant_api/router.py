@@ -1,8 +1,9 @@
-from dataclasses import dataclass
-from typing import Optional, Literal, Dict, Any, List
 import os
-from .fts import bm25_search_scored
+from dataclasses import dataclass
+from typing import Any, Dict, List, Literal, Optional
+
 from .faq import faq_search_best
+from .fts import bm25_search_scored
 
 Route = Literal["rag", "faq", "chitchat"]
 
@@ -11,7 +12,7 @@ Route = Literal["rag", "faq", "chitchat"]
 class RouteOut:
     route: Route
     reason: str
-    project_id: Optional[str] = None
+    project_id: str | None = None
     score: float = 0.0
 
 
@@ -19,9 +20,9 @@ RAG_MIN_SCORE = float(os.getenv("ROUTER_RAG_MIN", "7.0"))  # bm25 score gate
 FAQ_MIN_SCORE = float(os.getenv("ROUTER_FAQ_MIN", "0.72"))  # cosine sim gate (0..1)
 
 
-def _dominant_project(hits: List[Dict[str, Any]]) -> Optional[str]:
+def _dominant_project(hits: list[dict[str, Any]]) -> str | None:
     # pick the most frequent project_id among hits (if present)
-    tally: Dict[str, int] = {}
+    tally: dict[str, int] = {}
     for h in hits:
         pid = h.get("project_id") or (h.get("meta", {}) or {}).get("project_id")
         if not pid:

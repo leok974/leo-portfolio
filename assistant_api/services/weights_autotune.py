@@ -4,18 +4,20 @@ Adaptive Agentic Feedback Loop (Phase 50.3)
 Automatically tunes layout weights based on A/B testing results.
 """
 from __future__ import annotations
+
 from typing import Dict
-from .layout_weights import read_active, propose_weights, approve_weights
-from .layout_opt import run_layout_optimize
-from .layout_ab import suggest_weights
+
 from .agent_events import log_event
+from .layout_ab import suggest_weights
+from .layout_opt import run_layout_optimize
+from .layout_weights import approve_weights, propose_weights, read_active
 
 
 def _apply_hint(
-    base: Dict[str, float],
-    hint: Dict[str, float],
+    base: dict[str, float],
+    hint: dict[str, float],
     alpha: float = 1.0
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Apply A/B testing hint to base weights with learning rate alpha.
 
@@ -39,7 +41,7 @@ def _apply_hint(
     return {k: v / total for k, v in out.items()}
 
 
-def run_autotune(alpha: float = 0.5) -> Dict:
+def run_autotune(alpha: float = 0.5) -> dict:
     """
     Run adaptive weight tuning based on A/B test results.
 

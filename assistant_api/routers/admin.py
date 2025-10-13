@@ -9,19 +9,20 @@ Endpoints:
 - POST /api/admin/gallery/add    - Add gallery item with metadata
 """
 import os
-from fastapi import APIRouter, Depends, Request, File, UploadFile, Form, HTTPException
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
 from typing import Optional
 
-from assistant_api.utils.cf_access import require_cf_access
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+
 from assistant_api.services.gallery_service import (
-    save_upload,
-    ffmpeg_poster,
     add_gallery_item,
+    ffmpeg_poster,
+    run_media_lint,
     run_sitemap_refresh,
-    run_media_lint
+    save_upload,
 )
+from assistant_api.utils.cf_access import require_cf_access
 
 # Single router with CF Access guard applied to ALL endpoints
 router = APIRouter(
@@ -60,10 +61,10 @@ def whoami(request: Request, principal: str = Depends(require_cf_access)):
 async def upload_file(
     file: UploadFile = File(...),
     make_card: bool = Form(False),
-    title: Optional[str] = Form(None),
-    description: Optional[str] = Form(None),
-    tools: Optional[str] = Form(None),  # comma-separated
-    tags: Optional[str] = Form(None),   # comma-separated
+    title: str | None = Form(None),
+    description: str | None = Form(None),
+    tools: str | None = Form(None),  # comma-separated
+    tags: str | None = Form(None),   # comma-separated
 ):
     """
     Upload image or video file.
@@ -163,11 +164,11 @@ class AddItemRequest(BaseModel):
     description: str = ''
     type: str = Field(pattern=r'^(image|video-local|youtube|vimeo)$')
     src: str
-    poster: Optional[str] = None
-    mime: Optional[str] = None
-    tools: Optional[list[str]] = None
-    workflow: Optional[list[str]] = None
-    tags: Optional[list[str]] = None
+    poster: str | None = None
+    mime: str | None = None
+    tools: list[str] | None = None
+    workflow: list[str] | None = None
+    tags: list[str] | None = None
 
 
 @router.post("/gallery/add")

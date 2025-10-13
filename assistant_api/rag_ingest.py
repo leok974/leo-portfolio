@@ -1,11 +1,22 @@
-import os, tempfile, subprocess, hashlib, glob, shutil, json, fnmatch, sqlite3, time
+import fnmatch
+import glob
+import hashlib
+import json
+import os
+import sqlite3
+import subprocess
+import tempfile
+import time
 from pathlib import Path
-from dotenv import load_dotenv
-from .db import connect, upsert_doc, upsert_vec, DB_PATH, commit_with_retry
-from .chunkers import chunk_for_path
+from typing import Any, Dict, List
+
 import numpy as np
-from typing import List, Dict, Any
+from dotenv import load_dotenv
+
 from .chunker import chunk_markdown, html_to_text
+from .chunkers import chunk_for_path
+from .db import DB_PATH, commit_with_retry, connect, upsert_doc, upsert_vec
+
 try:
     import yaml  # type: ignore
 except Exception:
@@ -105,14 +116,14 @@ def _ensure_kb_schema(con: sqlite3.Connection):
     )
     commit_with_retry(con, retries=6)
 
-def _load_projects_yaml(path: str) -> List[Dict[str, Any]]:
+def _load_projects_yaml(path: str) -> list[dict[str, Any]]:
     if not os.path.exists(path):
         return []
     if yaml is None:
         raise RuntimeError("PyYAML not installed. `pip install pyyaml` to use projects.yaml")
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f) or []
-    out: List[Dict[str, Any]] = []
+    out: list[dict[str, Any]] = []
     for p in data:
         out.append({
             "id": p.get("id"),
@@ -126,7 +137,7 @@ def _load_projects_yaml(path: str) -> List[Dict[str, Any]]:
         })
     return out
 
-def _upsert_kb_projects(con: sqlite3.Connection, projects: List[Dict[str, Any]]):
+def _upsert_kb_projects(con: sqlite3.Connection, projects: list[dict[str, Any]]):
     if not projects:
         return
     try:
@@ -156,7 +167,7 @@ def _upsert_kb_projects(con: sqlite3.Connection, projects: List[Dict[str, Any]])
         except Exception:
             pass
 
-def _match_project_id(projects: List[Dict[str, Any]], file_path: str) -> str:
+def _match_project_id(projects: list[dict[str, Any]], file_path: str) -> str:
     norm = file_path.replace("\\", "/").lower()
     for pd in projects:
         try:
@@ -218,7 +229,7 @@ async def ingest(req: dict | None = None):
                     for p in file_list(dst):
                         rel = os.path.relpath(p, dst)
                         try:
-                            content = open(p, "r", encoding="utf-8", errors="ignore").read()
+                            content = open(p, encoding="utf-8", errors="ignore").read()
                         except Exception:
                             continue
                         chunks = chunk_for_path(rel, content) or []
@@ -236,7 +247,7 @@ async def ingest(req: dict | None = None):
 
         # Structured repos: kb, fs or git
         with tempfile.TemporaryDirectory() as tmp:
-            kb_projects: List[Dict[str, Any]] = []
+            kb_projects: list[dict[str, Any]] = []
             for r in repos:
                 rtype = (r or {}).get("type", "fs")
                 if rtype == "kb":
@@ -258,7 +269,7 @@ async def ingest(req: dict | None = None):
                     for fp in files:
                         rel = os.path.relpath(fp, base)
                         try:
-                            content = open(fp, "r", encoding="utf-8", errors="ignore").read()
+                            content = open(fp, encoding="utf-8", errors="ignore").read()
                         except Exception:
                             continue
                         # Enhanced chunking and titles
@@ -304,7 +315,7 @@ async def ingest(req: dict | None = None):
                     for fp in files:
                         rel = os.path.relpath(fp, dst)
                         try:
-                            content = open(fp, "r", encoding="utf-8", errors="ignore").read()
+                            content = open(fp, encoding="utf-8", errors="ignore").read()
                         except Exception:
                             continue
                         chunks = chunk_for_path(rel, content) or []

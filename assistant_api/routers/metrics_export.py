@@ -1,8 +1,13 @@
 from __future__ import annotations
+
+import csv
+import datetime as dt
+import io
+import json
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import PlainTextResponse
-from pathlib import Path
-import csv, json, io, datetime as dt
 
 router = APIRouter(prefix="/agent/metrics", tags=["agent","metrics"])
 
@@ -22,7 +27,7 @@ def export_csv(limit_days: int = Query(90, ge=0, le=3650)):
         if limit_days:
             try:
                 ts = dt.datetime.fromisoformat(j.get("ts","").replace("Z","+00:00"))
-                if (dt.datetime.now(dt.timezone.utc) - ts).days > limit_days:
+                if (dt.datetime.now(dt.UTC) - ts).days > limit_days:
                     continue
             except Exception:
                 pass

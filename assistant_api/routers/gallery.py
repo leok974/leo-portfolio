@@ -6,15 +6,12 @@ Allows agent to:
 - Trigger sitemap refresh
 - Validate media assets
 """
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
 from typing import Optional
 
-from assistant_api.services.gallery_service import (
-    add_gallery_item,
-    run_sitemap_refresh,
-    run_media_lint
-)
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel, Field
+
+from assistant_api.services.gallery_service import add_gallery_item, run_media_lint, run_sitemap_refresh
 from assistant_api.utils.cf_access import require_cf_access
 
 router = APIRouter(
@@ -30,11 +27,11 @@ class AddItemRequest(BaseModel):
     description: str = ''
     type: str = Field(pattern=r'^(image|video-local|youtube|vimeo)$')
     src: str
-    poster: Optional[str] = None
-    mime: Optional[str] = None
-    tools: Optional[list[str]] = None
-    workflow: Optional[list[str]] = None
-    tags: Optional[list[str]] = None
+    poster: str | None = None
+    mime: str | None = None
+    tools: list[str] | None = None
+    workflow: list[str] | None = None
+    tags: list[str] | None = None
 
 
 @router.post('/add')

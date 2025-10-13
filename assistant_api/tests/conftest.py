@@ -8,9 +8,9 @@ Sets up test environment with:
 - FastAPI TestClient
 """
 import os
+
 import pytest
 from fastapi.testclient import TestClient
-
 
 # Set test environment before importing app
 os.environ.setdefault("APP_ENV", "test")
@@ -43,7 +43,7 @@ def mock_llm_generate(monkeypatch):
             "tokens_out": 8,
             "model": "test-model"
         }
-    
+
     try:
         import assistant_api.llm
         monkeypatch.setattr("assistant_api.llm.generate", fake_generate)
@@ -61,13 +61,13 @@ def mock_ollama_client(monkeypatch):
     class FakeOllamaClient:
         def generate(self, **kwargs):
             return {"response": "Test response"}
-        
+
         def list(self):
             return {"models": [{"name": "test-model"}]}
-        
+
         def chat(self, **kwargs):
             return {"message": {"content": "Test chat response"}}
-    
+
     try:
         monkeypatch.setattr("ollama.Client", lambda *args, **kwargs: FakeOllamaClient())
     except (ImportError, AttributeError):
@@ -85,14 +85,14 @@ def mock_openai_client(monkeypatch):
             self.choices = [type('obj', (object,), {
                 'message': type('obj', (object,), {'content': content})()
             })()]
-    
+
     class FakeOpenAIClient:
         class chat:
             class completions:
                 @staticmethod
                 def create(**kwargs):
                     return FakeOpenAIResponse()
-    
+
     try:
         monkeypatch.setattr("openai.OpenAI", lambda *args, **kwargs: FakeOpenAIClient())
     except (ImportError, AttributeError):
@@ -114,9 +114,9 @@ def clean_env(monkeypatch):
     """
     # Store original env
     original_env = dict(os.environ)
-    
+
     yield monkeypatch
-    
+
     # Restore original env
     os.environ.clear()
     os.environ.update(original_env)

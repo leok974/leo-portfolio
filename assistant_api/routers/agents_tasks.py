@@ -1,20 +1,22 @@
 """FastAPI router for agents_tasks orchestration API."""
-from typing import Optional
-from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, Header
-from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc, text
 import base64
-import json
-import io
 import csv
+import io
+import json
 import os
+from datetime import datetime
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi.responses import StreamingResponse
+from sqlalchemy import and_, desc, or_, text
+from sqlalchemy.orm import Session
+
 from assistant_api.db import get_db
-from assistant_api.models.agents_tasks import AgentTask
-from assistant_api.schemas.agents_tasks import AgentTaskCreate, AgentTaskUpdate, AgentTaskOut, AgentTaskListOut
 from assistant_api.metrics import emit as emit_metric
+from assistant_api.models.agents_tasks import AgentTask
 from assistant_api.rbac import require_admin
+from assistant_api.schemas.agents_tasks import AgentTaskCreate, AgentTaskListOut, AgentTaskOut, AgentTaskUpdate
 
 router = APIRouter(prefix="/agents/tasks", tags=["agents"])
 
@@ -89,8 +91,8 @@ def update_agent_task(task_id: int, task_update: AgentTaskUpdate, db: Session = 
 
 @router.get("/", response_model=list[AgentTaskOut])
 def list_agent_tasks_legacy(
-    run_id: Optional[str] = None,
-    status: Optional[str] = None,
+    run_id: str | None = None,
+    status: str | None = None,
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
@@ -131,8 +133,8 @@ def _decode_cursor(token: str) -> dict | None:
 def list_tasks_paged(
     db: Session = Depends(get_db),
     limit: int = Query(50, ge=1, le=200),
-    since: Optional[datetime] = Query(None, description="Return tasks with started_at >= this UTC datetime (ISO-8601)"),
-    cursor: Optional[str] = Query(None, description="Opaque pagination token from previous page"),
+    since: datetime | None = Query(None, description="Return tasks with started_at >= this UTC datetime (ISO-8601)"),
+    cursor: str | None = Query(None, description="Opaque pagination token from previous page"),
     status: list[str] = Query([], description="Filter by status (can be specified multiple times)"),
     task: list[str] = Query([], description="Filter by task name (can be specified multiple times)"),
 ):
@@ -179,7 +181,7 @@ def list_tasks_paged(
 def list_tasks_paged_csv(
     db: Session = Depends(get_db),
     limit: int = Query(1000, ge=1, le=10000),
-    since: Optional[datetime] = Query(None, description="Return tasks with started_at >= this UTC datetime (ISO-8601)"),
+    since: datetime | None = Query(None, description="Return tasks with started_at >= this UTC datetime (ISO-8601)"),
     status: list[str] = Query([], description="Filter by status (can be specified multiple times)"),
     task: list[str] = Query([], description="Filter by task name (can be specified multiple times)"),
 ):

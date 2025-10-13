@@ -1,5 +1,9 @@
-import re, os, httpx
-from .db import connect, search, index_dim
+import os
+import re
+
+import httpx
+
+from .db import connect, index_dim, search
 from .rag_query import embed_query_matching_dim
 
 # Default to the backend service URL in containerized/prod; allow override via env.

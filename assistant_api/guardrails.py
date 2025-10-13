@@ -1,7 +1,7 @@
 from __future__ import annotations
+
 import os
 import re
-import typing as t
 
 # Lightweight patterns; easy to extend later
 INJECTION_PATTERNS: list[str] = [

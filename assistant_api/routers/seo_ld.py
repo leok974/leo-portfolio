@@ -1,7 +1,7 @@
 """SEO JSON-LD Router - Generate, validate, and report on JSON-LD structured data."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -39,50 +39,50 @@ class LDImageObject(BaseModel):
     model_config = {"populate_by_name": True}
     type: str = Field("ImageObject", alias="@type")
     url: HttpUrl
-    width: Optional[int] = None
-    height: Optional[int] = None
+    width: int | None = None
+    height: int | None = None
 
 class LDVideoObject(BaseModel):
     model_config = {"populate_by_name": True}
     type: str = Field("VideoObject", alias="@type")
     name: str
-    description: Optional[str] = None
-    thumbnailUrl: List[HttpUrl]
-    uploadDate: Optional[str] = None
-    contentUrl: Optional[HttpUrl] = None
-    embedUrl: Optional[HttpUrl] = None
+    description: str | None = None
+    thumbnailUrl: list[HttpUrl]
+    uploadDate: str | None = None
+    contentUrl: HttpUrl | None = None
+    embedUrl: HttpUrl | None = None
 
 class LDBreadcrumbItem(BaseModel):
     model_config = {"populate_by_name": True}
     type: str = Field("ListItem", alias="@type")
     position: int
     name: str
-    item: Optional[HttpUrl] = None
+    item: HttpUrl | None = None
 
 class LDBreadcrumbList(BaseModel):
     model_config = {"populate_by_name": True}
     context: str = Field("https://schema.org", alias="@context")
     type: str = Field("BreadcrumbList", alias="@type")
-    itemListElement: List[LDBreadcrumbItem]
+    itemListElement: list[LDBreadcrumbItem]
 
 class LDOrganization(BaseModel):
     model_config = {"populate_by_name": True}
     context: str = Field("https://schema.org", alias="@context")
     type: str = Field("Organization", alias="@type")
     name: str
-    url: Optional[HttpUrl] = None
-    logo: Optional[HttpUrl] = None
-    sameAs: Optional[List[HttpUrl]] = None
+    url: HttpUrl | None = None
+    logo: HttpUrl | None = None
+    sameAs: list[HttpUrl] | None = None
 
 class LDPerson(BaseModel):
     model_config = {"populate_by_name": True}
     context: str = Field("https://schema.org", alias="@context")
     type: str = Field("Person", alias="@type")
     name: str
-    url: Optional[HttpUrl] = None
-    image: Optional[HttpUrl] = None
-    sameAs: Optional[List[HttpUrl]] = None
-    affiliation: Optional[LDOrganization] = None
+    url: HttpUrl | None = None
+    image: HttpUrl | None = None
+    sameAs: list[HttpUrl] | None = None
+    affiliation: LDOrganization | None = None
 
 class LDWebSite(BaseModel):
     model_config = {"populate_by_name": True}
@@ -91,7 +91,7 @@ class LDWebSite(BaseModel):
     url: HttpUrl
     name: str
     inLanguage: str = "en"
-    publisher: Optional[Union[LDPerson, LDOrganization]] = None
+    publisher: LDPerson | LDOrganization | None = None
 
 class LDWebPage(BaseModel):
     model_config = {"populate_by_name": True}
@@ -99,58 +99,58 @@ class LDWebPage(BaseModel):
     type: str = Field("WebPage", alias="@type")
     url: HttpUrl
     name: str
-    description: Optional[str] = None
-    breadcrumb: Optional[Union[LDBreadcrumbList, Dict[str, Any]]] = None
-    primaryImageOfPage: Optional[LDImageObject] = None
-    isPartOf: Optional[LDWebSite] = None
+    description: str | None = None
+    breadcrumb: LDBreadcrumbList | dict[str, Any] | None = None
+    primaryImageOfPage: LDImageObject | None = None
+    isPartOf: LDWebSite | None = None
 
 class LDCreativeWork(BaseModel):
     model_config = {"populate_by_name": True}
     context: str = Field("https://schema.org", alias="@context")
     type: str = Field("CreativeWork", alias="@type")
     name: str
-    url: Optional[HttpUrl] = None
-    description: Optional[str] = None
-    image: Optional[Union[HttpUrl, List[HttpUrl], List[LDImageObject]]] = None
-    author: Optional[Union[LDPerson, LDOrganization]] = None
-    datePublished: Optional[str] = None
+    url: HttpUrl | None = None
+    description: str | None = None
+    image: HttpUrl | list[HttpUrl] | list[LDImageObject] | None = None
+    author: LDPerson | LDOrganization | None = None
+    datePublished: str | None = None
 
 class LDArticle(BaseModel):
     model_config = {"populate_by_name": True}
     context: str = Field("https://schema.org", alias="@context")
     type: str = Field("Article", alias="@type")
     headline: str
-    url: Optional[HttpUrl] = None
-    description: Optional[str] = None
-    image: Optional[Union[HttpUrl, List[HttpUrl], List[LDImageObject]]] = None
-    author: Optional[Union[LDPerson, LDOrganization]] = None
-    datePublished: Optional[str] = None
-    dateModified: Optional[str] = None
+    url: HttpUrl | None = None
+    description: str | None = None
+    image: HttpUrl | list[HttpUrl] | list[LDImageObject] | None = None
+    author: LDPerson | LDOrganization | None = None
+    datePublished: str | None = None
+    dateModified: str | None = None
 
 class LDFaqItem(BaseModel):
     model_config = {"populate_by_name": True}
     type: str = Field("Question", alias="@type")
     name: str
-    acceptedAnswer: Dict[str, Any]  # {"@type":"Answer","text":"..."}
+    acceptedAnswer: dict[str, Any]  # {"@type":"Answer","text":"..."}
 
 class LDFaqPage(BaseModel):
     model_config = {"populate_by_name": True}
     context: str = Field("https://schema.org", alias="@context")
     type: str = Field("FAQPage", alias="@type")
-    mainEntity: List[LDFaqItem]
+    mainEntity: list[LDFaqItem]
 
 class LDHowToStep(BaseModel):
     model_config = {"populate_by_name": True}
     type: str = Field("HowToStep", alias="@type")
     name: str
-    text: Optional[str] = None
+    text: str | None = None
 
 class LDHowTo(BaseModel):
     model_config = {"populate_by_name": True}
     context: str = Field("https://schema.org", alias="@context")
     type: str = Field("HowTo", alias="@type")
     name: str
-    step: List[LDHowToStep]
+    step: list[LDHowToStep]
 
 # Union registry for schema checks
 LD_TYPE_REGISTRY = {
@@ -179,9 +179,9 @@ def _slug_from_url(url: str) -> str:
         .strip("_")
     )
 
-def _write_artifacts(slug: str, jsonld: List[Dict[str, Any]], report: Dict[str, Any]) -> Dict[str, str]:
+def _write_artifacts(slug: str, jsonld: list[dict[str, Any]], report: dict[str, Any]) -> dict[str, str]:
     """Write JSON-LD and validation report to artifacts directory."""
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H%M%SZ")
+    ts = datetime.now(UTC).strftime("%Y-%m-%dT%H%M%SZ")
     folder = ARTIFACTS_DIR.joinpath(slug)
     folder.mkdir(parents=True, exist_ok=True)
     json_path = folder.joinpath(f"{ts}.jsonld")
@@ -194,7 +194,7 @@ def _write_artifacts(slug: str, jsonld: List[Dict[str, Any]], report: Dict[str, 
     folder.joinpath("latest.report.json").write_text(report_path.read_text())
     return {"json": str(json_path), "report": str(report_path)}
 
-def _load_latest(slug: str) -> Dict[str, Any]:
+def _load_latest(slug: str) -> dict[str, Any]:
     """Load latest JSON-LD and report for a URL slug."""
     import json
     folder = ARTIFACTS_DIR.joinpath(slug)
@@ -208,19 +208,19 @@ def _load_latest(slug: str) -> Dict[str, Any]:
     }
 
 # ---------- Validation core ----------
-def _validate_jsonld(jsonld_any: Union[Dict[str, Any], List[Dict[str, Any]]]) -> Dict[str, Any]:
+def _validate_jsonld(jsonld_any: dict[str, Any] | list[dict[str, Any]]) -> dict[str, Any]:
     """
     Validate JSON-LD structure and schema compliance.
     Returns validation result with 'errors' and 'warnings' lists.
     """
-    jsonld_list: List[Dict[str, Any]]
+    jsonld_list: list[dict[str, Any]]
     if isinstance(jsonld_any, dict):
         jsonld_list = [jsonld_any]
     else:
         jsonld_list = list(jsonld_any)
 
-    errors: List[str] = []
-    warnings: List[str] = []
+    errors: list[str] = []
+    warnings: list[str] = []
     seen_ids: set[str] = set()
 
     for i, obj in enumerate(jsonld_list):
@@ -261,7 +261,7 @@ def _validate_jsonld(jsonld_any: Union[Dict[str, Any], List[Dict[str, Any]]]) ->
     return {"count": len(jsonld_list), "errors": errors, "warnings": warnings}
 
 # ---------- Metadata collection stub ----------
-def _collect_metadata(url: str) -> Dict[str, Any]:
+def _collect_metadata(url: str) -> dict[str, Any]:
     """
     Replace with real page metadata lookup (RAG, scraper, or repo JSON).
     For now, provides a safe baseline derived from settings & URL.
@@ -288,17 +288,17 @@ def _collect_metadata(url: str) -> Dict[str, Any]:
         "image": og_image,
         "breadcrumbs": breadcrumbs if len(breadcrumbs) > 1 else None,
         "is_project": is_project,
-        "published_iso": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "published_iso": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
 
 # ---------- Request models ----------
 class GenerateReq(BaseModel):
     url: HttpUrl
-    types: Optional[List[str]] = None
+    types: list[str] | None = None
     dry_run: bool = True
 
 class ValidateReq(BaseModel):
-    jsonld: Union[Dict[str, Any], List[Dict[str, Any]]]
+    jsonld: dict[str, Any] | list[dict[str, Any]]
 
 # ---------- Router endpoints ----------
 @router.post("/generate")
@@ -315,7 +315,7 @@ def generate_ld(req: GenerateReq):
     meta = _collect_metadata(str(req.url))
     want_types = set(req.types or ["WebPage", "WebSite"]) & (ALLOWED_TYPES or set())
 
-    objs: List[Dict[str, Any]] = []
+    objs: list[dict[str, Any]] = []
 
     if "Organization" in want_types:
         objs.append({
@@ -324,7 +324,7 @@ def generate_ld(req: GenerateReq):
         })
 
     if "Person" in want_types:
-        person_obj: Dict[str, Any] = {
+        person_obj: dict[str, Any] = {
             "@context":"https://schema.org","@type":"Person",
             "name": settings.PERSON_NAME, "url": meta["origin"],
         }
@@ -346,7 +346,7 @@ def generate_ld(req: GenerateReq):
         })
 
     if "WebPage" in want_types:
-        page: Dict[str, Any] = {
+        page: dict[str, Any] = {
             "@context":"https://schema.org","@type":"WebPage",
             "url": meta["url"], "name": meta["title"], "description": meta["description"],
             "isPartOf": {"@context":"https://schema.org","@type":"WebSite","url": meta["origin"], "name": settings.BRAND_NAME},

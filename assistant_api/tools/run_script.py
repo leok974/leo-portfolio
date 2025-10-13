@@ -1,7 +1,13 @@
 from __future__ import annotations
-from typing import Dict, Any, List
-import os, sys, subprocess, time, pathlib
-from .base import register, ToolSpec, persist_audit, _safe_join, BASE_DIR, ALLOW_TOOLS, is_allow_tools
+
+import os
+import pathlib
+import subprocess
+import sys
+import time
+from typing import Any, Dict, List
+
+from .base import BASE_DIR, ToolSpec, _safe_join, is_allow_tools, persist_audit, register
 
 # Default allowlist for UI display when ALLOW_SCRIPTS is unset (does not affect enforcement)
 DEFAULT_ALLOW = [
@@ -12,7 +18,7 @@ def _allowed(script_rel: str) -> bool:
     allow = os.getenv("ALLOW_SCRIPTS", "").strip()
     if not allow:
         return False
-    parts: List[str] = []
+    parts: list[str] = []
     for sep in (';', ','):
         if sep in allow:
             parts = [p.strip() for p in allow.split(sep)]
@@ -22,7 +28,7 @@ def _allowed(script_rel: str) -> bool:
     norm = script_rel.replace("\\", "/").strip()
     return any(norm.lower() == p.replace("\\", "/").strip().lower() for p in parts if p)
 
-def _build_argv(path: pathlib.Path, args: List[str]) -> List[str]:
+def _build_argv(path: pathlib.Path, args: list[str]) -> list[str]:
     s = str(path)
     low = s.lower()
     if low.endswith(".ps1"):
@@ -41,7 +47,7 @@ def _build_argv(path: pathlib.Path, args: List[str]) -> List[str]:
         return [py, s] + args
     return [s] + args
 
-def run_run_script(args: Dict[str, Any]) -> Dict[str, Any]:
+def run_run_script(args: dict[str, Any]) -> dict[str, Any]:
     if not is_allow_tools():
         return {"ok": False, "error": "not allowed (dangerous)"}
     script_rel = (args.get("script") or "").strip()

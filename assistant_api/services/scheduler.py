@@ -1,14 +1,17 @@
 """Nightly scheduler service for automated layout optimization."""
 from __future__ import annotations
-import os
+
 import asyncio
 import datetime as dt
 import logging
+import os
 import pathlib
-import yaml
 from typing import Optional
-from .layout_opt import run_layout_optimize
+
+import yaml
+
 from .agent_events import log_event
+from .layout_opt import run_layout_optimize
 
 logger = logging.getLogger(__name__)
 POLICY = pathlib.Path("data/schedule.policy.yml")
@@ -58,7 +61,7 @@ def _parse_time_local(s: str) -> dt.time:
     return dt.time(hour=int(h), minute=int(m))
 
 
-def _next_run(now: Optional[dt.datetime] = None) -> dt.datetime:
+def _next_run(now: dt.datetime | None = None) -> dt.datetime:
     """
     Calculate next scheduled run time based on policy.
 

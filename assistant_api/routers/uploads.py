@@ -8,16 +8,17 @@ Supports:
 - Sitemap refresh after upload
 """
 import os
-from fastapi import APIRouter, File, UploadFile, Form, Depends, HTTPException
-from fastapi.responses import JSONResponse
 from typing import Optional
 
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import JSONResponse
+
 from assistant_api.services.gallery_service import (
-    save_upload,
-    ffmpeg_poster,
     add_gallery_item,
+    ffmpeg_poster,
+    run_media_lint,
     run_sitemap_refresh,
-    run_media_lint
+    save_upload,
 )
 from assistant_api.utils.cf_access import require_cf_access
 
@@ -32,10 +33,10 @@ router = APIRouter(
 async def upload_file(
     file: UploadFile = File(...),
     make_card: bool = Form(False),
-    title: Optional[str] = Form(None),
-    description: Optional[str] = Form(None),
-    tools: Optional[str] = Form(None),  # comma-separated
-    tags: Optional[str] = Form(None),   # comma-separated
+    title: str | None = Form(None),
+    description: str | None = Form(None),
+    tools: str | None = Form(None),  # comma-separated
+    tags: str | None = Form(None),   # comma-separated
 ):
     """
     Upload image or video file.

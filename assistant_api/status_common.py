@@ -1,20 +1,21 @@
 import os
 import os.path
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
+
 import httpx
+
+from . import llm_client as _llm_client
 from .db import connect, index_dim
+from .keys import is_openai_configured
 from .llm_client import (
-    PRIMARY_BASE,
-    OPENAI_MODEL,
     DISABLE_PRIMARY,
-    PRIMARY_MODELS,
-    PRIMARY_MODEL_PRESENT,
     LAST_PRIMARY_ERROR,
     LAST_PRIMARY_STATUS,
+    OPENAI_MODEL,
+    PRIMARY_BASE,
+    PRIMARY_MODELS,
 )
-from . import llm_client as _llm_client
-from .metrics import providers, primary_fail_reason
-from .keys import is_openai_configured
+from .metrics import primary_fail_reason, providers
 
 
 def _llm_path(ollama_state: str | None, primary_present: bool, openai_state: str | None) -> str:
@@ -155,7 +156,7 @@ async def build_status(base: str) -> dict:
         'primary': primary_block,
         'build': {
             'sha': os.getenv('BACKEND_BUILD_SHA', 'local'),
-            'time': datetime.now(timezone.utc).isoformat(timespec='seconds')
+            'time': datetime.now(UTC).isoformat(timespec='seconds')
         },
         'metrics_hint': {
             'providers': dict(providers),

@@ -4,8 +4,9 @@ Revision ID: 001_agents_tasks
 Revises:
 Create Date: 2025-01-XX
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
+
 try:
     from sqlalchemy.dialects.postgresql import JSONB
     has_postgres = True

@@ -1,7 +1,9 @@
+import json
+import os
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any
-import json, os
 from pathlib import Path
+from typing import Any, Dict, Optional
+
 from .embeddings import embed_texts as embed_texts_local_first
 
 FAQ_PATH = Path(os.getenv("FAQ_PATH", "data/faq.json"))
@@ -11,11 +13,11 @@ FAQ_PATH = Path(os.getenv("FAQ_PATH", "data/faq.json"))
 class FaqHit:
     q: str
     a: str
-    project_id: Optional[str]
+    project_id: str | None
     score: float
 
 
-_cache: Dict[str, Any] = {"ready": False, "items": [], "E": None}
+_cache: dict[str, Any] = {"ready": False, "items": [], "E": None}
 
 
 def _load() -> None:
@@ -30,7 +32,7 @@ def _load() -> None:
     _cache["ready"] = True
 
 
-def faq_search_best(query: str) -> Optional[FaqHit]:
+def faq_search_best(query: str) -> FaqHit | None:
     _load()
     if not _cache["items"]:
         return None

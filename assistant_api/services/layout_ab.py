@@ -1,11 +1,12 @@
 """A/B testing service for layout optimization."""
 from __future__ import annotations
+
+import hashlib
 import json
-import time
 import pathlib
 import random
-import hashlib
-from typing import Dict, Any
+import time
+from typing import Any, Dict
 
 STATE_PATH = pathlib.Path("data/layout_ab_state.json")
 
@@ -15,7 +16,7 @@ def _ensure_state_dir():
     STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
-def _load() -> Dict[str, Any]:
+def _load() -> dict[str, Any]:
     """Load A/B testing state from disk."""
     _ensure_state_dir()
     if STATE_PATH.exists():
@@ -30,7 +31,7 @@ def _load() -> Dict[str, Any]:
     }
 
 
-def _save(state: Dict[str, Any]) -> Dict[str, Any]:
+def _save(state: dict[str, Any]) -> dict[str, Any]:
     """Save A/B testing state to disk."""
     _ensure_state_dir()
     STATE_PATH.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -55,7 +56,7 @@ def assign_bucket(visitor_id: str | None = None) -> str:
     return "A" if random.random() < 0.5 else "B"
 
 
-def record_event(bucket: str, event: str) -> Dict[str, Any]:
+def record_event(bucket: str, event: str) -> dict[str, Any]:
     """
     Record an event for a bucket.
 
@@ -78,7 +79,7 @@ def record_event(bucket: str, event: str) -> Dict[str, Any]:
     return _save(state)
 
 
-def suggest_weights() -> Dict[str, Any]:
+def suggest_weights() -> dict[str, Any]:
     """
     Suggest weight adjustments based on CTR comparison.
 
@@ -120,7 +121,7 @@ def suggest_weights() -> Dict[str, Any]:
     }
 
 
-def reset_metrics() -> Dict[str, Any]:
+def reset_metrics() -> dict[str, Any]:
     """
     Reset A/B testing metrics.
 

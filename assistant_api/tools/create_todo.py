@@ -1,11 +1,15 @@
 from __future__ import annotations
-from typing import Dict, Any
-import json, time, pathlib
-from .base import register, ToolSpec, persist_audit
+
+import json
+import pathlib
+import time
+from typing import Any, Dict
+
+from .base import ToolSpec, persist_audit, register
 
 TODO_PATH = pathlib.Path("data/todos.json")
 
-def run_create_todo(args: Dict[str, Any]) -> Dict[str, Any]:
+def run_create_todo(args: dict[str, Any]) -> dict[str, Any]:
     title = (args.get("title") or "").strip()
     project_id = ((args.get("project_id") or "").strip() or None)
     if not title:

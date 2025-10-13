@@ -1,7 +1,9 @@
 import re
-from typing import Iterable, List, Dict, Tuple
+from collections.abc import Iterable
+from typing import Dict, List, Tuple
 
-def _split_markdown_sections(text: str) -> List[Tuple[str, str]]:
+
+def _split_markdown_sections(text: str) -> list[tuple[str, str]]:
     """
     Return [(heading, body)] for top-level and h2/h3 sections.
     Falls back to one chunk if no headings.
@@ -9,7 +11,7 @@ def _split_markdown_sections(text: str) -> List[Tuple[str, str]]:
     lines = text.splitlines()
     sections = []
     cur_head = "Document"
-    cur_buf: List[str] = []
+    cur_buf: list[str] = []
     heading_re = re.compile(r'^(#{1,3})\s+(.*)')
 
     for ln in lines:
@@ -25,7 +27,7 @@ def _split_markdown_sections(text: str) -> List[Tuple[str, str]]:
         sections.append((cur_head, "\n".join(cur_buf).strip()))
     return sections or [("Document", text)]
 
-def chunk_markdown(text: str, max_chars: int = 3500, overlap: int = 250) -> Iterable[Dict]:
+def chunk_markdown(text: str, max_chars: int = 3500, overlap: int = 250) -> Iterable[dict]:
     """
     Heading-aware chunks with small overlap. Returns dicts with {title, content}.
     """

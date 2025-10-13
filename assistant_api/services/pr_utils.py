@@ -1,8 +1,9 @@
 """PR utilities for creating GitHub pull requests."""
 from __future__ import annotations
+
 import os
 import subprocess
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 def git_commit(file_path: str, message: str) -> str:
@@ -34,7 +35,7 @@ def git_commit(file_path: str, message: str) -> str:
     return (hash_result.stdout or "").strip()
 
 
-def open_pr_via_cli(branch: str, title: str, body: str) -> Dict[str, Any]:
+def open_pr_via_cli(branch: str, title: str, body: str) -> dict[str, Any]:
     """
     Open a PR using GitHub CLI.
 
@@ -87,7 +88,7 @@ def open_pr_via_api(
     head_branch: str | None = None,
     title: str = "",
     body: str = ""
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Open a PR using GitHub API.
 

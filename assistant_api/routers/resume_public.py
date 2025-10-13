@@ -1,15 +1,17 @@
 # assistant_api/routers/resume_public.py
 """Public resume generation endpoint for LinkedIn optimization."""
 from __future__ import annotations
+
+import datetime as dt
+import io
+import json
+import os
+import re
+from pathlib import Path
+from typing import List, Optional, Tuple
+
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse, PlainTextResponse, Response
-from pathlib import Path
-import os
-import io
-import re
-import json
-import datetime as dt
-from typing import List, Optional, Tuple
 
 router = APIRouter(prefix="/resume", tags=["resume"])
 
@@ -109,7 +111,7 @@ def _project_bullet(p: dict) -> list[str]:
 
 
 # ---------- NEW: keyword tuner ----------
-def _tune(roles: List[str], seniority: Optional[str]) -> Tuple[str, str, List[str]]:
+def _tune(roles: list[str], seniority: str | None) -> tuple[str, str, list[str]]:
     """Tune headline and about text based on role keywords and seniority."""
     roles = [r.strip().lower() for r in roles if r.strip()]
     seniority = (seniority or "").strip().lower()
@@ -139,7 +141,7 @@ def _tune(roles: List[str], seniority: Optional[str]) -> Tuple[str, str, List[st
 
 
 # ---------- NEW: achievements from metrics ----------
-def _load_achievements() -> List[str]:
+def _load_achievements() -> list[str]:
     """
     Tries to read achievements metrics from a JSON file path in env:
     RESUME_METRICS_JSON=/path/to/metrics.json
@@ -173,7 +175,7 @@ def _load_achievements() -> List[str]:
     return bullets
 
 
-def _make_markdown(projects: list[dict], roles: List[str] = None, seniority: Optional[str] = None) -> str:
+def _make_markdown(projects: list[dict], roles: list[str] = None, seniority: str | None = None) -> str:
     """Generate complete Markdown resume with optional role/seniority tuning."""
     if roles is None:
         roles = []
@@ -254,9 +256,9 @@ def _compact_linkedin_text(md: str, limit: int = 2600) -> str:
 def _render_pdf(md_text: str) -> bytes:
     """Render markdown text to PDF using ReportLab. Raises 503 if ReportLab not installed."""
     try:
-        from reportlab.pdfgen import canvas
         from reportlab.lib.pagesizes import letter
         from reportlab.lib.units import inch
+        from reportlab.pdfgen import canvas
     except Exception:
         raise HTTPException(status_code=503, detail="pdf_unavailable: install reportlab")
 
@@ -310,7 +312,7 @@ def _render_pdf(md_text: str) -> bytes:
 
 
 @router.get("/generate.md", response_class=PlainTextResponse)
-def resume_markdown(roles: Optional[str] = Query(None), seniority: Optional[str] = Query(None)):
+def resume_markdown(roles: str | None = Query(None), seniority: str | None = Query(None)):
     """Public endpoint that returns LinkedIn-optimized Markdown resume derived from site content."""
     projects = _load_projects()
     if not projects:
@@ -323,8 +325,8 @@ def resume_markdown(roles: Optional[str] = Query(None), seniority: Optional[str]
 @router.get("/copy.txt", response_class=PlainTextResponse)
 def resume_copy(
     limit: int = Query(2600, ge=200, le=10000),
-    roles: Optional[str] = Query(None),
-    seniority: Optional[str] = Query(None)
+    roles: str | None = Query(None),
+    seniority: str | None = Query(None)
 ):
     """Compact LinkedIn-ready text within character limit."""
     projects = _load_projects()
@@ -337,7 +339,7 @@ def resume_copy(
 
 
 @router.get("/generate.pdf")
-def resume_pdf(roles: Optional[str] = Query(None), seniority: Optional[str] = Query(None)):
+def resume_pdf(roles: str | None = Query(None), seniority: str | None = Query(None)):
     """Generate PDF resume. Requires reportlab (returns 503 if not installed)."""
     projects = _load_projects()
     if not projects:

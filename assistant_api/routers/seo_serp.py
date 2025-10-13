@@ -1,11 +1,14 @@
 from __future__ import annotations
-from datetime import date, datetime, timedelta, timezone
+
+import json
+import random
+from datetime import UTC, date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter, Body, HTTPException, Query
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, HttpUrl
 from starlette.responses import JSONResponse
-import json, os, random
 
 try:
     from assistant_api.settings import settings
@@ -34,29 +37,29 @@ class SerpRow(BaseModel):
     position: float
 
 class FetchReq(BaseModel):
-    start_date: Optional[str] = None  # YYYY-MM-DD
-    end_date: Optional[str] = None    # YYYY-MM-DD
-    property_url: Optional[str] = None
+    start_date: str | None = None  # YYYY-MM-DD
+    end_date: str | None = None    # YYYY-MM-DD
+    property_url: str | None = None
     limit: int = 200
     dry_run: bool = True
 
 class AnalyzeReq(BaseModel):
-    rows: List[SerpRow]
+    rows: list[SerpRow]
     min_impressions: int = 50
     low_ctr_factor: float = 0.5  # flag pages < (factor * median ctr)
 
 class PingReq(BaseModel):
-    sitemap_urls: List[HttpUrl]
+    sitemap_urls: list[HttpUrl]
     dry_run: bool = True
 
 class RemediateReq(BaseModel):
-    day: Optional[str] = None     # default: latest
+    day: str | None = None     # default: latest
     limit: int = 10               # max anomalies to act on
     dry_run: bool = True
 
 # ---------------- Helpers ----------------
 def _today_utc() -> date:
-    return datetime.now(timezone.utc).date()
+    return datetime.now(UTC).date()
 
 def _dates_from_req(req: FetchReq) -> tuple[str, str]:
     end_d = date.fromisoformat(req.end_date) if req.end_date else _today_utc()
@@ -68,23 +71,23 @@ def _folder_for(day: str) -> Path:
     p.mkdir(parents=True, exist_ok=True)
     return p
 
-def _write_jsonl(p: Path, rows: List[Dict[str, Any]]):
+def _write_jsonl(p: Path, rows: list[dict[str, Any]]):
     with p.open("w", encoding="utf-8") as f:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
-def _load_previous_day(day: str) -> List[Dict[str, Any]]:
+def _load_previous_day(day: str) -> list[dict[str, Any]]:
     prev = (date.fromisoformat(day) - timedelta(days=1)).isoformat()
     f = ART_DIR.joinpath(prev, "gsc.jsonl")
     if not f.exists(): return []
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     with f.open("r", encoding="utf-8") as fh:
         for line in fh:
             try: rows.append(json.loads(line))
             except: pass
     return rows
 
-def _median(values: List[float]) -> float:
+def _median(values: list[float]) -> float:
     if not values: return 0.0
     v = sorted(values)
     n = len(v)
@@ -96,7 +99,7 @@ def _median(values: List[float]) -> float:
 def _gsc_configured() -> bool:
     return bool(getattr(settings, "GSC_PROPERTY", "") and (getattr(settings, "GSC_SA_JSON", "") or getattr(settings, "GSC_SA_FILE", "")))
 
-def _fetch_gsc_real(property_url: str, start_date: str, end_date: str, limit: int) -> List[SerpRow]:
+def _fetch_gsc_real(property_url: str, start_date: str, end_date: str, limit: int) -> list[SerpRow]:
     """
     Real Search Console fetch. Requires google-api-python-client in env and service account with Search Console access.
     This function is guarded and not executed unless configured.
@@ -107,11 +110,11 @@ def _fetch_gsc_real(property_url: str, start_date: str, end_date: str, limit: in
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"google-api-python-client not installed: {e}")
 
-    sa_info: Dict[str, Any] = {}
+    sa_info: dict[str, Any] = {}
     if getattr(settings, "GSC_SA_JSON", ""):
         sa_info = json.loads(settings.GSC_SA_JSON)
     elif getattr(settings, "GSC_SA_FILE", ""):
-        with open(settings.GSC_SA_FILE, "r", encoding="utf-8") as f:
+        with open(settings.GSC_SA_FILE, encoding="utf-8") as f:
             sa_info = json.load(f)
     else:
         raise HTTPException(status_code=500, detail="Service account not provided")
@@ -135,10 +138,10 @@ def _fetch_gsc_real(property_url: str, start_date: str, end_date: str, limit: in
         rows.append(SerpRow(date=end_date, page=page, clicks=clicks, impressions=impressions, ctr=ctr, position=pos))
     return rows
 
-def _fetch_gsc_mock(property_url: str, start_date: str, end_date: str, limit: int) -> List[SerpRow]:
+def _fetch_gsc_mock(property_url: str, start_date: str, end_date: str, limit: int) -> list[SerpRow]:
     origin = property_url.rstrip("/")
     paths = ["/", "/projects/ledgermind", "/projects/datapipe", "/posts/agentic-portfolio"]
-    rows: List[SerpRow] = []
+    rows: list[SerpRow] = []
     rnd = random.Random(42)  # stable
     for p in paths:
         imps = rnd.randint(60, 400)
@@ -151,15 +154,15 @@ def _fetch_gsc_mock(property_url: str, start_date: str, end_date: str, limit: in
     return rows[:limit]
 
 # ---------------- Analysis ----------------
-def _analyze(rows: List[SerpRow], min_impressions: int, low_ctr_factor: float, previous_rows: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
-    prev_by_page: Dict[str, Dict[str, Any]] = {}
+def _analyze(rows: list[SerpRow], min_impressions: int, low_ctr_factor: float, previous_rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    prev_by_page: dict[str, dict[str, Any]] = {}
     if previous_rows:
         for r in previous_rows:
             prev_by_page[str(r.get("page"))] = r
 
     ctrs = [r.ctr for r in rows if r.impressions >= min_impressions]
     med_ctr = _median(ctrs)
-    anomalies: List[Dict[str, Any]] = []
+    anomalies: list[dict[str, Any]] = []
     for r in rows:
         if r.impressions < min_impressions: continue
         flag_low = med_ctr > 0 and r.ctr < (low_ctr_factor * med_ctr)
@@ -243,7 +246,7 @@ def analyze(req: AnalyzeReq):
     return JSONResponse(result)
 
 @router.get("/report")
-def report(day: Optional[str] = Query(None, description="YYYY-MM-DD or omit for latest")):
+def report(day: str | None = Query(None, description="YYYY-MM-DD or omit for latest")):
     # choose latest folder
     if not day:
         subdirs = [p for p in ART_DIR.iterdir() if p.is_dir()]
@@ -252,7 +255,7 @@ def report(day: Optional[str] = Query(None, description="YYYY-MM-DD or omit for 
     folder = ART_DIR.joinpath(day)
     if not folder.exists(): raise HTTPException(status_code=404, detail="Day not found")
     jsonl = folder.joinpath("gsc.jsonl")
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     if jsonl.exists():
         for line in jsonl.read_text(encoding="utf-8").splitlines():
             try: rows.append(json.loads(line))

@@ -1,15 +1,17 @@
 # assistant_api/tasks/seo_tune.py
 from __future__ import annotations
-from dataclasses import dataclass
-from typing import Dict, List, Tuple
-from datetime import datetime, timezone
+
 import json
 import os
 import re
+from dataclasses import dataclass
+from datetime import UTC, datetime, timezone
+from typing import Dict
 
-from ..settings import get_settings
 from ..ctr_analytics.storage import ensure_tables, fetch_below_ctr
+from ..settings import get_settings
 from ..utils.artifacts import ensure_artifacts_dir, write_artifact
+
 
 @dataclass
 class PageMeta:
@@ -38,7 +40,7 @@ def load_current_meta(url_path: str, web_root: str) -> PageMeta:
     file_path = os.path.join(web_root.lstrip("/"), url_path.lstrip("/"))
     if not os.path.exists(file_path):
         return PageMeta(title=None, description=None)
-    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+    with open(file_path, encoding="utf-8", errors="ignore") as f:
         html = f.read()
     return extract_meta_from_html(html)
 
@@ -64,7 +66,7 @@ def heuristic_rewrite(meta: PageMeta, url: str, target_ctr: float) -> PageMeta:
     desc = desc[:155]
     return PageMeta(title=title, description=desc)
 
-def run(threshold: float|None = None) -> Dict:
+def run(threshold: float|None = None) -> dict:
     settings = get_settings()
     db_path = settings["RAG_DB"]
     ensure_tables(db_path)
@@ -106,7 +108,7 @@ def run(threshold: float|None = None) -> Dict:
         })
 
     out_json = {
-        "generated": datetime.now(timezone.utc).isoformat(),
+        "generated": datetime.now(UTC).isoformat(),
         "threshold": th,
         "count": len(pages),
         "pages": pages

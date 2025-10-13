@@ -3,17 +3,23 @@
 Provides cached or on-demand page discovery status with integrity checksums.
 """
 from __future__ import annotations
-from pathlib import Path
-from datetime import datetime, timezone
-from time import time
-import json
-import hashlib
 
-from fastapi import APIRouter, HTTPException, Query, Depends, Request
-from fastapi.responses import PlainTextResponse, JSONResponse
+import hashlib
+import json
+from datetime import UTC, datetime, timezone
+from pathlib import Path
+from time import time
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from assistant_api.settings import get_settings
-from assistant_api.utils.sitemap import discover_pages, resolve_file_for_url_path, get_public_dirs, load_from_sitemap_files
+from assistant_api.utils.sitemap import (
+    discover_pages,
+    get_public_dirs,
+    load_from_sitemap_files,
+    resolve_file_for_url_path,
+)
 
 router = APIRouter(prefix="/agent/status", tags=["agent", "status"])
 
@@ -69,7 +75,7 @@ def pages_status():
     if not payload:
         items = discover_pages()
         payload = {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "pages": [
                 {"path": p.path, "title": p.title, "desc": p.desc}
                 for p in items

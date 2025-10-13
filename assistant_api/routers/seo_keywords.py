@@ -7,12 +7,13 @@ Generates keyword recommendations per page with:
 - SHA-256 integrity checksums in artifacts
 """
 from __future__ import annotations
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+
 import hashlib
 import json
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -20,7 +21,7 @@ from pydantic import BaseModel
 from ..settings import get_settings
 from ..utils.cf_access import require_cf_access
 from ..utils.http import http_get_json
-from ..utils.sitemap import discover_pages, PageMeta
+from ..utils.sitemap import PageMeta, discover_pages
 
 # Auto-downgrade support: import mock generator for seamless fallback
 try:
@@ -48,18 +49,18 @@ class KeywordItem(BaseModel):
 class PageKeywords(BaseModel):
     """Keyword recommendations for a single page."""
     page: str
-    title: Optional[str] = None
-    desc: Optional[str] = None
-    keywords: List[KeywordItem]
+    title: str | None = None
+    desc: str | None = None
+    keywords: list[KeywordItem]
 
 
 class KeywordsReport(BaseModel):
     """Complete keyword intelligence report with integrity."""
     generated_at: str
     mode: str  # "llm" | "heuristic"
-    inputs: Dict[str, str]  # e.g., source sitemap/analytics pointers
-    items: List[PageKeywords]
-    integrity: Optional[Dict[str, str]] = None
+    inputs: dict[str, str]  # e.g., source sitemap/analytics pointers
+    items: list[PageKeywords]
+    integrity: dict[str, str] | None = None
 
 
 # ----------------------------
@@ -80,7 +81,7 @@ def _normalize_text(s: str) -> str:
     return re.sub(r"\s+", " ", s or "").strip()
 
 
-def _extract_candidates_heuristic(title: str, desc: str, extra: str = "") -> List[Tuple[str, float]]:
+def _extract_candidates_heuristic(title: str, desc: str, extra: str = "") -> list[tuple[str, float]]:
     """
     Lightweight candidate extractor:
     - Favors title bigrams/trigrams
@@ -93,7 +94,7 @@ def _extract_candidates_heuristic(title: str, desc: str, extra: str = "") -> Lis
     desc = _normalize_text(desc)
     extra = _normalize_text(extra)
 
-    def grams(tokens: List[str], n: int) -> List[str]:
+    def grams(tokens: list[str], n: int) -> list[str]:
         return [" ".join(tokens[i:i+n]) for i in range(len(tokens)-n+1)]
 
     t_tokens = [w.lower() for w in WORD_RE.findall(title)]
@@ -132,7 +133,7 @@ def _extract_candidates_heuristic(title: str, desc: str, extra: str = "") -> Lis
     return items
 
 
-def _trends_interest_stub(terms: List[str], region: str = "US") -> Dict[str, int]:
+def _trends_interest_stub(terms: list[str], region: str = "US") -> dict[str, int]:
     """
     Stub for Google Trends interest scores.
     Replace with real API call in production.
@@ -151,7 +152,7 @@ def _trends_interest_stub(terms: List[str], region: str = "US") -> Dict[str, int
     return out
 
 
-def _load_analytics_summary(backend_url: str) -> Dict:
+def _load_analytics_summary(backend_url: str) -> dict:
     """
     Best-effort fetch of analytics underperformers.
     Returns empty dict on failure.
@@ -165,10 +166,10 @@ def _load_analytics_summary(backend_url: str) -> Dict:
 
 
 def _rank_and_limit(
-    cands: List[Tuple[str, float]],
-    trends: Dict[str, int],
+    cands: list[tuple[str, float]],
+    trends: dict[str, int],
     bias: float = 0.0
-) -> List[KeywordItem]:
+) -> list[KeywordItem]:
     """
     Combine confidence and trend interest with optional bias for underperformers.
 
@@ -180,7 +181,7 @@ def _rank_and_limit(
     Returns:
         Top 10 keywords sorted by trend-weighted score
     """
-    items: List[KeywordItem] = []
+    items: list[KeywordItem] = []
     for term, conf in cands:
         tr = trends.get(term, 50)
         # Apply bias and clamp to 0..1
@@ -192,7 +193,7 @@ def _rank_and_limit(
     return items[:10]
 
 
-def _get_artifact_dir(settings: Dict) -> Path:
+def _get_artifact_dir(settings: dict) -> Path:
     """Get artifact directory from settings, create if needed."""
     global ART_DIR
     if ART_DIR is None:
@@ -201,7 +202,7 @@ def _get_artifact_dir(settings: Dict) -> Path:
     return ART_DIR
 
 
-def _write_artifacts(report: KeywordsReport, settings: Dict) -> KeywordsReport:
+def _write_artifacts(report: KeywordsReport, settings: dict) -> KeywordsReport:
     """Write JSON and Markdown artifacts with SHA-256 integrity."""
     art_dir = _get_artifact_dir(settings)
     art_json = art_dir / "seo-keywords.json"
@@ -273,8 +274,8 @@ def generate_keywords(
         return KeywordsReport(**resp["payload"])
 
     # 1) Gather inputs from sitemap/filesystem (auto-discovery)
-    discovered: List[PageMeta] = discover_pages()
-    pages: List[Tuple[str, str, str]] = [
+    discovered: list[PageMeta] = discover_pages()
+    pages: list[tuple[str, str, str]] = [
         (p.path, p.title or "", p.desc or "") for p in discovered
     ]
 
@@ -292,7 +293,7 @@ def generate_keywords(
 
     # 3) Generate candidates per page
     mode = "llm" if settings.get("SEO_LLM_ENABLED") else "heuristic"
-    out_items: List[PageKeywords] = []
+    out_items: list[PageKeywords] = []
 
     for path, title, desc in pages:
         if mode == "llm":
@@ -328,7 +329,7 @@ def generate_keywords(
 
     # 6) Build and write artifacts
     report = KeywordsReport(
-        generated_at=datetime.now(timezone.utc).isoformat(),
+        generated_at=datetime.now(UTC).isoformat(),
         mode=mode,
         inputs={"analytics": "underperformers", "source": "sitemap|defaults"},
         items=out_items,

@@ -1,6 +1,7 @@
 # assistant_api/tests/test_seo_tune.py
 from pathlib import Path
-from assistant_api.services.seo_tune import run_seo_tune, ARTIFACTS_DIR
+
+from assistant_api.services.seo_tune import run_seo_tune
 
 
 def test_seo_tune_dry_run(tmp_path, monkeypatch):

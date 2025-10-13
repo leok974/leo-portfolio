@@ -1,10 +1,10 @@
-from collections import defaultdict
-from datetime import datetime, timedelta, UTC
-from typing import Dict, Any, List
 import random
+from collections import defaultdict
+from datetime import UTC, datetime, timedelta
+from typing import Any, Dict, List
 
 
-def _norm(vs: Dict[str, float]) -> Dict[str, float]:
+def _norm(vs: dict[str, float]) -> dict[str, float]:
     if not vs:
         return {}
     lo, hi = min(vs.values()), max(vs.values())
@@ -14,12 +14,12 @@ def _norm(vs: Dict[str, float]) -> Dict[str, float]:
 
 
 def analyze(
-    events: List[dict],
-    prev: Dict[str, Any],
-    sections_default: List[str],
+    events: list[dict],
+    prev: dict[str, Any],
+    sections_default: list[str],
     ema_alpha=0.3,
     decay=0.98,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     # aggregate
     counts_view = defaultdict(int)
     counts_click = defaultdict(int)
@@ -65,8 +65,8 @@ def analyze(
 
 
 def order_sections(
-    weights: Dict[str, Any], epsilon: float, default_order: List[str]
-) -> List[str]:
+    weights: dict[str, Any], epsilon: float, default_order: list[str]
+) -> list[str]:
     base = sorted(
         list({*default_order, *weights.get("sections", {}).keys()}),
         key=lambda s: -weights.get("sections", {}).get(s, {}).get("weight", 0.5),

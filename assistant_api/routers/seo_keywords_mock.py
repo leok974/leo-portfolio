@@ -4,15 +4,15 @@ Generates deterministic keyword artifacts instantly without LLM dependencies.
 Useful for CI smoke tests and local development verification.
 """
 from __future__ import annotations
-from pathlib import Path
-from datetime import datetime, timezone
+
 import hashlib
 import json
+from datetime import UTC, datetime, timezone
+from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 
 from ..settings import get_settings
-from ..utils.artifacts import ensure_artifacts_dir
 
 router = APIRouter(prefix="/agent/seo", tags=["agent", "seo-mock"])
 
@@ -43,7 +43,7 @@ def _write_mock_keywords(settings: dict) -> dict:
     art_md = art_dir / "seo-keywords.md"
 
     payload = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "mode": "mock",
         "inputs": {
             "analytics": "underperformers (mock)",

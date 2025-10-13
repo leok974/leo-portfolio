@@ -3,11 +3,12 @@
 Uses SQLite with SQLAlchemy, aligned with the existing RAG_DB pattern.
 """
 import os
-from pathlib import Path
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator
+from pathlib import Path
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from .models import Base

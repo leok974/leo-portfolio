@@ -1,16 +1,17 @@
 """Layout optimization service for project ordering."""
 from __future__ import annotations
-from dataclasses import dataclass, asdict
-from typing import Any, Dict, List, Tuple
+
 import json
-import time
 import math
 import pathlib
+import time
+from dataclasses import dataclass
+from typing import Any, Dict, List, Tuple
 
+from ..utils.text import slugify
 from .artifacts import write_artifact
 from .git_utils import make_diff
 from .layout_weights import read_active
-from ..utils.text import slugify
 
 # Paths (adjust if your structure differs)
 PROJECTS_PATH = pathlib.Path("projects.json")
@@ -55,7 +56,7 @@ PRESETS = {
 }
 
 
-def select_preset(name: str | None) -> Dict[str, Any]:
+def select_preset(name: str | None) -> dict[str, Any]:
     """Select a preset configuration by name."""
     return PRESETS.get(name or "default", PRESETS["default"])
 
@@ -65,8 +66,8 @@ class ProjectScore:
     """Score data for a single project."""
     slug: str
     score: float
-    contributions: Dict[str, float]
-    rationale: List[str]
+    contributions: dict[str, float]
+    rationale: list[str]
 
 
 def _read_json(path: pathlib.Path) -> Any:
@@ -100,7 +101,7 @@ def _freshness_score(updated_ts: float) -> float:
     return 0.5 ** (days / DECAY_HALF_LIFE_DAYS)
 
 
-def _signal_score(p: Dict[str, Any]) -> float:
+def _signal_score(p: dict[str, Any]) -> float:
     """
     Calculate signal score from project metrics.
 
@@ -120,7 +121,7 @@ def _signal_score(p: Dict[str, Any]) -> float:
     return math.log1p(raw) / 5.0  # roughly 0..~1
 
 
-def _fit_score(p: Dict[str, Any], roles: set[str]) -> Tuple[float, List[str]]:
+def _fit_score(p: dict[str, Any], roles: set[str]) -> tuple[float, list[str]]:
     """
     Calculate role fit score based on keyword matches.
 
@@ -151,7 +152,7 @@ def _fit_score(p: Dict[str, Any], roles: set[str]) -> Tuple[float, List[str]]:
     return score, rationales
 
 
-def _media_score(p: Dict[str, Any]) -> float:
+def _media_score(p: dict[str, Any]) -> float:
     """
     Calculate media quality score.
 
@@ -172,7 +173,7 @@ def _media_score(p: Dict[str, Any]) -> float:
         return 0.2
 
 
-def score_projects(projects: List[Dict[str, Any]], roles: set, weights: Dict[str, float]) -> List[ProjectScore]:
+def score_projects(projects: list[dict[str, Any]], roles: set, weights: dict[str, float]) -> list[ProjectScore]:
     """
     Score all projects and sort by descending score.
 
@@ -184,7 +185,7 @@ def score_projects(projects: List[Dict[str, Any]], roles: set, weights: Dict[str
     Returns:
         List of ProjectScore objects, sorted by score (highest first)
     """
-    out: List[ProjectScore] = []
+    out: list[ProjectScore] = []
 
     for p in projects:
         slug = p.get("slug") or slugify(p.get("title", "project"))
@@ -237,7 +238,7 @@ def score_projects(projects: List[Dict[str, Any]], roles: set, weights: Dict[str
     return out
 
 
-def to_sections(scores: List[ProjectScore], featured_count: int) -> Dict[str, List[str]]:
+def to_sections(scores: list[ProjectScore], featured_count: int) -> dict[str, list[str]]:
     """
     Split ordered projects into sections.
 
@@ -257,7 +258,7 @@ def to_sections(scores: List[ProjectScore], featured_count: int) -> Dict[str, Li
     }
 
 
-def propose_layout(scores: List[ProjectScore], featured_count: int = 3, preset_name: str = "default") -> Dict[str, Any]:
+def propose_layout(scores: list[ProjectScore], featured_count: int = 3, preset_name: str = "default") -> dict[str, Any]:
     """
     Generate layout proposal from scores.
 
@@ -288,7 +289,7 @@ def propose_layout(scores: List[ProjectScore], featured_count: int = 3, preset_n
     }
 
 
-def run_layout_optimize(payload: Dict[str, Any] | None = None) -> Dict[str, Any]:
+def run_layout_optimize(payload: dict[str, Any] | None = None) -> dict[str, Any]:
     """
     Main entry point for layout.optimize task.
 

@@ -4,11 +4,13 @@ A/B Testing Event Store
 Stores view/click events in JSONL format with daily aggregation for analytics.
 """
 from __future__ import annotations
+
+import datetime as dt
 import json
 import pathlib
 import time
-import datetime as dt
-from typing import Literal, Dict, Any, Iterable
+from collections.abc import Iterable
+from typing import Any, Dict, Literal
 
 DATA_DIR = pathlib.Path("data")
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -44,7 +46,7 @@ def append_event(
         )
 
 
-def iter_events() -> Iterable[Dict[str, Any]]:
+def iter_events() -> Iterable[dict[str, Any]]:
     """Iterate over all events in the log."""
     if not EVENTS.exists():
         return []
@@ -59,7 +61,7 @@ def iter_events() -> Iterable[Dict[str, Any]]:
                 continue
 
 
-def summary(from_day: str | None = None, to_day: str | None = None) -> Dict[str, Any]:
+def summary(from_day: str | None = None, to_day: str | None = None) -> dict[str, Any]:
     """
     Aggregate daily CTR per bucket + totals.
 
@@ -73,7 +75,7 @@ def summary(from_day: str | None = None, to_day: str | None = None) -> Dict[str,
             "overall": {"A_ctr": 0.14, "B_ctr": 0.11, "A": {...}, "B": {...}}
         }
     """
-    daily: Dict[str, Dict[str, Dict[str, int]]] = {}  # day -> bucket -> counts
+    daily: dict[str, dict[str, dict[str, int]]] = {}  # day -> bucket -> counts
     totals = {"A": {"views": 0, "clicks": 0}, "B": {"views": 0, "clicks": 0}}
 
     for e in iter_events():

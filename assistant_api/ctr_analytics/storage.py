@@ -1,9 +1,11 @@
 # assistant_api/analytics/storage.py
 from __future__ import annotations
+
 import sqlite3
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, List, Optional, Tuple
-from datetime import datetime
+from typing import List
+
 
 @dataclass
 class CTRRow:
@@ -46,7 +48,7 @@ def upsert_ctr_rows(db_path: str, rows: Iterable[CTRRow]) -> int:
         c.commit()
         return c.total_changes
 
-def fetch_below_ctr(db_path: str, threshold: float) -> List[CTRRow]:
+def fetch_below_ctr(db_path: str, threshold: float) -> list[CTRRow]:
     with _conn(db_path) as c:
         cur = c.execute("""
         SELECT url, impressions, clicks, ctr, last_seen, source

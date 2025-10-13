@@ -1,17 +1,17 @@
-from contextlib import asynccontextmanager
-from typing import AsyncIterator
 import asyncio
 import time as _time
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 try:
     # Initialize uptime start timestamp early
     from .routes.status import set_start_time  # type: ignore
     set_start_time(_time.time())
 except Exception:  # pragma: no cover
     pass
+import os
 import sys
 import time
-import os
-import logging
 
 # Configurable polling (env override) for primary model detection
 PRIMARY_POLL_INTERVAL_S = float(os.getenv("PRIMARY_POLL_INTERVAL_S", "5"))  # default 5s
@@ -25,10 +25,10 @@ async def _poll_primary_models(stopper: asyncio.Event) -> None:  # pragma: no co
     start = time.perf_counter()
     try:
         from .llm_client import (
-            primary_list_models,
+            DISABLE_PRIMARY,
             PRIMARY_MODEL,
             PRIMARY_MODEL_PRESENT,
-            DISABLE_PRIMARY,
+            primary_list_models,
         )
     except Exception:
         return
@@ -61,7 +61,7 @@ async def _poll_primary_models(stopper: asyncio.Event) -> None:  # pragma: no co
         # Sleep/pause between polls or exit early when stopper is set
         try:
             await asyncio.wait_for(stopper.wait(), timeout=PRIMARY_POLL_INTERVAL_S)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             # timeout means continue polling
             pass
 
@@ -77,8 +77,9 @@ async def lifespan(app) -> AsyncIterator[None]:  # type: ignore[override]
 
     # Log analytics configuration (no secrets)
     try:
-        from .settings import get_settings
         from pathlib import Path
+
+        from .settings import get_settings
         settings = get_settings()
         geo_path = settings.get("GEOIP_DB_PATH")
         geo_exists = bool(geo_path and Path(geo_path).exists())

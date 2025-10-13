@@ -1,5 +1,8 @@
 from __future__ import annotations
-from typing import Iterable, Dict
+
+from collections.abc import Iterable
+from typing import Dict
+
 from .db import get_conn
 
 
@@ -20,7 +23,7 @@ def chunker(text: str, *, max_tokens: int = 350) -> Iterable[str]:
     return parts
 
 
-def ingest_direct(*, project_id: str, doc_id: str, text: str, meta: Dict | None = None) -> dict:
+def ingest_direct(*, project_id: str, doc_id: str, text: str, meta: dict | None = None) -> dict:
     """Write directly into chunks (and implicit FTS via triggers).
 
     Requires project_id and doc_id. Splits text using chunker(), writes rows with
@@ -65,14 +68,15 @@ def smart_extract(path: str) -> str:
             t.extract()
         return soup.get_text("\n", strip=True)
     if ext in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}:
-        from PIL import Image
         import pytesseract
+        from PIL import Image
         return pytesseract.image_to_string(Image.open(path))
     return pathlib.Path(path).read_text(encoding="utf-8", errors="ignore")
 
 
 if __name__ == "__main__":
-    import argparse, pathlib
+    import argparse
+    import pathlib
     ap = argparse.ArgumentParser("assistant_api.ingest")
     ap.add_argument("--project", required=True)
     ap.add_argument("--doc-id", required=True)

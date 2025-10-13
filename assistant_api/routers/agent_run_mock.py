@@ -1,13 +1,15 @@
 """Test-only mock route for fast E2E tests."""
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException, status
-from datetime import datetime, timezone
-import json
+
 import hashlib
+import json
+from datetime import UTC, datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..settings import get_settings
-from ..utils.cf_access import require_cf_access
 from ..utils.artifacts import ensure_artifacts_dir, write_artifact
+from ..utils.cf_access import require_cf_access
 
 router = APIRouter(prefix="/agent/run", tags=["agent-mock"])
 
@@ -37,7 +39,7 @@ def run_mock_plan(
         )
 
     ensure_artifacts_dir(settings["ARTIFACTS_DIR"])
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
 
     # Build base payload without integrity field
     base_fake = {

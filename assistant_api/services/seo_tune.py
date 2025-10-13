@@ -1,11 +1,12 @@
 # assistant_api/services/seo_tune.py
 from __future__ import annotations
-import os
+
 import json
+import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
-from typing import Iterable, List, Dict, Tuple
+from typing import Dict, List, Tuple
 
 # Optional: wire to your existing events/logging bus
 try:
@@ -36,7 +37,7 @@ def _ensure_dirs() -> None:
     OG_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _collect_projects() -> List[Dict]:
+def _collect_projects() -> list[dict]:
     """Collect project content/metadata.
     Replace this with your real loaders (JSON/YAML/MD parsing).
     Must return items with keys: slug, title, description, text.
@@ -61,7 +62,7 @@ def _collect_projects() -> List[Dict]:
     ]
 
 
-def _propose_meta(project: Dict) -> Tuple[str, str, str, str, str]:
+def _propose_meta(project: dict) -> tuple[str, str, str, str, str]:
     """Return (title_before, title_after, desc_before, desc_after, reason).
     Implement real LLM call here (local-first → fallback)."""
     title_before = project.get("title")
@@ -84,14 +85,14 @@ def _propose_meta(project: Dict) -> Tuple[str, str, str, str, str]:
     return title_before, title_after, desc_before, desc_after, reason
 
 
-def _write_diff_and_reason(proposals: List[SeoProposal]) -> Tuple[Path, Path]:
+def _write_diff_and_reason(proposals: list[SeoProposal]) -> tuple[Path, Path]:
     _ensure_dirs()
     diff_path = ARTIFACTS_DIR / "seo-tune.diff"
     md_path = ARTIFACTS_DIR / "seo-tune.md"
 
     lines = []
     reasons = ["# SEO Tune — Reasoning\n"]
-    ts = datetime.now(timezone.utc).isoformat()
+    ts = datetime.now(UTC).isoformat()
     for p in proposals:
         lines.append(f"--- a/projects/{p.slug}.meta\n")
         lines.append(f"+++ b/projects/{p.slug}.meta\n")
@@ -111,7 +112,7 @@ def _write_diff_and_reason(proposals: List[SeoProposal]) -> Tuple[Path, Path]:
     return diff_path, md_path
 
 
-def _regenerate_og(slug: str) -> Tuple[str | None, str | None]:
+def _regenerate_og(slug: str) -> tuple[str | None, str | None]:
     """Call your real OG generator; return (before, after) paths as strings.
     Replace stub with import of your existing service."""
     before = str((OG_DIR / f"{slug}.png").as_posix()) if (OG_DIR / f"{slug}.png").exists() else None
@@ -128,11 +129,11 @@ def _regenerate_sitemaps() -> None:
     SITEMAP_MEDIA_PATH.write_text("<!-- stub media sitemap regenerated -->\n", encoding="utf-8")
 
 
-def run_seo_tune(dry_run: bool = False) -> Dict:
+def run_seo_tune(dry_run: bool = False) -> dict:
     emit_event(task="seo.tune", phase="start")
     projects = _collect_projects()
 
-    proposals: List[SeoProposal] = []
+    proposals: list[SeoProposal] = []
     for proj in projects:
         title_b, title_a, desc_b, desc_a, reason = _propose_meta(proj)
         og_b, og_a = _regenerate_og(proj["slug"])  # swap for real service

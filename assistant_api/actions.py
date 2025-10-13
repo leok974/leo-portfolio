@@ -1,8 +1,12 @@
 from __future__ import annotations
+
+import json
+import re
 from typing import Any, Dict, List
-import os, json, re
+
 from pydantic import BaseModel
-from .tools.base import list_tools, get_tool, ALLOW_TOOLS, persist_audit, is_allow_tools
+
+from .tools.base import get_tool, is_allow_tools, list_tools, persist_audit
 
 SYSTEM = (
   "You are a careful planner. When a user asks for repo info, choose at most 2 tool calls.\n"
@@ -15,20 +19,20 @@ SYSTEM = (
 
 class PlanStep(BaseModel):
     tool: str
-    args: Dict[str, Any] = {}
+    args: dict[str, Any] = {}
 
 class PlanOut(BaseModel):
-    plan: List[PlanStep] = []
+    plan: list[PlanStep] = []
 
 def _heuristic_plan(question: str) -> PlanOut:
     q = (question or "").lower()
-    steps: List[PlanStep] = []
+    steps: list[PlanStep] = []
     # Simple rebuild hint → use run_script if user mentions rebuild index or rag
     if any(w in q for w in ["rebuild rag", "rebuild the rag", "rebuild index", "rebuild the index"]):
         # naive path extract (drive-letter or ./data style)
         mpath = re.search(r"([a-zA-Z]:[\\/][^\s]+|\./data/[^\s]+|/data/[^\s]+)", question or "")
         dbp = mpath.group(1) if mpath else None
-        args: Dict[str, Any] = {"script": "scripts/rag-build-index.ps1"}
+        args: dict[str, Any] = {"script": "scripts/rag-build-index.ps1"}
         if dbp:
             args["args"] = ["-DbPath", dbp]
         steps.append(PlanStep(tool="run_script", args=args))
@@ -72,8 +76,8 @@ async def plan_actions(question: str) -> PlanOut:
     # Heuristic fallback when no JSON completion available
     return _heuristic_plan(question)
 
-def execute_plan(plan: PlanOut) -> Dict[str, Any]:
-    transcripts: List[Dict[str, Any]] = []
+def execute_plan(plan: PlanOut) -> dict[str, Any]:
+    transcripts: list[dict[str, Any]] = []
     for step in plan.plan[:2]:
         spec = get_tool(step.tool)
         if not spec:

@@ -1,9 +1,14 @@
 from __future__ import annotations
-import os, subprocess, time
-from typing import Dict, Any, List
-from .base import register, ToolSpec, persist_audit, BASE_DIR
 
-def _run(argv: List[str], timeout: int = 8) -> str:
+import os
+import subprocess
+import time
+from typing import Any, Dict, List
+
+from .base import BASE_DIR, ToolSpec, persist_audit, register
+
+
+def _run(argv: list[str], timeout: int = 8) -> str:
     p = subprocess.run(
         argv,
         cwd=str(BASE_DIR),
@@ -19,7 +24,7 @@ def _run(argv: List[str], timeout: int = 8) -> str:
 def _parse_porcelain(s: str):
     # https://git-scm.com/docs/git-status#_porcelain_format_version_1
     modified = added = deleted = renamed = untracked = 0
-    sample: List[str] = []
+    sample: list[str] = []
     for line in s.splitlines():
         line = line.rstrip("\n")
         if not line:
@@ -47,7 +52,7 @@ def _parse_porcelain(s: str):
         "status_sample": sample[:20],
     }
 
-def run_git_status(args: Dict[str, Any]) -> Dict[str, Any]:
+def run_git_status(args: dict[str, Any]) -> dict[str, Any]:
     base_remote = (args.get("base") or os.getenv("GIT_BASE") or "origin/main").strip()
     start = time.time()
     try:

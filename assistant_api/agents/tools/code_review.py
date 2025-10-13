@@ -1,15 +1,15 @@
 """Code review tool - executes static analysis on diffs."""
 import json
-import subprocess
-import shlex
-import os
 import pathlib
+import shlex
+import subprocess
 import time
-from typing import Optional, Tuple, Any, Dict
+from typing import Any, Dict, Tuple
+
 from ...settings import settings
 
 
-def _run(cmd: str, timeout: int) -> Tuple[int, str, str, float]:
+def _run(cmd: str, timeout: int) -> tuple[int, str, str, float]:
     """Execute command with timeout, return (rc, stdout, stderr, duration)."""
     t0 = time.time()
     try:
@@ -28,7 +28,7 @@ def _run(cmd: str, timeout: int) -> Tuple[int, str, str, float]:
         return 124, "", "timeout", time.time() - t0
 
 
-def run_code_review(artifact_dir: pathlib.Path) -> Dict[str, Any]:
+def run_code_review(artifact_dir: pathlib.Path) -> dict[str, Any]:
     """
     Run code review command and write artifacts.
 

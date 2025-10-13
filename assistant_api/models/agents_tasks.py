@@ -1,5 +1,6 @@
 """SQLAlchemy model for agents_tasks table."""
-from sqlalchemy import Column, Integer, String, DateTime, Text, Index, JSON
+from sqlalchemy import JSON, Column, DateTime, Index, Integer, String, Text
+
 try:
     from sqlalchemy.dialects.postgresql import JSONB
 except ImportError:

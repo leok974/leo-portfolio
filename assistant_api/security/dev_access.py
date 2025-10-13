@@ -2,8 +2,9 @@
 Dev access security for privileged metrics dashboard.
 Supports multiple authentication methods with optional localhost bypass.
 """
-from fastapi import Request, HTTPException
 import ipaddress
+
+from fastapi import HTTPException, Request
 
 
 def _client_ip(req: Request) -> str | None:

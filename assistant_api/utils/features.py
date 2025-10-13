@@ -10,7 +10,9 @@ Usage:
 """
 
 import os
-from fastapi import Depends, HTTPException, Request
+
+from fastapi import HTTPException, Request
+
 from .auth import get_current_user
 
 

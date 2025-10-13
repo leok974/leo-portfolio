@@ -1,7 +1,13 @@
-import os, time, httpx, traceback, asyncio
-from typing import Optional, Tuple, List, Iterable, AsyncGenerator
-from .metrics import record, providers, primary_fail_reason, stage_record_ms
+import os
+import time
+from collections.abc import Iterable
 from dataclasses import dataclass
+from typing import List, Optional, Tuple
+
+import httpx
+
+from .metrics import primary_fail_reason, providers, record, stage_record_ms
+
 
 @dataclass
 class LLMHealth:  # Backwards-compatible minimal structure for tests
@@ -41,7 +47,7 @@ def _read_secret(*candidates: tuple[str, str]) -> str | None:
         f = os.getenv(file_env)
         if f and os.path.exists(f):
             try:
-                return open(f, "r", encoding="utf-8").read().strip()
+                return open(f, encoding="utf-8").read().strip()
             except Exception:
                 continue
     return None
@@ -57,19 +63,19 @@ PRIMARY_DEBUG = os.getenv("PRIMARY_DEBUG", "1").lower() in ("1","true","yes")
 REQ_TIMEOUT_S = float(os.getenv("PRIMARY_TIMEOUT_S", "60"))
 
 # Primary state caches ----------------------------------------------------------
-PRIMARY_MODELS: List[str] = []
-PRIMARY_MODEL_PRESENT: Optional[bool] = None
-LAST_PRIMARY_STATUS: Optional[int] = None
-LAST_PRIMARY_ERROR: Optional[str] = None
+PRIMARY_MODELS: list[str] = []
+PRIMARY_MODEL_PRESENT: bool | None = None
+LAST_PRIMARY_STATUS: int | None = None
+LAST_PRIMARY_ERROR: str | None = None
 DISABLE_PRIMARY = os.getenv("DISABLE_PRIMARY", "").lower() in ("1","true","yes")
 
-def set_primary_model_present(value: Optional[bool]) -> Optional[bool]:
+def set_primary_model_present(value: bool | None) -> bool | None:
     global PRIMARY_MODEL_PRESENT
     PRIMARY_MODEL_PRESENT = value
     return PRIMARY_MODEL_PRESENT
 
 
-def mark_primary_models(models: Iterable[str] | None) -> Optional[bool]:
+def mark_primary_models(models: Iterable[str] | None) -> bool | None:
     global PRIMARY_MODELS
     if models is None:
         return set_primary_model_present(None)
@@ -140,7 +146,7 @@ def _debug_log(msg: str):
         except Exception:
             pass
 
-async def primary_list_models() -> List[str]:
+async def primary_list_models() -> list[str]:
     # Short-circuit when primary probing is disabled
     if DISABLE_PRIMARY:
         mark_primary_models([])
@@ -155,7 +161,7 @@ async def primary_list_models() -> List[str]:
             except Exception:
                 j = {}
             data = j.get("data") or []
-            ids: List[str] = []
+            ids: list[str] = []
             if isinstance(data, list):
                 for it in data:
                     if isinstance(it, dict) and isinstance(it.get("id"), str):
@@ -167,7 +173,7 @@ async def primary_list_models() -> List[str]:
         mark_primary_models(None)
         return []
 
-async def list_models() -> List[str]:
+async def list_models() -> list[str]:
     """Return available primary model IDs, or an empty list if not ready.
 
     Never raises; safe to call during startup/lifespan without aborting the server.
@@ -189,7 +195,7 @@ async def list_models() -> List[str]:
             pass
         return []
 
-async def primary_chat(messages: list[dict], max_tokens: int = 64) -> Tuple[Optional[dict], Optional[str], Optional[int]]:
+async def primary_chat(messages: list[dict], max_tokens: int = 64) -> tuple[dict | None, str | None, int | None]:
     """Attempt primary. Returns (json, reason, http_status). reason None on success."""
     global LAST_PRIMARY_ERROR, LAST_PRIMARY_STATUS, PRIMARY_MODEL_PRESENT
     if DISABLE_PRIMARY:
@@ -209,7 +215,7 @@ async def primary_chat(messages: list[dict], max_tokens: int = 64) -> Tuple[Opti
             if r.status_code >= 400:
                 reason = "http_4xx" if r.status_code < 500 else "http_5xx"
                 try:
-                    j = r.json();
+                    j = r.json()
                     err = (j.get("error") or {}).get("message", "")
                     if "model" in err and "not found" in err:
                         reason = "model_missing"

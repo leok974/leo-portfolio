@@ -1,8 +1,10 @@
 """Agent task telemetry - push events to /metrics for dashboards."""
 import asyncio
-import httpx
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any, Dict
+
+import httpx
+
 
 # Lightweight telemetry - fire and forget, never blocks task execution
 async def push_event(
@@ -11,7 +13,7 @@ async def push_event(
     task: str,
     task_id: str,
     status: str,
-    metadata: Dict[str, Any] = None
+    metadata: dict[str, Any] = None
 ):
     """Push agent task event to metrics endpoint (non-blocking)."""
     try:
@@ -37,6 +39,6 @@ async def push_event(
         pass
 
 
-def track_status_change(agent: str, task: str, task_id: str, status: str, metadata: Dict[str, Any] = None):
+def track_status_change(agent: str, task: str, task_id: str, status: str, metadata: dict[str, Any] = None):
     """Fire-and-forget status change event."""
     asyncio.create_task(push_event("status_change", agent, task, task_id, status, metadata))

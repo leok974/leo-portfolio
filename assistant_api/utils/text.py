@@ -1,5 +1,6 @@
 """Text utilities for assistant API."""
 from __future__ import annotations
+
 import re
 
 

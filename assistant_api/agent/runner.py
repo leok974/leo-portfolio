@@ -1,7 +1,9 @@
-import uuid, traceback
-from typing import List, Dict, Any
+import traceback
+import uuid
+from typing import Any, Dict, List
+
+from .models import emit, insert_job, update_job
 from .tasks import REGISTRY
-from .models import insert_job, update_job, emit
 
 DEFAULT_PLAN = [
     "projects.sync",
@@ -14,7 +16,7 @@ DEFAULT_PLAN = [
 ]
 
 
-def run(plan: List[str] | None = None, params: Dict[str, Any] | None = None):
+def run(plan: list[str] | None = None, params: dict[str, Any] | None = None):
     run_id = str(uuid.uuid4())
     tasks = plan or DEFAULT_PLAN
     params = {**(params or {}), "_run_id": run_id, "_tasks": tasks}

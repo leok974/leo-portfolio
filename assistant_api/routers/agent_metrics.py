@@ -1,21 +1,21 @@
-from fastapi import APIRouter, Depends, Request, HTTPException, Response
-from fastapi.responses import StreamingResponse, HTMLResponse
-from pathlib import Path
-import json
 import csv
 import io
+import json
 import os
 from collections import defaultdict
-from datetime import datetime, timedelta, UTC
-import ipaddress
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
-from ..settings import get_settings
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import HTMLResponse, StreamingResponse
+
 from ..models.metrics import MetricIngestRequest
+from ..security.dev_access import ensure_dev_access
 from ..services.analytics_store import AnalyticsStore
 from ..services.behavior_learning import analyze, order_sections
 from ..services.geo import anonymize_prefix, lookup_country
 from ..services.retention import run_retention
-from ..security.dev_access import ensure_dev_access
+from ..settings import get_settings
 
 try:
     from reportlab.lib.pagesizes import letter

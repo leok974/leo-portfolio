@@ -1,5 +1,8 @@
-import os, sqlite3, re
+import os
+import re
+import sqlite3
 from typing import List
+
 
 def _db():
     path = os.environ.get("RAG_DB")
@@ -71,7 +74,7 @@ def _sanitize_match_query(q: str) -> str:
     toks = re.findall(r"[\w-]+", q.lower())
     return " ".join(toks) or "*"
 
-def bm25_search(query: str, topk: int = 50) -> List[int]:
+def bm25_search(query: str, topk: int = 50) -> list[int]:
     con = _db()
     try:
         q = _sanitize_match_query(query)

@@ -1,10 +1,18 @@
 # assistant_api/routers/rag_projects.py
 from __future__ import annotations
-import os, json, sqlite3, datetime, re, time
+
+import datetime
+import json
+import os
+import re
+import sqlite3
+import time
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, HTTPException, Body, Depends
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+
 from assistant_api.utils.auth import get_current_user
 
 RAG_DB = os.environ.get("RAG_DB") or os.path.join(os.getcwd(), "data", "rag.sqlite")
@@ -16,14 +24,14 @@ DEBUG_ERRORS = os.environ.get("DEBUG_ERRORS", "0") == "1"
 # ---- Models
 class ProjectPatch(BaseModel):
     slug: str = Field(..., description="Project slug to update")
-    title: Optional[str] = None
-    status: Optional[str] = Field(None, pattern=r"^(in-progress|completed)$")
-    summary: Optional[str] = None
-    value: Optional[str] = None
-    links: Optional[Dict[str, str]] = None
-    tech_stack: Optional[List[str]] = None
-    tags: Optional[List[str]] = None
-    key_features: Optional[List[str]] = None
+    title: str | None = None
+    status: str | None = Field(None, pattern=r"^(in-progress|completed)$")
+    summary: str | None = None
+    value: str | None = None
+    links: dict[str, str] | None = None
+    tech_stack: list[str] | None = None
+    tags: list[str] | None = None
+    key_features: list[str] | None = None
 
 class NLUpdate(BaseModel):
     instruction: str = Field(..., description="Natural-language instruction, e.g. 'mark clarity-companion completed and add tag Accessibility' ")
@@ -114,17 +122,17 @@ def list_projects(include_unknown: bool = False):
         con.close()
 
 
-def _load_projects() -> List[Dict[str, Any]]:
-    with open(PROJECTS_JSON, "r", encoding="utf-8") as f:
+def _load_projects() -> list[dict[str, Any]]:
+    with open(PROJECTS_JSON, encoding="utf-8") as f:
         return json.load(f)
 
 
-def _save_projects(data: List[Dict[str, Any]]):
+def _save_projects(data: list[dict[str, Any]]):
     with open(PROJECTS_JSON, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
-def _project_doc(p: Dict[str, Any]) -> str:
+def _project_doc(p: dict[str, Any]) -> str:
     lines = [
         f"Project: {p.get('title') or p.get('slug')}",
         f"Slug: {p.get('slug')}",
@@ -141,7 +149,7 @@ def _project_doc(p: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def _ingest_projects(projects: List[Dict[str, Any]]) -> int:
+def _ingest_projects(projects: list[dict[str, Any]]) -> int:
     con = _connect()
     try:
         _ensure_schema(con)

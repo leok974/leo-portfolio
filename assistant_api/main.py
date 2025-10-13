@@ -1,65 +1,65 @@
-from fastapi import FastAPI, HTTPException, Response, Request, Depends
-import asyncio, httpx
-import os, re, sys, subprocess
-import logging
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, FileResponse
-from pydantic import BaseModel
 import os
 import os.path as _ospath
+import re
+import subprocess
 from pathlib import Path
-from .rag_query import router as rag_router
-from .routers import rag_projects
-from .rag_ingest import ingest
-from .llm_client import (
-    chat as llm_chat,
-    chat_stream as llm_chat_stream,
-    diag as llm_diag,
-    primary_list_models,
-    PRIMARY_MODELS,
-    PRIMARY_MODEL_PRESENT,
-    OPENAI_MODEL as PRIMARY_MODEL_NAME,
-    PRIMARY_BASE as PRIMARY_BASE_URL,
-    LAST_PRIMARY_ERROR,
-    LAST_PRIMARY_STATUS,
-    DISABLE_PRIMARY,
-)
-from .auto_rag import needs_repo_context, fetch_context, build_context_message
-from .router import route_query
-from .memory import remember, recall
+
+import httpx
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, StreamingResponse
+from pydantic import BaseModel
+
+from .actions import execute_plan, plan_actions
+from .auto_rag import build_context_message, fetch_context, needs_repo_context
 from .faq import faq_search_best
-from .rag_query import rag_query as rag_query_direct, QueryIn
 from .generate import generate_brief_answer
 from .guardrails import detect_injection, should_enforce
-from .actions import plan_actions, execute_plan
+from .llm_client import (
+    chat as llm_chat,
+)
+from .llm_client import (
+    chat_stream as llm_chat_stream,
+)
+from .llm_client import (
+    diag as llm_diag,
+)
+from .memory import recall, remember
+from .rag_ingest import ingest
+from .rag_query import QueryIn
+from .rag_query import rag_query as rag_query_direct
+from .rag_query import router as rag_router
+from .router import route_query
+from .routers import rag_projects
 from .tools import base as tools_base  # ensure registry is importable
-from .tools import search_repo, read_file, create_todo, git_status  # noqa: F401 (register tools)
+from .tools import create_todo, git_status, read_file, search_repo  # noqa: F401 (register tools)
+
 try:
     from .tools import run_script  # type: ignore  # noqa: F401
 except Exception:
     run_script = None  # type: ignore
-from .llm_health import router as llm_health_router
-from .ready import router as ready_router
-from fastapi import APIRouter
-from .metrics import record, snapshot, recent_latency_stats, recent_latency_stats_by_provider, stage_snapshot
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-from .analytics import router as analytics_router
-from .metrics_analytics import resume_downloads
-from .settings import ANALYTICS_ENABLED
-from .routes import status as status_routes, llm as llm_routes
-from .routes import llm_latency as llm_latency_routes
-from .health import router as health_router
-from .feedback import router as feedback_router
-from .status_common import build_status
-from .state import LAST_SERVED_BY, sse_inc, sse_dec
-import httpx
-import time
 import json
-from pathlib import Path as _PathAlias  # keep existing Path import above
 import pathlib as _pathlib
 import sqlite3 as _sqlite3
-from . import fts as fts_helpers
+import time
+
+from fastapi import APIRouter
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
 from . import db as db_helpers
+from . import fts as fts_helpers
+from .analytics import router as analytics_router
+from .feedback import router as feedback_router
+from .health import router as health_router
+from .llm_health import router as llm_health_router
+from .metrics import record, snapshot, stage_snapshot
+from .metrics_analytics import resume_downloads
+from .ready import router as ready_router
+from .routes import llm as llm_routes
+from .routes import llm_latency as llm_latency_routes
+from .routes import status as status_routes
+from .state import LAST_SERVED_BY, sse_dec, sse_inc
+
 try:
     # Load .env and .env.local if present (dev convenience)
     from dotenv import load_dotenv
@@ -79,8 +79,8 @@ try:
 except Exception:
     pass
 
-from .lifespan import lifespan
 from . import settings as _settings
+from .lifespan import lifespan
 
 app = FastAPI(title="Leo Portfolio Assistant", lifespan=lifespan)
 
@@ -106,7 +106,9 @@ else:
     )
 
 # Admin authentication (HMAC-signed cookies)
-from .auth_admin import router as auth_router, require_admin
+from .auth_admin import require_admin
+from .auth_admin import router as auth_router
+
 app.include_router(auth_router)
 
 # Protected admin endpoints (for E2E testing)
@@ -129,42 +131,52 @@ app.include_router(analytics_router)
 
 # Behavior metrics routes (Phase 50.8)
 from assistant_api.routers import metrics_behavior
+
 app.include_router(metrics_behavior.router)
 
 # Gallery and uploads routes (now consolidated under /api/admin)
 from assistant_api.routers import admin
+
 app.include_router(admin.router)
 
 # SiteAgent automation routes (protected by CF Access)
 from assistant_api.routers import agent
+
 app.include_router(agent.router)
 
 # SiteAgent public routes (HMAC authentication for CI/CD)
 from assistant_api.routers import agent_public
+
 app.include_router(agent_public.router)
 
 # Agent actions (autonomous PR generator, etc.)
 from assistant_api.routers import agent_act
+
 app.include_router(agent_act.router)
 
 # A/B testing routes (for layout optimization)
 from assistant_api.routers import ab
+
 app.include_router(ab.router)
 
 # Layout weights management routes (for interactive weight tuning)
 from assistant_api.routers import layout_weights
+
 app.include_router(layout_weights.router)
 
 # Resume public routes (no auth required)
 from assistant_api.routers import resume_public
+
 app.include_router(resume_public.router)
 
 # Dev overlay routes (for enabling/disabling admin UI via cookie)
 from assistant_api.routers import dev_overlay
+
 app.include_router(dev_overlay.router)
 
 # Agents orchestration routes (for nightly task tracking)
 from assistant_api.routers import agents_tasks
+
 app.include_router(agents_tasks.router)
 
 # Phase 50.4 — SEO & OG Intelligence routes
@@ -211,8 +223,8 @@ except Exception as e:
 
 # Agent Registry System (autonomous task execution with approval)
 try:
-    from assistant_api.routers import agents as agents_router
     from assistant_api.agents.database import init_db
+    from assistant_api.routers import agents as agents_router
     # Initialize database tables
     init_db()
     app.include_router(agents_router.router)
@@ -355,6 +367,7 @@ def metrics():
     from assistant_api.util.testmode import is_test_mode
     if is_test_mode():
         from fastapi.responses import JSONResponse
+
         # Import the router counters from metrics module
         from .metrics import router_route_total
         return JSONResponse({"router": dict(router_route_total), "counters": dict(router_route_total)})
@@ -452,7 +465,6 @@ class ChatReq(BaseModel):
     include_sources: bool | None = False
 
 # Tools API
-from fastapi import Body
 
 @app.get("/api/tools")
 async def tools_list():
@@ -486,8 +498,8 @@ class ToolExecIn(BaseModel):
 
 @app.post("/api/tools/exec")
 async def tools_exec(inb: ToolExecIn):
-    from .util.testmode import is_test_mode
     from .tools.base import get_tool
+    from .util.testmode import is_test_mode
     spec = get_tool(inb.name)
     if not spec:
         return {"ok": False, "error": "unknown tool"}
@@ -1145,7 +1157,7 @@ async def chat_stream_ep(req: ChatReq):
         while True:
             try:
                 tag, line = await _asyncio.wait_for(aiter.__anext__(), timeout=0.9)
-            except _asyncio.TimeoutError:
+            except TimeoutError:
                 if not got_first:
                     # keepalive ping
                     yield "event: ping\ndata: 0\n\n"

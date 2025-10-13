@@ -1,7 +1,8 @@
 """Git utilities for agent tasks."""
 from __future__ import annotations
-import subprocess
+
 import pathlib
+import subprocess
 
 
 def make_diff(path: str) -> str:

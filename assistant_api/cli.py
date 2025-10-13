@@ -1,8 +1,10 @@
 from __future__ import annotations
-import argparse, pathlib, os, sqlite3
-from .ingest import ingest_direct, smart_extract
+
+import argparse
+import pathlib
+
 from .db import connect, rebuild_fts
-from .ingest import smart_extract
+from .ingest import ingest_direct, smart_extract
 
 
 def main() -> None:

@@ -1,14 +1,20 @@
-import os, numpy as np, hashlib, json, time, math
+import hashlib
+import json
+import math
+import os
+import time
 from datetime import datetime
+from typing import Dict, List
+
+import numpy as np
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
-from typing import List, Dict
-from .db import connect, search, index_dim
-from .fts import bm25_search, fts_offsets_to_hits, highlight_snippet, _sanitize_match_query
-from .vector_store import dense_search
-from .reranker import rerank
+
+from .db import connect, index_dim, search
+from .fts import _sanitize_match_query, bm25_search
 from .guardrails import sanitize_snippet
-from .db import get_conn as _get_conn
+from .reranker import rerank
+from .vector_store import dense_search
 
 router = APIRouter()
 
@@ -31,7 +37,7 @@ def _read_openai_key() -> str | None:
     p = os.getenv("OPENAI_API_KEY_FILE", "/run/secrets/openai_api_key")
     if os.path.exists(p):
         try:
-            return open(p, "r", encoding="utf-8").read().strip()
+            return open(p, encoding="utf-8").read().strip()
         except Exception:
             return None
     return None
@@ -174,7 +180,7 @@ async def rag_query(
             }
 
         # 2) Load texts from chunks; map metadata via docs when possible
-        doc_rows: List[Dict] = []
+        doc_rows: list[dict] = []
         for cid in pool_ids:
             c = con.execute("SELECT id, content, title, source_path, text FROM chunks WHERE id= ?", (cid,)).fetchone()
             if not c:

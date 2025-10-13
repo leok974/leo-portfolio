@@ -9,11 +9,13 @@ Features:
 - Single-commit rolling branches for clean history
 """
 from __future__ import annotations
-import os
+
 import json
+import os
 import subprocess
 from pathlib import Path
 from typing import Optional, Tuple
+
 from fastapi import APIRouter, Body, Depends, HTTPException
 from pydantic import BaseModel
 
@@ -26,16 +28,16 @@ ARTIFACTS_DIR = Path("agent/artifacts")
 
 class PRCreateInput(BaseModel):
     """Input for PR creation."""
-    branch: Optional[str] = None
-    title: Optional[str] = None
-    body: Optional[str] = None
+    branch: str | None = None
+    title: str | None = None
+    body: str | None = None
     labels: list[str] = ["auto", "siteagent"]
     base: str = "main"
-    commit_message: Optional[str] = None
+    commit_message: str | None = None
     dry_run: bool = False
     use_llm: bool = False  # Enable LLM-generated title/body
     attach_insights: bool = True  # Append analytics insights to PR body
-    category: Optional[str] = None  # Logical stream (seo/content/og/deps/misc)
+    category: str | None = None  # Logical stream (seo/content/og/deps/misc)
     single_commit: bool = True  # Keep branch as single rolling commit
     force_with_lease: bool = True  # Safe force push when updating
 
@@ -43,11 +45,11 @@ class PRCreateInput(BaseModel):
 class PRCreateResponse(BaseModel):
     """Response from PR creation."""
     status: str
-    branch: Optional[str] = None
-    pr: Optional[str] = None
-    labels: Optional[list[str]] = None
-    diff: Optional[str] = None
-    message: Optional[str] = None
+    branch: str | None = None
+    pr: str | None = None
+    labels: list[str] | None = None
+    diff: str | None = None
+    message: str | None = None
 
 
 # ============ Guards ============
@@ -157,7 +159,7 @@ def _branch_for_category(payload: PRCreateInput) -> str:
     return f"siteagent/{cat or 'misc'}"
 
 
-def _find_open_pr_for_branch(repo: str, branch: str, token: str) -> Tuple[Optional[int], Optional[str]]:
+def _find_open_pr_for_branch(repo: str, branch: str, token: str) -> tuple[int | None, str | None]:
     """Find open PR with given head branch. Returns (pr_number, pr_url) or (None, None)."""
     try:
         env = {"GH_TOKEN": token}

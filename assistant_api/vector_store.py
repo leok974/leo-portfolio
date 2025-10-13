@@ -1,5 +1,7 @@
-import os, sqlite3, json
-from typing import List, Tuple, Optional
+import json
+import os
+import sqlite3
+from typing import List, Optional, Tuple
 
 # Optional FAISS: allow backend to run without faiss installed (Windows-friendly)
 try:
@@ -22,7 +24,7 @@ def _connect_db() -> sqlite3.Connection:
     con.execute("PRAGMA journal_mode=WAL")
     return con
 
-def _fetch_chunks(con, project_id: Optional[str] = None) -> List[Tuple[int, str]]:
+def _fetch_chunks(con, project_id: str | None = None) -> list[tuple[int, str]]:
     q = "SELECT id, content FROM chunks"
     args = []
     if project_id:
@@ -30,7 +32,7 @@ def _fetch_chunks(con, project_id: Optional[str] = None) -> List[Tuple[int, str]
         args = [project_id]
     return list(con.execute(q, args))
 
-def build_index(project_id: Optional[str] = None) -> dict:
+def build_index(project_id: str | None = None) -> dict:
     os.makedirs(IDX_DIR, exist_ok=True)
     con = _connect_db()
     rows = _fetch_chunks(con, project_id)
@@ -67,13 +69,13 @@ def build_index(project_id: Optional[str] = None) -> dict:
         json.dump([{"rowid": i, "chunk_id": int(cid)} for i, cid in enumerate(ids)], f)
     return {"ok": True, "count": len(ids), "index": IDX_PATH}
 
-def dense_search(query: str, topk: int = 50) -> List[int]:
+def dense_search(query: str, topk: int = 50) -> list[int]:
     if _DENSE_DISABLED or faiss is None:
         return []
     if not (os.path.exists(IDX_PATH) and os.path.exists(MAP_PATH)):
         return []
     index = faiss.read_index(IDX_PATH)  # type: ignore
-    with open(MAP_PATH, "r", encoding="utf-8") as f:
+    with open(MAP_PATH, encoding="utf-8") as f:
         mapping = json.load(f)
     qv = embed_texts([query])
     D, I = index.search(qv, topk)  # ignore scores here (we’ll rerank later)

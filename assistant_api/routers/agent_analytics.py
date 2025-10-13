@@ -1,12 +1,15 @@
 # assistant_api/routers/agent_analytics.py
 from __future__ import annotations
+
+from datetime import UTC, datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Request
-from datetime import datetime, timezone
+
+from ..ctr_analytics.parsers import detect_and_parse
+from ..ctr_analytics.schemas import IngestResult
+from ..ctr_analytics.storage import CTRRow, ensure_tables, upsert_ctr_rows
 from ..settings import get_settings
 from ..utils.cf_access import require_cf_access
-from ..ctr_analytics.storage import ensure_tables, upsert_ctr_rows, CTRRow
-from ..ctr_analytics.schemas import IngestResult
-from ..ctr_analytics.parsers import detect_and_parse
 
 router = APIRouter(prefix="/agent/analytics", tags=["agent-analytics"])
 
@@ -59,7 +62,7 @@ async def ingest_analytics(request: Request, principal: str = Depends(require_cf
             detail="No rows detected. Provide internal JSON, GSC API JSON, GA4 JSON, or GSC CSV export."
         )
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     ctr_rows = []
     for r in parsed_rows:
         imp = int(r.get("impressions", 0))

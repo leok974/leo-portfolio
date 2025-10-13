@@ -4,12 +4,13 @@ Generates SEO-optimized title and description suggestions using discovered keywo
 Phase 50.7 seed implementation.
 """
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional, List, Dict
+
+import hashlib
 import json
 import re
-import hashlib
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
+from pathlib import Path
+from typing import Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
@@ -44,12 +45,12 @@ def _limit(s: str, n: int) -> str:
     return (s[:n-1]).rstrip() + "…"
 
 
-def _load_keywords_index() -> Dict[str, List[str]]:
+def _load_keywords_index() -> dict[str, list[str]]:
     """
     Returns { '/path': ['kw1','kw2','kw3', ...] }
     Uses seo-keywords.json if present; falls back to blank list.
     """
-    idx: Dict[str, List[str]] = {}
+    idx: dict[str, list[str]] = {}
     p = Path("agent") / "artifacts" / "seo-keywords.json"
     if p.exists():
         try:
@@ -63,7 +64,7 @@ def _load_keywords_index() -> Dict[str, List[str]]:
     return idx
 
 
-def _craft_title(base_title: str, kws: List[str]) -> str:
+def _craft_title(base_title: str, kws: list[str]) -> str:
     """
     Craft SEO title preferring 1-2 top keywords, ≤ 60 chars.
     """
@@ -76,7 +77,7 @@ def _craft_title(base_title: str, kws: List[str]) -> str:
     return _limit(title, 60)
 
 
-def _craft_desc(base_desc: str, kws: List[str]) -> str:
+def _craft_desc(base_desc: str, kws: list[str]) -> str:
     """
     Build readable sentence weaving in 2-3 keywords, ≤ 155 chars.
     """
@@ -130,7 +131,7 @@ def suggest_meta(
     desc_suggestion = _craft_desc(page.desc or "", kws)
 
     payload = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "path": path,
         "base": {"title": page.title, "desc": page.desc},
         "keywords": kws[:6],

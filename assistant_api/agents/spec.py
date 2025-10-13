@@ -1,8 +1,9 @@
 """Agent specification and registry loading."""
-from pydantic import BaseModel
-from typing import List, Dict, Optional
-import yaml
 import pathlib
+from typing import Dict, List, Optional
+
+import yaml
+from pydantic import BaseModel
 
 REGISTRY_PATH = pathlib.Path(__file__).resolve().parents[2] / "agents.yml"
 
@@ -10,15 +11,15 @@ REGISTRY_PATH = pathlib.Path(__file__).resolve().parents[2] / "agents.yml"
 class AgentSpec(BaseModel):
     """Specification for an autonomous agent."""
     name: str
-    goals: List[str]
-    tools: List[str]
+    goals: list[str]
+    tools: list[str]
     allow_auto: bool = False
 
 
-_registry_cache: Optional[Dict[str, AgentSpec]] = None
+_registry_cache: dict[str, AgentSpec] | None = None
 
 
-def load_registry() -> Dict[str, AgentSpec]:
+def load_registry() -> dict[str, AgentSpec]:
     """Load agent registry from agents.yml (cached after first load)."""
     global _registry_cache
     if _registry_cache is not None:

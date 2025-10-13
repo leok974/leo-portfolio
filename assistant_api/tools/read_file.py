@@ -1,9 +1,12 @@
 from __future__ import annotations
-from typing import Dict, Any
-import pathlib
-from .base import register, ToolSpec, _safe_join, persist_audit
 
-def run_read_file(args: Dict[str, Any]) -> Dict[str, Any]:
+import pathlib
+from typing import Any, Dict
+
+from .base import ToolSpec, _safe_join, persist_audit, register
+
+
+def run_read_file(args: dict[str, Any]) -> dict[str, Any]:
     rel = (args.get("path") or "").strip()
     start = int(args.get("start") or 1)
     end   = int(args.get("end")   or (start + 80))

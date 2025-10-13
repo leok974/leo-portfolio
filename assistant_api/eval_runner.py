@@ -1,12 +1,17 @@
 from __future__ import annotations
-import json, time, datetime
+
+import datetime
+import json
+import time
 from typing import Any, Dict, List
+
 import httpx
+
 
 def _now_iso() -> str:
     return datetime.datetime.utcnow().isoformat() + "Z"
 
-async def _chat_case(base: str, row: Dict[str, Any]) -> Dict[str, Any]:
+async def _chat_case(base: str, row: dict[str, Any]) -> dict[str, Any]:
     q = row["question"]
     body = {"messages":[{"role":"user","content":q}], "include_sources": True}
     t0 = time.time()
@@ -24,7 +29,7 @@ async def _chat_case(base: str, row: Dict[str, Any]) -> Dict[str, Any]:
     scope = res.get("scope") or {}
     route = scope.get("route")
 
-    errors: List[str] = []
+    errors: list[str] = []
     for s in (row.get("expect_contains") or []):
         if s.lower() not in content.lower():
             errors.append(f'missing expected text: "{s}"')
@@ -46,7 +51,7 @@ async def _chat_case(base: str, row: Dict[str, Any]) -> Dict[str, Any]:
         "errors": errors,
     }
 
-async def _plan_case(base: str, row: Dict[str, Any]) -> Dict[str, Any]:
+async def _plan_case(base: str, row: dict[str, Any]) -> dict[str, Any]:
     q = row["question"]
     t0 = time.time()
     async with httpx.AsyncClient(timeout=60) as c:
@@ -57,7 +62,7 @@ async def _plan_case(base: str, row: Dict[str, Any]) -> Dict[str, Any]:
     plan = (res or {}).get("plan") or {}
     steps = plan.get("plan") or []
 
-    errors: List[str] = []
+    errors: list[str] = []
     exp_tool = row.get("expect_tool")
     if exp_tool and not any((s.get("tool") == exp_tool) for s in steps):
         errors.append(f'expected tool "{exp_tool}" not in plan')
@@ -78,9 +83,9 @@ async def _plan_case(base: str, row: Dict[str, Any]) -> Dict[str, Any]:
         "errors": errors,
     }
 
-def _load_jsonl(path: str) -> List[Dict[str, Any]]:
-    rows: List[Dict[str, Any]] = []
-    with open(path, "r", encoding="utf-8") as f:
+def _load_jsonl(path: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line: continue
@@ -89,12 +94,12 @@ def _load_jsonl(path: str) -> List[Dict[str, Any]]:
 
 async def run_eval_inprocess(
     base: str,
-    files: List[str],
+    files: list[str],
     fail_under: float,
-    metrics: Dict[str, Any] | None = None,
-    git: Dict[str, str] | None = None,
-) -> Dict[str, Any]:
-    results: List[Dict[str, Any]] = []
+    metrics: dict[str, Any] | None = None,
+    git: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    results: list[dict[str, Any]] = []
     for fp in files:
         for row in _load_jsonl(fp):
             kind = (row.get("type") or "chat").lower()

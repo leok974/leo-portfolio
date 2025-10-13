@@ -1,9 +1,14 @@
+import json
+import os
+import sqlite3
+import time
+from collections.abc import Generator
 from pathlib import Path
-import sqlite3, numpy as np, json, os, time
-from sqlalchemy.ext.declarative import declarative_base
+
+import numpy as np
 from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from typing import Generator
 
 # SQLAlchemy Base for ORM models (agents_tasks, etc.)
 Base = declarative_base()

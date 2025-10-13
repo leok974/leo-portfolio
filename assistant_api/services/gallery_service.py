@@ -8,8 +8,8 @@ Handles:
 - Sitemap refresh and validation
 """
 from __future__ import annotations
+
 import json
-import os
 import re
 import shutil
 import subprocess
@@ -122,14 +122,14 @@ def add_gallery_item(
     *,
     title: str,
     description: str = '',
-    date: Optional[str] = None,
+    date: str | None = None,
     typ: Literal['image', 'video-local', 'youtube', 'vimeo'],
     src: str,
-    poster: Optional[str] = None,
-    mime: Optional[str] = None,
-    tools: Optional[list[str]] = None,
-    workflow: Optional[list[str]] = None,
-    tags: Optional[list[str]] = None
+    poster: str | None = None,
+    mime: str | None = None,
+    tools: list[str] | None = None,
+    workflow: list[str] | None = None,
+    tags: list[str] | None = None
 ) -> dict:
     """
     Add new item to gallery.json (prepends to items array).

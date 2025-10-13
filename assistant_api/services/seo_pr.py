@@ -3,11 +3,12 @@
 Creates GitHub PRs with SEO tune changes using git worktree isolation.
 """
 from __future__ import annotations
+
 import os
 import subprocess
 import tempfile
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 from typing import Dict
 
 from assistant_api.services.seo_tune import ARTIFACTS_DIR
@@ -46,7 +47,7 @@ def _run(cmd: list[str], cwd: str | None = None) -> str:
 def open_seo_pr(
     base_branch: str = "main",
     branch_prefix: str = "seo/tune-"
-) -> Dict:
+) -> dict:
     """Create a GitHub PR with SEO tune changes.
 
     Args:
@@ -158,7 +159,7 @@ def open_seo_pr(
             "branch": branch,
             "pr": pr_out.strip()
         }
-    except Exception as e:
+    except Exception:
         # gh CLI not present or failed
         emit_event(task="seo.pr", phase="pushed", branch=branch)
         return {

@@ -1,12 +1,13 @@
+import os
+import urllib.parse
+from datetime import UTC, datetime, timezone
+
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
-import os
-from ..status_common import build_status
-from ..metrics import recent_latency_stats, recent_latency_stats_by_provider
-from ..metrics import stage_snapshot
+
+from ..metrics import recent_latency_stats, recent_latency_stats_by_provider, stage_snapshot
 from ..state import LAST_SERVED_BY, SSE_CONNECTIONS
-import urllib.parse
-from datetime import datetime, timezone
+from ..status_common import build_status
 
 router = APIRouter()
 
@@ -113,7 +114,7 @@ async def status_cors(request: Request):
         "domain_env": domain_env,
         "request_origin": req_origin,
         "is_allowed": is_allowed,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 

@@ -5,11 +5,11 @@ single import location so tests and other modules can reference the
 same normalized view without duplicating parsing rules.
 """
 from __future__ import annotations
+
 import os
 import urllib.parse
 from functools import lru_cache
-from typing import List, Dict, Any
-from pydantic import AnyHttpUrl
+from typing import Any, Dict
 
 
 def _split_env_list(val: str) -> list[str]:
@@ -22,7 +22,7 @@ def _split_env_list(val: str) -> list[str]:
 
 
 @lru_cache(maxsize=1)
-def get_settings() -> Dict[str, Any]:
+def get_settings() -> dict[str, Any]:
     from .util.testmode import is_test_mode
 
     raw_origins = os.getenv("ALLOWED_ORIGINS", "")

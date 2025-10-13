@@ -1,10 +1,11 @@
 # assistant_api/analytics/parsers.py
 from __future__ import annotations
-from typing import Iterable, List, Tuple, Dict, Any
+
 import csv
 import io
+from typing import Any, Dict, List, Tuple
 
-Row = Dict[str, Any]
+Row = dict[str, Any]
 
 def _norm_url(url: str) -> str:
     if not url:
@@ -23,7 +24,7 @@ def _norm_url(url: str) -> str:
         url = "/" + url
     return url
 
-def from_internal_json(payload: Dict[str, Any]) -> Tuple[str, List[Row]]:
+def from_internal_json(payload: dict[str, Any]) -> tuple[str, list[Row]]:
     """
     Our internal format:
       { source: "...", rows: [{url, impressions, clicks}, ...] }
@@ -40,14 +41,14 @@ def from_internal_json(payload: Dict[str, Any]) -> Tuple[str, List[Row]]:
         rows.append({"url": url, "impressions": imp, "clicks": clk})
     return src, rows
 
-def from_gsc_api(payload: Dict[str, Any]) -> Tuple[str, List[Row]]:
+def from_gsc_api(payload: dict[str, Any]) -> tuple[str, list[Row]]:
     """
     Google Search Console API (searchanalytics.query) style:
       rows: [{ keys:["/path"], clicks: n, impressions: n, ... }, ...]
     Or keys may contain full URL. We only read keys[0], clicks, impressions.
     """
     src = "search_console"
-    out: List[Row] = []
+    out: list[Row] = []
     for r in payload.get("rows", []):
         keys = r.get("keys") or []
         if not keys:
@@ -58,7 +59,7 @@ def from_gsc_api(payload: Dict[str, Any]) -> Tuple[str, List[Row]]:
         out.append({"url": url, "impressions": imp, "clicks": clk})
     return src, out
 
-def from_gsc_csv(text: str) -> Tuple[str, List[Row]]:
+def from_gsc_csv(text: str) -> tuple[str, list[Row]]:
     """
     GSC UI CSV export (typical headers):
       "Page","Clicks","Impressions","CTR","Position"
@@ -66,9 +67,9 @@ def from_gsc_csv(text: str) -> Tuple[str, List[Row]]:
     src = "search_console"
     f = io.StringIO(text)
     reader = csv.DictReader(f)
-    out: List[Row] = []
+    out: list[Row] = []
     # Normalize header variants
-    def get_num(d: Dict[str, str], *keys: str) -> int:
+    def get_num(d: dict[str, str], *keys: str) -> int:
         for k in keys:
             if k in d and d[k] != "":
                 try:
@@ -90,7 +91,7 @@ def from_gsc_csv(text: str) -> Tuple[str, List[Row]]:
         out.append({"url": url, "impressions": imp, "clicks": clk})
     return src, out
 
-def from_ga4_json(payload: Dict[str, Any]) -> Tuple[str, List[Row]]:
+def from_ga4_json(payload: dict[str, Any]) -> tuple[str, list[Row]]:
     """
     Very loose GA4 mapping (if user exports page paths and views/click-like custom metric):
     Accepts either:
@@ -99,7 +100,7 @@ def from_ga4_json(payload: Dict[str, Any]) -> Tuple[str, List[Row]]:
     We approximate clicks using 'clicks' or 'events' if present; impressions ~ page_views.
     """
     src = "ga4"
-    out: List[Row] = []
+    out: list[Row] = []
     rows = payload.get("rows")
     if isinstance(rows, list) and rows and "dimensionValues" in rows[0]:
         for r in rows:
@@ -132,7 +133,7 @@ def from_ga4_json(payload: Dict[str, Any]) -> Tuple[str, List[Row]]:
             out.append({"url": url, "impressions": imp, "clicks": clk})
     return src, out
 
-def detect_and_parse(payload: Any, content_type: str | None, raw_text: str | None) -> Tuple[str, List[Row]]:
+def detect_and_parse(payload: Any, content_type: str | None, raw_text: str | None) -> tuple[str, list[Row]]:
     """
     Try formats in order:
       1) Our internal {source, rows:[{url,impressions,clicks}]}
@@ -161,7 +162,7 @@ def detect_and_parse(payload: Any, content_type: str | None, raw_text: str | Non
 
     # If array-of-rows passed directly: map minimal fields
     if isinstance(payload, list):
-        rows: List[Row] = []
+        rows: list[Row] = []
         for r in payload:
             if not isinstance(r, dict):
                 continue

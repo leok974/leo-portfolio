@@ -1,17 +1,19 @@
+from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
-from ..agent.runner import run, DEFAULT_PLAN
-from ..agent.tasks import REGISTRY
+
 from ..agent.models import recent_runs
+from ..agent.runner import DEFAULT_PLAN, run
+from ..agent.tasks import REGISTRY
 from ..utils.cf_access import require_cf_access
 
 router = APIRouter(prefix="/api/admin/agent", tags=["agent"])
 
 
 class RunReq(BaseModel):
-    plan: Optional[List[str]] = None
-    params: Optional[Dict[str, Any]] = None
+    plan: list[str] | None = None
+    params: dict[str, Any] | None = None
 
 
 @router.get("/tasks")

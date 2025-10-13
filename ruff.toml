@@ -1,0 +1,34 @@
+# Ruff linting configuration
+# See: https://docs.astral.sh/ruff/configuration/
+
+line-length = 120
+target-version = "py311"
+
+[lint]
+# Enable core rules (E=pycodestyle errors, F=pyflakes, W=warnings)
+# UP=pyupgrade, I=isort
+select = ["E", "F", "W", "UP", "I"]
+
+# Ignore specific rules that are too noisy or subjective
+ignore = [
+    "E203",   # Whitespace before ':'
+    "E266",   # Too many leading '#' for block comment
+    "E402",   # Module import not at top - intentional for conditional imports
+    "E501",   # Line too long (handled by formatter)
+    "E701",   # Multiple statements on one line (colon) - too common in codebase
+    "E702",   # Multiple statements on one line (semicolon) - too common in codebase
+    "E722",   # Do not use bare 'except' - TODO: fix these properly
+    "E741",   # Ambiguous variable name (l, I, O) - acceptable in math/indexing
+    "F401",   # Imported but unused - often intentional for test fixtures
+    "F841",   # Local variable assigned but never used - often WIP code
+    "UP035",  # typing.Dict/List deprecated - cosmetic, can migrate incrementally
+    "UP038",  # isinstance tuple optimization - low value
+    "W191",   # Tab indentation - mixed tabs/spaces in legacy files
+]
+
+[lint.isort]
+known-first-party = ["assistant_api"]
+
+[format]
+quote-style = "double"
+indent-style = "space"

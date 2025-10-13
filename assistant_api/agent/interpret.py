@@ -1,10 +1,10 @@
 import re
-from typing import Dict, Any, List, Tuple
+from typing import Any, Dict, List, Tuple
 
-Command = Dict[str, Any]
+Command = dict[str, Any]
 
 
-def parse_command(cmd: str) -> Tuple[List[str], Dict[str, Any]]:
+def parse_command(cmd: str) -> tuple[list[str], dict[str, Any]]:
     """
     Very small rule-based interpreter that turns a sentence into a plan+params.
     Supported:
@@ -16,8 +16,8 @@ def parse_command(cmd: str) -> Tuple[List[str], Dict[str, Any]]:
       - (re)generate og
     """
     c = (cmd or "").strip()
-    plan: List[str] = []
-    params: Dict[str, Any] = {}
+    plan: list[str] = []
+    params: dict[str, Any] = {}
     if not c:
         return plan, params
 

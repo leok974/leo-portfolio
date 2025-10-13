@@ -5,15 +5,15 @@ Logs significant agent actions (scheduler runs, manual optimizations, autotuning
 for audit trail and "Last Actions" feed.
 """
 import json
-import time
 import pathlib
-from typing import Dict, Any
+import time
+from typing import Any, Dict
 
 EVENTS = pathlib.Path("data/agent_events.jsonl")
 EVENTS.parent.mkdir(parents=True, exist_ok=True)
 
 
-def log_event(kind: str, meta: Dict[str, Any]):
+def log_event(kind: str, meta: dict[str, Any]):
     """
     Log an agent event to JSONL file.
 
@@ -33,7 +33,7 @@ def log_event(kind: str, meta: Dict[str, Any]):
         }) + "\n")
 
 
-def recent_events(limit: int = 50) -> list[Dict[str, Any]]:
+def recent_events(limit: int = 50) -> list[dict[str, Any]]:
     """
     Get recent events (most recent first).
 

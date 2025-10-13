@@ -1,10 +1,9 @@
 # assistant_api/llm/seo_rewriter.py
 from __future__ import annotations
+
 import json
-import math
-import time
-from dataclasses import dataclass
 from typing import Optional, Tuple
+
 from ..settings import get_settings
 from ..tasks.seo_tune import PageMeta  # reuse dataclass
 
@@ -13,12 +12,12 @@ try:
     import requests
 except Exception:  # pragma: no cover
     requests = None
-    import urllib.request
     import urllib.error
+    import urllib.request
 
 _JSON_ERR = object()
 
-def _post(url: str, headers: dict, payload: dict, timeout: float) -> Tuple[int, str]:
+def _post(url: str, headers: dict, payload: dict, timeout: float) -> tuple[int, str]:
     """
     HTTP POST helper that works with both requests and urllib.
     Returns (status_code, response_text).
@@ -42,11 +41,11 @@ def _post(url: str, headers: dict, payload: dict, timeout: float) -> Tuple[int, 
 def _try_chat(
     base: str,
     model: str,
-    api_key: Optional[str],
+    api_key: str | None,
     sys_prompt: str,
     user_prompt: str,
     timeout: float
-) -> Optional[dict]:
+) -> dict | None:
     """
     Attempts OpenAI-compatible /chat/completions call.
     Returns parsed JSON dict if successful, None otherwise.
@@ -98,7 +97,7 @@ def _valid_out(obj: dict) -> bool:
         and isinstance(obj["description"], str)
     )
 
-def llm_rewrite(url: str, ctr: float, current: PageMeta) -> Optional[PageMeta]:
+def llm_rewrite(url: str, ctr: float, current: PageMeta) -> PageMeta | None:
     """
     Attempts LLM rewrite using primary (OPENAI_BASE_URL/MODEL) then fallback (FALLBACK_BASE_URL/MODEL).
     Returns PageMeta or None on failure.

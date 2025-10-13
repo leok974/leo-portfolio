@@ -1,7 +1,8 @@
 """Artifact writing utilities for agent tasks."""
 from __future__ import annotations
-import pathlib
+
 import json
+import pathlib
 import time
 
 ART_DIR = pathlib.Path("agent_artifacts")

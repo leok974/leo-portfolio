@@ -6,8 +6,6 @@ Create Date: 2025-10-10
 
 """
 from alembic import op
-import sqlalchemy as sa
-
 
 # revision identifiers, used by Alembic.
 revision = "002_agents_tasks_prune_fn"

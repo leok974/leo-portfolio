@@ -1,11 +1,14 @@
+import statistics
+import time
+from typing import Dict, List
+
 from fastapi import APIRouter, Query
-from typing import List, Dict
-import time, statistics
-from ..llm_client import ping_primary_once, get_primary_base_url
+
+from ..llm_client import get_primary_base_url, ping_primary_once
 
 router = APIRouter(prefix="/llm/primary", tags=["llm"])
 
-def _percentile(values: List[float], p: float) -> float:
+def _percentile(values: list[float], p: float) -> float:
     if not values:
         return 0.0
     values = sorted(values)
@@ -21,11 +24,11 @@ async def primary_latency(
     count: int = Query(15, ge=1, le=200, description="Total probes (including warmup)."),
     warmup: int = Query(2, ge=0, le=50, description="Warmup probes not counted in stats."),
     timeout_ms: int = Query(500, ge=50, le=5000, description="Per-probe timeout in ms."),
-) -> Dict[str, object]:
+) -> dict[str, object]:
     """Low-overhead latency sampling hitting the primary /models endpoint directly."""
     timeout_s = timeout_ms / 1000.0
-    samples_ms: List[float] = []
-    statuses: List[int] = []
+    samples_ms: list[float] = []
+    statuses: list[int] = []
     total = max(count, 1)
     for _ in range(total):
         t0 = time.perf_counter_ns()

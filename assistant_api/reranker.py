@@ -1,6 +1,8 @@
 import os
 from typing import List, Tuple
+
 from .metrics import timer
+
 
 def _have_local():
     try:
@@ -16,7 +18,7 @@ def _get_local():
     device = os.getenv("RERANK_DEVICE", "cpu")
     return CrossEncoder(name, device=device)
 
-def _rerank_local(query: str, pairs: List[Tuple[str, str]], topk: int):
+def _rerank_local(query: str, pairs: list[tuple[str, str]], topk: int):
     global _LOCAL
     if _LOCAL is None:
         _LOCAL = _get_local()
@@ -25,9 +27,10 @@ def _rerank_local(query: str, pairs: List[Tuple[str, str]], topk: int):
     ranked = sorted(zip([cid for cid, _ in pairs], scores), key=lambda x: x[1], reverse=True)
     return ranked[:topk]
 
-def _rerank_llm(query: str, pairs: List[Tuple[str, str]], topk: int):
-    from openai import OpenAI
+def _rerank_llm(query: str, pairs: list[tuple[str, str]], topk: int):
     import json
+
+    from openai import OpenAI
     client = OpenAI()
     capped = pairs[: min(len(pairs), 25)]
     blocks = [f"[{i}] {text[:500]}" for i, (_, text) in enumerate(capped)]
@@ -46,7 +49,7 @@ def _rerank_llm(query: str, pairs: List[Tuple[str, str]], topk: int):
     ranked = [(capped[i][0], float(len(capped) - i)) for i in idxs if 0 <= i < len(capped)]
     return ranked[:topk]
 
-def rerank(query: str, pairs: List[Tuple[str, str]], topk: int):
+def rerank(query: str, pairs: list[tuple[str, str]], topk: int):
     prefer_local = os.getenv("PREFER_LOCAL", "1").lower() in ("1", "true")
     if prefer_local and _have_local():
         try:

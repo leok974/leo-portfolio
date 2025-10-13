@@ -1,4 +1,7 @@
-import json, os, sys, urllib.request
+import json
+import os
+import sys
+import urllib.request
 
 URL = os.environ.get("HEALTH_URL", "http://127.0.0.1:8000/ready")
 

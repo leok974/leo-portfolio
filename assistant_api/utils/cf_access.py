@@ -19,13 +19,15 @@ Usage:
     )
 """
 from __future__ import annotations
+
+import json
+import logging
 import os
 import time
-import json
 import urllib.request
+
 import jwt
-import logging
-from fastapi import Request, HTTPException
+from fastapi import HTTPException, Request
 
 logger = logging.getLogger(__name__)
 

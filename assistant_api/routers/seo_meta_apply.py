@@ -8,16 +8,17 @@ Provides endpoints to preview and commit SEO meta changes with:
 - SHA-256 integrity on artifacts
 """
 from __future__ import annotations
-from pathlib import Path
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any, Tuple
+
 import difflib
 import hashlib
 import html
 import json
 import re
+from datetime import UTC, datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
 
-from fastapi import APIRouter, Depends, HTTPException, Body, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from assistant_api.settings import get_settings
@@ -68,7 +69,7 @@ def _ensure_head_wrapped(html: str) -> str:
     return "<head>\n</head>\n" + html
 
 
-def _set_title(html: str, new_title: Optional[str]) -> Tuple[str, bool]:
+def _set_title(html: str, new_title: str | None) -> tuple[str, bool]:
     """Set or update <title> tag in HTML."""
     if not new_title:
         return html, False
@@ -89,7 +90,7 @@ def _set_title(html: str, new_title: Optional[str]) -> Tuple[str, bool]:
     )
 
 
-def _set_meta_desc(html_src: str, new_desc: Optional[str]) -> Tuple[str, bool]:
+def _set_meta_desc(html_src: str, new_desc: str | None) -> tuple[str, bool]:
     """Set or update meta description in HTML."""
     if new_desc is None:
         return html_src, False
@@ -114,8 +115,8 @@ def _set_meta_desc(html_src: str, new_desc: Optional[str]) -> Tuple[str, bool]:
 
 
 def _apply_changes(
-    orig_html: str, title: Optional[str], desc: Optional[str]
-) -> Tuple[str, Dict[str, bool]]:
+    orig_html: str, title: str | None, desc: str | None
+) -> tuple[str, dict[str, bool]]:
     """Apply title and description changes to HTML."""
     changed = {"title": False, "description": False}
     html = orig_html
@@ -140,7 +141,7 @@ def _unified_diff(path: str, before: str, after: str) -> str:
     return "".join(diff)
 
 
-def _write_artifacts(slug: str, info: Dict[str, Any]) -> Dict[str, Any]:
+def _write_artifacts(slug: str, info: dict[str, Any]) -> dict[str, Any]:
     """Write diff, preview HTML, and metadata artifacts to disk."""
     base = ART_DIR / slug
     base.parent.mkdir(parents=True, exist_ok=True)
@@ -174,7 +175,7 @@ def _write_artifacts(slug: str, info: Dict[str, Any]) -> Dict[str, Any]:
 @router.post("/preview", summary="Dev: preview meta changes with PR-ready diff")
 def preview_meta(
     path: str = Query(..., description="Site-relative path, e.g. /index.html"),
-    payload: Dict[str, Optional[str]] = Body(
+    payload: dict[str, str | None] = Body(
         ..., example={"title": "New title", "desc": "New description"}
     ),
 ):
@@ -194,7 +195,7 @@ def preview_meta(
     )
     diff = _unified_diff(path, orig_html, new_html)
 
-    ts = datetime.now(timezone.utc).isoformat()
+    ts = datetime.now(UTC).isoformat()
     slug = _slugify(path)
     meta = _write_artifacts(
         slug,
@@ -225,7 +226,7 @@ def preview_meta(
 @router.post("/commit", summary="Dev: apply meta changes to file (with backup)")
 def commit_meta(
     path: str = Query(...),
-    payload: Dict[str, Optional[str]] = Body(...),
+    payload: dict[str, str | None] = Body(...),
     confirm: int = Query(0, description="Set to 1 to actually write changes"),
     expect_mtime: float = Query(None, description="Optional: expected source file mtime"),
     expect_sha256: str = Query(None, description="Optional: expected source file sha256"),
@@ -257,7 +258,7 @@ def commit_meta(
         orig_html, payload.get("title"), payload.get("desc")
     )
     diff = _unified_diff(path, orig_html, new_html)
-    ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    ts = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
 
     slug = _slugify(path)
     meta = _write_artifacts(

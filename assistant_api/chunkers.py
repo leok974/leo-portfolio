@@ -1,4 +1,6 @@
-import re, pathlib
+import pathlib
+import re
+
 
 def split_markdown(text: str):
     blocks = re.split(r"\n(?=#+ )", text)

@@ -1,17 +1,18 @@
-from fastapi import APIRouter, Query
-from time import perf_counter
-import os
 import logging
+import os
+from time import perf_counter
+
+from fastapi import APIRouter, Query
+
 from ..llm_client import (
-    primary_list_models,
-    primary_chat,
+    DISABLE_PRIMARY,
     OPENAI_MODEL,
     PRIMARY_BASE,
-    PRIMARY_MODEL_PRESENT,
-    DISABLE_PRIMARY,
     PRIMARY_MODELS,
-    get_primary_status,
     get_fallback_status,
+    get_primary_status,
+    primary_chat,
+    primary_list_models,
 )
 
 router = APIRouter(prefix="/llm", tags=["llm"])

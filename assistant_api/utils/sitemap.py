@@ -1,28 +1,30 @@
 # assistant_api/utils/sitemap.py
 from __future__ import annotations
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Iterable, List, Tuple, Optional
+
 import fnmatch
 import json
 import os
 import re
 import xml.etree.ElementTree as ET
+from collections.abc import Iterable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Optional, Tuple
 
 # Root guess (repo root where backend runs). Adjust if needed.
 ROOT = Path(".").resolve()
 
-def _split_env_paths(name: str) -> List[Path]:
+def _split_env_paths(name: str) -> list[Path]:
     """Parse comma-separated paths from environment variable."""
     raw = os.environ.get(name, "").strip()
     return [Path(p).resolve() for p in raw.split(",") if p.strip()]
 
-def _split_env_globs(name: str) -> List[str]:
+def _split_env_globs(name: str) -> list[str]:
     """Parse comma-separated glob patterns from environment variable."""
     raw = os.environ.get(name, "").strip()
     return [g.strip() for g in raw.split(",") if g.strip()]
 
-def get_public_dirs() -> List[Path]:
+def get_public_dirs() -> list[Path]:
     """Get public directories from env or defaults."""
     # Allow overriding public dirs from env (comma-separated)
     env_dirs = _split_env_paths("SEO_PUBLIC_DIRS")
@@ -57,8 +59,8 @@ HREF_HOST_RE = re.compile(r"^https?://[^/]+")
 @dataclass
 class PageMeta:
     path: str           # URL path like "/agent.html"
-    title: Optional[str]
-    desc: Optional[str]
+    title: str | None
+    desc: str | None
 
 def _read_text(p: Path) -> str:
     try:
@@ -66,7 +68,7 @@ def _read_text(p: Path) -> str:
     except Exception:
         return ""
 
-def _extract_title_desc(html: str) -> Tuple[Optional[str], Optional[str]]:
+def _extract_title_desc(html: str) -> tuple[str | None, str | None]:
     title = None
     desc = None
     m = TITLE_RE.search(html)
@@ -82,9 +84,9 @@ def _to_rel_url(path: Path, base: Path) -> str:
     rel = path.relative_to(base)
     return "/" + str(rel).replace("\\", "/")
 
-def _dedupe_keep_first(items: Iterable[PageMeta]) -> List[PageMeta]:
+def _dedupe_keep_first(items: Iterable[PageMeta]) -> list[PageMeta]:
     seen = set()
-    out: List[PageMeta] = []
+    out: list[PageMeta] = []
     for it in items:
         if it.path in seen:
             continue
@@ -92,7 +94,7 @@ def _dedupe_keep_first(items: Iterable[PageMeta]) -> List[PageMeta]:
         out.append(it)
     return out
 
-def _apply_globs(paths: List[str]) -> List[str]:
+def _apply_globs(paths: list[str]) -> list[str]:
     """Apply include/exclude glob patterns from env to URL paths."""
     includes = _split_env_globs("SEO_SITEMAP_INCLUDE")
     excludes = _split_env_globs("SEO_SITEMAP_EXCLUDE")
@@ -104,7 +106,7 @@ def _apply_globs(paths: List[str]) -> List[str]:
 
     return list(dict.fromkeys(paths))  # dedupe, preserve order
 
-def _cache_write(pages: List[PageMeta]) -> None:
+def _cache_write(pages: list[PageMeta]) -> None:
     """Optionally cache discovered pages to agent/artifacts/status.json."""
     if os.environ.get("SEO_SITEMAP_CACHE", "0") not in ("1", "true", "TRUE"):
         return
@@ -120,9 +122,9 @@ def _cache_write(pages: List[PageMeta]) -> None:
 
 # -------- Sources --------
 
-def load_from_sitemap_files() -> List[str]:
+def load_from_sitemap_files() -> list[str]:
     """Return URL list from any discovered sitemap.xml (absolute or site-relative)."""
-    urls: List[str] = []
+    urls: list[str] = []
     for sm in SITEMAP_FILES:
         if not sm.exists():
             continue
@@ -140,9 +142,9 @@ def load_from_sitemap_files() -> List[str]:
             continue
     return _apply_globs(list(dict.fromkeys(urls)))  # dedupe, filter, preserve order
 
-def load_from_public_dirs() -> List[Path]:
+def load_from_public_dirs() -> list[Path]:
     """Scan PUBLIC_DIRS for *.html files (supports nested paths up to 3 levels)."""
-    candidates: List[Path] = []
+    candidates: list[Path] = []
     for base in PUBLIC_DIRS:
         if not base.exists() or not base.is_dir():
             continue
@@ -158,7 +160,7 @@ def load_from_public_dirs() -> List[Path]:
 
 # -------- Orchestrator --------
 
-def discover_pages() -> List[PageMeta]:
+def discover_pages() -> list[PageMeta]:
     """
     Best-effort page discovery with env-based filtering:
     1) sitemap.xml if present
@@ -171,14 +173,14 @@ def discover_pages() -> List[PageMeta]:
     - SEO_SITEMAP_EXCLUDE: comma-separated globs (e.g., /drafts/*,/private/*)
     - SEO_SITEMAP_CACHE: "1" to write agent/artifacts/status.json
     """
-    items: List[PageMeta] = []
+    items: list[PageMeta] = []
 
     # 1) sitemap.xml
     rel_urls = load_from_sitemap_files()
     if rel_urls:
         for rel in rel_urls:
             # try to map to a file location to extract title/desc
-            file_guess: Optional[Path] = None
+            file_guess: Path | None = None
             for base in PUBLIC_DIRS:
                 candidate = (base / rel.lstrip("/")).resolve()
                 if candidate.exists() and candidate.is_file():
@@ -194,7 +196,7 @@ def discover_pages() -> List[PageMeta]:
     html_files = load_from_public_dirs()
     for f in html_files:
         # Derive base-relative URL for nested paths
-        base_found: Optional[Path] = None
+        base_found: Path | None = None
         for base in PUBLIC_DIRS:
             try:
                 if f.is_relative_to(base):
@@ -236,7 +238,7 @@ def discover_pages() -> List[PageMeta]:
 
 # --- File resolver (dev-only helpers) ---
 
-def resolve_file_for_url_path(url_path: str) -> Optional[Path]:
+def resolve_file_for_url_path(url_path: str) -> Path | None:
     """
     Map a site-relative path like "/blog/post/index.html" to a real file
     inside one of SEO_PUBLIC_DIRS. Guards against traversal.

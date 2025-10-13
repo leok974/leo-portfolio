@@ -1,6 +1,6 @@
 """SQLAlchemy models for agent task tracking."""
+from sqlalchemy import JSON, Boolean, Column, DateTime, String, Text, func
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, String, Integer, JSON, DateTime, Boolean, Text, func
 
 Base = declarative_base()
 

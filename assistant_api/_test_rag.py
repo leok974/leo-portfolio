@@ -1,7 +1,12 @@
-import os, asyncio, json
+import asyncio
+import json
+import os
+
+from sentence_transformers import SentenceTransformer
+
 from assistant_api.db import connect, search
 from assistant_api.rag_query import embed_query
-from sentence_transformers import SentenceTransformer
+
 
 async def main():
     q = os.environ.get('Q', 'What does the assistant chip do?')

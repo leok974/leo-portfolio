@@ -1,7 +1,13 @@
-import hmac, hashlib, base64, json, time, os
-from fastapi import APIRouter, Response, Request, HTTPException, Depends
+import base64
+import hashlib
+import hmac
+import json
+import os
+import time
+from typing import Any, Dict, Optional
+
+from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
-from typing import Dict, Any, Optional
 
 ADMIN_SECRET   = os.environ.get("ADMIN_HMAC_SECRET", "change-me")
 ADMIN_EMAILS   = [e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "leoklemet.pa@gmail.com").split(",")]
@@ -15,12 +21,12 @@ def _b64url(b: bytes) -> str:
 def _b64url_decode(s: str) -> bytes:
     return base64.urlsafe_b64decode(s + "=" * (4 - len(s) % 4))
 
-def _sign(obj: Dict[str, Any]) -> str:
+def _sign(obj: dict[str, Any]) -> str:
     body = _b64url(json.dumps(obj, separators=(",", ":")).encode())
     sig  = hmac.new(ADMIN_SECRET.encode(), body.encode(), hashlib.sha256).digest()
     return f"{body}.{_b64url(sig)}"
 
-def _verify(token: str) -> Optional[Dict[str, Any]]:
+def _verify(token: str) -> dict[str, Any] | None:
     try:
         body, sig = token.split(".", 1)
         want = hmac.new(ADMIN_SECRET.encode(), body.encode(), hashlib.sha256).digest()
@@ -77,7 +83,7 @@ def admin_logout(response: Response):
         rsp.delete_cookie(COOKIE_NAME, path="/")
     return rsp
 
-def require_admin(request: Request) -> Dict[str, Any]:
+def require_admin(request: Request) -> dict[str, Any]:
     tok = request.cookies.get(COOKIE_NAME)
     if not tok:
         raise HTTPException(401, "auth required")

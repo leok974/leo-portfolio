@@ -1,18 +1,19 @@
 """Agent task runner with sub-agent dispatch."""
-import json
-import uuid
-import pathlib
 import asyncio
-from typing import Dict, Any, Tuple
+import json
+import pathlib
+import uuid
+from typing import Any, Dict, Tuple
+
 from sqlalchemy.orm import Session
 
 from .models import AgentTask
 from .spec import load_registry
 from .telemetry import track_status_change
-from .tools.seo_validate import seo_validate_to_artifacts
 from .tools.code_review import run_code_review
 from .tools.dx_integrate import run_dx_integrate
 from .tools.infra_scale import run_infra_scale
+from .tools.seo_validate import seo_validate_to_artifacts
 
 ARTIFACTS_DIR = pathlib.Path("./artifacts")
 ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -25,7 +26,7 @@ def _artifact_path(task_id: str) -> pathlib.Path:
     return p
 
 
-def create_task(db: Session, agent: str, task: str, inputs: Dict[str, Any]) -> AgentTask:
+def create_task(db: Session, agent: str, task: str, inputs: dict[str, Any]) -> AgentTask:
     """Create a new agent task."""
     reg = load_registry()
     if agent not in reg:
@@ -94,7 +95,7 @@ async def run_task(db: Session, t: AgentTask) -> AgentTask:
 
 # ---- Sub-agent dispatch (stubs - replace with real tools later) ----
 
-async def _dispatch_to_agent(agent: str, task: str, inputs: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:
+async def _dispatch_to_agent(agent: str, task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any], str]:
     """Route task to appropriate agent implementation."""
     if agent == "projects":
         return await _agent_projects(task, inputs)
@@ -119,7 +120,7 @@ async def _dispatch_to_agent(agent: str, task: str, inputs: Dict[str, Any]) -> T
 
 # --- Example stub implementations (replace later with real tools) ---
 
-async def _agent_projects(task: str, inputs: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:
+async def _agent_projects(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any], str]:
     """Projects agent - GitHub sync and project curation."""
     await asyncio.sleep(0)  # yield
 
@@ -138,7 +139,7 @@ async def _agent_projects(task: str, inputs: Dict[str, Any]) -> Tuple[Dict[str, 
     return {"ok": True}, f"[projects.{task}] no-op"
 
 
-async def _agent_seo(task: str, inputs: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:
+async def _agent_seo(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any], str]:
     """SEO agent - validation and auto-fix."""
     await asyncio.sleep(0)
 
@@ -167,7 +168,7 @@ async def _agent_seo(task: str, inputs: Dict[str, Any]) -> Tuple[Dict[str, Any],
     return {"ok": True}, f"[seo.{task}] no-op"
 
 
-async def _agent_branding(task: str, inputs: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:
+async def _agent_branding(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any], str]:
     """Branding agent - logo and theme generation."""
     await asyncio.sleep(0)
 
@@ -184,7 +185,7 @@ async def _agent_branding(task: str, inputs: Dict[str, Any]) -> Tuple[Dict[str, 
     return {"ok": True}, f"[branding.{task}] no-op"
 
 
-async def _agent_content(task: str, inputs: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:
+async def _agent_content(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any], str]:
     """Content agent - summarization and rewriting."""
     await asyncio.sleep(0)
 
@@ -208,7 +209,7 @@ async def _agent_content(task: str, inputs: Dict[str, Any]) -> Tuple[Dict[str, A
     return {"ok": True}, f"[content.{task}] no-op"
 
 
-async def _agent_orchestrator(task: str, inputs: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:
+async def _agent_orchestrator(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any], str]:
     """Orchestrator agent - scheduling and routing."""
     await asyncio.sleep(0)
 
@@ -228,7 +229,7 @@ async def _agent_orchestrator(task: str, inputs: Dict[str, Any]) -> Tuple[Dict[s
     return {"ok": True}, f"[orchestrator.{task}] no-op"
 
 
-async def _agent_code(task: str, inputs: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:
+async def _agent_code(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any], str]:
     """Code agent - review and analysis."""
     await asyncio.sleep(0)
 
@@ -240,7 +241,7 @@ async def _agent_code(task: str, inputs: Dict[str, Any]) -> Tuple[Dict[str, Any]
     return {"ok": True}, f"[code.{task}] no-op"
 
 
-async def _agent_dx(task: str, inputs: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:
+async def _agent_dx(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any], str]:
     """DX agent - developer experience integrations."""
     await asyncio.sleep(0)
 
@@ -252,7 +253,7 @@ async def _agent_dx(task: str, inputs: Dict[str, Any]) -> Tuple[Dict[str, Any], 
     return {"ok": True}, f"[dx.{task}] no-op"
 
 
-async def _agent_infra(task: str, inputs: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:
+async def _agent_infra(task: str, inputs: dict[str, Any]) -> tuple[dict[str, Any], str]:
     """Infra agent - infrastructure scaling."""
     await asyncio.sleep(0)
 

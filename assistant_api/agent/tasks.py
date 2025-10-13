@@ -1,9 +1,21 @@
-from typing import Dict, Callable, Any, List, Tuple
-import os, json, subprocess, shutil, re, io, urllib.request, urllib.error, socket, ipaddress, hashlib
+import hashlib
+import io
+import ipaddress
+import json
+import os
+import re
+import shutil
+import socket
+import subprocess
+import urllib.error
+import urllib.request
+from collections.abc import Callable
+from typing import Any, Dict, List, Tuple
+
 from .models import emit
 
-TaskFn = Callable[[str, Dict[str, Any]], Dict[str, Any]]
-REGISTRY: Dict[str, TaskFn] = {}
+TaskFn = Callable[[str, dict[str, Any]], dict[str, Any]]
+REGISTRY: dict[str, TaskFn] = {}
 
 
 def task(name):
@@ -131,7 +143,7 @@ def status_write(run_id, params):
         ov_path = "./assets/data/og-overrides.json"
         if os.path.exists(ov_path):
             import json as _json
-            with open(ov_path, "r", encoding="utf-8") as f:
+            with open(ov_path, encoding="utf-8") as f:
                 ov = _json.load(f)
                 if isinstance(ov, dict) and ov.get("brand"):
                     brand = str(ov["brand"])
@@ -167,7 +179,7 @@ def overrides_update(run_id, params):
     cur = {}
     if os.path.exists(dst):
         try:
-            with open(dst, "r", encoding="utf-8") as f:
+            with open(dst, encoding="utf-8") as f:
                 cur = json.load(f) or {}
         except Exception as e:
             emit(run_id, "warn", "overrides.update.read_fail", {"err": str(e)})
@@ -334,7 +346,6 @@ def logo_fetch(run_id, params):
         if ext == "svg":
             # sanitize SVG: strip scripts/foreignObject and event attributes
             try:
-                import xml.etree.ElementTree as ET
                 txt = data.decode("utf-8", errors="ignore")
                 # Remove script/foreignObject
                 txt = re.sub(r"<\s*(script|foreignObject)[\s\S]*?<\s*/\s*\1\s*>", "", txt, flags=re.I)
@@ -373,7 +384,7 @@ def logo_fetch(run_id, params):
     ov = {}
     if os.path.exists(ov_path):
         try:
-            with open(ov_path, "r", encoding="utf-8") as f:
+            with open(ov_path, encoding="utf-8") as f:
                 ov = json.load(f) or {}
         except Exception:
             ov = {}
@@ -406,18 +417,17 @@ def media_scan(run_id, params):
     """
     roots = ["./public", "./assets"]
     exts = {".png",".jpg",".jpeg",".webp",".gif",".svg",".bmp",".tiff"}
-    items: List[Dict[str, Any]] = []
+    items: list[dict[str, Any]] = []
     have_pil = False
     try:
-        from PIL import Image  # type: ignore
         have_pil = True
     except Exception:
         pass
 
-    def get_dims(p: str, ext: str) -> Tuple[int,int]:
+    def get_dims(p: str, ext: str) -> tuple[int,int]:
         if ext == ".svg":
             try:
-                txt = open(p,"r",encoding="utf-8",errors="ignore").read()
+                txt = open(p,encoding="utf-8",errors="ignore").read()
                 m = re.search(r'\bwidth="?(\d+)', txt) and re.search(r'\bheight="?(\d+)', txt)
             except Exception:
                 m=None
@@ -487,7 +497,7 @@ def media_optimize(run_id, params):
     if not os.path.exists(idx_path):
         emit(run_id, "warn", "media.optimize.no_index", {})
         return {"skipped": True, "reason": "no_index"}
-    idx = json.loads(open(idx_path,"r",encoding="utf-8").read())
+    idx = json.loads(open(idx_path,encoding="utf-8").read())
     items = idx.get("items", [])
     outdir = "./assets/derived"
     os.makedirs(outdir, exist_ok=True)
@@ -540,10 +550,10 @@ def links_suggest(run_id, params):
     if not os.path.exists(lc):
         emit(run_id, "warn", "links.suggest.no_report", {})
         return {"skipped": True}
-    data = json.loads(open(lc,"r",encoding="utf-8").read())
+    data = json.loads(open(lc,encoding="utf-8").read())
     missing = [m["url"] for m in data.get("missing", []) if isinstance(m.get("url"), str)]
     # candidate corpus: all local files
-    corpus: List[str] = []
+    corpus: list[str] = []
     for root in ["./public","./assets"]:
         if not os.path.isdir(root): continue
         for r,_,files in os.walk(root):
@@ -553,7 +563,7 @@ def links_suggest(run_id, params):
     def base(u: str) -> str:
         u = u.split("#",1)[0].split("?",1)[0]
         return os.path.basename(u)
-    suggestions: Dict[str, List[str]] = {}
+    suggestions: dict[str, list[str]] = {}
     for miss in missing:
         b = base(miss)
         if not b: continue
@@ -590,7 +600,7 @@ def news_sync(run_id, params):
         os.environ.get("SITEAGENT_REPOS")
         or "leok974/ledger-mind,leok974/leo-portfolio"
     ).split(",")
-    items: List[dict] = []
+    items: list[dict] = []
     have_gh = bool(shutil.which("gh"))
     for repo in [r.strip() for r in repos if r.strip()]:
         feed = []
@@ -643,7 +653,7 @@ def links_validate(run_id, params):
     External links are ignored. Produces assets/data/link-check.json
     """
     roots = ["./", "./public"]
-    html_paths: List[str] = []
+    html_paths: list[str] = []
     for root in roots:
         if not os.path.exists(root):
             continue
@@ -652,11 +662,11 @@ def links_validate(run_id, params):
                 if fn.lower().endswith(".html"):
                     html_paths.append(os.path.join(r, fn))
     href_re = re.compile(r"""(?:href|src)=["']([^"']+)["']""", re.I)
-    missing: List[Tuple[str, str]] = []
+    missing: list[tuple[str, str]] = []
     checked = 0
     for html in html_paths:
         try:
-            with open(html, "r", encoding="utf-8", errors="ignore") as f:
+            with open(html, encoding="utf-8", errors="ignore") as f:
                 content = f.read()
         except Exception:
             continue
@@ -732,7 +742,7 @@ def seo_tune(run_id, params):
     # Auto-downgrade to mock when LLM disabled
     if not settings.get("SEO_LLM_ENABLED"):
         emit(run_id, "info", "seo.tune.auto_mock", {"reason": "SEO_LLM_ENABLED=0"})
-        from ..routers.agent_run_mock import run_mock_plan, require_cf_access
+        from ..routers.agent_run_mock import run_mock_plan
         # Use mock implementation (will write deterministic artifacts)
         try:
             result = run_mock_plan(body=params, principal="agent-task")

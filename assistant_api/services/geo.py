@@ -1,6 +1,7 @@
 from __future__ import annotations
-from functools import lru_cache
+
 import ipaddress
+from functools import lru_cache
 from typing import Optional
 
 try:
@@ -8,7 +9,7 @@ try:
 except Exception:
     geoip2 = None  # optional dependency
 
-def anonymize_prefix(ip: Optional[str]) -> Optional[str]:
+def anonymize_prefix(ip: str | None) -> str | None:
     """IPv4 -> /24, IPv6 -> /48. Returns CIDR string or None."""
     if not ip:
         return None
@@ -24,7 +25,7 @@ def anonymize_prefix(ip: Optional[str]) -> Optional[str]:
         return None
 
 @lru_cache(maxsize=1)
-def get_geo_reader(db_path: Optional[str]):
+def get_geo_reader(db_path: str | None):
     """Cache the GeoIP reader so we don't reopen per request."""
     if not (db_path and geoip2):
         return None
@@ -33,7 +34,7 @@ def get_geo_reader(db_path: Optional[str]):
     except Exception:
         return None
 
-def lookup_country(ip: Optional[str], db_path: Optional[str]) -> Optional[str]:
+def lookup_country(ip: str | None, db_path: str | None) -> str | None:
     reader = get_geo_reader(db_path)
     if not (reader and ip):
         return None

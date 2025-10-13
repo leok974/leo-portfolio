@@ -1,7 +1,11 @@
+import os
+
+import httpx
 from fastapi import APIRouter
-import os, httpx
-from .llm_client import PRIMARY_MODEL as PRIMARY_MODEL_NAME, mark_primary_models, set_primary_model_present
+
 from .keys import is_openai_configured
+from .llm_client import PRIMARY_MODEL as PRIMARY_MODEL_NAME
+from .llm_client import mark_primary_models, set_primary_model_present
 
 router = APIRouter(prefix="/llm", tags=["llm"])
 

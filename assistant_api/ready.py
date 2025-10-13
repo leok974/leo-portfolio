@@ -1,4 +1,7 @@
-import os, sqlite3, httpx
+import os
+import sqlite3
+
+import httpx
 from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
@@ -20,7 +23,7 @@ def _read_secret(env_name: str, file_env: str, default_file: str | None = None) 
     fpath = os.getenv(file_env) or default_file
     if fpath and os.path.exists(fpath):
         try:
-            with open(fpath, "r", encoding="utf-8") as f:
+            with open(fpath, encoding="utf-8") as f:
                 return f.read().strip()
         except Exception:
             return None

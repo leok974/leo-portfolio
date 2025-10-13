@@ -1,20 +1,38 @@
-from fastapi import APIRouter, Request
+import json
+import time
+from datetime import datetime
 from urllib.parse import urlparse
+
+from fastapi import APIRouter, Request
+
+from .db import get_conn
 from .metrics_analytics import (
-    page_views, dwell_seconds, scroll_depth, project_clicks, project_hovers,
-    project_expands, project_plays, agent_requests, agent_feedback,
-    agent_latency, frontend_errors, click_bins, web_vitals_lcp, sessions_started,
-    link_clicks, page_view_by_dow_hour, page_view_by_dow_hour_path, page_view_by_dow_hour_path_device
+    agent_feedback,
+    agent_requests,
+    click_bins,
+    dwell_seconds,
+    frontend_errors,
+    link_clicks,
+    page_view_by_dow_hour,
+    page_view_by_dow_hour_path,
+    page_view_by_dow_hour_path_device,
+    page_views,
+    project_clicks,
+    project_expands,
+    project_hovers,
+    project_plays,
+    scroll_depth,
+    sessions_started,
+    web_vitals_lcp,
 )
 from .settings import ANALYTICS_ENABLED, ANALYTICS_PERSIST, ANALYTICS_RESPECT_DNT
-from .db import get_conn
-import json, time
-from datetime import datetime
+
 try:
     from zoneinfo import ZoneInfo  # type: ignore
 except Exception:  # py<3.9 fallback, unlikely to be used here
     ZoneInfo = None  # type: ignore
 import os as _os
+
 ANALYTICS_TZ = _os.getenv("ANALYTICS_TZ", "America/New_York")
 _TZ = None
 if ZoneInfo:

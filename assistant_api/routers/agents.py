@@ -1,13 +1,14 @@
 """Agent system API routes."""
+from typing import Any, Dict, Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
 
-from ..agents.spec import load_registry
+from ..agents.database import get_db
 from ..agents.models import AgentTask
 from ..agents.runner import create_task, run_task
-from ..agents.database import get_db
+from ..agents.spec import load_registry
 from ..agents.telemetry import track_status_change
 
 router = APIRouter(prefix="/agents", tags=["agents"])
@@ -19,13 +20,13 @@ class RunReq(BaseModel):
     """Request to run an agent task."""
     agent: str
     task: str
-    inputs: Optional[Dict[str, Any]] = None
+    inputs: dict[str, Any] | None = None
 
 
 class ApproveReq(BaseModel):
     """Request to approve/reject a task."""
     task_id: str
-    note: Optional[str] = None
+    note: str | None = None
 
 
 # --- Helper: Get Current User (Optional Auth) ---

@@ -1,20 +1,21 @@
 """SEO validation tool: runs guardrails + lighthouse, merges reports."""
 import json
-import subprocess
-import shlex
 import os
 import pathlib
+import shlex
+import subprocess
 import time
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
 from ...settings import settings
 
 
-class StepResult(Dict[str, Any]):
+class StepResult(dict[str, Any]):
     """Typed dict for step results."""
     pass
 
 
-def _run_cmd(cmd: str, cwd: Optional[str], timeout: int) -> Tuple[int, str, str, float]:
+def _run_cmd(cmd: str, cwd: str | None, timeout: int) -> tuple[int, str, str, float]:
     """Run a shell command with timeout, return (rc, stdout, stderr, duration)."""
     t0 = time.time()
     proc = subprocess.Popen(
@@ -83,7 +84,7 @@ def run_lighthouse_batch(pages_hint: str | None = None) -> StepResult:
 def seo_validate_to_artifacts(
     artifact_dir: pathlib.Path,
     pages_hint: str | None = None
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Runs both guardrails + lighthouse, writes:
       - guardrails.json
@@ -92,7 +93,7 @@ def seo_validate_to_artifacts(
     Returns a summary dict used by the agent runner.
     """
     artifact_dir.mkdir(parents=True, exist_ok=True)
-    steps: List[StepResult] = []
+    steps: list[StepResult] = []
 
     # --- Guardrails ---
     try:
@@ -125,7 +126,7 @@ def seo_validate_to_artifacts(
         )
 
     # Merge a shallow overview:
-    overview: Dict[str, Any] = {
+    overview: dict[str, Any] = {
         "inputs": {"pages": pages_hint or "sitemap://current"},
         "steps": [
             {

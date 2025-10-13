@@ -1,11 +1,11 @@
 from __future__ import annotations
-from pathlib import Path
-from datetime import datetime, timezone, date
+
 import gzip
 import re
-from typing import Dict, Any
+from datetime import UTC, date, datetime, timezone
+from pathlib import Path
+from typing import Any, Dict
 
-from ..settings import get_settings
 from .analytics_store import AnalyticsStore
 
 PATTERN = re.compile(r"^events-(\d{8})\.jsonl(\.gz)?$")
@@ -29,7 +29,7 @@ def _gzip_file(src: Path, dst: Path) -> None:
                 break
             f_out.write(chunk)
 
-def run_retention(settings: Dict[str, Any]) -> Dict[str, Any]:
+def run_retention(settings: dict[str, Any]) -> dict[str, Any]:
     """
     Compress (gzip) and prune analytics event logs under settings['ANALYTICS_DIR'].
     Returns stats dict: scanned, compressed, removed, dir.
@@ -37,7 +37,7 @@ def run_retention(settings: Dict[str, Any]) -> Dict[str, Any]:
     store = AnalyticsStore(settings["ANALYTICS_DIR"])
     base = store.dir
     base.mkdir(parents=True, exist_ok=True)
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
 
     gzip_after = max(0, int(settings["ANALYTICS_GZIP_AFTER_DAYS"]))
     retain = max(gzip_after + 1, int(settings["ANALYTICS_RETENTION_DAYS"]))

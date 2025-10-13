@@ -4,8 +4,8 @@ import sys
 from logging.config import fileConfig
 from pathlib import Path
 
-from sqlalchemy import engine_from_config, pool
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 # Add parent directory to path so we can import assistant_api modules
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -30,7 +30,6 @@ if not db_url:
 config.set_main_option("sqlalchemy.url", db_url)
 
 # Import all models so Base.metadata includes them
-from assistant_api.models.agents_tasks import AgentTask  # noqa: E402
 from assistant_api.models.agents_tasks import Base as TaskBase  # noqa: E402
 
 # Use the Base from agents_tasks model

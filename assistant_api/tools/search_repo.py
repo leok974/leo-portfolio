@@ -1,12 +1,15 @@
 from __future__ import annotations
-import re, pathlib
-from typing import Dict, Any, List
-from .base import register, ToolSpec, _safe_join, persist_audit, BASE_DIR
+
+import pathlib
+import re
+from typing import Any, Dict, List
+
+from .base import BASE_DIR, ToolSpec, _safe_join, persist_audit, register
 
 INCLUDE = tuple([".md", ".mdx", ".py", ".ts", ".tsx", ".json", ".yml", ".yaml", ".toml", ".ps1"])  # basic text/code types
 
-def _grep(root: pathlib.Path, query: str, max_hits: int = 20) -> List[Dict[str, Any]]:
-    hits: List[Dict[str, Any]] = []
+def _grep(root: pathlib.Path, query: str, max_hits: int = 20) -> list[dict[str, Any]]:
+    hits: list[dict[str, Any]] = []
     try:
         pat = re.compile(re.escape(query), re.IGNORECASE)
     except Exception:
@@ -31,7 +34,7 @@ def _grep(root: pathlib.Path, query: str, max_hits: int = 20) -> List[Dict[str, 
                 continue
     return hits
 
-def run_search_repo(args: Dict[str, Any]) -> Dict[str, Any]:
+def run_search_repo(args: dict[str, Any]) -> dict[str, Any]:
     q: str = (args.get("query") or "").strip()
     subdir: str = (args.get("subdir") or "").strip()
     if not q:

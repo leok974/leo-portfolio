@@ -1,11 +1,12 @@
 """Lightweight HTTP utility for internal service calls."""
 from __future__ import annotations
+
 import json
 import urllib.request
 from typing import Any, Optional
 
 
-def http_get_json(url: str, timeout: float = 5.0, headers: Optional[dict] = None) -> Any:
+def http_get_json(url: str, timeout: float = 5.0, headers: dict | None = None) -> Any:
     """
     Simple JSON GET request using urllib.
 

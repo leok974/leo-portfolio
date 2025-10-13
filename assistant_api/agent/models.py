@@ -1,7 +1,8 @@
-from dataclasses import dataclass, asdict
+import json
+import os
+import sqlite3
 from datetime import datetime
-from typing import Optional, Dict, Any, List
-import sqlite3, json, os
+from typing import Optional
 
 DB_PATH = os.environ.get("RAG_DB", "./data/rag.sqlite")
 
@@ -81,7 +82,7 @@ def recent_runs(limit=10):
     return rows
 
 
-def query_events(level: Optional[str] = None, run_id: Optional[str] = None, limit: int = 10):
+def query_events(level: str | None = None, run_id: str | None = None, limit: int = 10):
     """Query agent events with optional filtering by level and run_id."""
     con = _con()
     query = "SELECT run_id, ts, level, event, data FROM agent_events"

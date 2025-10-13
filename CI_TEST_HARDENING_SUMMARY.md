@@ -1,7 +1,7 @@
 # CI Test Hardening - Implementation Summary
 
-**Date**: October 13, 2025  
-**Commits**: `ab5dc44` → `0a9f436` (7 commits)  
+**Date**: October 13, 2025
+**Commits**: `ab5dc44` → `0a9f436` (7 commits)
 **Status**: 🟡 **PARTIAL SUCCESS** - Infrastructure improvements applied, iterative debugging in progress
 
 ---
@@ -142,7 +142,7 @@ def mock_openai_client(monkeypatch): ...
 
 ### **Issue 1: TypeScript Checking JavaScript Utilities** ❌→✅
 
-**Problem**: `tsconfig.json` included `"**/*.js"` → checked 60+ script files  
+**Problem**: `tsconfig.json` included `"**/*.js"` → checked 60+ script files
 **Attempts**:
 1. Exclude individual files → FAILED (include takes precedence)
 2. Exclude `scripts/**` → FAILED (still checking via tests/* imports)
@@ -171,7 +171,7 @@ def mock_openai_client(monkeypatch): ...
 
 ### **Issue 2: Pytest Coverage Requirement** ❌→✅
 
-**Problem**: Only 2 tests in `assistant_api/tests/`, coverage 3% < 90% threshold  
+**Problem**: Only 2 tests in `assistant_api/tests/`, coverage 3% < 90% threshold
 **Fix**: Added `--no-cov` flag to pytest command
 
 ```yaml
@@ -184,7 +184,7 @@ run: pytest assistant_api/tests/ -q --tb=short --maxfail=5 --no-cov
 
 ### **Issue 3: Playwright Global Setup Needs Backend** ❌→🟡
 
-**Problem**: `tests/e2e/setup/dev-overlay.ui.setup.ts` calls `POST /agent/dev/enable`  
+**Problem**: `tests/e2e/setup/dev-overlay.ui.setup.ts` calls `POST /agent/dev/enable`
 **Fix**: Added `BACKEND_REQUIRED=0` env var
 
 ```yaml

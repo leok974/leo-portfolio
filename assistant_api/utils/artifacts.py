@@ -1,6 +1,6 @@
 # assistant_api/utils/artifacts.py
 import os
-from typing import Tuple
+
 
 def ensure_artifacts_dir(path: str):
     os.makedirs(path, exist_ok=True)

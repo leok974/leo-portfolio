@@ -1,10 +1,11 @@
 # assistant_api/routers/seo.py
 from __future__ import annotations
-from fastapi import APIRouter, Query, HTTPException
+
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import PlainTextResponse
-from pathlib import Path
-from assistant_api.services.seo_tune import run_seo_tune, ARTIFACTS_DIR
-from assistant_api.services.seo_pr import open_seo_pr, SeoPRConfigError
+
+from assistant_api.services.seo_pr import SeoPRConfigError, open_seo_pr
+from assistant_api.services.seo_tune import ARTIFACTS_DIR, run_seo_tune
 
 router = APIRouter(prefix="/agent/seo", tags=["agent-seo"])
 

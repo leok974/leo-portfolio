@@ -5,9 +5,10 @@ Tries PRIMARY_* env vars first (e.g., local Ollama), then falls back to
 FALLBACK_* (e.g., OpenAI cloud) on retryable errors.
 """
 from __future__ import annotations
+
 import os
 import socket
-from typing import List, Dict, Any, Tuple
+from typing import Any, Dict, List, Tuple
 
 # OpenAI python client supports base_url
 import openai  # type: ignore
@@ -56,8 +57,8 @@ def _is_retryable(exc: Exception) -> bool:
 
 
 def chat_complete(
-    messages: List[Dict[str, Any]], temperature: float = 0.2
-) -> Tuple[str, str]:
+    messages: list[dict[str, Any]], temperature: float = 0.2
+) -> tuple[str, str]:
     """
     Chat completion with automatic fallback.
 

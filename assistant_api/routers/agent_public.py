@@ -1,30 +1,31 @@
 """Public siteAgent endpoint with dual authentication (CF Access OR HMAC)."""
-from fastapi import APIRouter, Request, HTTPException, Depends, Query, Response, Cookie, Body
-from fastapi.responses import PlainTextResponse, StreamingResponse
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
-from urllib.parse import urlparse
-from enum import Enum
-import hmac
-import hashlib
-import os
-import json
 import base64
-import time
-import httpx
+import datetime as dt
+import hashlib
+import hmac
+import json
+import os
 import subprocess
+import time
 from pathlib import Path
-from ..agent.runner import run, DEFAULT_PLAN
-from ..agent.tasks import REGISTRY
-from ..agent.models import recent_runs, query_events
-from ..utils.cf_access import require_cf_access
+from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
+
+import httpx
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Request
+from fastapi.responses import PlainTextResponse
+from pydantic import BaseModel
+
 from ..agent.interpret import parse_command
-from ..services.pr_utils import git_commit, open_pr_via_api
+from ..agent.models import query_events, recent_runs
+from ..agent.runner import DEFAULT_PLAN, run
+from ..agent.tasks import REGISTRY
+from ..services.agent_events import log_event, recent_events
 from ..services.layout_opt import run_layout_optimize
+from ..services.pr_utils import git_commit, open_pr_via_api
 from ..services.scheduler import pick_preset_for_day
 from ..services.weights_autotune import run_autotune
-from ..services.agent_events import log_event, recent_events
-import datetime as dt
+from ..utils.cf_access import require_cf_access
 
 router = APIRouter(prefix="/agent", tags=["agent-public"])
 
@@ -52,17 +53,17 @@ def _host_allowed(url: str) -> bool:
 # Models
 # -----------------------------
 class RunReq(BaseModel):
-    plan: Optional[List[str]] = None
-    params: Optional[Dict[str, Any]] = None
+    plan: list[str] | None = None
+    params: dict[str, Any] | None = None
 
 
 class ActReq(BaseModel):
-    command: Optional[str] = None
-    task: Optional[str] = None
-    payload: Optional[Dict[str, Any]] = None
+    command: str | None = None
+    task: str | None = None
+    payload: dict[str, Any] | None = None
 
 
-def _verify_hmac(body_bytes: bytes, signature_header: Optional[str]) -> None:
+def _verify_hmac(body_bytes: bytes, signature_header: str | None) -> None:
     """Verify HMAC signature if SITEAGENT_HMAC_SECRET is set."""
     secret = os.environ.get("SITEAGENT_HMAC_SECRET")
     if not secret:
@@ -105,16 +106,17 @@ def list_tasks():
 
 
 @router.post("/run")
-async def run_agent(request: Request, task: Optional[str] = Query(None), body: bytes = Depends(_authorized)):
+async def run_agent(request: Request, task: str | None = Query(None), body: bytes = Depends(_authorized)):
     """Run agent with dual authentication (CF Access OR HMAC)."""
     from ..util.testmode import is_test_mode
 
     # Test-mode compatibility for analytics ingest test
     if is_test_mode() and task == "seo.tune":
         # Create minimal fake artifacts for test validation
-        from ..settings import get_settings
-        from pathlib import Path
         import json as json_lib
+        from pathlib import Path
+
+        from ..settings import get_settings
 
         settings = get_settings()
         artifacts_dir = Path(settings["ARTIFACTS_DIR"])
@@ -163,9 +165,9 @@ def status():
 
 @router.get("/events")
 def events(
-    level: Optional[str] = Query(None, description="Filter by level (info, warn, error)"),
-    run_id: Optional[str] = Query(None, description="Filter by run_id"),
-    task: Optional[str] = Query(None, description="Filter by task name"),
+    level: str | None = Query(None, description="Filter by level (info, warn, error)"),
+    run_id: str | None = Query(None, description="Filter by run_id"),
+    task: str | None = Query(None, description="Filter by task name"),
     limit: int = Query(10, ge=1, le=100, description="Maximum number of events to return")
 ):
     """Get recent agent events with optional filtering (public endpoint)."""
@@ -242,7 +244,7 @@ async def list_link_apply_files():
         return {"files": [], "note": "Run dry-run first."}
 
     try:
-        with open(LINK_APPLY_FILES, "r", encoding="utf-8") as f:
+        with open(LINK_APPLY_FILES, encoding="utf-8") as f:
             data = json.load(f)
         return {"files": data.get("files", [])}
     except Exception as e:
@@ -381,13 +383,13 @@ def _b64u_dec(s: str) -> bytes:
     return base64.urlsafe_b64decode(s + pad)
 
 
-def _sign_dev(payload: Dict[str, Any], key: str) -> str:
+def _sign_dev(payload: dict[str, Any], key: str) -> str:
     raw = json.dumps(payload, separators=(",", ":")).encode("utf-8")
     sig = hmac.new(key.encode("utf-8"), raw, hashlib.sha256).digest()
     return _b64u(raw) + "." + _b64u(sig)
 
 
-def _verify_dev(token: str, key: str) -> Optional[Dict[str, Any]]:
+def _verify_dev(token: str, key: str) -> dict[str, Any] | None:
     try:
         raw_b64, sig_b64 = token.split(".", 1)
         raw = _b64u_dec(raw_b64)
@@ -404,11 +406,11 @@ def _verify_dev(token: str, key: str) -> Optional[Dict[str, Any]]:
 
 
 class DevEnableReq(BaseModel):
-    hours: Optional[int] = 2
+    hours: int | None = 2
 
 
 @router.get("/dev/status")
-def dev_status(sa_dev: Optional[str] = Cookie(default=None)):
+def dev_status(sa_dev: str | None = Cookie(default=None)):
     """
     Returns whether the dev overlay is enabled via signed cookie.
     Returns only 'allowed' key for test compatibility.
@@ -477,9 +479,9 @@ async def dev_disable(body: bytes = Depends(_authorized)):
 # PR Automation
 # -----------------------------
 class PROpenReq(BaseModel):
-    title: Optional[str] = "chore(siteAgent): automated changes"
-    branch: Optional[str] = "siteagent/auto/update"
-    body: Optional[str] = "Automated update by SiteAgent."
+    title: str | None = "chore(siteAgent): automated changes"
+    branch: str | None = "siteagent/auto/update"
+    body: str | None = "Automated update by SiteAgent."
 
 
 @router.post("/pr/open")
@@ -553,8 +555,8 @@ async def pr_open(payload: PROpenReq, body: bytes = Depends(_authorized)):
 # -----------------------------
 @router.get("/automation/workflow")
 async def automation_workflow(
-    include: Optional[str] = Query(None, description="Comma-separated list of tasks to include"),
-    exclude: Optional[str] = Query(None, description="Comma-separated list of tasks to exclude"),
+    include: str | None = Query(None, description="Comma-separated list of tasks to include"),
+    exclude: str | None = Query(None, description="Comma-separated list of tasks to exclude"),
     dry_run: bool = Query(False, description="Enable dry-run mode for all tasks")
 ):
     """
@@ -620,7 +622,7 @@ jobs:
 async def run_now(
     req: Request,
     body: bytes = Depends(_authorized),
-    preset: Optional[str] = None
+    preset: str | None = None
 ):
     """
     Manually trigger layout optimization with specified or auto-selected preset.

@@ -1,8 +1,9 @@
 """Weight management service for layout optimization."""
 from __future__ import annotations
+
 import json
 import pathlib
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 ACTIVE_PATH = pathlib.Path("data/layout_weights.active.json")
 PROPOSED_PATH = pathlib.Path("data/layout_weights.proposed.json")
@@ -13,7 +14,7 @@ def _ensure_dir():
     ACTIVE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
-def read_active() -> Optional[Dict[str, float]]:
+def read_active() -> dict[str, float] | None:
     """
     Read active weights from disk.
 
@@ -26,7 +27,7 @@ def read_active() -> Optional[Dict[str, float]]:
     return None
 
 
-def read_proposed() -> Optional[Dict[str, float]]:
+def read_proposed() -> dict[str, float] | None:
     """
     Read proposed weights from disk.
 
@@ -39,7 +40,7 @@ def read_proposed() -> Optional[Dict[str, float]]:
     return None
 
 
-def propose_weights(weights: Dict[str, float]) -> Dict[str, Any]:
+def propose_weights(weights: dict[str, float]) -> dict[str, Any]:
     """
     Save proposed weights for review.
 
@@ -54,7 +55,7 @@ def propose_weights(weights: Dict[str, float]) -> Dict[str, Any]:
     return {"status": "proposed", "weights": weights}
 
 
-def approve_weights() -> Dict[str, Any]:
+def approve_weights() -> dict[str, Any]:
     """
     Approve proposed weights and activate them.
 
@@ -72,7 +73,7 @@ def approve_weights() -> Dict[str, Any]:
     return {"status": "approved", "weights": proposed}
 
 
-def clear_proposed() -> Dict[str, Any]:
+def clear_proposed() -> dict[str, Any]:
     """
     Clear proposed weights without activating.
 

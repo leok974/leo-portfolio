@@ -1,12 +1,13 @@
-import time, threading
-from collections import deque, defaultdict, Counter
+import threading
+import time
+from collections import Counter, defaultdict, deque
 from typing import Deque, Tuple
 
 _lock = threading.Lock()
-_events: Deque[Tuple[float, int, float, str, int, int]] = deque(maxlen=5000)  # (ts, status, ms, provider, in_toks, out_toks)
+_events: deque[tuple[float, int, float, str, int, int]] = deque(maxlen=5000)  # (ts, status, ms, provider, in_toks, out_toks)
 # Recent latency window (lightweight) for status summary (default ~ last 200 requests)
-_recent_lat: Deque[float] = deque(maxlen=200)
-_recent_lat_by_provider: dict[str, Deque[float]] = defaultdict(lambda: deque(maxlen=200))
+_recent_lat: deque[float] = deque(maxlen=200)
+_recent_lat_by_provider: dict[str, deque[float]] = defaultdict(lambda: deque(maxlen=200))
 _totals = defaultdict(int)
 router_route_total = Counter()
 
@@ -186,8 +187,8 @@ def timer(stage: str, backend: str):
 # ==================================================================================
 # Analytics / Observability: Emit events to external metrics collector
 # ==================================================================================
-import os
 import json
+import os
 import urllib.request
 
 METRICS_URL = os.getenv("METRICS_URL", "")

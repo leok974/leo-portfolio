@@ -1,17 +1,17 @@
 from __future__ import annotations
+
 import json
 import os
 from collections import Counter, deque
-from datetime import datetime
 from pathlib import Path
 from typing import Deque
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
+from fastapi import APIRouter, Header, HTTPException, Query
 
 from assistant_api.models.metrics import (
+    BehaviorAggBucket,
     BehaviorEvent,
     BehaviorSnapshot,
-    BehaviorAggBucket,
     EventIngestResult,
 )
 
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/api/metrics", tags=["metrics"])
 
 # Simple ring buffer for quick snapshots (avoids hitting disk for GETs)
 _RING_CAPACITY = int(os.getenv("METRICS_RING_CAPACITY", "500"))
-_ring: Deque[BehaviorEvent] = deque(maxlen=_RING_CAPACITY)
+_ring: deque[BehaviorEvent] = deque(maxlen=_RING_CAPACITY)
 
 # Server-side sampling (0.0 to 1.0)
 _SAMPLE = float(os.getenv("METRICS_SAMPLE_RATE", "1.0"))
