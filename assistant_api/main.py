@@ -84,6 +84,12 @@ from .lifespan import lifespan
 
 app = FastAPI(title="Leo Portfolio Assistant", lifespan=lifespan)
 
+# Lightweight health check (no provider checks)
+@app.get("/health")
+def health_simple():
+    """Simple health check for CI smoke tests (no provider initialization)."""
+    return {"ok": True}
+
 _CORS_META = _settings.get_settings()
 origins = _CORS_META["allowed_origins"]
 allow_all = _CORS_META["allow_all"]

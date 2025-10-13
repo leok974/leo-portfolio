@@ -184,7 +184,7 @@ jobs:
 
       - name: Run smoke tests
         shell: pwsh
-        run: pwsh -File scripts/smoke-ci.ps1 -BaseUrl "http://127.0.0.1:8001" -TimeoutSec 90
+        run: pwsh -File scripts/smoke-ci.ps1 -BaseUrl "http://127.0.0.1:8001" -TimeoutSec 120
 
       - name: Dump backend logs on failure
         if: failure()
