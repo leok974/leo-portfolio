@@ -326,12 +326,12 @@ jobs:
 
       - name: Preview siteagent (vite)
         run: |
-          npx vite preview --port 5173 --strictPort --outDir dist-siteagent > preview.log 2>&1 &
+          npx vite preview --host 127.0.0.1 --port 5173 --strictPort --outDir dist-siteagent > preview.log 2>&1 &
           echo $! > preview.pid
           
           # Wait for vite preview to be ready (up to 30s)
           for i in {1..30}; do
-            if nc -z 127.0.0.1 5173 2>/dev/null; then
+            if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5173/ | grep -q "200"; then
               echo "Vite preview ready on port 5173"
               curl -s http://127.0.0.1:5173/ | head -20
               break
@@ -340,7 +340,7 @@ jobs:
             sleep 1
           done
           
-          if ! nc -z 127.0.0.1 5173; then
+          if ! curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5173/ | grep -q "200"; then
             echo "ERROR: Vite preview did not start!"
             cat preview.log
             exit 1
