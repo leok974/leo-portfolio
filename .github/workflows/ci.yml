@@ -285,6 +285,7 @@ jobs:
           APP_ENV: test
           SKIP_PROVIDER_INIT: "1"
           RAG_DB_PATH: ":memory:"
+          SITEAGENT_DEV_COOKIE_KEY: "test-cookie-key-for-ci"
         run: |
           . .venv/bin/activate
           uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 > backend.log 2>&1 &
@@ -314,6 +315,14 @@ jobs:
 
       - name: Build siteagent
         run: npm run build:siteagent
+
+      - name: Create dist symlink for tests
+        run: |
+          if [ ! -e dist ]; then
+            ln -s dist-siteagent dist
+          fi
+          echo "Verifying dist structure:"
+          ls -la dist/assets/ | head -20
 
       - name: Preview siteagent (vite)
         run: |
