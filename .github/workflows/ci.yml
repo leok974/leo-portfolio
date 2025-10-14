@@ -266,11 +266,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Playwright deps
-        run: npx playwright install --with-deps
-
       - name: Install frontend deps
         run: npm ci || npm i
+
+      - name: Install Playwright deps
+        run: npx playwright install --with-deps
 
       - name: Install backend deps
         run: |
