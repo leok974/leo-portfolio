@@ -247,3 +247,102 @@ jobs:
           name: dist-portfolio
           path: dist-portfolio/
           retention-days: 7
+
+  e2e-fullstack:
+    name: E2E (full-stack)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Playwright deps
+        run: npx playwright install --with-deps
+
+      - name: Install frontend deps
+        run: npm ci || npm i
+
+      - name: Install backend deps
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -U pip
+          pip install -r assistant_api/requirements.txt
+          if [ -f assistant_api/requirements-dev.txt ]; then pip install -r assistant_api/requirements-dev.txt; fi
+
+      - name: Start backend (test mode)
+        env:
+          APP_ENV: test
+          SKIP_PROVIDER_INIT: "1"
+          RAG_DB_PATH: ":memory:"
+        run: |
+          . .venv/bin/activate
+          uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 > backend.log 2>&1 &
+          echo $! > backend.pid
+          sleep 2
+
+      - name: Wait for backend /health
+        shell: bash
+        run: |
+          set -e
+          deadline=$((SECONDS+120))
+          until curl -sf http://127.0.0.1:8001/health > /dev/null; do
+            if [ $SECONDS -gt $deadline ]; then
+              echo "Backend failed to become healthy"
+              echo "::group::Backend logs"
+              tail -n +1 backend.log || true
+              echo "::endgroup::"
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "Backend healthy."
+
+      - name: Enable dev overlay (best-effort)
+        run: |
+          curl -s -X POST http://127.0.0.1:8001/agent/dev/enable -H "Content-Type: application/json" -d '{}' || true
+
+      - name: Build siteagent
+        run: npm run build:siteagent
+
+      - name: Preview siteagent (vite)
+        run: |
+          npx vite preview --port 5173 --strictPort --outDir dist-siteagent > preview.log 2>&1 &
+          echo $! > preview.pid
+          sleep 2
+
+      - name: Run Playwright tests
+        env:
+          PW_BASE_URL: "http://127.0.0.1:5173"
+          BACKEND_REQUIRED: "1"
+        run: npm run e2e:ci
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+
+      - name: Teardown
+        if: always()
+        run: |
+          kill $(cat preview.pid) 2>/dev/null || true
+          kill $(cat backend.pid) 2>/dev/null || true
+          sleep 1
+          echo "::group::Backend logs"
+          tail -n +200 backend.log || true
+          echo "::endgroup::"
+          echo "::group::Preview logs"
+          tail -n +200 preview.log || true
+          echo "::endgroup::"

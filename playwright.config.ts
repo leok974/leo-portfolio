@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 const isCI = !!process.env.CI;
 const workers = process.env.PW_WORKERS ? Number(process.env.PW_WORKERS) : undefined;
 const defaultPort = process.env.PW_APP === 'portfolio' ? '5174' : '5173';
-const baseURL = process.env.BASE_URL ?? process.env.BASE ?? process.env.PROD_BASE ?? `http://127.0.0.1:${defaultPort}`;
+const baseURL = process.env.PW_BASE_URL ?? process.env.BASE_URL ?? process.env.BASE ?? process.env.PROD_BASE ?? `http://127.0.0.1:${defaultPort}`;
 
 // Reporter: line locally; html + line in CI (keeps local output light)
 const reporter = (isCI ? [['html'], ['line']] : [['line']]) as any;
