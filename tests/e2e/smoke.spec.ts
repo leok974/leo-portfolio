@@ -28,14 +28,14 @@ test('@siteagent @smoke dev overlay affordance exists', async ({ page }) => {
   expect(count).toBeGreaterThan(0);
 });
 
-test('@siteagent @smoke backend is reachable', async ({ page, request }) => {
+test('@siteagent @smoke backend is reachable', async ({ request }) => {
   // Try to hit the backend health endpoint
   const backendURL = process.env.BACKEND_URL || 'http://127.0.0.1:8001';
 
   try {
     const response = await request.get(`${backendURL}/health`);
     expect(response.ok()).toBeTruthy();
-  } catch (error) {
+  } catch (_error) {
     // If backend not available, that's OK for pure frontend tests
     // But log it for debugging
     console.warn('Backend not reachable at', backendURL, '- frontend-only mode');
