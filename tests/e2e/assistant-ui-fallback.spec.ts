@@ -29,7 +29,7 @@ const distDir = resolve(currentDir, '../../dist');
 const bundledScriptPath = findBundle(distDir);
 const bundledScriptBody = readFileSync(bundledScriptPath, 'utf-8');
 
-test.describe('@frontend assistant UI fallback', () => {
+test.describe('@siteagent @frontend assistant UI fallback', () => {
   test.beforeEach(async ({ page }) => {
     await installFastUI(page);
     await mockReady(page, 'primary');
@@ -46,7 +46,7 @@ test.describe('@frontend assistant UI fallback', () => {
     });
   });
 
-  test('falls back to JSON when stream has no tokens', async ({ page }) => {
+  test('@siteagent falls back to JSON when stream has no tokens', async ({ page }) => {
     page.on('console', (msg) => {
       console.log('[console]', msg.type(), msg.text());
     });

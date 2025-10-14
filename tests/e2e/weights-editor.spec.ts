@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Weights Editor @frontend', () => {
-  test('proposes, approves, and optimizes weights', async ({ page }) => {
+test.describe('@siteagent Weights Editor @frontend', () => {
+  test('@siteagent proposes, approves, and optimizes weights', async ({ page }) => {
     // Navigate to page with weights editor
     // Adjust this URL if your overlay is on a different route
     await page.goto('/');
@@ -32,7 +32,7 @@ test.describe('Weights Editor @frontend', () => {
     await expect(page.getByTestId('weights-msg')).toContainText(/Optimized/i, { timeout: 10000 });
   });
 
-  test('shows normalized percentages', async ({ page }) => {
+  test('@siteagent shows normalized percentages', async ({ page }) => {
     await page.goto('/');
     const editor = page.getByTestId('weights-editor');
     await expect(editor).toBeVisible({ timeout: 10000 });
@@ -42,7 +42,7 @@ test.describe('Weights Editor @frontend', () => {
     await expect(percentages.first()).toBeVisible();
   });
 
-  test('displays active weights when present', async ({ page }) => {
+  test('@siteagent displays active weights when present', async ({ page }) => {
     await page.goto('/');
     const editor = page.getByTestId('weights-editor');
     await expect(editor).toBeVisible({ timeout: 10000 });

@@ -48,7 +48,7 @@ function sseFrames() {
   ].join('\n');
 }
 
-test.describe('@frontend no console warn on timely first token', () => {
+test.describe('@portfolio @frontend no console warn on timely first token', () => {
   test.beforeEach(async ({ page }) => {
     await installFastUI(page);
     await mockReady(page, 'primary');
@@ -57,7 +57,7 @@ test.describe('@frontend no console warn on timely first token', () => {
     });
   });
 
-  test('no warn on timely first token', async ({ page }) => {
+  test('@portfolio no warn on timely first token', async ({ page }) => {
     const warns: string[] = [];
     page.on('console', (m) => m.type() === 'warning' && warns.push(m.text()));
 

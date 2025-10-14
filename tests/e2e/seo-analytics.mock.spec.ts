@@ -2,7 +2,7 @@ import { test, expect, request as PWRequest } from '@playwright/test';
 import { waitForArtifact } from './helpers/waitForArtifact';
 
 const BE = process.env.BACKEND_URL || 'http://127.0.0.1:8001';
-const UI = process.env.UI_URL || 'http://127.0.0.1:5173';
+const UI = process.env.UI_URL || '';
 
 test.describe('@backend SEO Analytics (mock fast)', () => {
   test.setTimeout(30_000); // Mock should be much faster than real run

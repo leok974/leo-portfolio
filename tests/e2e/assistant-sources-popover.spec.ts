@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 // Verifies: badge visible → click opens popover → list shows titles → Esc and outside-click close → focus returns to badge.
 
-test('@frontend sources popover lists title + path and links when url provided', async ({ page }) => {
+test('@siteagent @frontend sources popover lists title + path and links when url provided', async ({ page }) => {
   await installFastUI(page);
   await mockReady(page, 'primary');
 

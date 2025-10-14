@@ -1,0 +1,17 @@
+# Spec files that ran in CI (from run 18503456062)
+# These are the 43 tests that need @siteagent or @portfolio tags
+
+tests/e2e/ab-analytics.spec.ts
+tests/e2e/admin.panel.spec.ts
+tests/e2e/assistant-sources-popover.spec.ts
+tests/e2e/assistant-stream-meta.spec.ts
+tests/e2e/assistant-ui-fallback.spec.ts
+tests/e2e/assistant-ui-first-chunk.spec.ts
+tests/e2e/assistant-ui-followup.spec.ts
+tests/e2e/assistant-ui-grounded.spec.ts
+tests/e2e/chat-dock-stream.spec.ts
+tests/e2e/home-filter.spec.ts
+tests/e2e/last-run-badge.spec.ts
+tests/e2e/layout-agent-panel.spec.ts
+tests/e2e/seo-pr-preview.spec.ts
+tests/e2e/weights-editor.spec.ts

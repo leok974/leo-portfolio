@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE = process.env.BASE || 'http://127.0.0.1:8080';
+const BASE = process.env.BASE || '';
 const isGithubPages = /(?:^|\.)github\.io/i.test(BASE);
 const isProdHost = /ledger-mind\.org/i.test(BASE);
 

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { waitForPrimary } from './lib/wait-primary';
 
-const BASE_URL = process.env.BASE_URL || process.env.BASE || process.env.PROD_BASE || 'http://127.0.0.1:8080';
+const BASE_URL = process.env.BASE_URL || process.env.BASE || process.env.PROD_BASE || '';
 
 async function postStream(messages: Array<{ role: string; content: string }>) {
   const supportsSignalTimeout = typeof AbortSignal !== 'undefined' && typeof (AbortSignal as any).timeout === 'function';

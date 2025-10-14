@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Last Run Badge @frontend', () => {
-  test('renders when layout.json exists', async ({ page }) => {
+test.describe('@siteagent Last Run Badge @frontend', () => {
+  test('@siteagent renders when layout.json exists', async ({ page }) => {
     await page.goto('/');
 
     // Badge might not be visible immediately if layout.json doesn't exist
@@ -27,7 +27,7 @@ test.describe('Last Run Badge @frontend', () => {
     }
   });
 
-  test('displays formatted timestamp', async ({ page }) => {
+  test('@siteagent displays formatted timestamp', async ({ page }) => {
     await page.goto('/');
 
     const badge = page.getByTestId('last-run-badge');
@@ -40,7 +40,7 @@ test.describe('Last Run Badge @frontend', () => {
     }
   });
 
-  test('shows preset name', async ({ page }) => {
+  test('@siteagent shows preset name', async ({ page }) => {
     await page.goto('/');
 
     const badge = page.getByTestId('last-run-badge');

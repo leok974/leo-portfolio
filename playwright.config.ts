@@ -47,6 +47,29 @@ export default defineConfig({
       name: 'setup',
       testMatch: /.*\.setup\.ts/,
     },
+    // SiteAgent project: Vite preview on port 5173
+    {
+      name: 'siteagent',
+      use: {
+        baseURL: process.env.PW_BASE_URL ?? 'http://127.0.0.1:5173',
+        ...devices['Desktop Chrome'],
+      },
+      grep: /@siteagent/,
+      grepInvert: /@portfolio|@wip/,
+      dependencies: [], // Don't depend on setup by default
+    },
+    // Portfolio project: nginx on port 8080 (full-stack)
+    {
+      name: 'portfolio',
+      use: {
+        baseURL: process.env.PW_EDGE_URL ?? 'http://127.0.0.1:8080',
+        ...devices['Desktop Chrome'],
+      },
+      grep: /@portfolio/,
+      grepInvert: /@siteagent|@wip/,
+      dependencies: [], // Don't depend on setup by default
+    },
+    // Legacy chromium project (no tag filtering)
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },

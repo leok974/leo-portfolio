@@ -10,12 +10,12 @@ import { test, expect } from '@playwright/test';
  * - No errors during PR flow
  */
 
-test.describe('SEO PR & Preview @frontend @seo', () => {
+test.describe('@siteagent SEO PR & Preview @frontend @seo', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/tools.html');
   });
 
-  test('Approve → PR triggers backend and preview renders', async ({ page }) => {
+  test('@siteagent Approve → PR triggers backend and preview renders', async ({ page }) => {
     // Check if dev overlay is enabled
     const unavailableMsg = page.getByText('Enable the admin overlay to access tools.');
     if (await unavailableMsg.isVisible()) {
@@ -67,7 +67,7 @@ test.describe('SEO PR & Preview @frontend @seo', () => {
     await expect(diffArea).toBeVisible();
   });
 
-  test('SEO tune section renders in tools page', async ({ page }) => {
+  test('@siteagent SEO tune section renders in tools page', async ({ page }) => {
     const unavailableMsg = page.getByText('Enable the admin overlay to access tools.');
     if (await unavailableMsg.isVisible()) {
       test.skip(true, 'Dev overlay not enabled');
@@ -80,7 +80,7 @@ test.describe('SEO PR & Preview @frontend @seo', () => {
     await expect(page.getByTestId('seo-pr')).toBeVisible();
   });
 
-  test('PR URL persists after reload', async ({ page }) => {
+  test('@siteagent PR URL persists after reload', async ({ page }) => {
     const unavailableMsg = page.getByText('Enable the admin overlay to access tools.');
     if (await unavailableMsg.isVisible()) {
       test.skip(true, 'Dev overlay not enabled');

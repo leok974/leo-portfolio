@@ -66,7 +66,7 @@ const FIXTURE_OBJECT = {
   }
 };
 
-test.describe('Homepage Status Filter @frontend', () => {
+test.describe('@portfolio Homepage Status Filter @frontend', () => {
   test.beforeEach(async ({ page }) => {
     // Stub projects.json so tests are stable regardless of prod content.
     await page.route(/projects\.json(\?.*)?$/, async route => {
@@ -78,7 +78,7 @@ test.describe('Homepage Status Filter @frontend', () => {
     });
   });
 
-  test('defaults to In Progress and renders only in-progress cards', async ({ page }) => {
+  test('@portfolio defaults to In Progress and renders only in-progress cards', async ({ page }) => {
     await page.goto('/');
 
     // Wait for projects to load
@@ -102,7 +102,7 @@ test.describe('Homepage Status Filter @frontend', () => {
     await expect(dermaaiCard).toBeHidden();
   });
 
-  test('toggle to Completed shows only completed projects', async ({ page }) => {
+  test('@portfolio toggle to Completed shows only completed projects', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('article.card', { timeout: 5000 });
 
@@ -130,7 +130,7 @@ test.describe('Homepage Status Filter @frontend', () => {
     await expect(completedBtn).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('toggle to All shows all projects', async ({ page }) => {
+  test('@portfolio toggle to All shows all projects', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('article.card', { timeout: 5000 });
 
@@ -156,7 +156,7 @@ test.describe('Homepage Status Filter @frontend', () => {
     await expect(allBtn).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('persists selected filter via localStorage', async ({ page }) => {
+  test('@portfolio persists selected filter via localStorage', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('article.card', { timeout: 5000 });
 
@@ -189,7 +189,7 @@ test.describe('Homepage Status Filter @frontend', () => {
     expect(savedAfterReload).toBe('completed');
   });
 
-  test('combines Status + Category filters (AND logic)', async ({ page }) => {
+  test('@portfolio combines Status + Category filters (AND logic)', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('article.card', { timeout: 5000 });
 
@@ -246,7 +246,7 @@ test.describe('Homepage Status Filter @frontend', () => {
     await expect(page.locator('article.card[data-slug="pixo-banana-suite"]')).not.toBeVisible();
   });
 
-  test('shows count badges on filter buttons', async ({ page }) => {
+  test('@portfolio shows count badges on filter buttons', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('article.card', { timeout: 5000 });
 
@@ -283,7 +283,7 @@ test.describe('Homepage Status Filter @frontend', () => {
     expect(allText).toMatch(/\(5\)/);
   });
 
-  test('keyboard navigation works for filter buttons', async ({ page }) => {
+  test('@portfolio keyboard navigation works for filter buttons', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('article.card', { timeout: 5000 });
 
@@ -309,7 +309,7 @@ test.describe('Homepage Status Filter @frontend', () => {
     await expect(page.locator('article.card:visible')).toHaveCount(1);
   });
 
-  test('screen reader accessibility - aria attributes', async ({ page }) => {
+  test('@portfolio screen reader accessibility - aria attributes', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('article.card', { timeout: 5000 });
 
@@ -343,7 +343,7 @@ test.describe('Homepage Status Filter @frontend', () => {
     }
   });
 
-  test('filter interaction does not break on rapid clicks', async ({ page }) => {
+  test('@portfolio filter interaction does not break on rapid clicks', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('article.card', { timeout: 5000 });
 
@@ -366,7 +366,7 @@ test.describe('Homepage Status Filter @frontend', () => {
     await expect(page.locator('article.card[data-slug="ledgermind"]')).toBeVisible();
   });
 
-  test('visual regression - filter bar renders correctly', async ({ page }) => {
+  test('@portfolio visual regression - filter bar renders correctly', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('article.card', { timeout: 5000 });
     await page.waitForTimeout(500); // Wait for counts to populate
@@ -388,8 +388,8 @@ test.describe('Homepage Status Filter @frontend', () => {
   });
 });
 
-test.describe('Homepage Status Filter - Edge Cases @frontend', () => {
-  test('handles projects.json with all in-progress', async ({ page }) => {
+test.describe('@portfolio Homepage Status Filter - Edge Cases @frontend', () => {
+  test('@portfolio handles projects.json with all in-progress', async ({ page }) => {
     // Fixture with only in-progress projects (using actual slugs from HTML)
     const allInProgress = {
       'ledgermind': {
@@ -464,7 +464,7 @@ test.describe('Homepage Status Filter - Edge Cases @frontend', () => {
     await expect(visibleCards).toHaveCount(0);
   });
 
-  test('handles projects.json with missing status fields (defaults to in-progress)', async ({ page }) => {
+  test('@portfolio handles projects.json with missing status fields (defaults to in-progress)', async ({ page }) => {
     // Fixture with projects missing status field (using actual slugs from HTML)
     const noStatus = {
       'ledgermind': {

@@ -47,7 +47,7 @@ function sseUngrounded() {
   ].join('\n');
 }
 
-test.describe('@frontend grounded badge states', () => {
+test.describe('@portfolio @frontend grounded badge states', () => {
   test.beforeEach(async ({ page }) => {
     await installFastUI(page);
     await mockReady(page, 'primary');
@@ -56,7 +56,7 @@ test.describe('@frontend grounded badge states', () => {
     });
   });
 
-  test('@frontend grounded badge appears with sources', async ({ page }) => {
+  test('@portfolio @frontend grounded badge appears with sources', async ({ page }) => {
     // Stream only meta (no tokens) to trigger JSON fallback path
     const metaOnly = [
       'event: meta',
@@ -100,7 +100,7 @@ test.describe('@frontend grounded badge states', () => {
   expect(/[?？]\s*$/m.test(text)).toBeTruthy();
   });
 
-  test('@frontend ungrounded shows a gentle overview hint', async ({ page }) => {
+  test('@portfolio @frontend ungrounded shows a gentle overview hint', async ({ page }) => {
     await page.route('**/api/chat/stream', async (route) => {
       await route.fulfill({ status: 200, contentType: 'text/event-stream', headers: { 'x-accel-buffering': 'no', 'cache-control': 'no-cache' }, body: sseUngrounded() });
     });

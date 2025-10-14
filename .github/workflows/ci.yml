@@ -328,7 +328,7 @@ jobs:
         run: |
           npx vite preview --host 127.0.0.1 --port 5173 --strictPort --outDir dist-siteagent > preview.log 2>&1 &
           echo $! > preview.pid
-          
+
           # Wait for vite preview to be ready (up to 30s)
           for i in {1..30}; do
             if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5173/ | grep -q "200"; then
@@ -339,16 +339,24 @@ jobs:
             echo "Waiting for vite preview... ($i/30)"
             sleep 1
           done
-          
+
           if ! curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5173/ | grep -q "200"; then
             echo "ERROR: Vite preview did not start!"
             cat preview.log
             exit 1
           fi
 
+      - name: Run Playwright smoke tests
+        env:
+          PW_BASE_URL: "http://127.0.0.1:5173"
+          PW_SKIP_WS: "1"
+          BACKEND_REQUIRED: "1"
+        run: npm run e2e:smoke
+
       - name: Run Playwright tests
         env:
           PW_BASE_URL: "http://127.0.0.1:5173"
+          PW_SKIP_WS: "1"
           BACKEND_REQUIRED: "1"
         run: npm run e2e:ci
 

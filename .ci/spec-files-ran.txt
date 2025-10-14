@@ -1,0 +1,8 @@
+tests/e2e/ab-analytics.spec.ts
+tests/e2e/admin.panel-Admin.spec.ts
+tests/e2e/assistant-sources.spec.ts
+tests/e2e/assistant-stream.spec.ts
+tests/e2e/assistant-ui.spec.ts
+tests/e2e/home-filter.spec.ts
+tests/e2e/seo-pr.spec.ts
+tests/e2e/weights-editor.spec.ts

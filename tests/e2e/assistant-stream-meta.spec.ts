@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 // This spec verifies the first non-heartbeat SSE frame is `event: meta`, and that
 // the grounded badge renders immediately on meta (before content streaming finishes).
 
-test('@frontend stream meta arrives first (badge before content)', async ({ page }) => {
+test('@siteagent @frontend stream meta arrives first (badge before content)', async ({ page }) => {
   await installFastUI(page);
   await mockReady(page, 'primary');
 

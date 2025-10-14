@@ -50,7 +50,7 @@ function sseBody() {
   ].join('\n');
 }
 
-test.describe('@frontend assistant UI follow-up', () => {
+test.describe('@siteagent @frontend assistant UI follow-up', () => {
   test.beforeEach(async ({ page }) => {
     await installFastUI(page);
     await mockReady(page, 'primary');
@@ -68,7 +68,7 @@ test.describe('@frontend assistant UI follow-up', () => {
     });
   });
 
-  test('last assistant bubble ends with a follow-up question', async ({ page }) => {
+  test('@siteagent last assistant bubble ends with a follow-up question', async ({ page }) => {
     // Stub the streaming endpoint with a tiny SSE that includes a question.
     await page.route('**/api/chat/stream', async (route) => {
       await route.fulfill({

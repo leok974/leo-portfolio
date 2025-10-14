@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('A/B Analytics Panel @frontend', () => {
-  test('shows CTRs and winner', async ({ page }) => {
+test.describe('@siteagent A/B Analytics Panel @frontend', () => {
+  test('@siteagent shows CTRs and winner', async ({ page }) => {
     await page.goto('/');
 
     const panel = page.getByTestId('ab-analytics');
@@ -15,7 +15,7 @@ test.describe('A/B Analytics Panel @frontend', () => {
     await expect(panel.locator('text=Winner (so far):')).toBeVisible();
   });
 
-  test('displays weight adjustment hints', async ({ page }) => {
+  test('@siteagent displays weight adjustment hints', async ({ page }) => {
     await page.goto('/');
 
     const panel = page.getByTestId('ab-analytics');
@@ -25,7 +25,7 @@ test.describe('A/B Analytics Panel @frontend', () => {
     await expect(panel.locator('text=Suggested weight nudge:')).toBeVisible();
   });
 
-  test('handles errors gracefully', async ({ page }) => {
+  test('@siteagent handles errors gracefully', async ({ page }) => {
     // This test would need backend to be down or configured to return errors
     // For now, just verify error state can render
     await page.goto('/');
@@ -37,7 +37,7 @@ test.describe('A/B Analytics Panel @frontend', () => {
     expect(await panel.textContent()).toBeTruthy();
   });
 
-  test('formats CTR as percentage', async ({ page }) => {
+  test('@siteagent formats CTR as percentage', async ({ page }) => {
     await page.goto('/');
 
     const panel = page.getByTestId('ab-analytics');

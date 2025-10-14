@@ -10,15 +10,15 @@
 
 import { test, expect } from "@playwright/test";
 
-const BASE = process.env.CI ? "http://127.0.0.1:8080" : "http://127.0.0.1:5174";
+const BASE = process.env.CI ? "" : "http://127.0.0.1:5174";
 
-test.describe("Admin Panel Controls @frontend", () => {
+test.describe("@siteagent Admin Panel Controls @frontend", () => {
   test.beforeEach(async ({ context }) => {
     // Clear admin override from localStorage before each test
     await context.clearCookies();
   });
 
-  test("admin controls hidden by default for normal visitors", async ({ page }) => {
+  test("@siteagent admin controls hidden by default for normal visitors", async ({ page }) => {
     await page.goto(BASE);
 
     // Assistant panel should be visible
@@ -35,7 +35,7 @@ test.describe("Admin Panel Controls @frontend", () => {
     await expect(page.locator("button:has-text('Hide')")).toBeVisible();
   });
 
-  test("admin controls visible with dev override (?admin=1)", async ({ page }) => {
+  test("@siteagent admin controls visible with dev override (?admin=1)", async ({ page }) => {
     // Enable admin mode via query param
     await page.goto(`${BASE}/?admin=1`);
 
@@ -63,7 +63,7 @@ test.describe("Admin Panel Controls @frontend", () => {
     await expect(page.locator("button:has-text('Hide')")).toBeVisible();
   });
 
-  test("admin override disabled with ?admin=0", async ({ page }) => {
+  test("@siteagent admin override disabled with ?admin=0", async ({ page }) => {
     // First enable admin
     await page.goto(`${BASE}/?admin=1`);
     await page.waitForTimeout(100);
@@ -82,7 +82,7 @@ test.describe("Admin Panel Controls @frontend", () => {
     await expect(page.getByTestId("btn-reset")).toHaveCount(0);
   });
 
-  test("admin badge has proper styling", async ({ page }) => {
+  test("@siteagent admin badge has proper styling", async ({ page }) => {
     // Enable admin mode
     await page.goto(`${BASE}/?admin=1`);
     await page.waitForTimeout(100);

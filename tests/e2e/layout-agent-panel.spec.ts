@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Layout Agent Panel Integration @frontend', () => {
-  test('all components render together', async ({ page }) => {
+test.describe('@siteagent Layout Agent Panel Integration @frontend', () => {
+  test('@siteagent all components render together', async ({ page }) => {
     await page.goto('/');
 
     // If components are in a panel that needs to be opened
@@ -33,7 +33,7 @@ test.describe('Layout Agent Panel Integration @frontend', () => {
     }
   });
 
-  test('end-to-end workflow: adjust weights → propose → approve → optimize', async ({ page }) => {
+  test('@siteagent end-to-end workflow: adjust weights → propose → approve → optimize', async ({ page }) => {
     await page.goto('/');
 
     const panel = page.getByTestId('layout-agent-panel');
@@ -79,7 +79,7 @@ test.describe('Layout Agent Panel Integration @frontend', () => {
     await page.waitForTimeout(1000);
   });
 
-  test('components use consistent styling', async ({ page }) => {
+  test('@siteagent components use consistent styling', async ({ page }) => {
     await page.goto('/');
 
     const panel = page.getByTestId('layout-agent-panel');
