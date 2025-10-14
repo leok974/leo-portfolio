@@ -251,7 +251,7 @@ jobs:
   e2e-fullstack:
     name: E2E (full-stack)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
 
     steps:
       - uses: actions/checkout@v4
@@ -353,7 +353,7 @@ jobs:
         run: npm run e2e:ci
 
       - name: Upload Playwright report
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
