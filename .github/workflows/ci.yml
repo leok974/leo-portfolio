@@ -328,7 +328,23 @@ jobs:
         run: |
           npx vite preview --port 5173 --strictPort --outDir dist-siteagent > preview.log 2>&1 &
           echo $! > preview.pid
-          sleep 2
+          
+          # Wait for vite preview to be ready (up to 30s)
+          for i in {1..30}; do
+            if nc -z 127.0.0.1 5173 2>/dev/null; then
+              echo "Vite preview ready on port 5173"
+              curl -s http://127.0.0.1:5173/ | head -20
+              break
+            fi
+            echo "Waiting for vite preview... ($i/30)"
+            sleep 1
+          done
+          
+          if ! nc -z 127.0.0.1 5173; then
+            echo "ERROR: Vite preview did not start!"
+            cat preview.log
+            exit 1
+          fi
 
       - name: Run Playwright tests
         env:
