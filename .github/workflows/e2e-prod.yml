@@ -21,11 +21,11 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - name: Install deps
-        run: npm ci || npm i
+        run: pnpm install --frozen-lockfile || npm i
       - name: Install browsers
-        run: npm run e2e:install
+        run: pnpm run e2e:install
       - name: Run Playwright tests
-        run: npm run e2e
+        run: pnpm run e2e
         env:
           PROD_BASE: https://assistant.ledger-mind.org
           SKIP_E2E: "0"

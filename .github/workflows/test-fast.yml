@@ -24,7 +24,7 @@ jobs:
       - name: E2E analytics (Playwright)
         run: |
           set -euo pipefail
-          npm ci || npm i -D @playwright/test
+          pnpm install --frozen-lockfile || npm i -D @playwright/test
           npx playwright install --with-deps
           # Start FastAPI backend on 8023 and wait for /metrics
           nohup python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8023 > uvicorn_ci.log 2>&1 & echo $! > uvicorn.pid

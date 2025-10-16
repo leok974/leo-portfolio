@@ -24,11 +24,16 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install Python dependencies
         run: |
@@ -36,7 +41,7 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Install Node dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run backend tests with coverage
         run: pytest --cov=assistant_api --cov-report=term-missing --cov-fail-under=90
@@ -50,7 +55,7 @@ jobs:
         run: pip-audit -r requirements.txt
 
       - name: Build frontend
-        run: npm run build
+        run: pnpm run build
 
   release:
     name: Create GitHub Release

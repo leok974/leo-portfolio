@@ -29,7 +29,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - name: Install deps
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
       - name: Run Playwright smoke

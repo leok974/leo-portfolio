@@ -9,7 +9,7 @@ on:
 jobs:
   # NOTE: E2E tests disabled in CI - they require backend + dev overlay auth
   # Most tests tagged @frontend still need backend API for state/data
-  # Run locally with: npm run dev:portfolio (backend) + npx playwright test
+  # Run locally with: pnpm run dev:portfolio (backend) + npx playwright test
   #
   # playwright-tests:
   #   name: Run E2E Tests (Playwright)
@@ -24,11 +24,11 @@ jobs:
   #         node-version: '18'
   #         cache: 'npm'
   #     - name: Install dependencies
-  #       run: npm ci
+  #       run: pnpm install --frozen-lockfile
   #     - name: Install Playwright browsers
   #       run: npx playwright install chromium --with-deps
   #     - name: Build frontend
-  #       run: npm run build:portfolio
+  #       run: pnpm run build:portfolio
   #     - name: Copy book.html to dist
   #       run: cp book.html dist-portfolio/book.html
   #     - name: Copy calendly.js to dist
@@ -120,11 +120,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -133,7 +138,7 @@ jobs:
           cache: 'pip'
 
       - name: Install Node dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Install Python dependencies
         run: |
@@ -141,7 +146,7 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Run ESLint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Run TypeScript check
         run: npx tsc --noEmit
@@ -220,17 +225,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build frontend
-        run: npm run build:portfolio
+        run: pnpm run build:portfolio
 
       - name: Verify build output
         run: |
@@ -256,6 +266,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -267,7 +282,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install frontend deps
-        run: npm ci || npm i
+        run: pnpm install --frozen-lockfile || npm i
 
       - name: Install Playwright deps
         run: npx playwright install --with-deps
@@ -314,7 +329,7 @@ jobs:
           curl -s -X POST http://127.0.0.1:8001/agent/dev/enable -H "Content-Type: application/json" -d '{}' || true
 
       - name: Build siteagent
-        run: npm run build:siteagent
+        run: pnpm run build:siteagent
 
       - name: Create dist symlink for tests
         run: |
@@ -351,14 +366,14 @@ jobs:
           PW_BASE_URL: "http://127.0.0.1:5173"
           PW_SKIP_WS: "1"
           BACKEND_REQUIRED: "1"
-        run: npm run e2e:smoke
+        run: pnpm run e2e:smoke
 
       - name: Run Playwright tests
         env:
           PW_BASE_URL: "http://127.0.0.1:5173"
           PW_SKIP_WS: "1"
           BACKEND_REQUIRED: "1"
-        run: npm run e2e:ci
+        run: pnpm run e2e:ci
 
       - name: Upload Playwright report
         if: failure() || cancelled()

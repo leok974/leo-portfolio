@@ -18,13 +18,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Install deps
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Start stack (prod compose)
         run: |
@@ -58,12 +64,12 @@ jobs:
           WAIT_CHAT_MS: "20000"
           WAIT_SSE_MS: "90000"
           WAIT_SSE_ATTEMPT_MS: "30000"
-        run: npm run test:backend:req
+        run: pnpm run test:backend:req
 
       # New: quick reachability table when strict run fails
       - name: Probe stack (edge/backend/ollama)
         if: failure()
-        run: npm run probe:stack || true
+        run: pnpm run probe:stack || true
 
       - name: "On failure: soft diagnostics (no fail)"
         if: failure()
@@ -78,7 +84,7 @@ jobs:
           WAIT_CHAT_MS: "30000"
           WAIT_SSE_MS: "120000"
           WAIT_SSE_ATTEMPT_MS: "45000"
-        run: npm run test:backend:req:soft || true
+        run: pnpm run test:backend:req:soft || true
 
       - name: "On failure: stream diagnostics (produce JSON; no fail)"
         if: failure()

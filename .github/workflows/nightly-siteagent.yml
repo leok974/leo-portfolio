@@ -1,0 +1,79 @@
+name: Nightly SiteAgent Sync
+
+on:
+  schedule:
+    # Run at 3:07 AM UTC every day
+    - cron: "7 3 * * *"
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  nightly-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Run nightly agent sync (with approvals)
+        run: |
+          echo "Running nightly SiteAgent sync..."
+
+          # Run full pipeline in dry-run mode (generates artifacts for approval)
+          response=$(curl -s -w "\n%{http_code}" -X POST https://assistant.ledger-mind.org/agent/run \
+            -H 'Content-Type: application/json' \
+            -d '{"tasks":["projects.sync","news.sync","og.generate","seo.tune","links.suggest","links.apply"],"dry_run":true}')
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "✅ Nightly sync completed successfully"
+          else
+            echo "❌ Nightly sync failed with status $http_code"
+            exit 1
+          fi
+
+      - name: Check artifacts
+        run: |
+          echo "Fetching generated artifacts..."
+          curl -s https://assistant.ledger-mind.org/agent/artifacts | head -n 50
+
+      - name: Verify agent status
+        run: |
+          echo "Checking agent status..."
+          curl -s https://assistant.ledger-mind.org/agent/status | jq .
+
+  # Optional: Autonomous mode (no approvals)
+  autonomous-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: false  # Set to true to enable autonomous mode
+
+    steps:
+      - name: Run autonomous agent sync
+        run: |
+          echo "Running autonomous SiteAgent sync (no approvals)..."
+
+          # Run full pipeline with dry_run=false (auto-applies changes)
+          response=$(curl -s -w "\n%{http_code}" -X POST https://assistant.ledger-mind.org/agent/run \
+            -H 'Content-Type: application/json' \
+            -d '{"tasks":["projects.sync","news.sync","og.generate","seo.tune","links.suggest","links.apply"],"dry_run":false}')
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "✅ Autonomous sync completed - site updated automatically"
+          else
+            echo "❌ Autonomous sync failed with status $http_code"
+            exit 1
+          fi
+
+      - name: Verify changes applied
+        run: |
+          echo "Checking for new artifacts..."
+          curl -s https://assistant.ledger-mind.org/agent/artifacts | grep -E "(applied|updated)" || echo "No changes applied"
