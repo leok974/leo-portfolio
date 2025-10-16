@@ -1,0 +1,18 @@
+# ESLint exclusions
+
+# Copilot instructions
+**/copilot-instructions.md
+
+# GitHub workflows and actions
+.github/**
+
+# Build outputs
+dist/
+dist-portfolio/
+dist-siteagent/
+coverage/
+node_modules/
+
+# Generated files
+*.log
+.DS_Store
