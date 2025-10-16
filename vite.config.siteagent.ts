@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite';
+import preact from '@preact/preset-vite';
 import path from 'node:path';
 
 export default defineConfig({
+  plugins: [preact()],
   root: 'apps/siteagent-ui',
   base: '/',
   publicDir: 'public',

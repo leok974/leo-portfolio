@@ -10,11 +10,14 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": [],
     "jsx": "react-jsx",
+    "jsxImportSource": "preact",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "react": ["types/react"],
+      "react-dom": ["types/react"],
+      "react-dom/client": ["types/react"]
     },
     "typeRoots": ["./types", "./node_modules/@types"],
     "noEmit": true
