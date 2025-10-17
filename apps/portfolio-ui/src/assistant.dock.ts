@@ -6,7 +6,7 @@
 const COLLAPSED_KEY = 'chatDock:collapsed';
 
 function setCollapsed(collapsed: boolean) {
-  const dock = document.getElementById('assistant-panel') as HTMLElement | null;
+  const dock = document.getElementById('chat-dock') as HTMLElement | null;
   const toggle = document.getElementById('dock-toggle') as HTMLButtonElement | null;
   const tab = document.getElementById('dock-tab') as HTMLButtonElement | null;
 
@@ -38,7 +38,7 @@ function setCollapsed(collapsed: boolean) {
 }
 
 function toggleDock() {
-  const dock = document.getElementById('assistant-panel');
+  const dock = document.getElementById('chat-dock');
   if (!dock) return;
 
   const isCollapsed = dock.classList.contains('collapsed');

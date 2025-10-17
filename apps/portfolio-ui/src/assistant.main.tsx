@@ -5,6 +5,7 @@ import { currentLayout, loadLayout, type LayoutRecipe } from "./layout";
 import { isAdmin } from "./admin";
 import { initAssistantDock } from "./assistant.dock";
 import { inputValue } from "../../../src/utils/event-helpers";
+import { layoutEnabled } from "./utils/featureFlags";
 
 const LAYOUT_EVENT = "layout:update";
 
@@ -263,9 +264,9 @@ function AssistantPanel() {
 
   return (
     <div
-      id="assistant-panel"
+      id="chat-dock"
       class={`assistant-panel${open ? "" : " hidden"}`}
-      data-testid="assistant-panel"
+      data-testid="chat-dock"
       role="region"
       aria-label="Portfolio Assistant"
       aria-expanded="true"
@@ -357,25 +358,29 @@ function AssistantPanel() {
         </button>
       </div>
 
-      <details class="asst-debug" data-testid="assistant-layout-toggle">
-        <summary>Layout</summary>
-        {!layout ? (
-          <div style="padding: 1rem; color: #94a3b8;" data-testid="assistant-layout-empty">
-            Layout learning is off or not learned yet.
-            <button
-              type="button"
-              class="btn-sm"
-              onClick={loadLayout}
-              style="margin-left: 0.5rem;"
-              data-testid="assistant-layout-refresh"
-            >
-              Refresh
-            </button>
+      {layoutEnabled() && (
+        <details class="asst-debug" data-testid="assistant-layout-toggle">
+          <summary>Layout</summary>
+          <div data-testid="layout-section">
+            {!layout ? (
+              <div style="padding: 1rem; color: #94a3b8;" data-testid="assistant-layout-empty">
+                Loading layout model...
+                <button
+                  type="button"
+                  class="btn-sm"
+                  onClick={loadLayout}
+                  style="margin-left: 0.5rem;"
+                  data-testid="assistant-layout-refresh"
+                >
+                  Refresh
+                </button>
+              </div>
+            ) : (
+              <pre data-testid="assistant-layout-json">{JSON.stringify(layout, null, 2)}</pre>
+            )}
           </div>
-        ) : (
-          <pre data-testid="assistant-layout-json">{JSON.stringify(layout, null, 2)}</pre>
-        )}
-      </details>
+        </details>
+      )}
       </div>
 
       {/* Slim tab stays visible when collapsed */}
