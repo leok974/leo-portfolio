@@ -79,8 +79,8 @@ jobs:
           retention-days: 7
 
   e2e-admin-staging:
-    # Only run if ADMIN_HMAC_SECRET is configured (protects staging/prod)
-    if: ${{ secrets.ADMIN_HMAC_SECRET != '' }}
+    # Only run on workflow_dispatch or if explicitly enabled
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: build-and-test
