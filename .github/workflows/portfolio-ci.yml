@@ -37,6 +37,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
       # === Sync projects from GitHub & generate OG images ===
       - name: Sync projects from GitHub
         run: pnpm projects:sync
