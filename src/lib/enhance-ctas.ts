@@ -1,4 +1,4 @@
-import { createRoot } from 'react-dom/client';
+import { render } from 'preact';
 import * as React from 'react';
 import { ArrowRight, FileDown } from 'lucide-react';
 
@@ -13,11 +13,12 @@ export function enhanceCTAs() {
     iconContainer.className = 'inline-flex items-center gap-2';
     seeWorkCTA.appendChild(iconContainer);
 
-    createRoot(iconContainer).render(
+    render(
       React.createElement(React.Fragment, null, [
         React.createElement('span', { key: 'text' }, textContent.replace('⟶', '').trim()),
         React.createElement(ArrowRight, { key: 'icon', size: 20, className: 'inline-block' })
-      ])
+      ]),
+      iconContainer
     );
   }
 
@@ -30,11 +31,12 @@ export function enhanceCTAs() {
     iconContainer.className = 'inline-flex items-center gap-2';
     resumeCTA.appendChild(iconContainer);
 
-    createRoot(iconContainer).render(
+    render(
       React.createElement(React.Fragment, null, [
         React.createElement(FileDown, { key: 'icon', size: 18, className: 'inline-block' }),
         React.createElement('span', { key: 'text' }, textContent.replace('📄', '').trim())
-      ])
+      ]),
+      iconContainer
     );
   }
 }

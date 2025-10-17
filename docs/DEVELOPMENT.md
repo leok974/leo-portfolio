@@ -7,6 +7,8 @@ title: DEVELOPMENT
 > Draft – Expand as tooling evolves.
 
 ## Environment Setup
+
+### Backend (Python)
 ```bash
 python -m venv .venv
 # Windows PowerShell
@@ -16,6 +18,22 @@ source .venv/bin/activate
 pip install -U pip
 pip install -r assistant_api/requirements.txt
 ```
+
+### Frontend (Node.js with pnpm)
+```bash
+# Install pnpm (if not already installed)
+pnpm install -g pnpm
+# Or via corepack (Node 16.13+)
+corepack enable
+
+# Install dependencies
+ppnpm install
+
+# Approve build scripts for native modules
+pnpm approve-builds
+```
+
+> **Note**: This project uses **pnpm** for package management. See `PNPM_MIGRATION_COMPLETE.md` for migration details.
 
 ## Run Backend (Dev)
 ```bash
@@ -62,7 +80,7 @@ Production image now ships with `entrypoint.d/10-csp-render.sh`. The script runs
 Manifest MIME: The production config now declares `application/manifest+json` for `webmanifest` ensuring browsers no longer warn about `site.webmanifest` being served as `text/plain` or `text/html`.
 
 Troubleshooting 404s:
-1. Ensure you actually built assets: `npm run build` (creates `dist/`).
+1. Ensure you actually built assets: `pnpm run build` (creates `dist/`).
 2. Confirm the files exist locally: `dir dist` (PowerShell) or `ls dist`.
 3. If still 404 in container, exec in Nginx: `docker compose exec nginx ls -1 /usr/share/nginx/html/assets`.
 4. Cache: Hashed assets are cached aggressively; force refresh with Ctrl+Shift+R.
@@ -83,7 +101,7 @@ Next Hardening Steps (planned):
 #### Guardrails (prompt‑injection) dev notes
 - Backend detects prompt‑injection and common secret patterns; mode controlled by `GUARDRAILS_MODE=enforce|log` (default enforce). Set `ALLOW_UNSAFE=1` to disable blocking locally.
 - SSE meta includes `guardrails` so the UI can render a Shield badge during streaming. JSON fallback responses also carry `guardrails`.
-- Quick spec: `npm run e2e:guardrails:proxy` builds `dist/`, serves it with a proxy to `:8001`, and runs a Playwright spec that:
+- Quick spec: `pnpm run e2e:guardrails:proxy` builds `dist/`, serves it with a proxy to `:8001`, and runs a Playwright spec that:
   - Confirms the Shield badge appears during stream
   - Confirms `/chat` JSON returns `guardrails.flagged=true` and `blocked=true` in enforce mode
 - Related UI resiliency: `tests/e2e/ui-assistant-chip.spec.ts` ensures the assistant chip is not covered by the admin dock and remains clickable (z-index + pointer-events hardening).
@@ -149,21 +167,21 @@ Expected output shows `notes: "llm"` when Ollama is reachable, or `notes: "heuri
 
 Frontend unit tests (Vitest + jsdom):
 ```bash
-npm run test     # one-off
-npm run test:watch
-npm run test:assistant:ui   # backend-free assistant UI Playwright harness (serve dist/ or set BASE_URL)
-npm run test:assistant:fallback   # targeted guard for zero-token stream fallback path
+pnpm run test     # one-off
+pnpm run test:watch
+pnpm run test:assistant:ui   # backend-free assistant UI Playwright harness (serve dist/ or set BASE_URL)
+pnpm run test:assistant:fallback   # targeted guard for zero-token stream fallback path
 - Harness stubs `/api/status/summary` via `tests/e2e/lib/mock-ready.ts` so the assistant dock unlocks without the real backend and works against archived shells.
 - Specs accept either the new `data-testid` hooks or legacy `#chatInput`/`#chatSend` markup, keeping assertions stable even if the hosted HTML hasn't been rebuilt yet.
 - `installFastUI(page)` from `tests/e2e/lib/fast-ui.ts` blocks heavy assets, disables animations, and standardizes viewport + reduced motion so mocked UI specs stay deterministic.
 - `tests/e2e/assistant-ui-fallback.spec.ts` intercepts a stream that only emits meta/done events and asserts the dock retries via `/api/chat` JSON, preventing blank transcripts.
 - `tests/e2e/assistant-ui-followup.spec.ts` validates the assistant's conversational tone by checking that responses end with follow-up questions. Uses bundle interception to ensure SSE mocks work correctly.
-- The fallback spec serves the freshly built Vite bundle from `dist/assets/`; run `npm run build` first so the hashed `index-*.js` is available.
+- The fallback spec serves the freshly built Vite bundle from `dist/assets/`; run `pnpm run build` first so the hashed `index-*.js` is available.
 
 Fast Playwright loops:
 ```bash
-npm run test:fast      # chromium, @frontend + routing smoke, aborts on first failure
-npm run test:changed   # chromium only, reruns specs touching modified files
+pnpm run test:fast      # chromium, @frontend + routing smoke, aborts on first failure
+pnpm run test:changed   # chromium only, reruns specs touching modified files
 ```
 
 ### Eval harness (chat + planner)
@@ -171,16 +189,16 @@ Lightweight evals are defined under `evals/` and executed by `scripts/eval_run.p
 
 One-offs (local backend at 127.0.0.1:8023 by default):
 ```powershell
-npm run eval:chat   # baseline chat cases
-npm run eval:plan   # planning/tooling cases
-npm run eval:all    # both files
-npm run eval:regress # regression-only set (keep baseline lean)
-npm run eval:full    # baseline + planning + regression
+pnpm run eval:chat   # baseline chat cases
+pnpm run eval:plan   # planning/tooling cases
+pnpm run eval:all    # both files
+pnpm run eval:regress # regression-only set (keep baseline lean)
+pnpm run eval:full    # baseline + planning + regression
 ```
 
 Pytest smokes:
 ```powershell
-npm run test:eval
+pnpm run test:eval
 ```
 
 Admin UI: the floating dock includes an Eval card with a tiny trend chart (pass ratio) backed by `/api/eval/history` and a Run button invoking `/api/eval/run`.
@@ -201,8 +219,8 @@ python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 --log-leve
 
 ```powershell
 # 2) In another terminal: build and serve dist with proxy to :8001
-npm run -s build
-npm run -s serve:dist:proxy   # http://127.0.0.1:5178 → proxies /api → http://127.0.0.1:8001
+pnpm run -s build
+pnpm run -s serve:dist:proxy   # http://127.0.0.1:5178 → proxies /api → http://127.0.0.1:8001
 ```
 
 ```powershell
@@ -215,7 +233,7 @@ npx playwright test tests/e2e/eval-run-sets.spec.ts --project=chromium --reporte
 Alternatively, use the helper script:
 ```powershell
 # Serve with proxy and run the spec (expects backend at :8001)
-npm run e2e:eval:proxy
+pnpm run e2e:eval:proxy
 ```
 
 Radix Select testing notes:
@@ -231,8 +249,8 @@ The SEO analytics agent (`seo.tune` task) has dedicated E2E tests with **mock** 
 
 #### Quick Commands
 ```bash
-npm run test:e2e:seo:mock  # Fast mock tests (~3s) - no LLM/DB dependencies
-npm run test:e2e:seo:full  # Full integration tests (~2min) - real agent execution
+pnpm run test:e2e:seo:mock  # Fast mock tests (~3s) - no LLM/DB dependencies
+pnpm run test:e2e:seo:full  # Full integration tests (~2min) - real agent execution
 ```
 
 #### Test Modes Comparison
@@ -346,7 +364,7 @@ $env:SEO_LLM_ENABLED="0"
 .venv/Scripts/python.exe -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001
 
 # Then run tests (they'll use mock under the hood)
-npm run test:e2e:seo:full
+pnpm run test:e2e:seo:full
 ```
 
 **CI Integration**: The e2e-mock workflow automatically sets `SEO_LLM_ENABLED=0` when starting the backend, enabling auto-downgrade for fast CI tests.
@@ -480,9 +498,9 @@ Tested helpers:
 JavaScript (JSDoc strict) + TypeScript unit helpers:
 
 ```bash
-npm run lint      # ESLint (flat config) over .js/.ts
-npm run test      # Vitest unit tests (jsdom)
-npm run coverage  # Generates coverage/ (lcov + HTML)
+pnpm run lint      # ESLint (flat config) over .js/.ts
+pnpm run test      # Vitest unit tests (jsdom)
+pnpm run coverage  # Generates coverage/ (lcov + HTML)
 ```
 
 Notes:
@@ -493,8 +511,8 @@ Notes:
 
 ### Coverage Badges (Shields JSON)
 Pipeline (current):
-1. `npm run coverage` generates `coverage/coverage-summary.json` (Vitest).
-2. `npm run cov:badges` (script `scripts/coverage-shield.mjs`) produces multiple Shields endpoints under `.github/badges/`:
+1. `pnpm run coverage` generates `coverage/coverage-summary.json` (Vitest).
+2. `pnpm run cov:badges` (script `scripts/coverage-shield.mjs`) produces multiple Shields endpoints under `.github/badges/`:
   - `coverage.json` (combined: `L <lines>| B <branches>| F <functions>`)
   - `lines.json`, `branches.json`, `functions.json` (individual metrics)
 3. CI workflow (`unit-ci.yml`) commits these JSON files to the `status-badge` branch alongside the raw summary.
@@ -502,8 +520,8 @@ Pipeline (current):
 
 Local regeneration after modifying tests:
 ```bash
-npm run coverage
-npm run cov:badges
+pnpm run coverage
+pnpm run cov:badges
 git checkout -B status-badge
 git add .github/badges/*.json coverage/coverage-summary.json
 git commit -m "chore(badges): update coverage shields"
@@ -532,7 +550,7 @@ This repository is ESM-first (`"type": "module"` in `package.json`).
 ### Pre-commit Hooks (Husky + lint-staged)
 Install dependencies (already in `devDependencies` after setup):
 ```bash
-npm run prepare   # installs .husky/ hooks
+pnpm run prepare   # installs .husky/ hooks
 ```
 Hook behavior:
 * Staged JS/TS: ESLint (`--max-warnings=0`) then `vitest related --run` (fast selective tests).
@@ -552,22 +570,22 @@ These tests exercise the deployed production host (status pill + readiness) and 
 
 Install browsers (first time):
 ```bash
-npm run e2e:install
+pnpm run e2e:install
 ```
 
 Run against prod (default base URL embedded):
 ```bash
-npm run e2e
+pnpm run e2e
 ```
 
 Override base:
 ```bash
-PROD_BASE=https://assistant.ledger-mind.org npm run e2e
+PROD_BASE=https://assistant.ledger-mind.org pnpm run e2e
 ```
 
 Skip in CI (environment gate):
 ```bash
-SKIP_E2E=1 npm run e2e
+SKIP_E2E=1 pnpm run e2e
 ```
 
 Artifacts (on failure): traces + screenshots (HTML report not auto-opened). Config: `playwright.config.ts`.
@@ -581,11 +599,11 @@ Two lightweight guards were added to catch regressions early:
 ### 1. TypeScript Check Workflow
 File: `.github/workflows/ts-check.yml`
 
-Runs `npm ci` then `tsc --noEmit` (leveraging `checkJs` + `.d.ts` ambient types) on every push / PR to `main` and `test`. Fails fast if any JS/TS typing drift (e.g., window global removal, module rename) occurs.
+Runs `pnpm install --frozen-lockfile` then `tsc --noEmit` (leveraging `checkJs` + `.d.ts` ambient types) on every push / PR to `main` and `test`. Fails fast if any JS/TS typing drift (e.g., window global removal, module rename) occurs.
 
 Local equivalent:
 ```bash
-npm run typecheck
+pnpm run typecheck
 ```
 
 ### 2. UI Smoke (Playwright)
@@ -794,14 +812,14 @@ After running any Playwright specs with `STREAM_LATENCY_LOG=1`, use the helper s
 
 ```powershell
 # Single run (Playwright config writes JSON to playwright-report/results.json)
-npm run report:latency
+pnpm run report:latency
 
 # Aggregate every JSON file in playwright-report/ (retries, shards, manual runs)
-npm run report:latency:all
+pnpm run report:latency:all
 
 # Enforce a latency budget (fails when p95 > LATENCY_P95_MS, default 1500ms)
 $env:LATENCY_P95_MS='1200'
-npm run report:latency:gate
+pnpm run report:latency:gate
 ```
 
 Notes:
@@ -823,7 +841,7 @@ for ($i = 1; $i -le 5; $i++) {
   npx playwright test -g "@backend chat stream first-chunk" --reporter=json --quiet > "playwright-report/run-$i.json"
   Start-Sleep -Seconds 1
 }
-npm run report:latency:all
+pnpm run report:latency:all
 ```
 
 CI wiring example:
@@ -837,7 +855,7 @@ CI wiring example:
   if: always()
   env:
     LATENCY_P95_MS: "1500"
-  run: npm run report:latency:gate
+  run: pnpm run report:latency:gate
 ```
 
 Optional extension: add annotations like `{ type: 'stream-coldstart', description: '1' }` in the spec when `waitForPrimary` detects a cold pull, then modify the rollup to segment stats by cold vs. warm runs.
@@ -859,8 +877,8 @@ pytest -q
 ```
 Frontend unit tests (Vitest + jsdom):
 ```bash
-npm run test     # one-off
-npm run test:watch
+pnpm run test     # one-off
+pnpm run test:watch
 ```
 Tested helpers:
 - `filters.ts` (category visibility & announcement text)
@@ -871,9 +889,9 @@ Tested helpers:
 JavaScript (JSDoc strict) + TypeScript unit helpers:
 
 ```bash
-npm run lint      # ESLint (flat config) over .js/.ts
-npm run test      # Vitest unit tests (jsdom)
-npm run coverage  # Generates coverage/ (lcov + HTML)
+pnpm run lint      # ESLint (flat config) over .js/.ts
+pnpm run test      # Vitest unit tests (jsdom)
+pnpm run coverage  # Generates coverage/ (lcov + HTML)
 ```
 
 Notes:
@@ -884,8 +902,8 @@ Notes:
 
 ### Coverage Badges (Shields JSON)
 Pipeline (current):
-1. `npm run coverage` generates `coverage/coverage-summary.json` (Vitest).
-2. `npm run cov:badges` (script `scripts/coverage-shield.mjs`) produces multiple Shields endpoints under `.github/badges/`:
+1. `pnpm run coverage` generates `coverage/coverage-summary.json` (Vitest).
+2. `pnpm run cov:badges` (script `scripts/coverage-shield.mjs`) produces multiple Shields endpoints under `.github/badges/`:
   - `coverage.json` (combined: `L <lines>| B <branches>| F <functions>`)
   - `lines.json`, `branches.json`, `functions.json` (individual metrics)
 3. CI workflow (`unit-ci.yml`) commits these JSON files to the `status-badge` branch alongside the raw summary.
@@ -893,8 +911,8 @@ Pipeline (current):
 
 Local regeneration after modifying tests:
 ```bash
-npm run coverage
-npm run cov:badges
+pnpm run coverage
+pnpm run cov:badges
 git checkout -B status-badge
 git add .github/badges/*.json coverage/coverage-summary.json
 git commit -m "chore(badges): update coverage shields"
@@ -923,7 +941,7 @@ This repository is ESM-first (`"type": "module"` in `package.json`).
 ### Pre-commit Hooks (Husky + lint-staged)
 Install dependencies (already in `devDependencies` after setup):
 ```bash
-npm run prepare   # installs .husky/ hooks
+pnpm run prepare   # installs .husky/ hooks
 ```
 Hook behavior:
 * Staged JS/TS: ESLint (`--max-warnings=0`) then `vitest related --run` (fast selective tests).
@@ -943,22 +961,22 @@ These tests exercise the deployed production host (status pill + readiness) and 
 
 Install browsers (first time):
 ```bash
-npm run e2e:install
+pnpm run e2e:install
 ```
 
 Run against prod (default base URL embedded):
 ```bash
-npm run e2e
+pnpm run e2e
 ```
 
 Override base:
 ```bash
-PROD_BASE=https://assistant.ledger-mind.org npm run e2e
+PROD_BASE=https://assistant.ledger-mind.org pnpm run e2e
 ```
 
 Skip in CI (environment gate):
 ```bash
-SKIP_E2E=1 npm run e2e
+SKIP_E2E=1 pnpm run e2e
 ```
 
 Artifacts (on failure): traces + screenshots (HTML report not auto-opened). Config: `playwright.config.ts`.
@@ -972,11 +990,11 @@ Two lightweight guards were added to catch regressions early:
 ### 1. TypeScript Check Workflow
 File: `.github/workflows/ts-check.yml`
 
-Runs `npm ci` then `tsc --noEmit` (leveraging `checkJs` + `.d.ts` ambient types) on every push / PR to `main` and `test`. Fails fast if any JS/TS typing drift (e.g., window global removal, module rename) occurs.
+Runs `pnpm install --frozen-lockfile` then `tsc --noEmit` (leveraging `checkJs` + `.d.ts` ambient types) on every push / PR to `main` and `test`. Fails fast if any JS/TS typing drift (e.g., window global removal, module rename) occurs.
 
 Local equivalent:
 ```bash
-npm run typecheck
+pnpm run typecheck
 ```
 
 ### 2. UI Smoke (Playwright)
@@ -1115,14 +1133,14 @@ After running any Playwright specs with `STREAM_LATENCY_LOG=1`, use the helper s
 
 ```powershell
 # Single run (Playwright config writes JSON to playwright-report/results.json)
-npm run report:latency
+pnpm run report:latency
 
 # Aggregate every JSON file in playwright-report/ (retries, shards, manual runs)
-npm run report:latency:all
+pnpm run report:latency:all
 
 # Enforce a latency budget (fails when p95 > LATENCY_P95_MS, default 1500ms)
 $env:LATENCY_P95_MS='1200'
-npm run report:latency:gate
+pnpm run report:latency:gate
 ```
 
 Notes:
@@ -1138,7 +1156,7 @@ for ($i = 1; $i -le 5; $i++) {
   npx playwright test -g "@backend chat stream first-chunk" --reporter=json --quiet > "playwright-report/run-$i.json"
   Start-Sleep -Seconds 1
 }
-npm run report:latency:all
+pnpm run report:latency:all
 ```
 
 ## Adding a New Endpoint
@@ -1260,7 +1278,7 @@ Root favicon / PWA icons (`leo-avatar-sm.png` 192x192 and `leo-avatar-md.png` 51
 
 Script: `scripts/generate-favicons.mjs`
 
-Hook: Runs automatically via `prebuild:prod` (triggered by `npm run build:prod` which the Dockerfile uses). This guarantees non-zero PNGs (Content-Length > 0) preventing failing cache/MIME tests or broken PWA install metadata.
+Hook: Runs automatically via `prebuild:prod` (triggered by `pnpm run build:prod` which the Dockerfile uses). This guarantees non-zero PNGs (Content-Length > 0) preventing failing cache/MIME tests or broken PWA install metadata.
 
 Regressions previously occurred when placeholder zero-byte files lived in `public/`. The generation step ensures consistent sizes across local + container builds.
 
@@ -1491,17 +1509,17 @@ $env:WAIT_PRIMARY_META_TIMEOUT_MS='8000'
 $env:WAIT_CHAT_MS='30000'
 $env:WAIT_SSE_MS='120000'
 $env:WAIT_SSE_ATTEMPT_MS='45000'
-npm run test:backend:req
+pnpm run test:backend:req
 ```
 
 Soft diagnostics (never fails):
 ```powershell
-npm run test:backend:req:soft
+pnpm run test:backend:req:soft
 ```
 
 Lenient streaming while stabilizing readiness:
 ```powershell
-npm run test:backend:req:flaky
+pnpm run test:backend:req:flaky
 ```
 
 ### Future Enhancements
@@ -1513,7 +1531,7 @@ npm run test:backend:req:flaky
 For focused investigation of streaming readiness and first-token latency without waiting for the full readiness gate, use:
 
 ```bash
-npm run test:backend:req:stream
+pnpm run test:backend:req:stream
 ```
 
 This script:
@@ -1565,7 +1583,7 @@ $env:UI_URL="http://127.0.0.1:5173"
 $env:DEV_BEARER="dev"
 
 # Run mock tests (uses /agent/run/mock endpoint)
-npm run test:e2e:seo:mock
+pnpm run test:e2e:seo:mock
 ```
 
 **Full Integration Tests** (with real agent execution, ~1-2min):
@@ -1581,7 +1599,7 @@ $env:DEV_BEARER="dev"
 $env:SEO_LLM_ENABLED="0"
 
 # Run full tests (real seo.tune task)
-npm run test:e2e:seo:full
+pnpm run test:e2e:seo:full
 ```
 
 ### Test Modes
@@ -1627,7 +1645,7 @@ const json = await waitForArtifact(
 
 2. **Vite dev server** (port 5173, for UI tests):
    ```powershell
-   npm run dev
+   pnpm run dev
    ```
 
 3. **Environment variables set** (see commands above)
@@ -2455,3 +2473,5 @@ event: 'COMMENT'  # instead of 'REQUEST_CHANGES'
 4. Append entry to `docs/CHANGELOG.md`
 
 ## TODO
+
+

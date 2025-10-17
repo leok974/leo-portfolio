@@ -1,4 +1,10 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+# Check if backend is running before attempting agent validation
+if ! curl -fsS http://127.0.0.1:8001/ready >/dev/null 2>&1; then
+  echo "[pre-push] Backend not running; skipping agent validation."
+  exit 0
+fi
+
 npm run agent:seo:validate:file

@@ -1,10 +1,15 @@
 /** @jsxImportSource preact */
 import { render } from "preact";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { currentLayout, loadLayout, type LayoutRecipe } from "./layout";
 import { isAdmin } from "./admin";
+import { initAssistantDock } from "./assistant.dock";
+import { inputValue } from "../../../src/utils/event-helpers";
 
 const LAYOUT_EVENT = "layout:update";
+
+// API base URL from environment
+const API_BASE = import.meta.env.VITE_AGENT_API_BASE || "";
 
 // ---- Chat types ----
 interface ChatMsg {
@@ -13,63 +18,91 @@ interface ChatMsg {
   ts: number;
 }
 
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
 // ---- Helpers ----
 function now() { return Date.now(); }
 function fmt(ts: number) { return new Date(ts).toLocaleTimeString(); }
-function uuid() {
-  // prefer crypto.randomUUID if available; otherwise a tiny fallback
-  const g = (crypto as any)?.randomUUID?.();
-  if (g) return g as string;
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0; const v = c === "x" ? r : (r & 0x3) | 0x8; return v.toString(16);
+
+// ---- Chat API helpers ----
+async function chatOnce(messages: ChatMessage[]) {
+  const r = await fetch(`${API_BASE}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages }),
+    credentials: 'include',
   });
+  if (!r.ok) throw new Error(`chat failed: ${r.status}`);
+  const data = await r.json();
+  // Extract reply from standard OpenAI-like response
+  return data.content || data.choices?.[0]?.message?.content || 'No response';
 }
 
-/**
- * Generic SSE with auto-reconnect (jittered backoff)
- * Pass an explicit key so the hook resets when url changes.
- */
-function useSSE(url: string, onEvent: (data: string) => void, onOpen?: () => void, key?: string) {
-  const esRef = useRef<EventSource | null>(null);
-  const backoffRef = useRef(1000);
+async function chatStream(
+  messages: ChatMessage[],
+  { onDelta, onDone, onError }: { onDelta: (t: string) => void; onDone: () => void; onError: (e: any) => void }
+) {
+  const r = await fetch(`${API_BASE}/chat/stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages }),
+    credentials: 'include',
+  });
+  if (!r.ok || !r.body) {
+    onError(new Error(`stream failed: ${r.status}`));
+    return;
+  }
 
-  useEffect(() => {
-    let cancelled = false;
+  const reader = r.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
 
-    const connect = () => {
-      if (cancelled) return;
-      try {
-        const es = new EventSource(url, { withCredentials: true });
-        esRef.current = es;
-        es.onopen = () => {
-          backoffRef.current = 1000;
-          onOpen?.();
-        };
-        es.onmessage = (e) => onEvent(e.data);
-        es.onerror = () => {
-          es.close();
-          esRef.current = null;
-          const delay = Math.min(backoffRef.current, 15000) + Math.floor(Math.random() * 500);
-          backoffRef.current = Math.min(backoffRef.current * 2, 15000);
-          setTimeout(connect, delay);
-        };
-      } catch {
-        const delay = Math.min(backoffRef.current, 15000) + Math.floor(Math.random() * 500);
-        backoffRef.current = Math.min(backoffRef.current * 2, 15000);
-        setTimeout(connect, delay);
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+
+      // event-stream chunks are separated by double newlines
+      let idx;
+      while ((idx = buf.indexOf('\n\n')) >= 0) {
+        const chunk = buf.slice(0, idx);
+        buf = buf.slice(idx + 2);
+        // expect lines like: "data: {...}" or "data: [DONE]"
+        const dataLine = chunk.split('\n').find(l => l.startsWith('data:'));
+        if (!dataLine) continue;
+        const data = dataLine.slice(5).trim();
+
+        if (data === '[DONE]') {
+          onDone();
+          return;
+        }
+        try {
+          const evt = JSON.parse(data);
+          // Handle OpenAI-like delta structure
+          const text = evt.delta?.content || evt.choices?.[0]?.delta?.content || '';
+          if (text) onDelta(text);
+          if (evt.done) { onDone(); return; }
+        } catch {
+          // Some servers send raw text; treat as delta
+          onDelta(data);
+        }
       }
-    };
-
-    connect();
-    return () => { cancelled = true; esRef.current?.close(); esRef.current = null; };
-  }, [url, key]);
+    }
+    onDone();
+  } catch (e) {
+    onError(e);
+  }
 }
 
 /**
  * Assistant panel:
- *  - streams site/agent events from /agent/events
- *  - streams chat tokens from /chat/stream?channel=…
- *  - POSTs user text to /chat with channel id
+ *  - Uses POST /chat for simple requests
+ *  - Uses POST /chat/stream for streaming responses
+ *  - Shows offline badge when API is unavailable
  */
 function AssistantPanel() {
   const [layout, setLayout] = useState<LayoutRecipe | null>(currentLayout());
@@ -77,10 +110,10 @@ function AssistantPanel() {
     { role: "system", text: "Assistant ready. Type below and press Enter.", ts: now() },
   ]);
   const [input, setInput] = useState("");
-  const [channel] = useState(() => uuid());
   const [streaming, setStreaming] = useState(false);
   const [admin, setAdmin] = useState(false);
   const [open, setOpen] = useState(true);
+  const [apiOffline, setApiOffline] = useState(false);
 
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -105,111 +138,84 @@ function AssistantPanel() {
     if (n) n.scrollTop = n.scrollHeight;
   }, [msgs]);
 
-  // ---- Site/agent events (global) ----
-  const onAgentEvent = useMemo(() => (text: string) => {
-    // try parse role/text JSON; else plain text
-    try {
-      const data = JSON.parse(text);
-      const role: ChatMsg["role"] = data.role ?? "assistant";
-      const body = typeof data.text === "string" ? data.text : JSON.stringify(data);
-      setMsgs((p) => [...p, { role, text: body, ts: now() }]);
-    } catch {
-      setMsgs((p) => [...p, { role: "assistant", text, ts: now() }]);
-    }
-  }, []);
-  useSSE("/agent/events", onAgentEvent, () => {
-    setMsgs((p) => [...p, { role: "event", text: "[events] connected", ts: now() }]);
-  }, "agent");
-
-  // ---- Chat stream (per channel) ----
-  // Accumulates partial tokens into the last assistant message.
-  const streamKey = `chat:${channel}`;
-  const lastAssistantIdxRef = useRef<number | null>(null);
-
-  const onChatOpen = () => {
-    setMsgs((p) => [...p, { role: "event", text: `[chat] stream connected (${channel})`, ts: now() }]);
-  };
-
-  const onChatEvent = (text: string) => {
-    // conventions accepted:
-    //  - "[DONE]" => finalize
-    //  - JSON {type:"meta", ...} ignored or displayed as event
-    //  - raw token strings appended to assistant message
-    if (text === "[DONE]") {
-      setStreaming(false);
-      setMsgs((p) => [...p, { role: "event", text: "[chat] done", ts: now() }]);
-      lastAssistantIdxRef.current = null;
-      return;
-    }
-    try {
-      const data = JSON.parse(text);
-      if (typeof data?.text === "string") {
-        appendAssistant(data.text);
-        return;
-      }
-      // non-text JSON → show as event
-      setMsgs((p) => [...p, { role: "event", text, ts: now() }]);
-    } catch {
-      // treat as raw token
-      appendAssistant(text);
-    }
-  };
-
-  function appendAssistant(token: string) {
-    setMsgs((prev) => {
-      // find or create the "streaming" assistant message
-      let idx = lastAssistantIdxRef.current;
-      let next = [...prev];
-      if (idx == null) {
-        idx = next.length;
-        lastAssistantIdxRef.current = idx;
-        next.push({ role: "assistant", text: token, ts: now() });
-      } else {
-        next[idx] = { ...next[idx], text: next[idx].text + token, ts: next[idx].ts };
-      }
-      return next;
-    });
-  }
-
-  useSSE(`/chat/stream?channel=${encodeURIComponent(channel)}`, onChatEvent, onChatOpen, streamKey);
-
-  // ---- Send a user message to /chat with channel id ----
+  // ---- Send a user message via streaming ----
   async function send(text: string) {
     const clean = text.trim();
     if (!clean) return;
+
+    // Check if API is offline
+    if (apiOffline) {
+      setMsgs((p) => [...p, {
+        role: "event",
+        text: "[error] Assistant API is offline. Please try again later.",
+        ts: now()
+      }]);
+      return;
+    }
+
     setMsgs((p) => [...p, { role: "user", text: clean, ts: now() }]);
     setInput("");
     setStreaming(true);
+
+    // Build messages from history (last 5 turns for context)
+    const history: ChatMessage[] = msgs
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .slice(-5)
+      .map(m => ({ role: m.role as 'user' | 'assistant', content: m.text }));
+
+    history.push({ role: 'user', content: clean });
+
+    // Try streaming first
+    let streamWorked = false;
+    let accumulatedText = '';
+
     try {
-      const res = await fetch("/chat", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: clean, channel }), // <— pass channel to bind the stream
+      await chatStream(history, {
+        onDelta: (delta) => {
+          streamWorked = true;
+          accumulatedText += delta;
+          // Update last message or add new one
+          setMsgs((p) => {
+            const last = p[p.length - 1];
+            if (last && last.role === 'assistant' && last.ts > now() - 5000) {
+              // Update existing assistant message
+              return [...p.slice(0, -1), { ...last, text: accumulatedText }];
+            } else {
+              // Create new assistant message
+              return [...p, { role: 'assistant', text: accumulatedText, ts: now() }];
+            }
+          });
+        },
+        onDone: () => {
+          setStreaming(false);
+          setApiOffline(false);
+        },
+        onError: (err) => {
+          console.error('[chat] stream error:', err);
+          // Don't throw, will fall back to non-streaming
+        }
       });
-      if (!res.ok) {
-        setStreaming(false);
-        setMsgs((p) => [...p, { role: "event", text: `[chat] ${res.status} ${res.statusText}`, ts: now() }]);
-        return;
+    } catch (streamErr) {
+      console.warn('[chat] streaming failed, trying non-stream:', streamErr);
+    }
+
+    // Fallback to non-streaming if stream didn't work
+    if (!streamWorked) {
+      try {
+        const reply = await chatOnce(history);
+        setMsgs((p) => [...p, { role: "assistant", text: reply, ts: now() }]);
+        setApiOffline(false);
+      } catch (err: any) {
+        const errorMsg = err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError')
+          ? "[error] Cannot reach assistant API - please check connection"
+          : `[error] ${String(err)}`;
+        setMsgs((p) => [...p, { role: "event", text: errorMsg, ts: now() }]);
+
+        if (err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError')) {
+          setApiOffline(true);
+        }
       }
-      // If server doesn't stream, fall back to non-stream JSON/text reply:
-      const ct = res.headers.get("content-type") || "";
-      if (ct.includes("application/json")) {
-        const data = await res.json();
-        const reply = typeof (data.reply ?? data.text) === "string"
-          ? (data.reply ?? data.text)
-          : JSON.stringify(data);
-        appendAssistant(reply);
-        setStreaming(false);
-      } else if (ct.startsWith("text/")) {
-        const reply = await res.text();
-        appendAssistant(reply);
-        setStreaming(false);
-      }
-      // If server *does* stream, tokens will be delivered via SSE; we'll get [DONE] to stop.
-    } catch (err: any) {
       setStreaming(false);
-      setMsgs((p) => [...p, { role: "event", text: `[chat] error: ${String(err)}`, ts: now() }]);
     }
   }
 
@@ -261,6 +267,15 @@ function AssistantPanel() {
         <div style="display:flex; align-items:center; gap:.5rem;">
           <div style="font-weight:600;">Portfolio Assistant</div>
           {admin && <span class="asst-badge-admin">admin</span>}
+          {apiOffline && (
+            <span
+              class="asst-badge-offline"
+              title="Assistant API is offline"
+              style="background:#ef4444; color:white; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:600;"
+            >
+              offline
+            </span>
+          )}
         </div>
         <div class="asst-controls" style="display:flex; gap:.25rem;">
           {admin && (
@@ -283,7 +298,12 @@ function AssistantPanel() {
               </button>
             </>
           )}
-          <button class="btn-sm" onClick={() => setOpen(false)} title="Hide panel">
+          <button
+            id="assistant-hide-btn"
+            class="btn-sm"
+            aria-pressed="false"
+            title="Hide panel (persists across reload)"
+          >
             Hide
           </button>
         </div>
@@ -307,14 +327,22 @@ function AssistantPanel() {
       <div class="asst-compose">
         <textarea
           aria-label="Message"
-          placeholder="Type a message…"
+          placeholder={apiOffline ? "Assistant offline - cannot send messages" : "Type a message…"}
           value={input}
-          onInput={(e: any) => setInput(e.currentTarget.value)}
+          onInput={(e: any) => setInput(inputValue(e))}
           onKeyDown={(e: any) => onKey(e as KeyboardEvent)}
           rows={1}
+          disabled={apiOffline}
+          style={apiOffline ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
         />
-        <button class="btn" onClick={() => void send(input)} disabled={streaming} data-testid="assistant-send">
-          {streaming ? "Sending…" : "Send"}
+        <button
+          class="btn"
+          onClick={() => void send(input)}
+          disabled={streaming || apiOffline}
+          data-testid="assistant-send"
+          title={apiOffline ? "API is offline" : undefined}
+        >
+          {streaming ? "Sending…" : apiOffline ? "Offline" : "Send"}
         </button>
       </div>
 
@@ -327,4 +355,8 @@ function AssistantPanel() {
 }
 
 const mount = document.getElementById("assistant-root");
-if (mount) render(<AssistantPanel />, mount);
+if (mount) {
+  render(<AssistantPanel />, mount);
+  // Initialize dock controls after render
+  initAssistantDock();
+}

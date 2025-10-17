@@ -4,7 +4,7 @@
 
 ### Run all tests
 ```bash
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 ### Run specific file
@@ -28,7 +28,7 @@ PWDEBUG=1 npx playwright test tests/e2e/ops-agents.spec.ts
 
 ### UI mode (interactive test explorer)
 ```bash
-npm run test:e2e:ui
+pnpm run test:e2e:ui
 ```
 
 ### Run against live backend (skip mocks)
@@ -137,7 +137,7 @@ To trigger: Go to Actions → E2E workflow → Run workflow
 1. **Check the HTML report**: `npx playwright show-report`
 2. **View traces**: `npx playwright show-trace test-results/.../trace.zip`
 3. **Run in headed mode**: Remove `headless: true` from config
-4. **Use UI mode**: `npm run test:e2e:ui` for step-by-step debugging
+4. **Use UI mode**: `pnpm run test:e2e:ui` for step-by-step debugging
 5. **Check screenshots**: Located in `test-results/` after failure
 
 ## Best Practices

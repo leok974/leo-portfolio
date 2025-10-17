@@ -10,7 +10,7 @@ import './assistant-dock';
 import { applyProjectFilter, announcementText } from './filters';
 import { computeGalleryIndex } from './gallery-nav';
 import { startLenis } from './lib/lenis';
-import { createRoot } from 'react-dom/client';
+import { render, h } from 'preact';
 import * as React from 'react';
 import Toasts from './components/Toasts';
 import { enhanceCTAs } from './lib/enhance-ctas';
@@ -43,7 +43,7 @@ syncDevFlagFromQuery();
     toastContainer = document.createElement('div');
     toastContainer.id = 'toast-container';
     document.body.appendChild(toastContainer);
-    createRoot(toastContainer).render(React.createElement(Toasts));
+    render(h(Toasts, null), toastContainer);
   }
 })();
 
@@ -56,7 +56,7 @@ syncDevFlagFromQuery();
     const badgeContainer = document.createElement('div');
     badgeContainer.id = 'metrics-badge-container';
     navRight.appendChild(badgeContainer);
-    createRoot(badgeContainer).render(React.createElement(MetricsBadge));
+    render(h(MetricsBadge, null), badgeContainer);
   }
 })();
 

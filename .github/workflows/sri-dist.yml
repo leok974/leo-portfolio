@@ -15,9 +15,9 @@ jobs:
         with:
           node-version: '20'
       - name: Install deps
-        run: npm ci --no-audit --no-fund
+        run: pnpm install --frozen-lockfile --no-audit --no-fund
       - name: Build (Vite)
-        run: npm run build
+        run: pnpm run build
       - name: Snapshot dist manifest (pre)
         run: |
           if [ -f dist/sri-manifest.json ]; then cp dist/sri-manifest.json dist/sri-manifest.prev.json; fi

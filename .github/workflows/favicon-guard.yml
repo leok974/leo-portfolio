@@ -14,15 +14,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: 'pnpm'
       - name: Install deps
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - name: Build (prod) to generate favicons
-        run: npm run build:prod
+        run: pnpm run build:prod
       - name: Assert favicon sizes
         run: |
           set -e
@@ -39,7 +45,7 @@ jobs:
           EXPECT_EDGE: '1'
           BASE: http://localhost:5178
         run: |
-          npm run build:prod
+          pnpm run build:prod
           npx http-server ./dist -p 5178 -c-1 &
           pid=$!
           npx playwright test -g "Favicon & Touch Icons" --reporter=line || { kill $pid; exit 1; }

@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
       - name: Run SEO tune (safe, require rolling PR)
         id: tune
@@ -26,7 +26,7 @@ jobs:
           SITE_BASE_URL: https://assistant.ledger-mind.org
         run: |
           set -e
-          OUT=$(npm run -s seo:tune -- --require-pr)
+          OUT=$(pnpm run -s seo:tune -- --require-pr)
           echo "$OUT"
           PR_URL=$(echo "$OUT" | sed -n 's/^outputs_uri=//p')
           echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"

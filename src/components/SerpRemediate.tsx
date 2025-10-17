@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { inputValue, inputChecked } from "@/utils/event-helpers";
 
 interface PlanItem {
   action: string;
@@ -54,11 +55,11 @@ export default function SerpRemediate() {
       <div className="flex flex-wrap items-center gap-3 mb-3">
         <label className="text-sm">Limit
           <input type="number" min={1} max={50} value={limit}
-                 onChange={(e)=>setLimit(Number(e.target.value))}
+                 onChange={(e) => setLimit(Number(inputValue(e)))}
                  className="ml-2 w-20 border rounded px-2 py-1 text-sm"/>
         </label>
         <label className="text-sm inline-flex items-center gap-2">
-          <input type="checkbox" checked={dispatch} onChange={(e)=>setDispatch(e.target.checked)}/>
+          <input type="checkbox" checked={dispatch} onChange={(e) => setDispatch(inputChecked(e))}/>
           Dispatch to rewrite endpoint
         </label>
         <button onClick={run} disabled={busy} className="px-3 py-1.5 rounded-md border">

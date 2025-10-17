@@ -11,6 +11,7 @@ import AgentsQuickRuns from "./AgentsQuickRuns";
 import OpsAgents from "./OpsAgents";
 import OverlayRecentRuns from "./OverlayRecentRuns";
 import OverlayApprovalBadge from "./OverlayApprovalBadge";
+import { inputValue, inputChecked } from "@/utils/event-helpers";
 
 interface ToolsList {
   ok: boolean;
@@ -240,7 +241,7 @@ export function AdminToolsPanel({ base = "" }: { base?: string }) {
             <select
               className="h-8 rounded border border-slate-300 bg-white px-2 text-xs dark:border-slate-700 dark:bg-slate-900"
               value={script}
-              onChange={(e) => setScript(e.target.value)}
+              onChange={(e) => setScript(inputValue(e))}
             >
               {tools!.allowlist.map((p) => (
                 <option key={p} value={p}>{p}</option>
@@ -253,7 +254,7 @@ export function AdminToolsPanel({ base = "" }: { base?: string }) {
         <Input
           data-testid="tools-script-input"
           value={script}
-          onChange={(e) => setScript(e.target.value)}
+          onChange={(e) => setScript(inputValue(e))}
           placeholder="scripts/rag-build-index.ps1"
           className="mb-2"
         />
@@ -264,7 +265,7 @@ export function AdminToolsPanel({ base = "" }: { base?: string }) {
             type="checkbox"
             className="h-4 w-4"
             checked={useDetectedDb}
-            onChange={(e) => setUseDetectedDb(e.target.checked)}
+            onChange={(e) => setUseDetectedDb(inputChecked(e))}
           />
           <label htmlFor="useDetected" className="text-[11px] text-slate-600 dark:text-slate-300">
             Use detected DB ({db || "none"})
@@ -277,7 +278,7 @@ export function AdminToolsPanel({ base = "" }: { base?: string }) {
             <Input
               data-testid="tools-db-input"
               value={dbPath}
-              onChange={(e) => setDbPath(e.target.value)}
+              onChange={(e) => setDbPath(inputValue(e))}
               placeholder="D:/path/to/rag.sqlite"
               className="mb-2"
             />

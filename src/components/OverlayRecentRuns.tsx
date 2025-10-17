@@ -5,6 +5,7 @@
  * Reuses the existing /agents/tasks/paged endpoint with limit=10.
  */
 import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { inputValue, inputChecked } from "@/utils/event-helpers";
 import { adminHeaders } from "@/lib/adminHeaders";
 
 interface AgentTask {
@@ -63,7 +64,7 @@ export default function OverlayRecentRuns() {
           <input
             data-testid="overlay-agent-input"
             value={agent}
-            onChange={(e) => setAgent(e.target.value)}
+            onChange={(e) => setAgent(inputValue(e))}
             placeholder="seo.validate, code.review…"
             className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-sm"
           />
@@ -73,7 +74,7 @@ export default function OverlayRecentRuns() {
           <select
             data-testid="overlay-status-select"
             value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            onChange={(e) => setStatus(inputValue(e))}
             className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-sm"
           >
             <option value="">(any)</option>
@@ -89,7 +90,7 @@ export default function OverlayRecentRuns() {
           <select
             data-testid="overlay-since-select"
             value={String(sinceHrs)}
-            onChange={(e) => setSinceHrs(Number(e.target.value))}
+            onChange={(e) => setSinceHrs(Number(inputValue(e)))}
             className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-sm"
           >
             <option value="6">6h</option>

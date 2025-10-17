@@ -78,7 +78,7 @@ for (const specPath of specFiles) {
   // Detect if this should be @portfolio based on content
   const isPortfolio = portfolioIndicators.some(rx => rx.test(src));
   const isSiteagent = siteagentIndicators.some(rx => rx.test(src));
-  
+
   let targetTag = tag;
   if (isPortfolio && !isSiteagent) {
     targetTag = 'portfolio';

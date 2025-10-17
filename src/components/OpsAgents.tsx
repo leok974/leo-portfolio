@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { inputValue, inputChecked } from "@/utils/event-helpers";
 import { adminHeaders } from "@/lib/adminHeaders";
 
 interface AgentTask {
@@ -156,7 +157,7 @@ export default function OpsAgents() {
             data-testid="since-input"
             type="datetime-local"
             value={since}
-            onChange={(e) => setSince(e.target.value)}
+            onChange={(e) => setSince(inputValue(e))}
             className="ml-2 bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-sm"
           />
         </label>
@@ -227,7 +228,7 @@ export default function OpsAgents() {
             data-testid="task-input"
             placeholder="seo.validate, code.review, dx.integrate"
             value={taskFilterRaw}
-            onChange={(e) => setTaskFilterRaw(e.target.value)}
+            onChange={(e) => setTaskFilterRaw(inputValue(e))}
             className="mt-1 w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-sm"
           />
         </label>

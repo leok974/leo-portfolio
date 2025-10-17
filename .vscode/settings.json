@@ -1,0 +1,37 @@
+{
+  "css.validate": true,
+  "css.lint.unknownAtRules": "ignore",
+  "css.lint.unknownProperties": "ignore",
+  "grafana-vscode.URL": "http://localhost:3000",
+  "npm.packageManager": "pnpm",
+
+  // SonarLint exclusions
+  "sonarlint.analyzerProperties": {
+    "sonar.exclusions": "**/copilot-instructions.md,**/.github/**"
+  },
+
+  // Reduce file watcher overhead
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/dist-portfolio/**": true,
+    "**/dist-siteagent/**": true,
+    "**/coverage/**": true,
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/copilot-instructions.md": true,
+    "**/.github/**": true
+  },
+
+  // Reduce search indexing overhead
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/dist-portfolio": true,
+    "**/dist-siteagent": true,
+    "**/coverage": true,
+    "**/.git": true,
+    "**/copilot-instructions.md": true,
+    "**/.github/**": true
+  }
+}

@@ -1,5 +1,5 @@
 import React from "react";
-import { createRoot } from "react-dom/client";
+import { render } from 'preact';
 import { API } from "@/api";
 import { AdminRebuildButton } from "@/components/AdminRebuildButton";
 import { AdminToolsPanel } from "@/components/AdminToolsPanel";
@@ -63,10 +63,10 @@ export function mountAdminRebuildFloating(base = "") {
   host.appendChild(card5);
   host.appendChild(card6);
 
-  createRoot(card1).render(<AdminRebuildButton base={finalBase} />);
-  try { createRoot(card2).render(<AdminToolsPanel base={finalBase} />); } catch {}
-  try { createRoot(card3).render(<AdminEvalWidget base={finalBase} />); } catch {}
-  try { createRoot(card4).render(<AdminFeedbackWidget base={finalBase} />); } catch {}
-  try { createRoot(card5).render(<AutotuneButton alpha={0.5} />); } catch {}
-  try { createRoot(card6).render(<ABAnalyticsDashboard />); } catch {}
+  render(<AdminRebuildButton base={finalBase} />, card1);
+  try { render(<AdminToolsPanel base={finalBase} />, card2); } catch {}
+  try { render(<AdminEvalWidget base={finalBase} />, card3); } catch {}
+  try { render(<AdminFeedbackWidget base={finalBase} />, card4); } catch {}
+  try { render(<AutotuneButton alpha={0.5} />, card5); } catch {}
+  try { render(<ABAnalyticsDashboard />, card6); } catch {}
 }

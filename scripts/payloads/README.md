@@ -8,13 +8,13 @@ This directory contains example payload files for agent runner script (`scripts/
 
 ### Validate Payloads
 ```bash
-npm run payload:validate  # Validates all payloads against JSON schemas
+pnpm run payload:validate  # Validates all payloads against JSON schemas
 ```
 
 ### Run Agent with Payload
 ```bash
-npm run agent:seo:validate:file  # Uses seo-validate.json
-npm run agent:seo:tune:file      # Uses seo-tune.json
+pnpm run agent:seo:validate:file  # Uses seo-validate.json
+pnpm run agent:seo:tune:file      # Uses seo-tune.json
 ```
 
 ---
@@ -29,7 +29,7 @@ All payload files are validated against JSON schemas to prevent drift and ensure
 
 **Validation**:
 - **Pre-commit**: Automatic validation via Husky hook
-- **Manual**: `npm run payload:validate`
+- **Manual**: `pnpm run payload:validate`
 - **CI/CD**: Runs in GitHub Actions before agent execution
 
 ---
@@ -61,7 +61,7 @@ node scripts/agents-run.mjs --agent <name> --task <name> --payload scripts/paylo
 
 **Usage**:
 ```bash
-npm run agent:seo:validate:file
+pnpm run agent:seo:validate:file
 # or
 node scripts/agents-run.mjs --agent seo --task validate --payload scripts/payloads/seo-validate.json
 ```
@@ -83,7 +83,7 @@ node scripts/agents-run.mjs --agent seo --task validate --payload scripts/payloa
 
 **Usage**:
 ```bash
-npm run agent:seo:tune:file
+pnpm run agent:seo:tune:file
 # or
 node scripts/agents-run.mjs --agent seo --task tune --payload scripts/payloads/seo-tune.json
 ```

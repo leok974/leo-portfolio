@@ -1,0 +1,45 @@
+# Dockerfile for Portfolio Static Site
+# Multi-stage build: build the app, then serve with nginx
+
+# Stage 1: Build
+FROM node:20-alpine AS builder
+
+WORKDIR /build
+
+# Copy package files
+COPY package*.json ./
+COPY apps/portfolio-ui/package*.json ./apps/portfolio-ui/
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY apps/portfolio-ui ./apps/portfolio-ui
+COPY vite.config.portfolio.ts ./
+COPY tsconfig.json ./
+
+# Build production bundle
+RUN npm run build:portfolio
+
+# Stage 2: Production
+FROM nginx:1.27-alpine
+
+# Copy built files from builder
+COPY --from=builder /build/dist-portfolio /usr/share/nginx/html
+
+# Copy nginx configuration (basic, reverse proxy will handle routing)
+COPY deploy/nginx.portfolio-static.conf /etc/nginx/conf.d/default.conf
+
+# Add labels for metadata
+LABEL org.opencontainers.image.title="Leo Portfolio"
+LABEL org.opencontainers.image.description="Portfolio static site with assistant integration"
+LABEL org.opencontainers.image.source="https://github.com/leok974/leo-portfolio"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
+  CMD wget --quiet --tries=1 --spider http://localhost:80/ || exit 1
+
+EXPOSE 80
+
+# Run nginx
+CMD ["nginx", "-g", "daemon off;"]

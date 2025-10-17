@@ -30,6 +30,8 @@ export default [
       'public/assets/js/**/*.js',  // Exclude public asset JavaScript files
       'test-script.js',  // HTML file misnamed as .js
       'scripts/seo.tune.mjs',  // JSDoc comments trigger TypeScript parser false positives
+      '.github/**',  // Exclude GitHub workflows and actions
+      '**/copilot-instructions.md',  // Exclude Copilot instructions
     ],
   },
 

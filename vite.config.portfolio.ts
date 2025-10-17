@@ -1,4 +1,5 @@
 import { defineConfig, Plugin } from 'vite';
+import preact from '@preact/preset-vite';
 import path from 'node:path';
 
 // Plugin to add nonce placeholder to all script tags in built HTML
@@ -19,7 +20,7 @@ export default defineConfig({
   root: 'apps/portfolio-ui',
   base: '/',
   publicDir: 'public',
-  plugins: [injectNoncePlaceholder()],
+  plugins: [preact(), injectNoncePlaceholder()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'apps/portfolio-ui'),

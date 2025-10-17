@@ -3,7 +3,7 @@
     "title": "LedgerMind",
     "slug": "ledgermind",
     "tags": ["ai", "finance", "ml"],
-    "thumbnail": "assets/ledgermind-thumb.webp",
+    "thumbnail": "assets/ledgermind-thumb.svg",
     "problem": "Personal finance tools fragment data across banks, budgets, and AI assistants with little explainability.",
     "solution": "Unified ledger ingestion, grounded NL → SQL analytics, and explainable AI suggestions with traceable references.",
     "demo": "https://app.ledger-mind.org",
@@ -20,59 +20,26 @@
       "Explain drawer with grounded references",
       "Exports to PDF/XLSX"
     ],
-    "images": [
-      {
-        "src": "assets/ledgermind-detail.webp",
-        "alt": "LedgerMind dashboard overview",
-        "caption": "Overview dashboard with grounded analytics."
-      }
-    ],
-    "videos": [
-      {
-        "poster": "assets/ledgermind-detail-poster.webp",
-        "sources": [
-          { "src": "assets/ledgermind-demo.webm", "type": "video/webm" },
-          { "src": "assets/ledgermind-demo.mp4", "type": "video/mp4" }
-        ],
-        "captions": "assets/ledgermind-demo.vtt"
-      }
-    ],
-    "downloads": [
-      {
-        "href": "assets/ledgermind-case-study.pdf",
-        "label": "Case Study (PDF)"
-      },
-      { "href": "assets/ledgermind-brief.pdf", "label": "One‑pager" }
-    ]
+    "images": [],
+    "videos": [],
+    "downloads": []
   },
   "datapipe-ai": {
     "title": "DataPipe AI",
     "slug": "datapipe-ai",
-    "tags": ["ai", "devops", "kubernetes", "ml"],
-    "thumbnail": "assets/datapipe-ai-cover.webp",
-    "problem": "Kubernetes/GKE operations generate noisy metrics and manual pipelines—operators react instead of anticipating.",
-    "solution": "Agent monitors telemetry, predicts scaling / failures, and automates pipeline deployment + remediation actions.",
-    "description": "AI-powered ops agent for GKE deployments with automated data pipeline management and intelligent monitoring.",
-    "goals": "Streamline Kubernetes operations with AI-driven automation, providing intelligent monitoring and automated data pipeline management for GKE deployments.",
-    "stack": [
-      "Google Kubernetes Engine (GKE)",
-      "Python, FastAPI",
-      "Kubernetes API, kubectl",
-      "Prometheus, Grafana",
-      "Docker, CI/CD pipelines"
-    ],
+    "tags": ["ai", "analytics", "devops"],
+    "thumbnail": "",
+    "problem": "Data engineering teams waste time manually scaling GKE clusters and troubleshooting pipeline failures.",
+    "solution": "AI-powered analytics platform that monitors data pipelines and automatically optimizes GKE resources.",
+    "description": "AI operations platform for GKE cluster management and data pipeline optimization.",
+    "goals": "AI operations platform for GKE cluster management and data pipeline optimization.",
+    "stack": ["GKE, Kubernetes", "Python, FastAPI", "Prometheus, Grafana", "ML/AI for predictive scaling"],
     "outcomes": [
-      "Automated deployment orchestration",
       "Intelligent resource scaling",
       "Proactive issue detection and resolution",
       "Streamlined data pipeline operations"
     ],
-    "images": [
-      {
-        "src": "assets/datapipe-ai-detail.webp",
-        "alt": "DataPipe AI dashboard showing GKE cluster management and monitoring"
-      }
-    ],
+    "images": [],
     "videos": [],
     "downloads": []
   },
@@ -80,7 +47,7 @@
     "title": "Clarity Companion",
     "slug": "clarity",
     "tags": ["dev", "extension", "productivity"],
-    "thumbnail": "assets/clarity-thumb.webp",
+    "thumbnail": "",
     "repo": "https://github.com/leok974/clarity-companion",
     "problem": "Writers receive vague style feedback; privacy concerns limit use of cloud AI for iterative editing.",
     "solution": "Local extension enforces clarity heuristics with coverage gates and offline-friendly analysis loop.",
@@ -88,12 +55,7 @@
     "goals": "On‑device writing clarity assistant with strict coverage gates and localized UI.",
     "stack": ["Chrome MV3, TypeScript", "Vitest, CI coverage gates"],
     "outcomes": [],
-    "images": [
-      {
-        "src": "assets/clarity-detail.webp",
-        "alt": "Clarity Companion panel with localized UI"
-      }
-    ],
+    "images": [],
     "videos": [],
     "downloads": []
   }

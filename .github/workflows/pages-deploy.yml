@@ -21,13 +21,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Fetch Inter variable font
         run: |
@@ -35,7 +40,7 @@ jobs:
           curl -L -o fonts/Inter-roman.var.woff2 https://github.com/rsms/inter/releases/latest/download/Inter-roman.var.woff2
 
       - name: Build (optimize + rev)
-        run: npm run build
+        run: pnpm run build
 
       - name: Prepare artifact
         run: |

@@ -1,0 +1,27 @@
+version: "3.9"
+
+name: portfolio
+
+services:
+  portfolio-ui:
+    image: nginx:1.27-alpine
+    container_name: portfolio-ui
+    volumes:
+      - ./nginx.portfolio-dev.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../dist-portfolio:/usr/share/nginx/html:ro
+    ports:
+      - "8090:80"
+      # Uncomment for HTTPS (requires certs in ./certs/)
+      # - "443:443"
+    restart: unless-stopped
+    # Allow container to reach host machine's localhost
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    # Uncomment for TLS
+    # volumes (additional):
+    #   - ./certs:/etc/nginx/certs:ro

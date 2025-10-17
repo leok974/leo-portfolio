@@ -107,7 +107,7 @@ curl -s -X POST http://localhost:8001/agents/run \
   -d '{"agent":"seo","task":"validate","inputs":{"pages":"sitemap://current"}}' | jq
 
 # Or via npm (stubbed outputs for quick dev)
-npm run seo:validate
+pnpm run seo:validate
 ```
 
 📖 **Details**: See [`SEO_REAL_TOOL_COMPLETE.md`](SEO_REAL_TOOL_COMPLETE.md) for architecture, configuration, and testing.
@@ -121,19 +121,19 @@ Automatically fetch your GitHub repositories, normalize metadata (stars, topics,
 **One-time local run**:
 ```bash
 export GITHUB_TOKEN=<your_pat>
-npm run projects:sync
+pnpm run projects:sync
 # prints: outputs_uri=https://github.com/<owner>/<repo>/pull/123
 ```
 
 **Dry-run (show changes without committing)**:
 ```bash
-npm run projects:sync:dry | jq
+pnpm run projects:sync:dry | jq
 # returns: { dry_run: true, changed: true, added: [...], removed: [...], count_before: 10, count_after: 12 }
 ```
 
 **Limit to specific repos**:
 ```bash
-npm run projects:sync:only ledger-mind,leo-portfolio
+pnpm run projects:sync:only ledger-mind,leo-portfolio
 ```
 
 **Recurring (GitHub Actions)**:
@@ -153,16 +153,16 @@ For quick local testing without external tooling, we ship lightweight stub scrip
 
 ```bash
 # Code review (diff-aware)
-npm run agents:code:review | jq
+pnpm run agents:code:review | jq
 
 # DX integration checks (storybook/docs/lint)
-npm run agents:dx:integrate | jq
+pnpm run agents:dx:integrate | jq
 
 # Infrastructure scaling plan
-npm run agents:infra:scale | jq
+pnpm run agents:infra:scale | jq
 
 # SEO validation (lighthouse stub)
-npm run agents:seo:lighthouse | jq
+pnpm run agents:seo:lighthouse | jq
 ```
 
 These stubs write proper artifacts so the backend works on fresh clones. Replace with real tooling via environment variables (see `assistant_api/.env.example`).
@@ -194,11 +194,11 @@ The orchestration system coordinates nightly agent tasks with database tracking 
 **Quick Commands**:
 ```bash
 # Run orchestrator locally
-npm run orchestrator:nightly
+pnpm run orchestrator:nightly
 
 # Run individual tasks
-npm run code:review
-npm run dx:integrate
+pnpm run code:review
+pnpm run dx:integrate
 ```
 
 **Features**:
@@ -245,11 +245,11 @@ The overlay lets you run agent plans, see last actions, and download artifacts (
 
 - **Local one-shot** (brings up Docker, waits, runs tests):
   ```bash
-  npm run e2e:local
+  pnpm run e2e:local
   ```
 - **Plain run** (skips backend-dependent tests if the stack isn't up):
   ```bash
-  npm run test:e2e
+  pnpm run test:e2e
   ```
 
 ---
@@ -424,7 +424,7 @@ Visit: <http://localhost:5173>
 > _“Copilot, scaffold `/projects/<slug>.html` using the modal content. Reuse the layout/header/footer and link the cards to the new pages.”_
 
 **Performance audits**
-> _“Copilot, add a simple `npm run optimize` script that uses `sharp` to convert images to WebP/AVIF and `ffmpeg` commands to make WebM/MP4 previews.”_
+> _“Copilot, add a simple `pnpm run optimize` script that uses `sharp` to convert images to WebP/AVIF and `ffmpeg` commands to make WebM/MP4 previews.”_
 
 **Accessibility checks**
 > _“Copilot, audit the site for WCAG 2.1: focus states, ARIA labels, color contrast, and generate a checklist in `docs/a11y.md`.”_
@@ -992,8 +992,8 @@ python -m uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 --log-leve
 ```
 2) In another terminal: build + serve dist with proxy and run the guardrails spec
 ```powershell
-npm run -s build
-npm run -s e2e:guardrails:proxy
+pnpm run -s build
+pnpm run -s e2e:guardrails:proxy
 ```
 What it asserts:
 - UI shows a shield badge during stream when `meta.guardrails` is present.
@@ -1029,7 +1029,7 @@ D:/leo-portfolio/.venv/Scripts/python.exe scripts/feedback_to_regress.py
 
 ### Frontend Dev: Assets 404 / CSP Inline Styles
 If you see 404s for `/assets/*.css` or fonts and an unstyled page:
-1. Ensure the Vite build produced `dist/` (run `npm run build`).
+1. Ensure the Vite build produced `dist/` (run `pnpm run build`).
 2. For local dev, apply the override: `docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.dev.override.yml up -d --force-recreate nginx`.
 3. Use relaxed CSP in `deploy/nginx.dev.conf` (allows inline while you refactor inline styles).
 4. `site.webmanifest` served with proper MIME via added `types` block (avoid text/html warning).
@@ -1153,32 +1153,32 @@ Convenient shortcuts for common test scenarios:
 
 ```bash
 # Full hermetic test suite
-npm run test:all
+pnpm run test:all
 
 # Frontend-only (CSS/UX + analytics) - fastest
-npm run test:all:frontend
+pnpm run test:all:frontend
 
 # Skip infrastructure (assumes running)
-npm run test:all:skip-infra
+pnpm run test:all:skip-infra
 
 # Update snapshots
-npm run test:all:baseline
+pnpm run test:all:baseline
 
 # Collect diagnostics manually
-npm run diag:collect
+pnpm run diag:collect
 
 # Run tests for changed files only
-npm run test:changed
+pnpm run test:changed
 
 # Quarantine: flaky tests (allowed to fail)
-npm run test:quarantine
+pnpm run test:quarantine
 
 # Non-quarantine: stable tests only
-npm run test:non-quarantine
+pnpm run test:non-quarantine
 
 # Parallel sharding (2 shards)
-npm run test:shard:1  # Terminal 1
-npm run test:shard:2  # Terminal 2
+pnpm run test:shard:1  # Terminal 1
+pnpm run test:shard:2  # Terminal 2
 ```
 
 #### CI Polish Features
@@ -1228,7 +1228,7 @@ On test failures, collect comprehensive diagnostics:
 pwsh .\scripts\collect-diag.ps1
 
 # Or via npm
-npm run diag:collect
+pnpm run diag:collect
 ```
 
 Creates timestamped bundle with:
@@ -1264,15 +1264,15 @@ E2E tests are environment‑sensitive to avoid noisy failures during local itera
 
 | Script | Command | Behavior |
 |--------|---------|----------|
-| Dev (default soft) | `npm run test:dev` | Skips CSS immutability + status pill finalization if assets or backend not fully ready. |
-| Strict (CI / prod) | `npm run test:strict` | Requires built CSS (200 + immutable), status pill transitions out of "Checking…", and streaming emits `_served_by`. |
-| Smoke (assistant only) | `npm run test:smoke` | Minimal single test (assistant.smoke) in soft mode. |
-| **Public smoke** | `npm run smoke:public` | **Tests live production site** (https://assistant.ledger-mind.org) - no local backend needed. See [docs/PUBLIC_SMOKE_TESTS.md](docs/PUBLIC_SMOKE_TESTS.md). |
-| Assistant UI (mock) | `npm run test:assistant:ui` | Backend-free Playwright harness that mocks `/api/chat/stream`; serve `dist/` via `npm run serve:dist` or set `BASE_URL` to an existing edge host. |
-| Assistant fallback guard | `npm run test:assistant:fallback` | Forces `/api/chat/stream` to finish without tokens and asserts the dock falls back to `/api/chat` JSON completions. |
-| Fast UI sweep | `npm run test:fast` | Chromium-only slice (`@frontend` + routing smoke) that aborts on first failure; helper `installFastUI(page)` blocks heavy assets and disables animations for deterministic runs. |
-| Changed specs | `npm run test:changed` | Chromium-only incremental run leveraging Playwright `--only-changed`; ideal while iterating on frontend specs. |
-| Analytics beacons | `npm run test:analytics` | Validates client-side analytics beacons (`page_view`, `scroll_depth`, `link_click`, `dwell`) via route interception; requires static server on port 5173 (`npm run serve` in separate terminal). |
+| Dev (default soft) | `pnpm run test:dev` | Skips CSS immutability + status pill finalization if assets or backend not fully ready. |
+| Strict (CI / prod) | `pnpm run test:strict` | Requires built CSS (200 + immutable), status pill transitions out of "Checking…", and streaming emits `_served_by`. |
+| Smoke (assistant only) | `pnpm run test:smoke` | Minimal single test (assistant.smoke) in soft mode. |
+| **Public smoke** | `pnpm run smoke:public` | **Tests live production site** (https://assistant.ledger-mind.org) - no local backend needed. See [docs/PUBLIC_SMOKE_TESTS.md](docs/PUBLIC_SMOKE_TESTS.md). |
+| Assistant UI (mock) | `pnpm run test:assistant:ui` | Backend-free Playwright harness that mocks `/api/chat/stream`; serve `dist/` via `pnpm run serve:dist` or set `BASE_URL` to an existing edge host. |
+| Assistant fallback guard | `pnpm run test:assistant:fallback` | Forces `/api/chat/stream` to finish without tokens and asserts the dock falls back to `/api/chat` JSON completions. |
+| Fast UI sweep | `pnpm run test:fast` | Chromium-only slice (`@frontend` + routing smoke) that aborts on first failure; helper `installFastUI(page)` blocks heavy assets and disables animations for deterministic runs. |
+| Changed specs | `pnpm run test:changed` | Chromium-only incremental run leveraging Playwright `--only-changed`; ideal while iterating on frontend specs. |
+| Analytics beacons | `pnpm run test:analytics` | Validates client-side analytics beacons (`page_view`, `scroll_depth`, `link_click`, `dwell`) via route interception; requires static server on port 5173 (`pnpm run serve` in separate terminal). |
 
 Environment flags:
 
@@ -1282,7 +1282,7 @@ Environment flags:
 
 Prerequisites for strict success locally:
 
-1. Build frontend: `npm run build` (serves hashed CSS in `dist/`).
+1. Build frontend: `pnpm run build` (serves hashed CSS in `dist/`).
 2. Serve built assets via nginx (see `deploy/docker-compose.prod.yml`) or `vite preview` with correct base path.
 3. Backend running and exposing `/api/ready` + `/api/status/summary` (e.g. `uvicorn assistant_api.main:app --port 8001` behind the nginx `/api` route or adjust `BASE`).
 4. If using custom host/port, export `BASE` (e.g. `BASE=http://localhost:8080`).
@@ -1385,9 +1385,9 @@ if (isEntrypoint(import.meta.url)) {
 
 Unified dispatcher:
 ```bash
-npm run generate:projects
-npm run optimize:media
-npm run validate:schema
+pnpm run generate:projects
+pnpm run optimize:media
+pnpm run validate:schema
 ```
 
 ---

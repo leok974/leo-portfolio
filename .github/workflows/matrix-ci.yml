@@ -15,25 +15,31 @@ jobs:
         node: [18, 20]
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: npm
+          cache: 'pnpm'
       - name: Install deps
-        run: npm ci || npm i
+        run: pnpm install --frozen-lockfile || npm i
       - name: Lint (ESM guard)
-        run: npm run lint
+        run: pnpm run lint
       - name: CI smoke
-        run: npm run ci:smoke
+        run: pnpm run ci:smoke
       - name: Unit tests
-        run: npm run test
+        run: pnpm run test
       - name: Coverage badges (Node 20 only)
         if: matrix.node == '20'
-        run: npm run cov:badges
+        run: pnpm run cov:badges
       - name: Coverage threshold gate (Node 20 only)
         if: matrix.node == '20'
-        run: npm run coverage:gate
+        run: pnpm run coverage:gate
       - name: Dispatcher unknown command test (Node 20 only)
         if: matrix.node == '20'
         run: node tests/dispatcher.unknown.spec.mjs

@@ -11,6 +11,6 @@ jobs:
         with:
           node-version: 20
       - name: Install dependencies
-        run: npm ci || npm i -D @lhci/cli
+        run: pnpm install --frozen-lockfile || npm i -D @lhci/cli
       - name: Run Lighthouse CI
         run: npx lhci autorun --collect.url=https://leok974.github.io/leo-portfolio/ --upload.target=temporary-public-storage

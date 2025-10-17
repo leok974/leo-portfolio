@@ -1,4 +1,5 @@
 import React from "react";
+import type { ComponentChildren } from "preact";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -48,7 +49,7 @@ export function RouteBadge({
     scope?.reason ? `reason: ${scope.reason}` : null,
   ].filter(Boolean).join(" • ");
 
-  const Chip: React.FC<{ className?: string; children: React.ReactNode }> = ({ className, children }) => (
+  const Chip: React.FC<{ className?: string; children: ComponentChildren }> = ({ className, children }) => (
     <Badge
       variant="outline"
       className={cn(

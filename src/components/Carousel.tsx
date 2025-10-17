@@ -1,6 +1,7 @@
+import type { ComponentChildren } from "preact";
 import useEmblaCarousel from 'embla-carousel-react';
 
-export default function Carousel({ items }: { items: React.ReactNode[] }) {
+export default function Carousel({ items }: { items: ComponentChildren[] }) {
   const [ref] = useEmblaCarousel({ loop: true, align: 'start' });
 
   return (

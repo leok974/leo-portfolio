@@ -1,0 +1,5 @@
+# SonarLint exclusions
+# Exclude Copilot instructions and GitHub workflows from analysis
+
+**/copilot-instructions.md
+.github/**

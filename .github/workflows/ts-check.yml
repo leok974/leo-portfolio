@@ -15,6 +15,6 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - name: Install deps
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - name: Type check (no emit)
         run: npx tsc --noEmit --pretty false

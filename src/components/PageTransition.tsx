@@ -1,10 +1,11 @@
+import type { ComponentChildren } from "preact";
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function PageTransition({
   children,
   path,
 }: {
-  children: React.ReactNode;
+  children: ComponentChildren;
   path: string;
 }) {
   return (

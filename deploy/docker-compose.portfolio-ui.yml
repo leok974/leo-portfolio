@@ -1,0 +1,42 @@
+# Portfolio Docker Compose Deployment
+# This file can be deployed directly to your server running docker-compose
+
+services:
+  portfolio-ui:
+    image: ghcr.io/leok974/leo-portfolio/portfolio:latest
+    container_name: portfolio-ui
+    restart: unless-stopped
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+    # Connect to infra network (same as nginx and cloudflared)
+    networks:
+      - infra_net
+
+    # Network alias for nginx to reach
+    # Your nginx config should proxy to http://portfolio.int:80
+    aliases:
+      infra_net:
+        - portfolio.int
+
+    # Optional: expose port on host for testing
+    ports:
+      - "8089:80"
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  infra_net:
+    external: true
+    name: infra_net
