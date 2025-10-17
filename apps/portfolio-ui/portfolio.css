@@ -990,35 +990,33 @@ button:focus-visible {
   text-align: center;
 }
 
-.calendly-wrap {
+.cal-wrap {
   width: min(720px, 100%);
-  overflow: hidden;
-  border-radius: 16px;
-  background: var(--card, #0b1220);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, .25);
+  margin-inline: auto;
 }
 
 .calendly-inline-widget {
   width: 100% !important;
-  min-width: 0 !important;      /* override Calendly's 320px */
+  min-width: 0 !important;       /* kill Calendly's 320px min that causes wrap */
   max-width: 100% !important;
-  height: 700px;
-  overflow: hidden;              /* guard against rogue inner width */
+  height: 680px;                  /* safe default; JS auto-sizes via postMessage */
+  overflow: hidden;
   border-radius: 16px;
-  background: var(--card, #0b1220);
+  background: var(--card, #0f172a);
 }
 
+/* keep iframe fluid too */
 .calendly-inline-widget iframe {
-  background: transparent;
+  width: 100% !important;
+  min-width: 0 !important;
 }
 
-/* Tighter height on small screens */
 @media (max-width: 480px) {
   .calendly-inline-widget {
-    height: 600px !important;
+    height: 620px;
   }
 }
 
-.calendly-wrap + .calendly-wrap {
+.cal-wrap + .cal-wrap {
   margin-top: 1.25rem;
 }
