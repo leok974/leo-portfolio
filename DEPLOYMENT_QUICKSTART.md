@@ -1,6 +1,6 @@
 # Production Deployment Quickstart
 
-**One-time setup**: 15-30 minutes  
+**One-time setup**: 15-30 minutes
 **Future deploys**: Just `git push` (3-4 min automated)
 
 ---

@@ -93,9 +93,9 @@ jobs:
             -H "Authorization: Bearer $CF_API_TOKEN" \
             -H "Content-Type: application/json" \
             --data '{"purge_everything":true}')
-          
+
           echo "$response" | jq .
-          
+
           success=$(echo "$response" | jq -r '.success')
           if [ "$success" = "true" ]; then
             echo "✅ Cloudflare cache purged"

@@ -1,7 +1,7 @@
 # Automated Deployment Status - Ready to Deploy
 
-**Date**: October 2024  
-**Version**: v0.4.0  
+**Date**: October 2024
+**Version**: v0.4.0
 **Status**: ✅ Ready for one-time server bootstrap
 
 ---
@@ -10,10 +10,10 @@
 
 All components for **zero-SSH automated deployment** are complete and committed:
 
-✅ **Docker image built and pushed** to GHCR  
-✅ **Watchtower configuration** added to docker-compose  
-✅ **GitHub Actions workflow** created for CI/CD  
-✅ **Comprehensive documentation** for setup and troubleshooting  
+✅ **Docker image built and pushed** to GHCR
+✅ **Watchtower configuration** added to docker-compose
+✅ **GitHub Actions workflow** created for CI/CD
+✅ **Comprehensive documentation** for setup and troubleshooting
 
 **Next Step**: One-time SSH to production server to bootstrap Watchtower.
 
@@ -122,10 +122,10 @@ Watchtower loop (every 60s):
 
 ### What's Live Now
 
-**Domain**: https://leoklemet.com  
-**Bundle**: `main-QESHvkic.js` ❌ (old build, layout disabled)  
-**Server**: `applylens-nginx-prod` container  
-**Port**: 80  
+**Domain**: https://leoklemet.com
+**Bundle**: `main-QESHvkic.js` ❌ (old build, layout disabled)
+**Server**: `applylens-nginx-prod` container
+**Port**: 80
 
 **Issue**: Production still serving old build because:
 1. Local stack updated but different from production server
@@ -134,10 +134,10 @@ Watchtower loop (every 60s):
 
 ### What Should Be Live
 
-**Domain**: https://leoklemet.com  
-**Bundle**: `main-D0fKNExd.js` ✅ (new build, layout enabled)  
-**Server**: `portfolio-ui` container from GHCR  
-**Port**: 80  
+**Domain**: https://leoklemet.com
+**Bundle**: `main-D0fKNExd.js` ✅ (new build, layout enabled)
+**Server**: `portfolio-ui` container from GHCR
+**Port**: 80
 
 **After Bootstrap**: Watchtower will keep this auto-updated on every push to main.
 
@@ -166,7 +166,7 @@ Watchtower loop (every 60s):
    ```bash
    # Option A: Download from repo
    curl -O https://raw.githubusercontent.com/leok974/leo-portfolio/main/deploy/docker-compose.portfolio-ui.yml
-   
+
    # Option B: Git clone
    git clone https://github.com/leok974/leo-portfolio.git
    cd leo-portfolio/deploy
@@ -191,7 +191,7 @@ Watchtower loop (every 60s):
        proxy_pass http://portfolio-ui:80;
    }
    ```
-   
+
    ```bash
    docker exec applylens-nginx-prod nginx -s reload
    ```
@@ -270,7 +270,7 @@ Watchtower loop (every 60s):
    ```bash
    # SSH to server
    docker logs -f watchtower
-   
+
    # Should show:
    # "Found new image for portfolio-ui"
    # "Stopping portfolio-ui"
@@ -476,9 +476,9 @@ docker compose -f docker-compose.portfolio-ui.yml up -d portfolio-ui
 5. Verify live
 ```
 
-**Time**: 15-30 minutes  
-**Requires**: SSH access, manual commands, verification  
-**Error-prone**: Forgot a step? Didn't clear cache? Wrong files?  
+**Time**: 15-30 minutes
+**Requires**: SSH access, manual commands, verification
+**Error-prone**: Forgot a step? Didn't clear cache? Wrong files?
 
 ### After (Automated)
 
@@ -488,9 +488,9 @@ docker compose -f docker-compose.portfolio-ui.yml up -d portfolio-ui
 3. Verify live
 ```
 
-**Time**: 3-4 minutes  
-**Requires**: Nothing (happens automatically)  
-**Reliable**: Same process every time, logged, monitored  
+**Time**: 3-4 minutes
+**Requires**: Nothing (happens automatically)
+**Reliable**: Same process every time, logged, monitored
 
 ---
 

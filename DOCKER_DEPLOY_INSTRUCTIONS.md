@@ -1,7 +1,7 @@
 # Deploy Portfolio to leoklemet.com - Docker Method
 
-**Status**: ✅ Image ready at `ghcr.io/leok974/leo-portfolio/portfolio:v0.4.0`  
-**Contains**: `main-D0fKNExd.js` (layout enabled, all fixes)  
+**Status**: ✅ Image ready at `ghcr.io/leok974/leo-portfolio/portfolio:v0.4.0`
+**Contains**: `main-D0fKNExd.js` (layout enabled, all fixes)
 **Current Live**: `main-QESHvkic.js` (old build)
 
 ---

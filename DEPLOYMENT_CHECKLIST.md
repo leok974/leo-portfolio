@@ -1,7 +1,7 @@
 # Production Deployment Checklist
 
-**Date**: October 17, 2024  
-**Version**: v0.4.0  
+**Date**: October 17, 2024
+**Version**: v0.4.0
 **Branch**: `portfolio-polish`
 
 ---
@@ -225,8 +225,8 @@ docker push ghcr.io/leok974/leo-portfolio/portfolio:latest
 
 ## 📝 Quick Reference
 
-**Production**: https://leoklemet.com/  
-**GitHub Actions**: https://github.com/leok974/leo-portfolio/actions  
+**Production**: https://leoklemet.com/
+**GitHub Actions**: https://github.com/leok974/leo-portfolio/actions
 **Docker Images**: https://github.com/leok974/leo-portfolio/pkgs/container/leo-portfolio%2Fportfolio
 
 **Guides**:

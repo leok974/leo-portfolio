@@ -481,10 +481,10 @@ See: https://containrrr.dev/watchtower/notifications/
 
 ### What You Have Now
 
-✅ **Watchtower** running on server, checking every 60s  
-✅ **GitHub Actions** workflow building and pushing images  
-✅ **Automated pipeline**: push → build → deploy (no SSH)  
-✅ **Rollback capability**: push old tag or manual restart  
+✅ **Watchtower** running on server, checking every 60s
+✅ **GitHub Actions** workflow building and pushing images
+✅ **Automated pipeline**: push → build → deploy (no SSH)
+✅ **Rollback capability**: push old tag or manual restart
 
 ### Deployment Flow
 
