@@ -18,13 +18,9 @@ services:
 
     # Connect to infra network (same as nginx and cloudflared)
     networks:
-      - infra_net
-
-    # Network alias for nginx to reach
-    # Your nginx config should proxy to http://portfolio.int:80
-    aliases:
       infra_net:
-        - portfolio.int
+        aliases:
+          - portfolio.int
 
     # Optional: expose port on host for testing
     ports:
