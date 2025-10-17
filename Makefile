@@ -1,4 +1,4 @@
-.PHONY: deps test build run audit latency models dev cmddev hyperdev webdev prod-up prod-down prod-logs prod-rebuild tunnel-up tunnel-down env-init
+.PHONY: deps test build run audit latency models dev cmddev hyperdev webdev prod-up prod-down prod-logs prod-rebuild tunnel-up tunnel-down env-init deploy-server-print
 
 # Lock dependencies from requirements.in
 deps:
@@ -96,6 +96,10 @@ env-init:
 csp-hash:
 	node scripts/csp-hash-extract.mjs --html index.html --conf deploy/nginx/nginx.prod.conf
 	@echo "If hashes updated, rebuild nginx: make prod-rebuild"
+
+# Print one-liner command for server deployment
+deploy-server-print:
+	bash scripts/deploy/server_bootstrap.sh
 
 .PHONY: csp-baseline
 csp-baseline:

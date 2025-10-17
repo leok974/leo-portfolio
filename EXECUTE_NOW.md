@@ -1,7 +1,7 @@
 # 🎯 Execute Deployment Now
 
-**Status**: ✅ Everything ready  
-**Current production**: `main-QESHvkic.js` (old)  
+**Status**: ✅ Everything ready
+**Current production**: `main-QESHvkic.js` (old)
 **Target**: `main-D0fKNExd.js` (new, in GHCR)
 
 ---

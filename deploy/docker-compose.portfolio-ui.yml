@@ -7,42 +7,26 @@ services:
     image: ghcr.io/leok974/leo-portfolio/portfolio:latest
     container_name: portfolio-ui
     restart: unless-stopped
-
-    # Health check
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 5s
-
-    # Connect to infra network (same as nginx and cloudflared)
     networks:
       infra_net:
         aliases:
-          - portfolio.int
-
-    # Optional: expose port on host for testing
+          - portfolio-ui
     ports:
-      - "8089:80"
-
-    # Logging
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-    # Watchtower label: only update labeled containers (safer)
+      - "80:80"
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
   watchtower:
     image: containrrr/watchtower
     container_name: watchtower
     restart: unless-stopped
-    networks:
-      - infra_net
+    networks: [infra_net]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     command: >
@@ -50,17 +34,7 @@ services:
       --cleanup
       --interval 60
       portfolio-ui
-    environment:
-      # Optional: add notifications (Slack, Discord, email, etc.)
-      - WATCHTOWER_NOTIFICATIONS=${WATCHTOWER_NOTIFICATIONS:-}
-      - WATCHTOWER_NOTIFICATION_URL=${WATCHTOWER_NOTIFICATION_URL:-}
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
 networks:
   infra_net:
     external: true
-    name: infra_net

@@ -98,6 +98,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "cross-env PWDEBUG=1 playwright test",
     "test:e2e:docker": "pwsh -File scripts/check-docker-and-test.ps1",
+    "deploy:server:print": "bash scripts/deploy/server_bootstrap.sh",
     "e2e:install": "npx playwright install --with-deps",
     "e2e": "playwright test",
     "pw:install": "playwright install chromium",

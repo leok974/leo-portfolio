@@ -1,7 +1,7 @@
 # 🚀 Deploy to Production - Execute Now
 
-**Version**: v0.4.0  
-**Date**: October 17, 2024  
+**Version**: v0.4.0
+**Date**: October 17, 2024
 **Status**: ✅ READY TO DEPLOY
 
 ---
