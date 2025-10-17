@@ -16,7 +16,7 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 5_000 },
   reporter: [['list']],
-  
+
   // ✅ Use env baseURL everywhere
   use: {
     headless: true,
@@ -28,14 +28,14 @@ export default defineConfig({
     navigationTimeout: 15_000,
     viewport: { width: 1280, height: 1600 },
   },
-  
+
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  
+
   // ✅ Only start a local server when we *don't* skip it
   ...(PW_SKIP_WS
     ? {}

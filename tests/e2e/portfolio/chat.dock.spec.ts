@@ -78,11 +78,11 @@ test.describe('Layout section gating @features', () => {
 
   test('visible when layout=1 (enabled)', async ({ page }) => {
     await page.goto(`${HOME}?layout=1`);
-    
+
     // Expand the details element first
     const layoutToggle = page.getByTestId('assistant-layout-toggle');
     await layoutToggle.click();
-    
+
     const section = page.getByTestId('layout-section');
     await expect(section).toBeVisible();
 
@@ -93,7 +93,7 @@ test.describe('Layout section gating @features', () => {
   test('shows friendly loading message when no layout data', async ({ page }) => {
     await page.goto(`${HOME}?layout=1`);
     const section = page.getByTestId('layout-section');
-    
+
     // Should show loading message, not error
     await expect(section).toContainText(/Loading layout model/i);
   });

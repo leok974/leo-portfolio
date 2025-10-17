@@ -141,6 +141,8 @@ class PortfolioGrid {
 
     // Add data-card attribute for layout system
     card.setAttribute('data-card', project.slug);
+    // Add data-testid for E2E testing
+    card.setAttribute('data-testid', 'project-card');
 
     const thumbnail = project.thumbnail || '/placeholder.svg';
     const title = this.escapeHtml(project.title);

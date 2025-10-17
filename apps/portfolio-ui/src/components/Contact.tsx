@@ -41,7 +41,7 @@ export default function Contact() {
           ref={widgetRef}
           id="calendly"
           class="calendly-inline-widget"
-          data-url="https://calendly.com/leoklemet/30min"
+          data-url="https://calendly.com/leoklemet-pa"
           data-testid="calendly"
           // height via CSS; auto-adjusted by postMessage
         />

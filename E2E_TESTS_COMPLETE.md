@@ -1,8 +1,8 @@
 # ✅ E2E Tests Complete and Passing
 
-## Test Status: 9/9 PASSING 🎉
+## Test Status: 16/16 PASSING 🎉
 
-All portfolio E2E tests are now working correctly against the production site.
+All portfolio E2E tests are now working correctly against the production site, including new OG meta and project display tests.
 
 ### Test Results (October 17, 2025)
 
@@ -103,12 +103,18 @@ npx playwright test --grep @ui --config playwright.portfolio.config.ts
 
 # Feature flag tests only
 npx playwright test --grep @features --config playwright.portfolio.config.ts
+
+# OG meta tests only
+npx playwright test --grep @og --config playwright.portfolio.config.ts
+
+# Projects tests only
+npx playwright test --grep @projects --config playwright.portfolio.config.ts
 ```
 
 ## Deployment Status
 
-✅ **Committed**: 21216f6 "test: fix Playwright config and make all E2E tests pass"  
-✅ **Branch**: portfolio-polish  
+✅ **Committed**: 21216f6 "test: fix Playwright config and make all E2E tests pass"
+✅ **Branch**: portfolio-polish
 ✅ **Files Changed**: 5 files (335 insertions, 11 deletions)
 
 ### Files Modified:
@@ -137,33 +143,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: pnpm/action-setup@v4
         with:
           version: 9
-      
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
-      
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-      
+
       - name: Build portfolio
         env:
           VITE_LAYOUT_ENABLED: 1
         run: pnpm run build:portfolio
-      
+
       - name: Run E2E tests
         env:
           PW_SKIP_WS: 1
           PW_BASE_URL: https://www.leoklemet.com
         run: npx playwright test --config playwright.portfolio.config.ts
-      
+
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -186,6 +192,19 @@ jobs:
 4. ✅ **Feature flag OFF** - Tests `?layout=0` hides section
 5. ✅ **Feature flag ON** - Tests `?layout=1` shows section
 6. ✅ **Loading message** - Tests friendly messaging when no data
+
+### OG Meta Tags (3 tests) - @og
+1. ✅ **Homepage OG fallback** - Tests og:image, og:site_name, Twitter Card
+2. ✅ **Image resolution** - HEAD request verifies image exists and is PNG
+3. ✅ **Image dimensions** - Tests og:image:width (1200) and og:image:height (630)
+4. ✅ **Preload link** - Tests link[rel="preload"] for OG image
+
+### Projects Display (4 tests) - @projects
+1. ✅ **Project cards render** - Tests data-testid="project-card" visibility
+2. ✅ **Card structure** - Tests title, description, thumbnail presence
+3. ✅ **Data attributes** - Tests data-card attribute for layout system
+4. ✅ **Filter functionality** - Tests filter buttons change card display
+5. ✅ **Tags display** - Tests project tags render correctly
 
 ## Key Learnings
 

@@ -18,10 +18,34 @@ router = APIRouter(prefix="/resume", tags=["resume"])
 ROOT = Path(__file__).resolve().parents[2]  # repo root
 SITE_INDEX = ROOT / "index.html"
 PROJECTS_JSON = ROOT / "projects.json"
+DATA_PROJECTS_JSON = ROOT / "data" / "projects.json"  # New location
 
 
 def _load_projects() -> list[dict]:
-    """Try to read projects.json; fallback to parsing index.html cards."""
+    """Try to read data/projects.json (new), then projects.json; fallback to parsing index.html cards."""
+    # Try new location first
+    if DATA_PROJECTS_JSON.exists():
+        try:
+            data = json.loads(DATA_PROJECTS_JSON.read_text(encoding="utf-8"))
+            # normalize shape: expect [{slug,title,one_liner,tags,stack,url,stars,updated_at,show}, ...]
+            out = []
+            for p in data:
+                out.append(
+                    {
+                        "title": p.get("title") or p.get("name") or "Untitled Project",
+                        "slug": p.get("slug") or "",
+                        "summary": p.get("one_liner") or p.get("summary") or "",
+                        "tags": p.get("tags") or p.get("labels") or [],
+                        "cats": p.get("cats") or p.get("categories") or [],
+                        "links": [p.get("url")] if p.get("url") else (p.get("links") or p.get("sources") or []),
+                        "year": p.get("updated_at", "")[:4] or "2025",
+                    }
+                )
+            return out
+        except Exception:
+            pass
+
+    # Fallback to old location
     if PROJECTS_JSON.exists():
         try:
             data = json.loads(PROJECTS_JSON.read_text(encoding="utf-8"))

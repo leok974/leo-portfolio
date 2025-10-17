@@ -1,0 +1,114 @@
+name: Portfolio CI
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**/*.md'
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * *'   # nightly: sync projects + OG, build, push
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/portfolio
+  PW_BASE_URL: https://www.leoklemet.com
+  PW_SKIP_WS: "1"
+
+jobs:
+  content-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # === Sync projects from GitHub & generate OG images ===
+      - name: Sync projects from GitHub
+        run: pnpm projects:sync
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate OG images
+        run: pnpm og:gen
+
+      - name: Build portfolio
+        run: pnpm build:portfolio
+        env:
+          VITE_LAYOUT_ENABLED: "1"
+
+      # === Build & push container ===
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set image tags
+        id: tags
+        run: |
+          SHA=${GITHUB_SHA::7}
+          echo "tag_latest=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_OUTPUT
+          echo "tag_sha=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHA}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.portfolio
+          push: true
+          tags: |
+            ${{ steps.tags.outputs.tag_latest }}
+            ${{ steps.tags.outputs.tag_sha }}
+
+  e2e-prod:
+    needs: content-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests against production
+        env:
+          PW_BASE_URL: ${{ env.PW_BASE_URL }}
+          PW_SKIP_WS: "1"
+        run: |
+          echo "Testing against $PW_BASE_URL"
+          npx playwright test --config=playwright.portfolio.config.ts
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

@@ -1,5 +1,41 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **Portfolio CI/CD Pipeline** (`.github/workflows/portfolio-ci.yml`):
+  - Automated nightly builds with project sync + OG generation
+  - Docker image build and push to GHCR
+  - E2E tests against production after deployment
+  - Runs on push to main, manual trigger, and nightly at 3:17 AM
+- **OG Image Enhancements**:
+  - Added `og:type="website"` and `og:site_name="Leo Klemet — Portfolio"` meta tags
+  - Added preload link for OG image for faster social crawler indexing
+  - Created `scripts/projects-sync.mjs` for GitHub API integration to sync repos to `data/projects.json`
+  - Enhanced `scripts/og-generate.mjs` to generate per-project OG images using Playwright (1200×630)
+  - Created `projects.config.json` for repository filtering rules (topics, archived status, denylist)
+  - Added `data-testid="project-card"` to portfolio.ts for E2E testing
+- **E2E Test Suites**:
+  - `tests/e2e/portfolio/og.spec.ts` (3 tests) - OG meta tags validation
+  - `tests/e2e/portfolio/projects.spec.ts` (4 tests) - Project cards display
+  - `tests/e2e/portfolio/resume.spec.ts` (2 tests) - Resume generation
+- **Resume Generation**:
+  - Updated `assistant_api/routers/resume_public.py` to read from `data/projects.json`
+  - Dynamic markdown resume with latest projects from GitHub sync
+  - Available at `/resume/generate.md` endpoint
+
+### Changed
+- **Calendly Integration**: Updated booking link from `calendly.com/leoklemet/30min` to `calendly.com/leoklemet-pa`
+- **OG Image URLs**: Changed from `leoklemet.com` to `www.leoklemet.com` (absolute URLs)
+- **OG Image Path**: Organized images from `/og.png` to `/og/og.png` directory structure
+- **Canonical URL**: Updated from `leoklemet.com` to `www.leoklemet.com`
+- **Projects Sync**: Primary `projects:sync` now uses simplified script (old version available as `projects:sync:advanced`)
+
+### Scripts
+- `projects:sync` - Sync GitHub repos to data/projects.json (simplified version)
+- `og:gen` - Generate OG social card images (1200×630 PNG)
+- `content:build` - Full content build pipeline (sync + OG + build)
+
 ## [0.4.0] - 2025-10-16
 
 ### Added
