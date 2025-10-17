@@ -48,10 +48,16 @@ export function initAssistantDock() {
     });
   }
 
-  // Escape key handler
+  // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
+    // Escape to hide
     if (e.key === 'Escape') {
       setHidden(true);
+    }
+    // Alt+P to show (reopen)
+    if (e.altKey && e.key.toLowerCase() === 'p') {
+      e.preventDefault();
+      setHidden(false);
     }
   });
 }

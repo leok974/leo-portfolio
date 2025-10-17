@@ -262,7 +262,13 @@ function AssistantPanel() {
   }
 
   return (
-    <div class={`assistant-panel${open ? "" : " hidden"}`} data-testid="assistant-panel">
+    <div
+      id="assistant-panel"
+      class={`assistant-panel${open ? "" : " hidden"}`}
+      data-testid="assistant-panel"
+      role="region"
+      aria-label="Portfolio Assistant"
+    >
       <div class="hdr" style="display:flex; align-items:center; gap:.5rem; justify-content:space-between;">
         <div style="display:flex; align-items:center; gap:.5rem;">
           <div style="font-weight:600;">Portfolio Assistant</div>
@@ -300,9 +306,11 @@ function AssistantPanel() {
           )}
           <button
             id="assistant-hide-btn"
+            type="button"
             class="btn-sm"
             aria-pressed="false"
             title="Hide panel (persists across reload)"
+            data-testid="assistant-hide"
           >
             Hide
           </button>
@@ -346,9 +354,24 @@ function AssistantPanel() {
         </button>
       </div>
 
-      <details class="asst-debug">
+      <details class="asst-debug" data-testid="assistant-layout-toggle">
         <summary>Layout</summary>
-        <pre>{JSON.stringify(layout, null, 2)}</pre>
+        {!layout ? (
+          <div style="padding: 1rem; color: #94a3b8;" data-testid="assistant-layout-empty">
+            Layout learning is off or not learned yet.
+            <button
+              type="button"
+              class="btn-sm"
+              onClick={loadLayout}
+              style="margin-left: 0.5rem;"
+              data-testid="assistant-layout-refresh"
+            >
+              Refresh
+            </button>
+          </div>
+        ) : (
+          <pre data-testid="assistant-layout-json">{JSON.stringify(layout, null, 2)}</pre>
+        )}
       </details>
     </div>
   );

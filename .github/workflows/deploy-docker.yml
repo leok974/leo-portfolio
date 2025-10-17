@@ -1,0 +1,117 @@
+name: Build & Push Portfolio Docker Image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/portfolio-ui/**'
+      - 'vite.config.portfolio.ts'
+      - 'Dockerfile.portfolio'
+      - 'deploy/nginx.portfolio-static.conf'
+      - '.github/workflows/deploy-docker.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write   # needed for GHCR push
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build portfolio (layout enabled)
+        env:
+          VITE_LAYOUT_ENABLED: 1
+        run: |
+          pnpm run build:portfolio
+          test -d dist-portfolio || (echo "❌ dist-portfolio not found" && exit 1)
+          echo "✅ Build artifacts present"
+
+      - name: Check build artifacts
+        run: |
+          ls -lh dist-portfolio/
+          ls -lh dist-portfolio/assets/main-*.js
+          echo "✅ Built successfully"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version
+        id: version
+        run: |
+          # Use package.json version if present; else use run number
+          ver=$(node -p "require('./package.json').version" 2>/dev/null || echo "0.0.${{ github.run_number }}")
+          echo "ver=$ver" >> "$GITHUB_OUTPUT"
+          echo "📦 Version: $ver"
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -f Dockerfile.portfolio \
+            -t ghcr.io/leok974/leo-portfolio/portfolio:latest \
+            -t ghcr.io/leok974/leo-portfolio/portfolio:v${{ steps.version.outputs.ver }} \
+            -t ghcr.io/leok974/leo-portfolio/portfolio:${{ github.sha }} \
+            .
+
+      - name: Push Docker images
+        run: |
+          echo "🚀 Pushing images..."
+          docker push ghcr.io/leok974/leo-portfolio/portfolio:latest
+          docker push ghcr.io/leok974/leo-portfolio/portfolio:v${{ steps.version.outputs.ver }}
+          docker push ghcr.io/leok974/leo-portfolio/portfolio:${{ github.sha }}
+          echo "✅ Images pushed successfully"
+
+      - name: Purge Cloudflare cache (optional)
+        if: env.CF_API_TOKEN != '' && env.CF_ZONE_ID != ''
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+        run: |
+          echo "🔄 Purging Cloudflare cache..."
+          response=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}')
+          
+          echo "$response" | jq .
+          
+          success=$(echo "$response" | jq -r '.success')
+          if [ "$success" = "true" ]; then
+            echo "✅ Cloudflare cache purged"
+          else
+            echo "⚠️ Cloudflare cache purge failed (not critical)"
+          fi
+
+      - name: Summary
+        run: |
+          echo "### 🎉 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Images pushed:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/leok974/leo-portfolio/portfolio:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/leok974/leo-portfolio/portfolio:v${{ steps.version.outputs.ver }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/leok974/leo-portfolio/portfolio:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Watchtower will auto-deploy in ~60 seconds** 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Verify at: https://leoklemet.com/" >> $GITHUB_STEP_SUMMARY

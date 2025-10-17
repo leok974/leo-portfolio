@@ -8,7 +8,7 @@
   - Installed `@preact/preset-vite@2.10.2` for automatic React→Preact aliasing
   - Created `src/utils/event-helpers.ts` with type-safe event handling utilities
   - Added comprehensive documentation: `PREACT_MIGRATION_COMPLETE.md`, `PREACT_TYPESCRIPT_STATUS.md`, `DOMAIN_STACK_REBUILD.md`
-  
+
 ### Changed
 - **Package Manager Migration**: Switched from npm to pnpm for faster installs and better disk efficiency
   - Created `.npmrc` with pnpm configuration

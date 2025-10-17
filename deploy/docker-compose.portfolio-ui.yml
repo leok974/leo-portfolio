@@ -1,5 +1,6 @@
 # Portfolio Docker Compose Deployment
 # This file can be deployed directly to your server running docker-compose
+# Includes Watchtower for automatic updates when new images are pushed
 
 services:
   portfolio-ui:
@@ -30,6 +31,33 @@ services:
       - "8089:80"
 
     # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Watchtower label: only update labeled containers (safer)
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    networks:
+      - infra_net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: >
+      --label-enable
+      --cleanup
+      --interval 60
+      portfolio-ui
+    environment:
+      # Optional: add notifications (Slack, Discord, email, etc.)
+      - WATCHTOWER_NOTIFICATIONS=${WATCHTOWER_NOTIFICATIONS:-}
+      - WATCHTOWER_NOTIFICATION_URL=${WATCHTOWER_NOTIFICATION_URL:-}
     logging:
       driver: "json-file"
       options:

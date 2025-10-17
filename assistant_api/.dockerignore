@@ -36,9 +36,6 @@ secrets/
 data/
 !.keep
 
-# ---- Models / embeddings (if any local copies) ----
-models/
-
 # ---- Misc build artifacts ----
 /build/
 /dist/

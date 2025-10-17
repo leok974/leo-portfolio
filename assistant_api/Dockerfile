@@ -51,7 +51,7 @@ RUN useradd --system --create-home --uid 1001 appuser && \
 
 EXPOSE 8000
 
-# Container-level healthcheck using existing script (already in assistant_api directory)
+# Container-level healthcheck using existing script
 HEALTHCHECK --interval=30s --timeout=6s --start-period=20s --retries=3 CMD python assistant_api/healthcheck.py
 
 USER appuser
