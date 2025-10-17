@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { inputValue, inputChecked } from "@/utils/event-helpers";
 
 interface ValidateResult {
   count: number;
@@ -107,8 +108,8 @@ export default function SeoJsonLdPanel() {
         data-testid="seo-ld-textarea"
         className="w-full h-56 font-mono text-sm rounded-md border p-2"
         value={blob}
-        onChange={(e)=>setBlob(e.target.value)}
-        spellCheck={false}
+        onChange={(e) => setBlob(inputValue(e))}
+        spellcheck={false}
       />
 
       <div className="mt-3 grid gap-2">

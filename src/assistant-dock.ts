@@ -3,7 +3,7 @@ import { API } from './api';
 import { readSSE } from './lib/sse';
 import { renderRouteBadge } from './components/render-badge';
 import * as React from 'react';
-import { createRoot } from 'react-dom/client';
+import { render } from 'preact';
 import { ShieldBadge } from '@/components/badges/ShieldBadge';
 import { mountAdminRebuildFloating } from '@/components/render-admin';
 
@@ -754,9 +754,9 @@ if (window.__assistantDockMounted) {
               }
               const holder = document.createElement('div');
               footer.appendChild(holder);
-              const root = createRoot(holder);
-              root.render(
-                React.createElement(ShieldBadge as any, { flagged: !!gr.flagged, blocked: !!gr.blocked })
+              render(
+                React.createElement(ShieldBadge as any, { flagged: !!gr.flagged, blocked: !!gr.blocked }),
+                holder
               );
             }
           } catch {}
@@ -867,8 +867,7 @@ if (window.__assistantDockMounted) {
                 if (!existing) {
                   const holder = document.createElement('div');
                   footer.appendChild(holder);
-                  const root = createRoot(holder);
-                  root.render(React.createElement(ShieldBadge as any, { flagged: !!gr.flagged, blocked: !!gr.blocked }));
+                  render(React.createElement(ShieldBadge as any, { flagged: !!gr.flagged, blocked: !!gr.blocked }), holder);
                 }
               }
             } catch {}

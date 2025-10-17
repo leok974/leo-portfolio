@@ -1,0 +1,44 @@
+# Docker Compose service definition for Portfolio
+# Add this to your existing docker-compose.yml on your production server
+
+services:
+  portfolio:
+    image: ghcr.io/leok974/leo-portfolio/portfolio:latest
+    container_name: portfolio
+    restart: unless-stopped
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+    # Networks - must be on same network as reverse proxy
+    networks:
+      - web
+
+    # Labels for Traefik (if using)
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.portfolio.rule=Host(`assistant.ledger-mind.org`)"
+      - "traefik.http.routers.portfolio.entrypoints=websecure"
+      - "traefik.http.routers.portfolio.tls.certresolver=letsencrypt"
+      - "traefik.http.services.portfolio.loadbalancer.server.port=80"
+
+    # Optional: mount custom nginx config
+    # volumes:
+    #   - ./nginx.portfolio-custom.conf:/etc/nginx/conf.d/default.conf:ro
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# If you need to create the network (if not already external)
+# networks:
+#   web:
+#     external: true

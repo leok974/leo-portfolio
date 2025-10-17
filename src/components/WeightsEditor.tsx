@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { inputValue, inputChecked } from "@/utils/event-helpers";
 import { Button } from "@/components/ui/button";
 
 interface Weights {
@@ -103,7 +104,7 @@ export function WeightsEditor({ base = "" }: { base?: string }) {
         max={1}
         step={0.01}
         value={draft[k]}
-        onChange={(e) => update(k, parseFloat(e.currentTarget.value))}
+        onChange={(e) => update(k, parseFloat(inputValue(e)))}
         className="w-full accent-blue-600"
       />
     </label>

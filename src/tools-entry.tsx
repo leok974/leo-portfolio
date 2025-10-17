@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { createRoot } from "react-dom/client";
+import { render } from 'preact';
 import { AgentToolsPanel } from "@/components/AgentToolsPanel";
 import { isPrivilegedUIEnabled } from "@/lib/devGuard";
 import "@/styles/tailwind.css";
@@ -49,9 +49,10 @@ function ToolsPage() {
 
 const root = document.getElementById("root");
 if (root) {
-  createRoot(root).render(
+  render(
     <React.StrictMode>
       <ToolsPage />
-    </React.StrictMode>
+    </React.StrictMode>,
+    root
   );
 }

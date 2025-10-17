@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { currentLayout, loadLayout, type LayoutRecipe } from "./layout";
 import { isAdmin } from "./admin";
 import { initAssistantDock } from "./assistant.dock";
+import { inputValue } from "../../../src/utils/event-helpers";
 
 const LAYOUT_EVENT = "layout:update";
 
@@ -328,7 +329,7 @@ function AssistantPanel() {
           aria-label="Message"
           placeholder={apiOffline ? "Assistant offline - cannot send messages" : "Type a message…"}
           value={input}
-          onInput={(e: any) => setInput(e.currentTarget.value)}
+          onInput={(e: any) => setInput(inputValue(e))}
           onKeyDown={(e: any) => onKey(e as KeyboardEvent)}
           rows={1}
           disabled={apiOffline}

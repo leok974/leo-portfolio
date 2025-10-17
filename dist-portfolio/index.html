@@ -31,9 +31,9 @@
   "name": "Leo Klemet",
   "url": "https://assistant.ledger-mind.org",
   "sameAs": [
-    "https://github.com/leo-klemet",
-    "https://www.linkedin.com/in/leo-klemet/",
-    "https://www.artstation.com/leo_klemet"
+    "https://github.com/leok974",
+    "https://www.linkedin.com/in/leo-klemet-1241662a6/",
+    "https://leoklemet3.artstation.com"
   ],
   "jobTitle": "AI Engineer"
 }
@@ -47,8 +47,8 @@
 
   <!-- Calendly inline widget styles -->
   <link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/main-D1Pg64qn.js" nonce="__CSP_NONCE__"></script>
-  <link rel="stylesheet" crossorigin href="/assets/main-CGbM2PxL.css">
+  <script type="module" crossorigin src="/assets/main-BWMj-_BO.js" nonce="__CSP_NONCE__"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-DEdu429b.css">
 </head>
 <body>
   <!-- Skip to content for accessibility -->
@@ -107,13 +107,13 @@
             </p>
             <!-- Social Links -->
             <div class="social-links" data-testid="social-links">
-              <a href="https://github.com/leo-klemet" aria-label="GitHub" target="_blank" rel="noopener noreferrer" class="social-link" data-testid="link-github">
+              <a href="https://github.com/leok974" aria-label="GitHub" target="_blank" rel="noopener noreferrer" class="social-link" data-testid="link-github">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
               </a>
-              <a href="https://www.linkedin.com/in/leo-klemet/" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer" class="social-link" data-testid="link-linkedin">
+              <a href="https://www.linkedin.com/in/leo-klemet-1241662a6/" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer" class="social-link" data-testid="link-linkedin">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
               </a>
-              <a href="https://www.artstation.com/leo_klemet" aria-label="ArtStation" target="_blank" rel="noopener noreferrer" class="social-link" data-testid="link-artstation">
+              <a href="https://leoklemet3.artstation.com" aria-label="ArtStation" target="_blank" rel="noopener noreferrer" class="social-link" data-testid="link-artstation">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.8 3.2c.6-1 1.8-1 2.4 0l8.6 15c.6 1-.1 2.3-1.2 2.3H3.4c-1.1 0-1.8-1.3-1.2-2.3l8.6-15zM6.7 16.9h8.2l-4.1-7.2-4.1 7.2zm10.7 0-1.8-3.2-1.8 3.2h3.6z" /></svg>
               </a>
               <a href="mailto:leoklemet.pa@gmail.com" aria-label="Email" class="social-link" data-testid="link-email">
@@ -126,15 +126,12 @@
 
             <!-- Resume Download Buttons -->
             <div class="resume-actions" style="margin-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
-              <a href="/resume/generate.md" class="btn-secondary" download="Leo_Klemet_Resume.md" data-testid="resume-md-download" aria-label="Download Resume as Markdown">
-                📄 Download Resume (Markdown)
-              </a>
-              <a href="/resume/generate.pdf" class="btn-secondary" target="_blank" data-testid="resume-pdf-download" aria-label="View Resume as PDF">
+              <a href="/resume/Leo_Klemet_Resume.pdf" class="btn-secondary" target="_blank" rel="noopener" data-testid="resume-pdf-view" aria-label="View Resume as PDF">
                 📑 View Resume (PDF)
               </a>
-              <a href="/resume/copy.txt?limit=2600" class="btn-secondary" target="_blank" data-testid="resume-linkedin-copy" aria-label="Copy Resume for LinkedIn">
+              <button id="copy-linkedin-btn" class="btn-secondary" data-testid="resume-linkedin-copy" aria-label="Copy Resume for LinkedIn">
                 📋 Copy for LinkedIn
-              </a>
+              </button>
             </div>
           </div>
           <div class="about-image">
@@ -224,45 +221,19 @@
             Whether you have a question or just want to say hi, feel free to reach out!
           </p>
 
-          <!-- Calendly Embed -->
-          <div class="calendly-container" data-testid="calendly">
-            <div class="calendly-buttons">
-              <a href="" id="calendly-popup-btn" class="btn-primary calendly-popup-link">Book a call</a>
-              <a href="https://calendly.com/leo-klemet/intro" target="_blank" rel="noopener noreferrer" class="btn-secondary" data-testid="calendly-open">Open Calendly</a>
-            </div>
-            <!-- Calendly inline widget -->
-            <div class="calendly-inline-widget" data-url="https://calendly.com/leo-klemet/intro"></div>
-          </div>
-
-          <div class="contact-links">
-            <a href="mailto:contact@ledger-mind.org" class="contact-link" aria-label="Send email">
-              <span class="contact-icon">✉️</span>
-              <span>contact@ledger-mind.org</span>
-            </a>
-            <a href="https://github.com/leok974" target="_blank" rel="noopener noreferrer" class="contact-link" aria-label="Visit GitHub profile">
-              <span class="contact-icon">💻</span>
-              <span>GitHub</span>
-            </a>
-            <a href="https://linkedin.com/in/leoklemet" target="_blank" rel="noopener noreferrer" class="contact-link" aria-label="Visit LinkedIn profile">
-              <span class="contact-icon">💼</span>
-              <span>LinkedIn</span>
-            </a>
-          </div>
+          <!-- Calendly Embed (Preact Component) -->
+          <div id="contact-root"></div>
 
           <!-- Resume Links -->
           <div class="resume-links" style="display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap; justify-content: center;">
-            <a href="/resume/generate.md" class="contact-link" download="Leo_Klemet_Resume.md" aria-label="Download Markdown Resume" data-testid="footer-resume-md">
-              <span class="contact-icon">📄</span>
-              <span>Resume (MD)</span>
-            </a>
-            <a href="/resume/generate.pdf" class="contact-link" target="_blank" aria-label="View PDF Resume" data-testid="footer-resume-pdf">
+            <a href="/resume/Leo_Klemet_Resume.pdf" class="contact-link" target="_blank" rel="noopener" aria-label="View PDF Resume" data-testid="footer-resume-pdf">
               <span class="contact-icon">📑</span>
               <span>Resume (PDF)</span>
             </a>
-            <a href="/resume/copy.txt?limit=2600" class="contact-link" target="_blank" aria-label="Copy LinkedIn Resume" data-testid="footer-resume-linkedin">
+            <button id="copy-linkedin-btn-footer" class="contact-link" aria-label="Copy LinkedIn Resume" data-testid="footer-resume-linkedin" style="background: none; border: none; cursor: pointer; font: inherit; color: inherit;">
               <span class="contact-icon">📋</span>
-              <span>LinkedIn Copy</span>
-            </a>
+              <span>Copy for LinkedIn</span>
+            </button>
           </div>
         </div>
       </div>
@@ -280,31 +251,9 @@
   </div>
 
   <!-- Calendly scripts -->
-  <script src="https://assets.calendly.com/assets/external/widget.js" type="text/javascript" async nonce="__CSP_NONCE__"></script>
-  <script type="text/javascript" nonce="__CSP_NONCE__">
-    // Initialize Calendly inline widget when DOM is ready
-    if (typeof Calendly !== 'undefined') {
-      Calendly.initInlineWidget({
-        url: 'https://calendly.com/leo-klemet/intro',
-        parentElement: document.querySelector('.calendly-inline-widget'),
-        prefill: {},
-        utm: {}
-      });
-    }
-    // Popup button handler
-    document.addEventListener('DOMContentLoaded', function() {
-      const popupBtn = document.getElementById('calendly-popup-btn');
-      if (popupBtn && typeof Calendly !== 'undefined') {
-        popupBtn.addEventListener('click', function(e) {
-          e.preventDefault();
-          Calendly.initPopupWidget({url: 'https://calendly.com/leo-klemet/intro'});
-          return false;
-        });
-      }
-    });
-  </script>
-
   <!-- Vanilla shell entry point -->
+
+  <!-- Preact island for contact (Calendly) -->
 
   <!-- Preact island for assistant panel -->
   <div id="assistant-root"></div>

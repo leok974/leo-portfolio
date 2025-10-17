@@ -1,0 +1,101 @@
+test(e2e): separate siteagent vs portfolio test execution (Option B)
+
+Implements Option B: targeted fix for the 43 tests that ran in CI, separating
+siteagent and portfolio test execution with proper tagging and port handling.
+
+## Changes
+
+### Test Separation Infrastructure
+- **playwright.config.ts**: Added separate `siteagent` and `portfolio` projects
+  - `siteagent` project: baseURL 5173, grep `/@siteagent/`, grepInvert `/@portfolio|@wip/`
+  - `portfolio` project: baseURL 8080, grep `/@portfolio/`, grepInvert `/@siteagent|@wip/`
+  - Both depend on `setup` project for auth state
+
+- **package.json**: Updated E2E scripts
+  - `e2e:ci`: `playwright test --project=siteagent --max-failures=10` (with PW_SKIP_WS=1)
+  - `e2e:portfolio`: `playwright test --project=portfolio` (with PW_EDGE_URL=http://127.0.0.1:8080)
+  - `e2e:smoke`: `playwright test --grep @smoke` (with PW_SKIP_WS=1)
+  - `e2e:tag`: Auto-tagging script for batch operations
+
+- **CI Workflow**: Added smoke test step before main E2E tests
+  - Smoke tests run first with `@smoke` filter (fast failure detection)
+  - Main E2E tests run `e2e:ci` (siteagent project only, max 10 failures)
+  - Both steps use `PW_SKIP_WS=1` to skip WebSocket tests
+
+### Automated Test Tagging (13 files)
+Created `scripts/tag-tests.mjs` with heuristic-based tagging:
+- **@siteagent tests** (10 files): Admin panel, assistant UI, agent tools, weights editor
+  - ab-analytics.spec.ts
+  - admin.panel.spec.ts
+  - assistant-sources-popover.spec.ts
+  - assistant-stream-meta.spec.ts
+  - assistant-ui-fallback.spec.ts
+  - assistant-ui-followup.spec.ts
+  - last-run-badge.spec.ts
+  - layout-agent-panel.spec.ts
+  - seo-pr-preview.spec.ts
+  - weights-editor.spec.ts
+
+- **@portfolio tests** (3 files): Homepage filters, portfolio-specific UI
+  - assistant-ui-first-chunk.spec.ts (portfolio title checks)
+  - assistant-ui-grounded.spec.ts (portfolio context)
+  - home-filter.spec.ts (project cards, status filters)
+
+### Port Hardcoding Removal (6 files)
+Removed `http://127.0.0.1:(5173|8080)` from:
+- admin.panel.spec.ts
+- chat-stream-yields.spec.ts
+- metrics.smoke.spec.ts
+- redirect.spec.ts
+- seo-analytics.mock.spec.ts
+- seo-analytics.spec.ts
+
+Now all use relative URLs (e.g., `await page.goto('/')`) and rely on
+playwright project `baseURL` configuration.
+
+### Smoke Tests
+Created `tests/e2e/smoke.spec.ts` with 4 tests:
+- `@siteagent @smoke homepage loads`
+- `@siteagent @smoke dev overlay affordance exists`
+- `@siteagent @smoke backend is reachable` (best-effort, non-blocking)
+- `@portfolio @smoke portfolio homepage loads`
+
+### Documentation
+- **TEST_TAGGING_STRATEGY.md**: Comprehensive tagging guide
+  - Tag definitions and categorization rules
+  - Port usage documentation
+  - File categorization summary (siteagent vs portfolio)
+  - Implementation steps and success criteria
+
+- **.ci/**: CI log analysis artifacts
+  - `spec-files-to-tag.txt`: List of 14 files that ran in CI
+  - Helper files for test title extraction
+
+## Expected Impact
+
+### Before (CI Run 18503456062)
+- 43 tests ran with `@frontend` filter
+- 36 failed (84% failure rate)
+- Root cause: Build/port mismatch (portfolio tests on siteagent build)
+
+### After (This Commit)
+- Tests separated by build target
+- `e2e:ci` runs only `@siteagent` tests against port 5173
+- `e2e:portfolio` runs only `@portfolio` tests against port 8080
+- No hardcoded ports (baseURL handles routing)
+- Smoke tests detect infrastructure issues in <30s
+- Expected: 70-90% pass rate (remaining failures are real bugs, not config issues)
+
+## Next Steps
+1. Push and verify CI passes smoke tests
+2. Analyze remaining siteagent test failures
+3. Gradually tag remaining 261 untouched test files
+4. Add separate portfolio CI job (nginx-based, separate from siteagent fast lane)
+
+## Testing
+- Local smoke test: `npm run e2e:smoke` (requires vite preview on 5173)
+- Local siteagent: `npm run e2e:ci` (requires backend on 8001 + vite on 5173)
+- Local portfolio: `npm run e2e:portfolio` (requires nginx on 8080)
+
+Relates to: Phase 50 E2E infrastructure hardening
+Fixes: Build/port mismatch causing 84% test failure rate

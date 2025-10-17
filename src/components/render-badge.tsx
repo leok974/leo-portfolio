@@ -1,5 +1,5 @@
 import React from 'react';
-import { createRoot, Root } from 'react-dom/client';
+import { render } from 'preact';
 import { RouteBadge } from './RouteBadge';
 
 interface BackendSnap { last_backend?: string; last_ms?: number }
@@ -12,13 +12,6 @@ interface Props {
   backends?: { gen?: BackendSnap; embeddings?: BackendSnap; rerank?: BackendSnap };
 }
 
-const roots = new WeakMap<HTMLElement, Root>();
-
 export function renderRouteBadge(container: HTMLElement, props: Props) {
-  let root = roots.get(container);
-  if (!root) {
-    root = createRoot(container);
-    roots.set(container, root);
-  }
-  root.render(<RouteBadge {...props} />);
+  render(<RouteBadge {...props} />, container);
 }

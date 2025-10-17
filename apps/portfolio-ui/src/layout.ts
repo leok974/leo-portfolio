@@ -20,11 +20,19 @@ const model = { recipe: null as LayoutRecipe | null };
  * Fires layout:update event for reactive components
  */
 export async function loadLayout() {
+  // Check if layout feature is enabled (default: true in production, can disable in dev)
+  const enabled = import.meta.env.VITE_LAYOUT_ENABLED !== '0';
+  if (!enabled) {
+    // Layout disabled - silently use defaults
+    return;
+  }
+
   try {
     // Fetch from backend endpoint (adjust URL if needed)
     const res = await fetch("/api/layout", { credentials: "include" });
     if (!res.ok) {
-      console.warn(`Layout API returned ${res.status}, using defaults`);
+      // Not an error - backend might not have layout endpoint
+      // (e.g., portfolio-only mode without SiteAgent API)
       return;
     }
     const recipe: LayoutRecipe = await res.json();
@@ -32,7 +40,8 @@ export async function loadLayout() {
     applyRecipe(recipe);
     window.dispatchEvent(new CustomEvent(LAYOUT_EVENT, { detail: recipe }));
   } catch (err) {
-    console.warn("Failed to load layout recipe:", err);
+    // Network error - silently fall back to defaults
+    // Don't log as error since layout is optional
   }
 }
 

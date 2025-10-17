@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { inputValue, inputChecked } from "@/utils/event-helpers";
 import AgentsStatusLegend from "./AgentsStatusLegend";
 
 interface Task {
@@ -228,7 +229,7 @@ export default function AgentsApprovalPanel() {
           className="px-2 py-1 rounded bg-neutral-900 border border-neutral-700 w-[360px] text-neutral-100 placeholder-neutral-500 focus:border-neutral-600 focus:outline-none"
           placeholder="Task ID…"
           value={taskId}
-          onChange={(e) => setTaskId(e.target.value)}
+          onChange={(e) => setTaskId(inputValue(e))}
           onKeyDown={(e) => e.key === "Enter" && taskId && fetchStatus(taskId)}
           disabled={loading}
         />
@@ -304,7 +305,7 @@ export default function AgentsApprovalPanel() {
             className="w-full min-h-20 rounded bg-neutral-900 border border-neutral-700 p-2 text-neutral-100 placeholder-neutral-500 focus:border-neutral-600 focus:outline-none resize-y"
             placeholder="Approval note…"
             value={note}
-            onChange={(e) => setNote(e.target.value)}
+            onChange={(e) => setNote(inputValue(e))}
             disabled={loading}
           />
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { inputValue, inputChecked } from "@/utils/event-helpers";
 import { Button } from "@/components/ui/button";
 
 interface ABSuggestion {
@@ -100,7 +101,7 @@ export function ABAnalyticsPanel({ base = "" }: { base?: string }) {
           <select
             data-testid="preset-now-select"
             value={preset}
-            onChange={(e) => setPreset(e.currentTarget.value)}
+            onChange={(e) => setPreset(inputValue(e))}
             className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-white dark:bg-gray-800"
           >
             <option value="default">default</option>

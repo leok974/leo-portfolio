@@ -5,7 +5,7 @@
 ### 1. **Vite Configuration** - Added `@preact/preset-vite` plugin
 - ✅ Installed `@preact/preset-vite@2.10.2`
 - ✅ Updated `vite.config.ts` with `preact()` plugin
-- ✅ Updated `vite.config.portfolio.ts` with `preact()` plugin  
+- ✅ Updated `vite.config.portfolio.ts` with `preact()` plugin
 - ✅ Updated `vite.config.siteagent.ts` with `preact()` plugin
 - ✅ Removed manual React→Preact aliases (plugin handles this)
 
@@ -67,7 +67,7 @@ React 18 types are more lenient with Preact compat.
 
 ### Option C: **Accept the errors** (Current state)
 - Builds work perfectly ✅
-- Runtime works perfectly ✅  
+- Runtime works perfectly ✅
 - TypeScript errors are dev-time only
 - `ts:check` script has `|| true` failsafe
 
@@ -78,7 +78,7 @@ React 18 types are more lenient with Preact compat.
 1. **Use event helpers in new code**:
    ```tsx
    import { inputValue, inputChecked } from '@/utils/event-helpers';
-   
+
    <input onChange={(e) => setState(inputValue(e))} />
    <input type="checkbox" onChange={(e) => setEnabled(inputChecked(e))} />
    ```
@@ -101,7 +101,7 @@ If you want to get to zero TS errors:
    // Instead of:
    import React, { useState } from 'react';
    import { createRoot } from 'react-dom/client';
-   
+
    // Use:
    import { useState, h } from 'preact';
    import { render } from 'preact';

@@ -5,6 +5,7 @@
  * Provides filtering and JSON export capabilities.
  */
 import React from "react";
+import { inputValue, inputChecked } from "@/utils/event-helpers";
 import { approveAndOpenPR } from "@/api";
 
 // Helper to copy text to clipboard
@@ -225,7 +226,7 @@ export default function DevPagesPanel() {
           className="w-full px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-sm outline-none focus:ring"
           placeholder="Filter by path, title, or description…"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => setQ(inputValue(e))}
         />
         <button
           onClick={load}
@@ -370,7 +371,7 @@ export default function DevPagesPanel() {
                     <input
                       className="w-full px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-sm"
                       value={titleInput}
-                      onChange={(e) => setTitleInput(e.target.value)}
+                      onChange={(e) => setTitleInput(inputValue(e))}
                     />
                     <button
                       onClick={() => copy(titleInput)}
@@ -389,7 +390,7 @@ export default function DevPagesPanel() {
                     <textarea
                       className="w-full h-28 px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-sm resize-none"
                       value={descInput}
-                      onChange={(e) => setDescInput(e.target.value)}
+                      onChange={(e) => setDescInput(inputValue(e))}
                     />
                     <button
                       onClick={() => copy(descInput)}

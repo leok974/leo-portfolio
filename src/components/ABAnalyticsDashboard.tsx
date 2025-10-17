@@ -9,6 +9,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { inputValue } from "@/utils/event-helpers";
 
 interface DailyStat {
   day: string;
@@ -104,7 +105,7 @@ export const ABAnalyticsDashboard: React.FC = () => {
           <input
             type="date"
             value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
+            onChange={(e) => setFromDate(inputValue(e))}
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </div>
@@ -113,7 +114,7 @@ export const ABAnalyticsDashboard: React.FC = () => {
           <input
             type="date"
             value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
+            onChange={(e) => setToDate(inputValue(e))}
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </div>

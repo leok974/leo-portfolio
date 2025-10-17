@@ -1,10 +1,11 @@
+import type { ComponentChildren } from "preact";
 import Balancer from 'react-wrap-balancer';
 
 export default function BalancedHeading({
   children,
   className = '',
 }: {
-  children: React.ReactNode;
+  children: ComponentChildren;
   className?: string;
 }) {
   return (

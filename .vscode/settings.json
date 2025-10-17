@@ -4,12 +4,12 @@
   "css.lint.unknownProperties": "ignore",
   "grafana-vscode.URL": "http://localhost:3000",
   "npm.packageManager": "pnpm",
-  
+
   // SonarLint exclusions
   "sonarlint.analyzerProperties": {
     "sonar.exclusions": "**/copilot-instructions.md,**/.github/**"
   },
-  
+
   // Reduce file watcher overhead
   "files.watcherExclude": {
     "**/node_modules/**": true,
@@ -22,7 +22,7 @@
     "**/copilot-instructions.md": true,
     "**/.github/**": true
   },
-  
+
   // Reduce search indexing overhead
   "search.exclude": {
     "**/node_modules": true,
