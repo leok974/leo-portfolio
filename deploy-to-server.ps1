@@ -5,10 +5,10 @@
 param(
     [Parameter(Mandatory=$true)]
     [string]$ServerHost,
-    
+
     [Parameter(Mandatory=$false)]
     [string]$ServerUser = "root",
-    
+
     [Parameter(Mandatory=$false)]
     [int]$ServerPort = 22
 )

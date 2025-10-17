@@ -1,6 +1,6 @@
 # Deploy Portfolio to leoklemet.com
 
-**Status**: Ready for deployment with one-liner  
+**Status**: Ready for deployment with one-liner
 **Date**: October 17, 2025
 
 ## 🚀 Quick start (server)

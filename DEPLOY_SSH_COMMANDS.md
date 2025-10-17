@@ -1,6 +1,6 @@
 # SSH Deployment Commands for leoklemet.com
 
-**Status**: Ready to deploy portfolio-ui container  
+**Status**: Ready to deploy portfolio-ui container
 **Date**: October 17, 2025
 
 ## 🔑 Step 1: SSH to Your Server
@@ -18,7 +18,7 @@ ssh <YOUR_USERNAME>@<YOUR_SERVER_IP>
 ssh -i path\to\your\key.pem <USER>@<SERVER_IP>
 ```
 
-**Don't know your server details?** 
+**Don't know your server details?**
 - Check your cloud provider dashboard (DigitalOcean, Vultr, AWS, etc.)
 - Look for "Access" or "Console" in your provider's panel
 - Or use the web-based console/terminal from your provider

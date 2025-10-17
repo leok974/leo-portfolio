@@ -268,10 +268,11 @@ function AssistantPanel() {
       data-testid="assistant-panel"
       role="region"
       aria-label="Portfolio Assistant"
+      aria-expanded="true"
     >
-      <div class="hdr" style="display:flex; align-items:center; gap:.5rem; justify-content:space-between;">
+      <header class="dock-head">
         <div style="display:flex; align-items:center; gap:.5rem;">
-          <div style="font-weight:600;">Portfolio Assistant</div>
+          <strong style="font-weight:600;">Chat</strong>
           {admin && <span class="asst-badge-admin">admin</span>}
           {apiOffline && (
             <span
@@ -305,19 +306,21 @@ function AssistantPanel() {
             </>
           )}
           <button
-            id="assistant-hide-btn"
+            id="dock-toggle"
             type="button"
-            class="btn-sm"
-            aria-pressed="false"
-            title="Hide panel (persists across reload)"
-            data-testid="assistant-hide"
+            class="dock-btn btn-sm"
+            aria-controls="assistant-panel"
+            aria-expanded="true"
+            title="Collapse (C)"
+            data-testid="dock-toggle"
           >
-            Hide
+            ▸
           </button>
         </div>
-      </div>
+      </header>
 
-      <div ref={logRef} class="asst-log" data-testid="assistant-log">
+      <div class="dock-body">
+        <div ref={logRef} class="asst-log" data-testid="assistant-log">
         {msgs.map((m, i) => (
           <div key={i} class={`row ${m.role}`}>
             <span class="ts">{fmt(m.ts)}</span>
@@ -373,6 +376,19 @@ function AssistantPanel() {
           <pre data-testid="assistant-layout-json">{JSON.stringify(layout, null, 2)}</pre>
         )}
       </details>
+      </div>
+
+      {/* Slim tab stays visible when collapsed */}
+      <button
+        id="dock-tab"
+        class="dock-tab"
+        aria-controls="assistant-panel"
+        aria-expanded="false"
+        title="Expand (C)"
+        data-testid="dock-tab"
+      >
+        Chat
+      </button>
     </div>
   );
 }
