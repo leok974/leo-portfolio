@@ -6,7 +6,7 @@ services:
     volumes:
       - ./mock-ollama.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
-      - "11434:11434"
+      - "127.0.0.1:11435:11434"  # host port changed from 11434 to avoid local conflict
     healthcheck:
       test: ["CMD-SHELL", "pidof nginx || exit 1"]
       interval: 5s

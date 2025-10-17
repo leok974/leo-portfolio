@@ -8,8 +8,7 @@ const __dirname = path.dirname(__filename);
 // Assumptions / overrides via env
 const isCI = !!process.env.CI;
 const workers = process.env.PW_WORKERS ? Number(process.env.PW_WORKERS) : undefined;
-const defaultPort = process.env.PW_APP === 'portfolio' ? '5174' : '5173';
-const baseURL = process.env.PW_BASE_URL ?? process.env.BASE_URL ?? process.env.BASE ?? process.env.PROD_BASE ?? `http://127.0.0.1:${defaultPort}`;
+const baseURL = process.env.PW_BASE_URL ?? process.env.BASE_URL ?? process.env.BASE ?? process.env.PROD_BASE ?? 'http://127.0.0.1:4173';
 
 // Reporter: line locally; html + line in CI (keeps local output light)
 const reporter = (isCI ? [['html'], ['line']] : [['line']]) as any;
@@ -35,6 +34,7 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
     storageState: process.env.PW_STATE || 'tests/e2e/.auth/dev-overlay-state.json',
     viewport: { width: 1280, height: 1600 },
+    serviceWorkers: 'block', // Prevent service workers from interfering with route mocking
     extraHTTPHeaders: {
       // All APIRequestContext calls will include this header
       // Enables dev auth for /agent/* routes in tests
@@ -94,15 +94,12 @@ export default defineConfig({
     },
   ],
   webServer: process.env.PW_SKIP_WS ? undefined : {
-    // Use dev server for the app being tested
-    // Portfolio: vite with portfolio config on 127.0.0.1:5174
-    // Siteagent: vite default on 127.0.0.1:5173
+    // Use preview server for built files (more realistic than dev server)
+    // Serves dist-portfolio/ on port 4173
     // Can override with PW_START env var for custom commands
-    command: process.env.PW_START || (process.env.PW_APP === 'portfolio'
-      ? 'npx vite --config vite.config.portfolio.ts --port 5174 --host 127.0.0.1 --strictPort'
-      : 'npx vite --port 5173 --host 127.0.0.1 --strictPort'),
-    url: process.env.PW_BASE_URL || (process.env.PW_APP === 'portfolio' ? 'http://127.0.0.1:5174' : 'http://127.0.0.1:5173'),
-    reuseExistingServer: true, // Always reuse to avoid port conflicts
+    command: process.env.PW_START || 'npm run preview:portfolio',
+    url: process.env.PW_BASE_URL || 'http://127.0.0.1:4173',
+    reuseExistingServer: !isCI, // Reuse locally, start fresh in CI
     timeout: 120_000, // Give CI time to build and start
     stdout: 'pipe',
     stderr: 'pipe',
