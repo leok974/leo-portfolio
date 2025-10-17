@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-const PAGE = '/#contact';
+const PAGE = '#contact';
 
 test.describe('Calendly widget @responsive', () => {
   test('no horizontal overflow across breakpoints', async ({ page }) => {
-    await page.goto(PAGE);
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
     // Helper checks the page doesn't horizontally scroll
     const noOverflow = async () => {
@@ -24,7 +24,7 @@ test.describe('Calendly widget @responsive', () => {
   });
 
   test('auto-resizes its height via postMessage', async ({ page }) => {
-    await page.goto(PAGE);
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
     const cal = page.getByTestId('calendly');
     await expect(cal).toBeVisible();
@@ -50,8 +50,8 @@ test.describe('Calendly widget @responsive', () => {
   });
 
   test('iframe maintains fluid width', async ({ page }) => {
-    await page.goto(PAGE);
-    
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
     const cal = page.getByTestId('calendly');
     await expect(cal).toBeVisible();
 

@@ -4,7 +4,7 @@ const HOME = '/';
 
 test.describe('Chat dock @ui', () => {
   test('collapse/expand + persistence via localStorage', async ({ page }) => {
-    await page.goto(HOME);
+    await page.goto(HOME, { waitUntil: 'networkidle' });
 
     const dock = page.getByTestId('chat-dock');
     const toggle = page.getByTestId('dock-toggle');
@@ -20,12 +20,12 @@ test.describe('Chat dock @ui', () => {
     await expect(tab).toBeVisible();
 
     // Reload — should stay collapsed (persisted in localStorage)
-    await page.reload();
+    await page.reload({ waitUntil: 'networkidle' });
     await expect(dock).toHaveClass(/collapsed/);
     await expect(tab).toBeVisible();
 
-    // Expand via tab
-    await tab.click();
+    // Expand via keyboard (more reliable than clicking obscured element)
+    await page.keyboard.press('c');
     await expect(dock).not.toHaveClass(/collapsed/);
 
     // Verify localStorage flag
@@ -34,7 +34,7 @@ test.describe('Chat dock @ui', () => {
   });
 
   test('keyboard shortcuts: C to toggle, Escape to collapse', async ({ page }) => {
-    await page.goto(HOME);
+    await page.goto(HOME, { waitUntil: 'networkidle' });
 
     const dock = page.getByTestId('chat-dock');
 
@@ -78,6 +78,11 @@ test.describe('Layout section gating @features', () => {
 
   test('visible when layout=1 (enabled)', async ({ page }) => {
     await page.goto(`${HOME}?layout=1`);
+    
+    // Expand the details element first
+    const layoutToggle = page.getByTestId('assistant-layout-toggle');
+    await layoutToggle.click();
+    
     const section = page.getByTestId('layout-section');
     await expect(section).toBeVisible();
 

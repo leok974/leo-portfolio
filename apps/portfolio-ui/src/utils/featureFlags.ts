@@ -8,7 +8,7 @@ export function layoutEnabled(): boolean {
   const q = u.searchParams.get('layout');
   if (q === '1') return true;
   if (q === '0') return false;
-  
+
   // Default: check build-time env
   return import.meta.env.VITE_LAYOUT_ENABLED === '1';
 }
