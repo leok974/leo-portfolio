@@ -19,7 +19,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const OUTPUT_DIR = path.join(__dirname, '..', 'public', 'og');
+const OUTPUT_DIR = path.join(__dirname, '..', 'apps', 'portfolio-ui', 'public', 'og');
 
 // Minimal HTML template with gradient background
 const template = ({ title, subtitle, tags }) => `
