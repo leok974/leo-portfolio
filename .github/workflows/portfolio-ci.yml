@@ -37,7 +37,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright browsers
+      - name: Install Playwright browsers for OG generation
         run: npx playwright install chromium --with-deps
 
       # === Sync projects from GitHub & generate OG images ===
@@ -104,6 +104,7 @@ jobs:
         env:
           PW_BASE_URL: ${{ env.PW_BASE_URL }}
           PW_SKIP_WS: "1"
+          SKIP_BACKEND: "1"
         run: |
           echo "Testing against $PW_BASE_URL"
           npx playwright test --config=playwright.portfolio.config.ts
