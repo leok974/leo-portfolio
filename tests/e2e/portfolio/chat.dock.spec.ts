@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { waitForAppReady } from '../../../e2e/utils';
 
 const HOME = '/';
 
 test.describe('Chat dock @ui', () => {
   test('collapse/expand + persistence via localStorage', async ({ page }) => {
-    await page.goto(HOME, { waitUntil: 'networkidle' });
+    await page.goto(HOME);
+    await waitForAppReady(page);
 
     const dock = page.getByTestId('chat-dock');
     const toggle = page.getByTestId('dock-toggle');
@@ -20,7 +22,8 @@ test.describe('Chat dock @ui', () => {
     await expect(tab).toBeVisible();
 
     // Reload — should stay collapsed (persisted in localStorage)
-    await page.reload({ waitUntil: 'networkidle' });
+    await page.reload();
+    await waitForAppReady(page);
     await expect(dock).toHaveClass(/collapsed/);
     await expect(tab).toBeVisible();
 
@@ -34,7 +37,8 @@ test.describe('Chat dock @ui', () => {
   });
 
   test('keyboard shortcuts: C to toggle, Escape to collapse', async ({ page }) => {
-    await page.goto(HOME, { waitUntil: 'networkidle' });
+    await page.goto(HOME);
+    await waitForAppReady(page);
 
     const dock = page.getByTestId('chat-dock');
 

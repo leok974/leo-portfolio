@@ -122,3 +122,11 @@ window.addEventListener("layout:update", (e) => {
 mountDevOverlayIfEnabled();
 
 console.log("Portfolio shell initialized");
+
+// Signal to E2E tests that the app is fully mounted and stable
+declare global {
+  interface Window {
+    __APP_READY__?: boolean;
+  }
+}
+window.__APP_READY__ = true;
