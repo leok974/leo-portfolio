@@ -2,15 +2,15 @@
 <#
 .SYNOPSIS
   Store Cloudflare credentials securely in Windows environment variables
-  
+
 .DESCRIPTION
   Saves CLOUDFLARE_API_TOKEN and CF_ZONE_ID to user-level environment variables
   so they persist across PowerShell sessions.
-  
+
 .EXAMPLE
   # Run this script once to set credentials
   .\scripts\set-cloudflare-credentials.ps1
-  
+
 .NOTES
   Credentials are stored at user level (not machine level) for security.
   Use $env:CLOUDFLARE_API_TOKEN and $env:CF_ZONE_ID in subsequent scripts.

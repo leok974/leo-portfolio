@@ -66,8 +66,8 @@ wsl bash /mnt/d/leo-portfolio/scripts/infra-guard.sh
 ## 🔧 Configuration Files
 
 ### `.env.cloudflare`
-**Location:** `D:\leo-portfolio\.env.cloudflare`  
-**Purpose:** Backup storage for Cloudflare credentials  
+**Location:** `D:\leo-portfolio\.env.cloudflare`
+**Purpose:** Backup storage for Cloudflare credentials
 **Security:** Listed in `.gitignore` - NEVER commit this file
 
 **Contents:**

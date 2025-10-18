@@ -1,7 +1,7 @@
 # E2E Test Fixes - Complete Summary
 
-**Date:** October 18, 2025  
-**Branch:** `portfolio-polish`  
+**Date:** October 18, 2025
+**Branch:** `portfolio-polish`
 **Commit:** e26b7c9
 
 ## Objective
@@ -100,8 +100,8 @@ await waitForAppReady(page);  // instead of { waitUntil: 'networkidle' }
 
 ## Docker Deployment
 
-**Image:** `ghcr.io/leok974/leo-portfolio/portfolio:latest`  
-**Pushed:** October 18, 2025  
+**Image:** `ghcr.io/leok974/leo-portfolio/portfolio:latest`
+**Pushed:** October 18, 2025
 **Digest:** `sha256:9fe731ce1458d4d5a65fd4a1e541e4d76e2b3ec60184b67a23072aac2eed5cd7`
 
 ### What's in the Image:
@@ -199,5 +199,5 @@ Consider adding:
 
 ---
 
-**Status:** ✅ All fixes committed and pushed to GHCR  
+**Status:** ✅ All fixes committed and pushed to GHCR
 **Next Action:** `git push origin portfolio-polish` to trigger CI

@@ -1,0 +1,70 @@
+name: Purge OG Cache
+
+# Manual workflow to purge Cloudflare cache for OG images
+# Requires secrets: CLOUDFLARE_API_TOKEN and CF_ZONE_ID
+
+on:
+  workflow_dispatch:
+    inputs:
+      files:
+        description: 'Comma-separated list of OG image filenames (or "all" for all 7 images)'
+        required: false
+        default: 'all'
+        type: string
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Purge OG cache from Cloudflare
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+        run: |
+          set -euo pipefail
+
+          # Default to all 7 OG images if "all" or empty
+          INPUT="${{ inputs.files }}"
+          if [[ -z "$INPUT" || "$INPUT" == "all" ]]; then
+            FILES=(
+              "https://www.leoklemet.com/og/og.png"
+              "https://www.leoklemet.com/og/applylens.png"
+              "https://www.leoklemet.com/og/ai-finance-agent-oss.png"
+              "https://www.leoklemet.com/og/ai-ops-agent-gke.png"
+              "https://www.leoklemet.com/og/pixo-banana-suite.png"
+              "https://www.leoklemet.com/og/adgen-starter-kit.png"
+              "https://www.leoklemet.com/og/leo-portfolio.png"
+            )
+          else
+            # Parse comma-separated input into array
+            IFS=',' read -ra NAMES <<< "$INPUT"
+            FILES=()
+            for name in "${NAMES[@]}"; do
+              # Strip whitespace
+              name=$(echo "$name" | xargs)
+              # Add full URL
+              FILES+=("https://www.leoklemet.com/og/${name}")
+            done
+          fi
+
+          echo "🗑️  Purging ${#FILES[@]} OG images from Cloudflare cache..."
+
+          # Build JSON array
+          JSON_FILES=$(printf '%s\n' "${FILES[@]}" | jq -R . | jq -s .)
+
+          # Purge cache
+          RESPONSE=$(curl -sX POST \
+            "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data "{\"files\":${JSON_FILES}}")
+
+          echo "$RESPONSE" | jq .
+
+          # Check success
+          if echo "$RESPONSE" | jq -e '.success == true' > /dev/null; then
+            echo "✅ Successfully purged OG cache"
+          else
+            echo "❌ Failed to purge cache"
+            exit 1
+          fi

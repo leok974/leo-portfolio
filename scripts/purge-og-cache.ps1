@@ -2,16 +2,16 @@
 <#
 .SYNOPSIS
   Purge Cloudflare cache for portfolio OG images
-  
+
 .DESCRIPTION
   Clears stale cached 404 responses for OG social media preview images.
   Requires CLOUDFLARE_API_TOKEN and CF_ZONE_ID environment variables.
-  
+
 .EXAMPLE
   # Set credentials first (get from Cloudflare dashboard)
   $env:CLOUDFLARE_API_TOKEN = "your-token-here"
   $env:CF_ZONE_ID = "your-zone-id-here"
-  
+
   # Then run this script
   .\scripts\purge-og-cache.ps1
 #>
@@ -53,7 +53,7 @@ $headers = @{
 
 try {
   $response = Invoke-RestMethod -Uri $url -Method Post -Headers $headers -Body $payload
-  
+
   if ($response.success) {
     Write-Host "✅ Cache purged successfully!" -ForegroundColor Green
     Write-Host "Files cleared:" -ForegroundColor Gray

@@ -69,9 +69,9 @@ services:
         aliases:
           - portfolio.int
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz || exit 1"]
-      interval: 15s
-      timeout: 5s
+      test: ["CMD-SHELL", "wget -q --spider http://localhost/healthz || exit 1"]
+      interval: 20s
+      timeout: 3s
       retries: 5
     labels:
       com.centurylinklabs.watchtower.enable: "true"

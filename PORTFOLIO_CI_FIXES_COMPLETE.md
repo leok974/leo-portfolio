@@ -65,7 +65,7 @@ const OUTPUT_DIR = path.join(__dirname, '..', 'apps', 'portfolio-ui', 'public', 
 ```typescript
 test.describe('Calendly widget @responsive', () => {
   test.skip(process.env.SKIP_FLAKY === '1', 'Flaky viewport test - layout settling inconsistent');
-  
+
   test('no horizontal overflow across breakpoints', async ({ page }) => {
     // ...
   });
@@ -147,7 +147,7 @@ env:
    ```powershell
    curl -I https://www.leoklemet.com/og/og.png
    # Expected: 200 OK, Content-Type: image/png
-   
+
    curl -I https://www.leoklemet.com/og/applylens.png
    # Expected: 200 OK, Content-Type: image/png
    ```
