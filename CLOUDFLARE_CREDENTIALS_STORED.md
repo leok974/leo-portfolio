@@ -2,12 +2,13 @@
 
 **Date:** October 18, 2025
 **Status:** Credentials stored and secured
+**Last Rotation:** October 18, 2025 (old token revoked)
 
 ## ✅ What Was Done
 
 ### 1. Persistent Environment Variables
 Stored in Windows user-level environment variables:
-- `CLOUDFLARE_API_TOKEN` = nliaGPFEvv... (42 chars)
+- `CLOUDFLARE_API_TOKEN` = iAjXQYOy0n... (42 chars) **[ROTATED 2025-10-18]**
 - `CF_ZONE_ID` = 3fbdb3802ab36704e7c652ad03ccb390
 
 **Access in any PowerShell session:**

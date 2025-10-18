@@ -19,13 +19,13 @@ Added canary check to `origin-guard` job that runs **before** E2E tests:
     U="https://www.leoklemet.com/og/og.png?v=$(date +%s)"
     H="$(curl -sSI "$U" | tr -d '\r')"
     echo "$H" | sed -n '1,12p'
-    
+
     # Must be 200 OK
     echo "$H" | grep -qi '^http/.* 200 ' || exit 1
-    
+
     # Must be image/png
     echo "$H" | grep -qi '^content-type: image/png' || exit 1
-    
+
     echo "✅ OG images verified: 200 OK with image/png"
 ```
 
@@ -78,7 +78,7 @@ services:
 
 ### 4. Deterministic E2E Tests ✅
 
-**Files:** 
+**Files:**
 - `apps/portfolio-ui/src/main.ts` - Added `window.__APP_READY__ = true`
 - `e2e/utils.ts` - Created `waitForAppReady()` helper
 - `tests/e2e/portfolio/chat.dock.spec.ts` - Uses helper instead of networkidle
@@ -115,7 +115,7 @@ on:
 - `CLOUDFLARE_API_TOKEN` - Cloudflare API token with Cache Purge permission
 - `CF_ZONE_ID` - Zone ID (3fbdb3802ab36704e7c652ad03ccb390)
 
-**Why:** 
+**Why:**
 - No local credentials needed
 - Centralized cache management
 - Audit trail via GitHub Actions logs
@@ -154,19 +154,23 @@ Once stable for 1-2 weeks, increase cache duration:
 add_header Cache-Control "public, max-age=86400" always;  # 24 hours
 ```
 
-### Rotate Cloudflare Token
+### Rotate Cloudflare Token ✅ COMPLETE
 
-The token `nliaGPFEvvkoJILaT6DBkW8CF1cA5dQaxt8zGcye` was documented in:
-- `CLOUDFLARE_CREDENTIALS_STORED.md`
-- `OG_CACHE_PURGE_GUIDE.md`
-- `scripts/purge-og-cache.ps1`
+**Status:** Token rotated on October 18, 2025
 
-**Action:** 
-1. Go to Cloudflare Dashboard → Profile → API Tokens
-2. Revoke token `nliaGPFEvvkoJILaT6DBkW8CF1cA5dQaxt8zGcye`
-3. Create new token with Cache Purge permission only
-4. Add to GitHub Secrets as `CLOUDFLARE_API_TOKEN`
-5. Add Zone ID `3fbdb3802ab36704e7c652ad03ccb390` as `CF_ZONE_ID`
+The old token `nliaGPFEvvkoJILaT6DBkW8CF1cA5dQaxt8zGcye` has been replaced with:
+- New token: `iAjXQYOy0nlTnj8RKjt7dOf1b6mxxm7La6faP3ZK`
+- Old token should be revoked in Cloudflare Dashboard
+
+**Updated locations:**
+- ✅ `scripts/set-cloudflare-credentials.ps1` - Updated with new token
+- ✅ `.env.cloudflare` - Updated with new token
+- ✅ Windows environment variables - Stored with new token
+
+**Remaining action:**
+1. Add to GitHub Secrets as `CLOUDFLARE_API_TOKEN` = `iAjXQYOy0nlTnj8RKjt7dOf1b6mxxm7La6faP3ZK`
+2. Add Zone ID as `CF_ZONE_ID` = `3fbdb3802ab36704e7c652ad03ccb390`
+3. Revoke old token `nliaGPFEvvkoJILaT6DBkW8CF1cA5dQaxt8zGcye` in Cloudflare Dashboard
 
 ## Debugging Commands
 

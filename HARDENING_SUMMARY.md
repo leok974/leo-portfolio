@@ -4,7 +4,7 @@
 
 ### Changes Pushed (Commit: 07ab4cb)
 
-1. **OG Canary Check in CI** 
+1. **OG Canary Check in CI**
    - File: `.github/workflows/portfolio-ci.yml`
    - Added second step to `origin-guard` job
    - Verifies OG images return 200 OK with `image/png` content type
@@ -35,30 +35,32 @@
 
 ## Verification Checklist
 
-✅ Nginx ^~ /og/ block sits above regex/SPA blocks  
-✅ Dockerfile copies public/og/ → /usr/share/nginx/html/og/  
-✅ Canonical OG URLs use www host in meta tags  
-✅ CI has origin-guard + OG canary; E2E depends on it  
-✅ SKIP_BACKEND=1 stays in CI until /resume/generate.md is live  
-✅ Chat dock tests use waitForAppReady (not networkidle)  
+✅ Nginx ^~ /og/ block sits above regex/SPA blocks
+✅ Dockerfile copies public/og/ → /usr/share/nginx/html/og/
+✅ Canonical OG URLs use www host in meta tags
+✅ CI has origin-guard + OG canary; E2E depends on it
+✅ SKIP_BACKEND=1 stays in CI until /resume/generate.md is live
+✅ Chat dock tests use waitForAppReady (not networkidle)
 
-## Action Required: Rotate Cloudflare Token
+## ✅ Cloudflare Token Rotated (October 18, 2025)
 
-The Cloudflare API token `nliaGPFEvvkoJILaT6DBkW8CF1cA5dQaxt8zGcye` was documented in:
-- `CLOUDFLARE_CREDENTIALS_STORED.md`
-- `OG_CACHE_PURGE_GUIDE.md`
-- `scripts/purge-og-cache.ps1`
+**Old token revoked:** `nliaGPFEvvkoJILaT6DBkW8CF1cA5dQaxt8zGcye`  
+**New token:** `iAjXQYOy0nlTnj8RKjt7dOf1b6mxxm7La6faP3ZK`
 
-**Steps:**
+**Updated files:**
+- ✅ `scripts/set-cloudflare-credentials.ps1`
+- ✅ `.env.cloudflare`
+- ✅ Windows user environment variables
+
+**Remaining steps:**
 1. Go to [Cloudflare Dashboard → API Tokens](https://dash.cloudflare.com/profile/api-tokens)
-2. Revoke token: `nliaGPFEvvkoJILaT6DBkW8CF1cA5dQaxt8zGcye`
-3. Create new token with **Zone.Cache Purge** permission only
-4. Add to GitHub repo secrets:
+2. **Revoke old token:** `nliaGPFEvvkoJILaT6DBkW8CF1cA5dQaxt8zGcye`
+3. Add to GitHub repo secrets:
    ```
-   CLOUDFLARE_API_TOKEN = <new_token>
+   CLOUDFLARE_API_TOKEN = iAjXQYOy0nlTnj8RKjt7dOf1b6mxxm7La6faP3ZK
    CF_ZONE_ID = 3fbdb3802ab36704e7c652ad03ccb390
    ```
-5. Test workflow: Actions → Purge OG Cache → Run workflow
+4. Test workflow: Actions → Purge OG Cache → Run workflow
 
 ## Debugging Commands
 

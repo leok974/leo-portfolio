@@ -21,8 +21,8 @@ $ErrorActionPreference = 'Stop'
 Write-Host "🔐 Cloudflare Credentials Setup" -ForegroundColor Cyan
 Write-Host ""
 
-# Cloudflare API Token
-$apiToken = "nliaGPFEvvkoJILaT6DBkW8CF1cA5dQaxt8zGcye"
+# Cloudflare API Token (rotated 2025-10-18)
+$apiToken = "iAjXQYOy0nlTnj8RKjt7dOf1b6mxxm7La6faP3ZK"
 Write-Host "Setting CLOUDFLARE_API_TOKEN..." -ForegroundColor Yellow
 
 # Zone ID
