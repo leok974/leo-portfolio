@@ -53,11 +53,9 @@ services:
       start_period: 60s
 
   nginx:
-    image: nginx:1.27-alpine
+    image: ghcr.io/leok974/leo-portfolio/portfolio:latest
     container_name: portfolio-nginx
-    volumes:
-      - ./nginx.portfolio-dev.conf:/etc/nginx/conf.d/default.conf:ro
-      - ../dist-portfolio:/usr/share/nginx/html:ro
+    pull_policy: always  # Watchtower will update this automatically
     ports:
       - "127.0.0.1:8082:80"
       # Uncomment for HTTPS termination at nginx (if not using Cloudflare Tunnel)
@@ -65,14 +63,26 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+    networks:
+      default:
+      infra_net:
+        aliases:
+          - portfolio.int
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
     # Uncomment for TLS certificates
     # volumes (additional):
     #   - ./certs:/etc/nginx/certs:ro
+
+networks:
+  infra_net:
+    external: true
+    name: infra_net
 
 # Note: Using host infra-ollama-1 on port 11434 (gpt-oss:20b)
 # No need for separate Ollama container

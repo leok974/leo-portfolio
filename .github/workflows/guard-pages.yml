@@ -1,0 +1,39 @@
+name: Guard Pages Domain
+
+# This workflow prevents GitHub Pages from being enabled for leoklemet.com/www.leoklemet.com
+# Production deployment is via Docker + Cloudflare Tunnel ONLY
+
+on: [push, workflow_dispatch]
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if GitHub Pages is enabled or points to prod
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          DATA="$(gh api repos/${{ github.repository }}/pages 2>&1 || true)"
+          echo "$DATA"
+          
+          # If the endpoint exists and 'status' not null → Pages is enabled, disallow.
+          if echo "$DATA" | grep -qi '"status":'; then
+            echo "❌ GitHub Pages is enabled — this is not allowed for production"
+            echo "Production deploys via Docker + Cloudflare Tunnel only"
+            echo "To disable: gh api repos/${{ github.repository }}/pages -X DELETE"
+            exit 1
+          fi
+          
+          # Also fail if a CNAME equals www.leoklemet.com or leoklemet.com
+          if echo "$DATA" | grep -qi '"cname": *"www.leoklemet.com"'; then
+            echo "❌ GitHub Pages CNAME conflicts with production domain (www.leoklemet.com)"
+            exit 1
+          fi
+          
+          if echo "$DATA" | grep -qi '"cname": *"leoklemet.com"'; then
+            echo "❌ GitHub Pages CNAME conflicts with production domain (leoklemet.com)"
+            exit 1
+          fi
+          
+          echo "✅ OK — GitHub Pages not active or not pointing to production domains."
