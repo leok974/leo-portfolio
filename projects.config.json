@@ -1,7 +1,7 @@
 {
   "org": "leok974",
-  "include_topics": ["portfolio", "featured", "ai", "agents"],
+  "include_topics": [],
   "exclude_archived": true,
-  "denylist": ["old-experiment", "sandbox-*"],
+  "denylist": ["old-experiment", "sandbox-*", "test-*", "template-*", "fork-*", ".github"],
   "min_stars": 0
 }
