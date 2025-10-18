@@ -44,7 +44,7 @@
 
 ## ✅ Cloudflare Token Rotated (October 18, 2025)
 
-**Old token revoked:** `nliaGPFEvvkoJILaT6DBkW8CF1cA5dQaxt8zGcye`  
+**Old token revoked:** `nliaGPFEvvkoJILaT6DBkW8CF1cA5dQaxt8zGcye`
 **New token:** `iAjXQYOy0nlTnj8RKjt7dOf1b6mxxm7La6faP3ZK`
 
 **Updated files:**
