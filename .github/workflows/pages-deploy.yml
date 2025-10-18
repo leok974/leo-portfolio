@@ -34,24 +34,32 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Fetch Inter variable font
-        run: |
-          mkdir -p fonts
-          curl -L -o fonts/Inter-roman.var.woff2 https://github.com/rsms/inter/releases/latest/download/Inter-roman.var.woff2
+      - name: Install Playwright for OG generation
+        run: npx playwright install chromium --with-deps
 
-      - name: Build (optimize + rev)
-        run: pnpm run build
+      - name: Sync projects from GitHub
+        run: pnpm projects:sync
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate OG images
+        run: pnpm og:gen
+
+      - name: Build portfolio
+        run: pnpm build:portfolio
+        env:
+          VITE_LAYOUT_ENABLED: "1"
 
       - name: Prepare artifact
         run: |
-          mkdir -p dist
-          shopt -s extglob
-          cp -r !(node_modules|.git|.github|dist) dist/
+          # dist-portfolio is the output directory
+          # Just upload it directly
+          ls -la dist-portfolio/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: dist-portfolio
 
   deploy:
     needs: build
