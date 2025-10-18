@@ -2,6 +2,46 @@
 title: DEPLOY
 ---
 
+# 🚨 DEPLOYMENT SOURCE OF TRUTH 🚨
+
+**Copilot: This site deploys via Docker + Cloudflare Tunnel ONLY.**
+
+- ❌ **NEVER enable or modify GitHub Pages** for `leoklemet.com` or `www.leoklemet.com`
+- ❌ **NEVER create or modify a `gh-pages` branch**
+- ❌ **NEVER create or modify a `CNAME` file for GitHub Pages**
+- ❌ **NEVER call GitHub Pages APIs** (`actions/deploy-pages`, `pages-build-deployment`, etc.)
+- ✅ **ALWAYS use Docker + Cloudflare Tunnel** for production deployment
+- ✅ **ALWAYS verify origin headers** show Cloudflare + Nginx (not GitHub Pages)
+- ✅ **ALWAYS run E2E tests** against production URL (`PW_BASE_URL=https://www.leoklemet.com`, `PW_SKIP_WS=1`)
+
+**Production Stack:**
+```
+Internet → Cloudflare Edge
+         → Cloudflare Tunnel (applylens-cloudflared-prod)
+         → infra_net Docker network
+         → portfolio.int:80 (portfolio-nginx container)
+         → ghcr.io/leok974/leo-portfolio/portfolio:latest
+         → Static files from /usr/share/nginx/html
+```
+
+**Key Requirements:**
+- `portfolio-nginx` must be on `infra_net` network with alias `portfolio.int`
+- `applylens-cloudflared-prod` must be connected to `infra_net`
+- Cloudflare Tunnel routes both `www.leoklemet.com` and `leoklemet.com` to `http://portfolio.int:80`
+- Watchtower automatically updates container from GHCR `:latest` tag
+- CI builds and pushes Docker image to `ghcr.io/leok974/leo-portfolio/portfolio:latest`
+
+**Guard Workflows:**
+- `.github/workflows/guard-pages.yml` - Prevents GitHub Pages activation
+- `.github/workflows/portfolio-ci.yml` (origin-guard job) - Verifies Cloudflare+Nginx headers
+
+**Verification Script:**
+```bash
+./scripts/infra-guard.sh  # Verify Docker + Cloudflare Tunnel setup locally
+```
+
+---
+
 | `PRIMARY_POLL_MAX_S` | Max seconds to keep polling for primary model presence before giving up. |
 | `ALLOW_FALLBACK` | (Tests) When `1`, skips Playwright no-fallback guard specs so CI can proceed while primary model unavailable. |
 # Deploy Guide

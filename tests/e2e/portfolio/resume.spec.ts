@@ -8,12 +8,12 @@ test.describe('Resume Generation @resume', () => {
     const apiContext = await playwrightRequest.newContext({ baseURL });
 
     const res = await apiContext.get('/resume/generate.md');
-    
+
     // Graceful handling if backend not deployed
     if (res.status() === 404) {
       test.fail(true, 'Resume endpoint 404 (backend not deployed yet)');
     }
-    
+
     expect(res.status()).toBe(200);
 
     const contentType = res.headers()['content-type'] || '';

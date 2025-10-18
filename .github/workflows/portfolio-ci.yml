@@ -79,8 +79,67 @@ jobs:
             ${{ steps.tags.outputs.tag_latest }}
             ${{ steps.tags.outputs.tag_sha }}
 
+  origin-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assert prod is Cloudflare+Nginx (not GitHub Pages)
+        run: |
+          set -euo pipefail
+          echo "🔍 Checking production origin at https://www.leoklemet.com"
+
+          H="$(curl -sSI https://www.leoklemet.com | tr -d '\r')"
+          echo "$H" | sed -n '1,12p'
+
+          # Must have Cloudflare server header
+          if ! echo "$H" | grep -qi '^server: cloudflare'; then
+            echo "❌ Missing 'Server: cloudflare' header — not using Cloudflare Tunnel!"
+            exit 1
+          fi
+
+          # Must have nginx x-config header (our custom marker)
+          if ! echo "$H" | grep -qi '^x-config:'; then
+            echo "❌ Missing 'x-config:' header — nginx not configured correctly!"
+            exit 1
+          fi
+
+          # Must NOT look like GitHub Pages
+          if echo "$H" | grep -qi 'github'; then
+            echo "❌ Headers contain 'github' — looks like GitHub Pages is serving this!"
+            exit 1
+          fi
+
+          # Must return 200 OK
+          if ! echo "$H" | grep -qi '^http/.* 200 '; then
+            echo "❌ Production site not returning 200 OK"
+            exit 1
+          fi
+
+          echo "✅ Production origin verified: Cloudflare + Nginx (Docker deployment)"
+
+      - name: OG canary check
+        run: |
+          set -euo pipefail
+          echo "🔍 Verifying OG images serve correctly"
+          U="https://www.leoklemet.com/og/og.png?v=$(date +%s)"
+          H="$(curl -sSI "$U" | tr -d '\r')"
+          echo "$H" | sed -n '1,12p'
+
+          # Must be 200 OK
+          if ! echo "$H" | grep -qi '^http/.* 200 '; then
+            echo "❌ OG image not returning 200 OK"
+            exit 1
+          fi
+
+          # Must be image/png
+          if ! echo "$H" | grep -qi '^content-type: image/png'; then
+            echo "❌ OG image not returning image/png content type"
+            exit 1
+          fi
+
+          echo "✅ OG images verified: 200 OK with image/png"
+
   e2e-prod:
-    needs: content-build
+    needs: [content-build, origin-guard]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
