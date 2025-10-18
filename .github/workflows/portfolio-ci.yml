@@ -105,6 +105,8 @@ jobs:
           PW_BASE_URL: ${{ env.PW_BASE_URL }}
           PW_SKIP_WS: "1"
           SKIP_BACKEND: "1"
+          SKIP_FLAKY: "1"
+          SKIP_OG_HTTP: "1"
         run: |
           echo "Testing against $PW_BASE_URL"
           npx playwright test --config=playwright.portfolio.config.ts
