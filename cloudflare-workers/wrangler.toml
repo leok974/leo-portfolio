@@ -1,0 +1,26 @@
+# Cloudflare Worker - Deployment Configuration
+#
+# Configuration for deploying the agent-refresh worker.
+#
+# Deploy:
+#   cd cloudflare-workers
+#   wrangler deploy
+#
+# Set secrets:
+#   wrangler secret put GH_PAT
+#   wrangler secret put ALLOW_KEY
+
+name = "agent-refresh"
+main = "agent-refresh.ts"
+compatibility_date = "2024-01-01"
+
+[vars]
+REPO = "leok974/leo-portfolio"
+
+# Secrets (set via wrangler secret put):
+# - GH_PAT: GitHub Personal Access Token with workflow dispatch permission
+# - ALLOW_KEY: Shared secret for authentication
+
+[[routes]]
+pattern = "api.leoklemet.com/agent/refresh*"
+zone_name = "leoklemet.com"

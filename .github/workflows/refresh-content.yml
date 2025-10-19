@@ -1,0 +1,57 @@
+name: Refresh Content & Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Why are we refreshing?
+        required: false
+        default: "agent-request"
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Sync projects from GitHub
+        run: pnpm projects:sync
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate skills from projects
+        run: pnpm skills:gen
+
+      - name: Generate OG images
+        run: pnpm og:gen
+
+      - name: Build portfolio
+        run: pnpm build:portfolio
+
+      - name: Build & Push Docker image
+        run: |
+          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker build -f Dockerfile.portfolio -t ghcr.io/leok974/leo-portfolio/portfolio:latest .
+          docker push ghcr.io/leok974/leo-portfolio/portfolio:latest
+
+      - name: Trigger Watchtower auto-update
+        run: echo "Watchtower will pull latest image automatically"
+
+      - name: Output completion
+        run: |
+          echo "✅ Content refresh completed"
+          echo "Reason: ${{ github.event.inputs.reason }}"
+          echo "Commit: ${{ github.sha }}"
