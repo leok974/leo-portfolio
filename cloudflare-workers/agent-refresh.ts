@@ -33,17 +33,24 @@ const _reqTimestamps: number[] = [];
 const ALLOWED_REASONS = new Set(['sync-projects', 'update-skills', 'refresh-portfolio', 'agent-request', 'manual-test']);
 
 async function ghLatest(env: Env) {
-  const res = await fetch(
-    `https://api.github.com/repos/${env.REPO}/actions/runs?per_page=1`,
-    { headers: { Authorization: `Bearer ${env.GH_PAT}`, Accept: 'application/vnd.github+json' } }
-  );
-  const j = await res.json();
-  const run = j.workflow_runs?.[0];
-  if (!run) return { state: 'unknown' };
-  return {
-    id: run.id, status: run.status, conclusion: run.conclusion,
-    html_url: run.html_url, name: run.name, created_at: run.created_at
-  };
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${env.REPO}/actions/runs?per_page=1`,
+      { headers: { Authorization: `Bearer ${env.GH_PAT}`, Accept: 'application/vnd.github+json' } }
+    );
+    if (!res.ok) {
+      return { state: 'error', message: `GitHub API returned ${res.status}` };
+    }
+    const j = await res.json();
+    const run = j.workflow_runs?.[0];
+    if (!run) return { state: 'unknown' };
+    return {
+      id: run.id, status: run.status, conclusion: run.conclusion,
+      html_url: run.html_url, name: run.name, created_at: run.created_at
+    };
+  } catch (err) {
+    return { state: 'error', message: String(err) };
+  }
 }
 
 export default {
