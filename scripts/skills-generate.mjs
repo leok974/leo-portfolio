@@ -34,8 +34,21 @@ const mapSkill = (raw, map) => {
 };
 
 (async () => {
-  const projects = await readJson(path.join(PUB, 'projects.json'), []);
-  if (!projects?.length) throw new Error('skills-generate: projects.json empty');
+  const projectsPath = path.join(PUB, 'projects.json');
+  const projects = await readJson(projectsPath, []);
+  
+  if (!projects?.length) {
+    console.error(`✗ skills-generate: projects.json is empty or missing`);
+    console.error(`  Path checked: ${projectsPath}`);
+    console.error(`  Absolute: ${path.resolve(projectsPath)}`);
+    try {
+      const stat = await fs.stat(projectsPath);
+      console.error(`  File exists, size: ${stat.size} bytes`);
+    } catch (e) {
+      console.error(`  File does not exist: ${e.message}`);
+    }
+    throw new Error('skills-generate: projects.json empty or missing');
+  }
 
   const cfg = await readJson('skills.map.json');
   const catNames = cfg.categories;
