@@ -46,7 +46,7 @@ jobs:
 
       - name: Build & Push Docker image
         run: |
-          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           docker build -f Dockerfile.portfolio -t ghcr.io/leok974/leo-portfolio/portfolio:latest .
           docker push ghcr.io/leok974/leo-portfolio/portfolio:latest
 
