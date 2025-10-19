@@ -1,0 +1,48 @@
+{
+  "categories": {
+    "ai-ml": "AI & Machine Learning",
+    "software": "Software Engineering",
+    "creative": "Creative Technology",
+    "data-devops": "Data & DevOps",
+    "misc": "Other"
+  },
+  "map": {
+    "ai":                { "name": "Artificial Intelligence",      "cat": "ai-ml", "syn": [] },
+    "ml":                { "name": "Machine Learning",             "cat": "ai-ml", "syn": [] },
+    "llm":               { "name": "Large Language Models (LLMs)", "cat": "ai-ml", "syn": ["llms","language models"] },
+    "rag":               { "name": "RAG Systems",                  "cat": "ai-ml", "syn": ["rag systems","retrieval augmented generation"] },
+    "agents":            { "name": "AI Agents",                    "cat": "ai-ml", "syn": ["agent","autonomous agents"] },
+    "ollama":            { "name": "Ollama",                       "cat": "ai-ml" },
+    "nlp":               { "name": "Natural Language Processing",  "cat": "ai-ml", "syn": ["nlp","text processing"] },
+    "pytorch":           { "name": "PyTorch",                      "cat": "ai-ml" },
+    "tensorflow":        { "name": "TensorFlow",                   "cat": "ai-ml" },
+    "scikit-learn":      { "name": "scikit-learn",                 "cat": "ai-ml", "syn": ["sklearn"] },
+
+    "react":             { "name": "React",                        "cat": "software" },
+    "typescript":        { "name": "TypeScript",                   "cat": "software", "syn": ["ts"] },
+    "python":            { "name": "Python",                       "cat": "software" },
+    "fastapi":           { "name": "FastAPI",                      "cat": "software" },
+    "sqlite":            { "name": "SQLite",                       "cat": "software" },
+    "postgres":          { "name": "PostgreSQL",                   "cat": "software", "syn": ["postgresql"] },
+    "api":               { "name": "API Design & Microservices",   "cat": "software", "syn": ["microservices"] },
+
+    "docker":            { "name": "Docker",                       "cat": "data-devops" },
+    "kubernetes":        { "name": "Kubernetes",                   "cat": "data-devops", "syn": ["k8s"] },
+    "devops":            { "name": "DevOps",                       "cat": "data-devops", "syn": [] },
+    "ci-cd":             { "name": "CI/CD Pipelines",              "cat": "data-devops", "syn": ["cicd"] },
+    "gcp":               { "name": "Google Cloud Platform",        "cat": "data-devops", "syn": ["google cloud"] },
+    "gke":               { "name": "Google Kubernetes Engine (GKE)","cat": "data-devops" },
+    "vector-db":         { "name": "Vector Databases",             "cat": "data-devops", "syn": ["pinecone","qdrant","weaviate","milvus"] },
+
+    "threejs":           { "name": "Three.js / WebGL",             "cat": "creative", "syn": ["webgl"] },
+    "viz":               { "name": "Data Visualization",           "cat": "creative", "syn": ["visualization","charts"] },
+    "blender":           { "name": "Blender",                      "cat": "creative" },
+    "genai-art":         { "name": "Generative AI Art",            "cat": "creative" },
+
+    "analytics":         { "name": "Analytics",                    "cat": "misc" },
+    "finance":           { "name": "Finance",                      "cat": "misc", "syn": ["fintech"] },
+    "portfolio":         { "name": "Portfolio Development",        "cat": "misc" },
+    "privacy":           { "name": "Privacy & Security",           "cat": "misc", "syn": ["security"] }
+  },
+  "pinFirst": ["Artificial Intelligence", "RAG Systems", "AI Agents", "React", "TypeScript", "Python", "Kubernetes"]
+}
