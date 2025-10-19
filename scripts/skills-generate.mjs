@@ -15,7 +15,13 @@ import path from 'node:path';
 const PUB = 'apps/portfolio-ui/public';
 
 const readJson = async (p, dflt=undefined) => {
-  try { return JSON.parse(await fs.readFile(p,'utf8')); } catch { return dflt; }
+  try { 
+    const content = await fs.readFile(p,'utf8');
+    return JSON.parse(content);
+  } catch (e) { 
+    console.error(`✗ readJson failed for ${p}: ${e.message}`);
+    return dflt; 
+  }
 };
 
 const normalize = s => String(s || '').trim().toLowerCase();
