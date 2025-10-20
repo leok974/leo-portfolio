@@ -7,7 +7,7 @@
 
   // Derive API base similar to api.js (but lightweight and synchronous)
   const isPages = typeof location !== 'undefined' && location.hostname.endsWith('github.io');
-  const API_BASE = (/** @type {any} */(window)).__API_BASE__ ? (/** @type {any} */(window)).__API_BASE__ : (isPages ? 'https://assistant.ledger-mind.org/api' : '/api');
+  const API_BASE = (/** @type {any} */(window)).__API_BASE__ ? (/** @type {any} */(window)).__API_BASE__ : (isPages ? 'https://api.leoklemet.com/api' : '/api');
   const API_BASE_CLEAN = API_BASE.replace(/\/$/, '');
 
   /**

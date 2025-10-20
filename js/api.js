@@ -24,7 +24,7 @@ function createApi(base){
   const w = /** @type {any} */ (window);
   if (w.API) return;
   const isPages = typeof location !== 'undefined' && location.hostname.endsWith('github.io');
-  const BASE = (w.__API_BASE__ || w.AGENT_BASE_URL || (isPages ? 'https://assistant.ledger-mind.org/api' : '/api')).replace(/\/$/, '');
+  const BASE = (w.__API_BASE__ || w.AGENT_BASE_URL || (isPages ? 'https://api.leoklemet.com/api' : '/api')).replace(/\/$/, '');
 
   /**
    * Generic HTTP wrapper (optionally with custom base for tests via third arg)

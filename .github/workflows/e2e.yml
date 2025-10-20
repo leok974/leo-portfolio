@@ -148,7 +148,7 @@ jobs:
       - name: Start API backend
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SITE_BASE_URL: https://assistant.ledger-mind.org
+          SITE_BASE_URL: https://www.leoklemet.com
         run: |
           cd assistant_api
           nohup uvicorn assistant_api.main:app --host 127.0.0.1 --port 8001 > api.log 2>&1 &
@@ -185,3 +185,4 @@ jobs:
           cat assistant_api/api.log || true
           echo "=== UI Logs ==="
           cat ui.log || true
+

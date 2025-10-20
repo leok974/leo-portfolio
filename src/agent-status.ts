@@ -4,7 +4,7 @@ import { statusWithFallback, StatusSummary } from './api';
 interface InternalStatus extends StatusSummary { tooltip?: string }
 
 const isPages = typeof location !== 'undefined' && location.hostname.endsWith('github.io');
-const BASE = ((window as any).__API_BASE__ || (window as any).AGENT_BASE_URL || (isPages ? 'https://assistant.ledger-mind.org/api' : '/api')).replace(/\/$/, '');
+const BASE = ((window as any).__API_BASE__ || (window as any).AGENT_BASE_URL || (isPages ? 'https://api.leoklemet.com/api' : '/api')).replace(/\/$/, '');
 const STATUS_URL = BASE + '/status/summary';
 const REFRESH_MS = 30_000;
 

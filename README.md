@@ -445,13 +445,13 @@ All privileged operations (uploads, gallery management, etc.) are now consolidat
 1. **User SSO (Interactive):**
 ```powershell
 # Authenticate
-cloudflared access login https://assistant.ledger-mind.org/api/admin
+cloudflared access login https://api.leoklemet.com/api/admin
 
 # Get JWT token
-$token = cloudflared access token --app https://assistant.ledger-mind.org/api/admin
+$token = cloudflared access token --app https://api.leoklemet.com/api/admin
 
 # Test whoami
-curl -H "Cf-Access-Jwt-Assertion: $token" https://assistant.ledger-mind.org/api/admin/whoami
+curl -H "Cf-Access-Jwt-Assertion: $token" https://api.leoklemet.com/api/admin/whoami
 # Expected: {"ok":true,"principal":"your-email@example.com"}
 ```
 
@@ -464,7 +464,7 @@ $env:CF_ACCESS_CLIENT_SECRET = "<client-secret>"
 # Test whoami (Cloudflare injects JWT automatically)
 curl -H "CF-Access-Client-Id: $env:CF_ACCESS_CLIENT_ID" `
      -H "CF-Access-Client-Secret: $env:CF_ACCESS_CLIENT_SECRET" `
-     https://assistant.ledger-mind.org/api/admin/whoami
+     https://api.leoklemet.com/api/admin/whoami
 # Expected: {"ok":true,"principal":"service-token-name"}
 ```
 
@@ -524,19 +524,19 @@ $env:CF_ACCESS_CLIENT_SECRET = "<your-client-secret>"
 # List available tasks
 curl -H "CF-Access-Client-Id: $env:CF_ACCESS_CLIENT_ID" `
      -H "CF-Access-Client-Secret: $env:CF_ACCESS_CLIENT_SECRET" `
-     https://assistant.ledger-mind.org/api/admin/agent/tasks
+     https://api.leoklemet.com/api/admin/agent/tasks
 
 # Run agent with default plan
 curl -X POST `
      -H "CF-Access-Client-Id: $env:CF_ACCESS_CLIENT_ID" `
      -H "CF-Access-Client-Secret: $env:CF_ACCESS_CLIENT_SECRET" `
      -H "Content-Type: application/json" `
-     https://assistant.ledger-mind.org/api/admin/agent/run
+     https://api.leoklemet.com/api/admin/agent/run
 
 # Check agent status
 curl -H "CF-Access-Client-Id: $env:CF_ACCESS_CLIENT_ID" `
      -H "CF-Access-Client-Secret: $env:CF_ACCESS_CLIENT_SECRET" `
-     https://assistant.ledger-mind.org/api/admin/agent/status
+     https://api.leoklemet.com/api/admin/agent/status
 ```
 
 **Quick Test (HMAC):**
@@ -555,7 +555,7 @@ $Hash = $Hmac.ComputeHash($BodyBytes)
 $Signature = "sha256=" + ($Hash | ForEach-Object { $_.ToString("x2") }) -join ""
 
 # Run agent with HMAC signature
-curl -X POST "https://assistant.ledger-mind.org/agent/run" `
+curl -X POST "https://api.leoklemet.com/agent/run" `
      -H "Content-Type: application/json" `
      -H "X-SiteAgent-Signature: $Signature" `
      -d $Body
@@ -604,7 +604,7 @@ jobs:
 ```
 
 **Required GitHub Secrets:**
-- `SITEAGENT_ENDPOINT`: `https://assistant.ledger-mind.org/agent/run`
+- `SITEAGENT_ENDPOINT`: `https://api.leoklemet.com/agent/run`
 - `SITEAGENT_HMAC_SECRET`: Same as backend `SITEAGENT_HMAC_SECRET` env var
 
 **Dev-Only Trigger Button:**
@@ -624,7 +624,7 @@ jobs:
     steps:
       - name: Run Agent
         run: |
-          curl -X POST "https://assistant.ledger-mind.org/api/admin/agent/run" \
+          curl -X POST "https://api.leoklemet.com/api/admin/agent/run" \
             -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
             -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}" \
             -H "Content-Type: application/json" \
@@ -936,7 +936,7 @@ Invoke-RestMethod -Method POST "http://127.0.0.1:8023/api/rag/query?project_id=d
 Core helper scripts:
 
 - `./scripts/smoke.ps1` – legacy smoke (readiness, metrics, RAG checks).
-- `./scripts/smoke-public.ps1` – **public smoke** (tests live site at https://assistant.ledger-mind.org).
+- `./scripts/smoke-public.ps1` – **public smoke** (tests live site at https://api.leoklemet.com).
 - `./scripts/all-green.ps1` – condensed readiness + summary + latency + non-stream + stream (curl) in one pass.
 - `./scripts/chat-probe.mjs` – Node SSE probe (streams first ~2KB then truncates).
 - `./scripts/chat-stream.ps1` – Pure PowerShell SSE reader (no curl/node dependency).
@@ -1267,7 +1267,7 @@ E2E tests are environment‑sensitive to avoid noisy failures during local itera
 | Dev (default soft) | `pnpm run test:dev` | Skips CSS immutability + status pill finalization if assets or backend not fully ready. |
 | Strict (CI / prod) | `pnpm run test:strict` | Requires built CSS (200 + immutable), status pill transitions out of "Checking…", and streaming emits `_served_by`. |
 | Smoke (assistant only) | `pnpm run test:smoke` | Minimal single test (assistant.smoke) in soft mode. |
-| **Public smoke** | `pnpm run smoke:public` | **Tests live production site** (https://assistant.ledger-mind.org) - no local backend needed. See [docs/PUBLIC_SMOKE_TESTS.md](docs/PUBLIC_SMOKE_TESTS.md). |
+| **Public smoke** | `pnpm run smoke:public` | **Tests live production site** (https://api.leoklemet.com) - no local backend needed. See [docs/PUBLIC_SMOKE_TESTS.md](docs/PUBLIC_SMOKE_TESTS.md). |
 | Assistant UI (mock) | `pnpm run test:assistant:ui` | Backend-free Playwright harness that mocks `/api/chat/stream`; serve `dist/` via `pnpm run serve:dist` or set `BASE_URL` to an existing edge host. |
 | Assistant fallback guard | `pnpm run test:assistant:fallback` | Forces `/api/chat/stream` to finish without tokens and asserts the dock falls back to `/api/chat` JSON completions. |
 | Fast UI sweep | `pnpm run test:fast` | Chromium-only slice (`@frontend` + routing smoke) that aborts on first failure; helper `installFastUI(page)` blocks heavy assets and disables animations for deterministic runs. |
@@ -1528,6 +1528,7 @@ node scripts/seo-meta-guardrails.mjs agent/artifacts/seo-meta-apply/*.apply.json
 ```
 
 ---
+
 
 
 

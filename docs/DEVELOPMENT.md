@@ -580,7 +580,7 @@ pnpm run e2e
 
 Override base:
 ```bash
-PROD_BASE=https://assistant.ledger-mind.org pnpm run e2e
+PROD_BASE=https://www.leoklemet.com pnpm run e2e
 ```
 
 Skip in CI (environment gate):
@@ -971,7 +971,7 @@ pnpm run e2e
 
 Override base:
 ```bash
-PROD_BASE=https://assistant.ledger-mind.org pnpm run e2e
+PROD_BASE=https://www.leoklemet.com pnpm run e2e
 ```
 
 Skip in CI (environment gate):
@@ -2473,5 +2473,6 @@ event: 'COMMENT'  # instead of 'REQUEST_CHANGES'
 4. Append entry to `docs/CHANGELOG.md`
 
 ## TODO
+
 
 

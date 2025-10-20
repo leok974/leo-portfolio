@@ -516,7 +516,7 @@ You can still host the static site on Pages, but the default deployment path is 
 
 ## Unified Host Revival: assistant.ledger-mind.org (SPA + API)
 
-Serve the portfolio (assistant-enabled SPA) and FastAPI backend from one origin `https://assistant.ledger-mind.org` with `/api/*` proxied.
+Serve the portfolio (assistant-enabled SPA) and FastAPI backend from one origin `https://www.leoklemet.com` with `/api/*` proxied.
 
 ### 1. Nginx Config
 See `deploy/nginx.assistant.conf`:
@@ -546,7 +546,7 @@ services:
 
 ### 2. Frontend Fallback
 `js/agent-status.js` probes bases in order:
-1. `https://assistant.ledger-mind.org/api`
+1. `https://www.leoklemet.com/api`
 2. `https://app.ledger-mind.org/api`
 3. `/api` (local)
 First success sets `window.AGENT_BASE_URL`.
@@ -554,11 +554,11 @@ First success sets `window.AGENT_BASE_URL`.
 ### 3. CORS Tightening
 After cutover:
 ```
-ALLOWED_ORIGINS=https://assistant.ledger-mind.org
+ALLOWED_ORIGINS=https://www.leoklemet.com
 ```
 During migration include Pages:
 ```
-ALLOWED_ORIGINS=https://assistant.ledger-mind.org,https://leok974.github.io
+ALLOWED_ORIGINS=https://www.leoklemet.com,https://leok974.github.io
 ```
 
 ### 4. Cloudflare / DNS
@@ -568,9 +568,9 @@ ALLOWED_ORIGINS=https://assistant.ledger-mind.org,https://leok974.github.io
 
 ### 5. Verification
 ```bash
-curl -I https://assistant.ledger-mind.org
-curl -s https://assistant.ledger-mind.org/api/ready
-curl -s https://assistant.ledger-mind.org/status/summary | jq
+curl -I https://www.leoklemet.com
+curl -s https://www.leoklemet.com/api/ready
+curl -s https://www.leoklemet.com/status/summary | jq
 ```
 Browser:
 <!-- eslint-skip -->
@@ -583,8 +583,8 @@ fetch('/api/ready').then(r=>r.status)
 
 ### 7. Redirect Legacy Pages (Optional)
 ```html
-<script>location.replace('https://assistant.ledger-mind.org'+location.pathname+location.search+location.hash);</script>
-<noscript><meta http-equiv="refresh" content="0;url=https://assistant.ledger-mind.org"></noscript>
+<script>location.replace('https://www.leoklemet.com'+location.pathname+location.search+location.hash);</script>
+<noscript><meta http-equiv="refresh" content="0;url=https://www.leoklemet.com"></noscript>
 ```
 
 ### 8. Rollback Plan
@@ -730,7 +730,7 @@ caches?.keys().then(k=>k.forEach(c=>caches.delete(c)));
 4. Nginx config includes both `/api/status/summary` (preferred) and legacy `/status/summary` blocks with CORS.
 5. Curl (edge):
 	```bash
-	curl -is -H "Origin: https://leok974.github.io" https://assistant.ledger-mind.org/api/status/summary | sed -n '1,20p'
+	curl -is -H "Origin: https://leok974.github.io" https://www.leoklemet.com/api/status/summary | sed -n '1,20p'
 	```
 	Expect `200` and `Access-Control-Allow-Origin: https://leok974.github.io`.
 6. If 404 without CORS: hostname not hitting patched edge (stale tunnel or DNS). Update public hostname entry.
@@ -984,7 +984,7 @@ $env:CLOUDFLARE_TUNNEL_UUID  = (Select-String -Path .env -Pattern '^CLOUDFLARE_T
 docker compose -f deploy/docker-compose.prod.yml up -d --build
 
 # 5. Validate
-curl https://assistant.ledger-mind.org/api/ready
+curl https://www.leoklemet.com/api/ready
 ```
 
 ## QUIC Buffer Warning
@@ -1019,14 +1019,14 @@ add_header X-Build-ID "$BUILD_ID" always;
 Inject a build id (short commit SHA) via a build arg or envsubst.
 ```bash
 docker build --build-arg BUILD_ID=$(git rev-parse --short HEAD) -t site:$(git rev-parse --short HEAD) .
-curl -Is https://assistant.ledger-mind.org | grep X-Build-ID
+curl -Is https://www.leoklemet.com | grep X-Build-ID
 ```
 
 ### GitHub Pages Redirect Stub
 `pages-redirect.html` can be deployed at the legacy Pages path to forward users:
 ```html
-<script>location.replace('https://assistant.ledger-mind.org'+location.pathname+location.search+location.hash);</script>
-<noscript><meta http-equiv="refresh" content="0;url=https://assistant.ledger-mind.org"></noscript>
+<script>location.replace('https://www.leoklemet.com'+location.pathname+location.search+location.hash);</script>
+<noscript><meta http-equiv="refresh" content="0;url=https://www.leoklemet.com"></noscript>
 ```
 
 ### Probe Artifact Surfacing
@@ -1040,4 +1040,5 @@ curl -Is https://assistant.ledger-mind.org | grep X-Build-ID
 ### Testing Expansion
 - Add shape/assert tests for `/status/summary` keys.
 - Playwright future: Validate pill class transitions with primary vs fallback model states.
+
 
