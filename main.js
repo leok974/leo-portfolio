@@ -240,8 +240,19 @@ async function loadProjectData() {
   try {
   // Use centralized API http only for API-base aware endpoints; this is a static asset fetch.
   // Keeping direct fetch here is fine; if moved behind edge under /api adjust accordingly.
-  const response = await fetch('projects.json');
-    PROJECT_DETAILS = await response.json();
+  const [projectsResponse, hiddenResponse] = await Promise.all([
+    fetch('projects.json'),
+    fetch('projects.hidden.json').catch(() => ({ ok: false }))
+  ]);
+    
+    const allProjects = await projectsResponse.json();
+    const hidden = hiddenResponse.ok ? await hiddenResponse.json() : [];
+    const hiddenSet = new Set((hidden ?? []).map(s => s.toLowerCase()));
+    
+    // Filter out hidden projects
+    PROJECT_DETAILS = Object.fromEntries(
+      Object.entries(allProjects).filter(([slug, _]) => !hiddenSet.has(slug.toLowerCase()))
+    );
 
     // Update filter counts and restore saved filter
     updateFilterCounts();

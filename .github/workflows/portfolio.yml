@@ -43,6 +43,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate projects.hidden.json shape
+        run: |
+          jq -e 'type=="array" and all(.[]; type=="string")' apps/portfolio-ui/public/projects.hidden.json > /dev/null
+          echo "✅ projects.hidden.json is valid"
+
       - name: Build portfolio
         run: pnpm run build:portfolio
 

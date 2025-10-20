@@ -5,6 +5,8 @@
  * Call mountDevOverlayIfEnabled() after page hydration to show the overlay.
  */
 
+import { mountProjectAdminPanel } from './overlay/ProjectAdminPanel';
+
 export function devOverlayEnabled(): boolean {
   const cookies = document.cookie.split(";").map(s => s.trim());
   return cookies.some(c => c.startsWith("sa_dev="));
@@ -59,6 +61,9 @@ export function mountDevOverlayIfEnabled() {
   // Add to page
   document.body.appendChild(badge);
   console.log('[Dev Overlay] Badge mounted successfully');
+  
+  // Mount project admin panel
+  mountProjectAdminPanel();
 }
 
 /**

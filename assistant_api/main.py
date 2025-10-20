@@ -191,6 +191,11 @@ from assistant_api.routers import dev_overlay
 
 app.include_router(dev_overlay.router)
 
+# Admin projects routes (hide/unhide projects)
+from assistant_api.routers import admin_projects
+
+app.include_router(admin_projects.router)
+
 # Agents orchestration routes (for nightly task tracking)
 from assistant_api.routers import agents_tasks
 

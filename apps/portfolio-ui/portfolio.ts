@@ -74,18 +74,24 @@ class PortfolioGrid {
 
   private async loadProjects(): Promise<void> {
     try {
-      const response = await fetch('/projects.json');
+      const [projectsResponse, hiddenResponse] = await Promise.all([
+        fetch('/projects.json'),
+        fetch('/projects.hidden.json').catch(() => ({ ok: false, json: async () => [] }))
+      ]);
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch projects: ${response.status}`);
+      if (!projectsResponse.ok) {
+        throw new Error(`Failed to fetch projects: ${projectsResponse.status}`);
       }
 
-      const data = await response.json();
+      const data = await projectsResponse.json();
+      const hidden = hiddenResponse.ok ? await hiddenResponse.json() : [];
+      const hiddenSet = new Set((hidden ?? []).map((s: string) => s.toLowerCase()));
 
-      // Convert object to array
-      this.projects = Object.values(data);
+      // Convert object to array and filter out hidden projects
+      const allProjects: Project[] = Object.values(data);
+      this.projects = allProjects.filter((p) => !hiddenSet.has((p.slug ?? '').toLowerCase()));
 
-      console.log(`Loaded ${this.projects.length} projects`);
+      console.log(`Loaded ${this.projects.length} projects (${allProjects.length - this.projects.length} hidden)`);
       this.renderProjects();
     } catch (error) {
       console.error('Error loading projects:', error);
