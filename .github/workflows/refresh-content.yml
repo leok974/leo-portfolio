@@ -27,13 +27,31 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Log package scripts (quick sanity check)
+        run: |
+          pnpm -v
+          jq -r '.scripts' package.json
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm dlx playwright install --with-deps chromium
 
       - name: Sync projects from GitHub
         run: pnpm projects:sync
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate projects.json shape
+        run: |
+          jq -e 'type=="array" and length>0' apps/portfolio-ui/public/projects.json > /dev/null
+          echo "✅ projects.json is a non-empty array"
 
       - name: Generate skills from projects
         run: pnpm skills:gen
