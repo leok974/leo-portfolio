@@ -7,12 +7,26 @@ on:
         description: Why are we refreshing?
         required: false
         default: "agent-request"
+  workflow_call:
+    inputs:
+      reason:
+        description: Why are we refreshing?
+        required: false
+        type: string
+        default: "agent-request"
+      ref:
+        description: Git ref to checkout
+        required: false
+        type: string
+        default: "main"
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || 'main' }}
 
       - uses: pnpm/action-setup@v4
         with:
@@ -74,5 +88,5 @@ jobs:
       - name: Output completion
         run: |
           echo "✅ Content refresh completed"
-          echo "Reason: ${{ github.event.inputs.reason }}"
+          echo "Reason: ${{ inputs.reason }}"
           echo "Commit: ${{ github.sha }}"
