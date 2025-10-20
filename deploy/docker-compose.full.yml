@@ -42,6 +42,11 @@ services:
     expose:
       - "8000"
     restart: unless-stopped
+    networks:
+      default:
+      infra_net:
+        aliases:
+          - portfolio-api.int
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/ready"]
       interval: 30s
@@ -114,6 +119,10 @@ volumes:
   ollama:
   loki-data:
   promtail-positions:
+
+networks:
+  infra_net:
+    external: true
 
 secrets:
   openai_api_key:
