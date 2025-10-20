@@ -1,6 +1,9 @@
 #!/usr/bin/env sh
 set -eu
 
+# Ensure data directories exist (idempotent)
+mkdir -p /data /app/data 2>/dev/null || true
+
 MODEL="${PRIMARY_MODEL:-${OPENAI_MODEL:-gpt-oss:20b}}"
 OLLAMA_HOST_VAR="${OLLAMA_HOST:-ollama}"
 OLLAMA_PORT_VAR="${OLLAMA_PORT:-11434}"

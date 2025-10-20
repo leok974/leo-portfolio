@@ -7,15 +7,15 @@ version: "3.9"
 
 services:
   backend:
-    image: ghcr.io/leok974/leo-portfolio/backend:main
+    image: ghcr.io/leok974/leo-portfolio/backend:latest
     container_name: portfolio-backend
     environment:
       # Production URLs
       - ALLOWED_ORIGINS=https://www.leoklemet.com,https://api.leoklemet.com
       - BACKEND_URL=https://api.leoklemet.com
 
-      # Database
-      - RAG_DB=./data/rag.sqlite
+      # Database - using persistent volume mount
+      - RAG_DB=/data/rag.sqlite
       - RAG_REPOS=leok974/ledger-mind,leok974/leo-portfolio
 
       # Ollama (primary LLM) - using host infra-ollama on 11434
@@ -40,6 +40,7 @@ services:
       - MAX_IMAGE_MB=30
       - MAX_VIDEO_MB=200
     volumes:
+      - portfolio_rag_data:/data:rw
       - ../data:/app/data:rw
       - ../assistant_api/.env.prod:/app/.env:ro
     ports:
@@ -56,6 +57,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
 
   nginx:
     image: ghcr.io/leok974/leo-portfolio/portfolio:latest
@@ -83,6 +86,10 @@ services:
     # Uncomment for TLS certificates
     # volumes (additional):
     #   - ./certs:/etc/nginx/certs:ro
+
+volumes:
+  portfolio_rag_data:
+    driver: local
 
 networks:
   infra_net:

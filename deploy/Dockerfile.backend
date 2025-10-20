@@ -28,8 +28,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY assistant_api ./assistant_api
 COPY assistant_api/entrypoint.sh ./entrypoint.sh
 RUN useradd --system --create-home --uid 1001 appuser \
-    && mkdir -p /app/data \
-    && chown -R appuser:appuser /app \
+    && mkdir -p /app/data /data \
+    && chown -R appuser:appuser /app /data \
     && chmod +x /app/entrypoint.sh
 LABEL org.opencontainers.image.title="portfolio-backend" \
       org.opencontainers.image.revision="${GIT_SHA}" \
