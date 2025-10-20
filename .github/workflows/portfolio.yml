@@ -68,6 +68,7 @@ jobs:
             tests/e2e/seo.spec.ts \
             tests/e2e/csp.spec.ts \
             tests/e2e/resume-endpoints.spec.ts \
+            tests/e2e/api-ready.spec.ts \
             --project=chromium
 
       - name: Upload Playwright report
