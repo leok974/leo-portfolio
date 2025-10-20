@@ -1,6 +1,6 @@
 /**
  * Project Hide/Unhide Controls
- * 
+ *
  * Provides functions to hide/unhide projects and trigger portfolio refresh.
  * Used by dev overlay admin controls.
  */
@@ -20,12 +20,12 @@ export async function hideProject(slug: string): Promise<boolean> {
       },
       body: JSON.stringify({ slug })
     });
-    
+
     if (!res.ok) {
       const text = await res.text();
       throw new Error(`Hide failed: ${text}`);
     }
-    
+
     const data = await res.json();
     console.log(`[Hide] Project '${slug}' hidden`, data);
     return true;
@@ -50,12 +50,12 @@ export async function unhideProject(slug: string): Promise<boolean> {
       },
       body: JSON.stringify({ slug })
     });
-    
+
     if (!res.ok) {
       const text = await res.text();
       throw new Error(`Unhide failed: ${text}`);
     }
-    
+
     const data = await res.json();
     console.log(`[Unhide] Project '${slug}' unhidden`, data);
     return true;
@@ -73,12 +73,12 @@ export async function refreshPortfolio(): Promise<boolean> {
   try {
     const url = import.meta.env.VITE_AGENT_REFRESH_URL;
     const key = import.meta.env.VITE_AGENT_ALLOW_KEY;
-    
+
     if (!url || !key) {
       console.warn('[Refresh] Missing VITE_AGENT_REFRESH_URL or VITE_AGENT_ALLOW_KEY');
       return false;
     }
-    
+
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -90,11 +90,11 @@ export async function refreshPortfolio(): Promise<boolean> {
         ref: 'main'
       })
     });
-    
+
     if (!res.ok) {
       throw new Error(`Refresh dispatch failed: ${res.status}`);
     }
-    
+
     console.log('[Refresh] Portfolio refresh triggered');
     return true;
   } catch (error) {

@@ -1,10 +1,11 @@
 /**
  * Dev Overlay - Project Admin Panel
- * 
+ *
  * Enhanced dev overlay with project hide/unhide controls
  */
 
 import { hideProject, unhideProject, refreshPortfolio, getHiddenProjects } from './useHideProject';
+import type { OverlayStatus } from '../dev-overlay';
 
 interface Project {
   title: string;
@@ -17,8 +18,10 @@ export class ProjectAdminPanel {
   private panel: HTMLElement | null = null;
   private isOpen = false;
   private hiddenProjects = new Set<string>();
+  private status: OverlayStatus;
 
-  constructor() {
+  constructor(status: OverlayStatus) {
+    this.status = status;
     this.loadHiddenProjects();
   }
 
@@ -109,7 +112,7 @@ export class ProjectAdminPanel {
       const response = await fetch('/projects.json');
       const data = await response.json();
       const projects: Project[] = Object.values(data);
-      
+
       await this.loadHiddenProjects();
       this.renderProjects(projects);
     } catch (error) {
@@ -128,6 +131,25 @@ export class ProjectAdminPanel {
   private renderProjects(projects: Project[]) {
     const list = document.getElementById('project-admin-list');
     if (!list) return;
+
+    // Show message if overlay not allowed
+    if (!this.status.allowed) {
+      list.innerHTML = `
+        <div style="color: #94a3b8; text-align: center; padding: 20px;">
+          <div style="margin-bottom: 12px;">🔒 Dev Overlay: ${this.status.mode}</div>
+          <div style="font-size: 12px; line-height: 1.5;">
+            ${this.status.mode === 'no-backend'
+              ? 'Backend is disabled. Set <code>VITE_BACKEND_ENABLED=1</code> to enable admin features.'
+              : this.status.mode === 'unreachable'
+              ? 'Backend is unreachable. Check if the API server is running.'
+              : this.status.mode === 'denied'
+              ? 'Access denied. Check <code>DEV_OVERLAY_KEY</code> configuration.'
+              : 'Use <code>?dev_overlay=dev</code> to unlock locally.'}
+          </div>
+        </div>
+      `;
+      return;
+    }
 
     list.innerHTML = projects
       .sort((a, b) => a.title.localeCompare(b.title))
@@ -168,7 +190,7 @@ export class ProjectAdminPanel {
                 </div>
               </div>
               <div style="display: flex; gap: 4px;">
-                <button 
+                <button
                   class="project-toggle-btn"
                   data-slug="${project.slug}"
                   data-action="${isHidden ? 'unhide' : 'hide'}"
@@ -224,13 +246,13 @@ export class ProjectAdminPanel {
       if (success) {
         // Trigger refresh
         const refreshSuccess = await refreshPortfolio();
-        
+
         if (refreshSuccess) {
           alert(`Project "${slug}" ${action === 'hide' ? 'hidden' : 'shown'}!\n\nPortfolio refresh triggered. Changes will be live in ~2 minutes.`);
         } else {
           alert(`Project "${slug}" ${action === 'hide' ? 'hidden' : 'shown'}!\n\nNote: Auto-refresh failed. You may need to manually rebuild.`);
         }
-        
+
         // Reload the panel
         await this.loadProjects();
       } else {
@@ -263,8 +285,8 @@ export class ProjectAdminPanel {
 /**
  * Mount project admin panel if dev overlay is enabled
  */
-export function mountProjectAdminPanel() {
-  const panel = new ProjectAdminPanel();
+export function mountProjectAdminPanel(status: OverlayStatus) {
+  const panel = new ProjectAdminPanel(status);
   panel.mount();
-  console.log('[Dev Overlay] Project admin panel mounted');
+  console.log('[Dev Overlay] Project admin panel mounted with status:', status);
 }

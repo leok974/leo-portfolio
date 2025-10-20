@@ -57,18 +57,18 @@ def hide_project(
 ):
     """
     Hide a project by adding its slug to projects.hidden.json
-    
+
     Requires x-admin-key header matching ADMIN_HMAC_KEY env var.
     """
     check_auth(x_admin_key)
-    
+
     slug = payload.slug.strip()
     if not slug:
         raise HTTPException(status_code=400, detail="slug required")
-    
+
     items = load_hidden_list()
     slug_lower = slug.lower()
-    
+
     # Check if already hidden
     if any(s.lower() == slug_lower for s in items):
         return {
@@ -76,11 +76,11 @@ def hide_project(
             "message": f"Project '{slug}' already hidden",
             "hidden": items
         }
-    
+
     # Add to hidden list
     items.append(slug)
     save_hidden_list(items)
-    
+
     return {
         "ok": True,
         "message": f"Project '{slug}' hidden successfully",
@@ -95,31 +95,31 @@ def unhide_project(
 ):
     """
     Unhide a project by removing its slug from projects.hidden.json
-    
+
     Requires x-admin-key header matching ADMIN_HMAC_KEY env var.
     """
     check_auth(x_admin_key)
-    
+
     slug = payload.slug.strip()
     if not slug:
         raise HTTPException(status_code=400, detail="slug required")
-    
+
     items = load_hidden_list()
     slug_lower = slug.lower()
-    
+
     # Filter out the slug (case-insensitive)
     original_count = len(items)
     items = [s for s in items if s.lower() != slug_lower]
-    
+
     if len(items) == original_count:
         return {
             "ok": True,
             "message": f"Project '{slug}' was not hidden",
             "hidden": items
         }
-    
+
     save_hidden_list(items)
-    
+
     return {
         "ok": True,
         "message": f"Project '{slug}' unhidden successfully",
@@ -131,11 +131,11 @@ def unhide_project(
 def get_hidden_projects(x_admin_key: str | None = Header(default=None)):
     """
     Get list of currently hidden projects
-    
+
     Requires x-admin-key header matching ADMIN_HMAC_KEY env var.
     """
     check_auth(x_admin_key)
-    
+
     items = load_hidden_list()
     return {
         "ok": True,

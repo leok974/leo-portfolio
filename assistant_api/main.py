@@ -191,6 +191,11 @@ from assistant_api.routers import dev_overlay
 
 app.include_router(dev_overlay.router)
 
+# Dev API routes (status, layout stubs)
+from assistant_api.routers import dev as dev_router
+
+app.include_router(dev_router.router)
+
 # Admin projects routes (hide/unhide projects)
 from assistant_api.routers import admin_projects
 

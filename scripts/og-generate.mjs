@@ -98,15 +98,15 @@ const template = ({ title, subtitle, tags }) => `
 async function loadProjects() {
   const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
   const hiddenPath = path.join(__dirname, '..', 'apps', 'portfolio-ui', 'public', 'projects.hidden.json');
-  
+
   if (!existsSync(projectsPath)) {
     console.warn('⚠️  data/projects.json not found. Only generating homepage OG.');
     return [];
   }
-  
+
   const data = await fs.readFile(projectsPath, 'utf8');
   let projects = JSON.parse(data);
-  
+
   // Filter out hidden projects
   try {
     if (existsSync(hiddenPath)) {
@@ -120,7 +120,7 @@ async function loadProjects() {
   } catch (e) {
     console.warn(`⚠️  Could not load hidden list: ${e.message}`);
   }
-  
+
   return projects;
 }
 

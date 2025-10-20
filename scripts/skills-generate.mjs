@@ -15,12 +15,12 @@ import path from 'node:path';
 const PUB = 'apps/portfolio-ui/public';
 
 const readJson = async (p, dflt=undefined) => {
-  try { 
+  try {
     const content = await fs.readFile(p,'utf8');
     return JSON.parse(content);
-  } catch (e) { 
+  } catch (e) {
     console.error(`✗ readJson failed for ${p}: ${e.message}`);
-    return dflt; 
+    return dflt;
   }
 };
 
@@ -42,14 +42,14 @@ const mapSkill = (raw, map) => {
 (async () => {
   const projectsPath = path.join(PUB, 'projects.json');
   const hiddenPath = path.join(PUB, 'projects.hidden.json');
-  
+
   let projects = await readJson(projectsPath, []);
   const hidden = await readJson(hiddenPath, []);
   const hiddenSet = new Set((hidden ?? []).map(s => normalize(s)));
-  
+
   // Filter out hidden projects
   projects = projects.filter(p => !hiddenSet.has(normalize(p.slug || '')));
-  
+
   if (!projects?.length) {
     console.error(`✗ skills-generate: projects.json is empty or missing`);
     console.error(`  Path checked: ${projectsPath}`);
@@ -62,7 +62,7 @@ const mapSkill = (raw, map) => {
     }
     throw new Error('skills-generate: projects.json empty or missing');
   }
-  
+
   console.log(`✓ Processing ${projects.length} visible projects (${hidden.length} hidden)`);
 
   const cfg = await readJson('skills.map.json');

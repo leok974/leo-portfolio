@@ -244,11 +244,11 @@ async function loadProjectData() {
     fetch('projects.json'),
     fetch('projects.hidden.json').catch(() => ({ ok: false }))
   ]);
-    
+
     const allProjects = await projectsResponse.json();
     const hidden = hiddenResponse.ok ? await hiddenResponse.json() : [];
     const hiddenSet = new Set((hidden ?? []).map(s => s.toLowerCase()));
-    
+
     // Filter out hidden projects
     PROJECT_DETAILS = Object.fromEntries(
       Object.entries(allProjects).filter(([slug, _]) => !hiddenSet.has(slug.toLowerCase()))

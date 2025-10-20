@@ -27,12 +27,19 @@ export async function loadLayout() {
     return;
   }
 
+  // Check if backend is available
+  if (import.meta.env.VITE_BACKEND_ENABLED !== '1') {
+    // Static-only mode - skip backend fetch
+    return;
+  }
+
   try {
     // Fetch from backend endpoint (adjust URL if needed)
     const res = await fetch("/api/layout", { credentials: "include" });
     if (!res.ok) {
       // Not an error - backend might not have layout endpoint
       // (e.g., portfolio-only mode without SiteAgent API)
+      // Return null instead of throwing
       return;
     }
     const recipe: LayoutRecipe = await res.json();
@@ -42,6 +49,27 @@ export async function loadLayout() {
   } catch (err) {
     // Network error - silently fall back to defaults
     // Don't log as error since layout is optional
+    console.debug('[Layout] Backend unavailable, using defaults');
+  }
+}
+
+/**
+ * Fetch layout recipe (helper for components)
+ * Returns null on errors instead of throwing
+ */
+export async function fetchLayout(): Promise<LayoutRecipe | null> {
+  if (import.meta.env.VITE_BACKEND_ENABLED !== '1') {
+    return null; // Skip when static-only
+  }
+
+  try {
+    const res = await fetch('/api/layout');
+    if (!res.ok) {
+      return null; // 404/500 → null, don't throw
+    }
+    return await res.json();
+  } catch {
+    return null; // Network error → null
   }
 }
 
