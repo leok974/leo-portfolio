@@ -92,7 +92,7 @@ export async function executeCommand(cmd: AgentCmd): Promise<{
   return resp.json();
 }
 
-export type RefreshStatus = {
+export interface RefreshStatus {
   id?: number;
   status?: string;
   conclusion?: string | null;

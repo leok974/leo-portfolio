@@ -25,7 +25,7 @@ test.describe('Agent Content Refresh', () => {
     // Add test helper to expose detectCommand
     await page.evaluate(() => {
       (window as any).__testDetectCommand = async (input: string) => {
-        const { detectCommand } = await import('./src/agent/commands');
+        const { detectCommand } = await import('../../apps/portfolio-ui/src/agent/commands');
         return detectCommand(input);
       };
     });
@@ -49,7 +49,7 @@ test.describe('Agent Content Refresh', () => {
     }
   });
 
-  test('should dispatch workflow for "update skills" @agent @refresh', async ({ page, request }) => {
+  test('should dispatch workflow for "update skills" @agent @refresh', async ({ page }) => {
     // Skip in CI unless explicitly enabled
     test.skip(!process.env.ENABLE_AGENT_REFRESH_TESTS, 'Agent refresh tests disabled (set ENABLE_AGENT_REFRESH_TESTS=1)');
 
