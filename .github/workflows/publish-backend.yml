@@ -52,7 +52,21 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: docker/setup-qemu-action@v3
+      
       - uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: Free disk space
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+          sudo docker system prune -af --volumes || true
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc || true
+          echo "=== Disk space after cleanup ==="
+          df -h
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -65,15 +79,21 @@ jobs:
         id: meta
         run: echo "short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Build & Push (multi-arch)
+      - name: Build & Push (amd64 only - temporary)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: deploy/Dockerfile.backend
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:main
             ${{ env.IMAGE_NAME }}:sha-${{ steps.meta.outputs.short }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Prune buildx cache
+        if: always()
+        run: |
+          docker buildx prune -af || true
+          df -h
