@@ -1,6 +1,6 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
 
-const BASE = process.env.PUBLIC_URL || 'https://assistant.ledger-mind.org';
+const BASE = process.env.PUBLIC_URL || 'https://www.leoklemet.com';
 
 async function get(ctx: APIRequestContext, path: string) {
   const res = await ctx.get(`${BASE}${path}`, { timeout: 10_000 });

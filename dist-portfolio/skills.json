@@ -1,0 +1,78 @@
+{
+  "Other": [
+    {
+      "name": "Analytics",
+      "count": 1
+    },
+    {
+      "name": "Finance",
+      "count": 1
+    },
+    {
+      "name": "Portfolio Development",
+      "count": 1
+    },
+    {
+      "name": "Privacy & Security",
+      "count": 1
+    }
+  ],
+  "AI & Machine Learning": [
+    {
+      "name": "Artificial Intelligence",
+      "count": 3
+    },
+    {
+      "name": "RAG Systems",
+      "count": 1
+    },
+    {
+      "name": "AI Agents",
+      "count": 1
+    },
+    {
+      "name": "Machine Learning",
+      "count": 1
+    },
+    {
+      "name": "Ollama",
+      "count": 1
+    }
+  ],
+  "Software Engineering": [
+    {
+      "name": "React",
+      "count": 1
+    },
+    {
+      "name": "TypeScript",
+      "count": 3
+    },
+    {
+      "name": "Python",
+      "count": 4
+    },
+    {
+      "name": "FastAPI",
+      "count": 2
+    },
+    {
+      "name": "PostgreSQL",
+      "count": 1
+    }
+  ],
+  "Data & DevOps": [
+    {
+      "name": "Kubernetes",
+      "count": 2
+    },
+    {
+      "name": "DevOps",
+      "count": 1
+    },
+    {
+      "name": "Google Cloud Platform",
+      "count": 1
+    }
+  ]
+}

@@ -48,7 +48,7 @@ add_header Content-Security-Policy "$csp_policy" always;
 default-src 'self';
 img-src 'self' data: blob:;
 font-src 'self' data:;
-connect-src 'self' https://assistant.ledger-mind.org;
+connect-src 'self' https://api.leoklemet.com;
 script-src 'self' 'sha256-agVi37OvPe9UtrYEB/KMHK3iJVAl08ok4xzbm7ry2JE=';
 style-src 'self';
 object-src 'none';
@@ -58,7 +58,7 @@ upgrade-insecure-requests;
 ```
 Single-line (as it appears on the wire):
 ```
-Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://assistant.ledger-mind.org; script-src 'self' 'sha256-agVi37OvPe9UtrYEB/KMHK3iJVAl08ok4xzbm7ry2JE='; style-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests;
+Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.leoklemet.com; script-src 'self' 'sha256-agVi37OvPe9UtrYEB/KMHK3iJVAl08ok4xzbm7ry2JE='; style-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests;
 ```
 Hash maintenance is automated by `entrypoint.d/10-csp-render.sh`, which scans the shipped `index.html` on container startup and either replaces `__CSP_INLINE_HASHES__` placeholders or appends missing hashes after `script-src 'self'`. It installs `openssl` on first run when needed, keeping the hash list synchronized with inline bootstrap changes.
 Directive rationale (delta vs earlier draft):
@@ -200,6 +200,7 @@ Streaming specifics:
 - Raw events are stored as JSONL in `./data/analytics/` and can be rotated or redacted as needed.
 - No external tracking services or third-party beacons are used.
 - Data retention: Events older than 14 days are not analyzed (can be manually archived/deleted).
+
 
 
 

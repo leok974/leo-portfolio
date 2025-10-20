@@ -111,8 +111,8 @@ jobs:
 
       - name: Admin auth E2E (staging)
         env:
-          PW_SITE: https://assistant.ledger-mind.org
-          PW_API: https://assistant.ledger-mind.org
+          PW_SITE: https://www.leoklemet.com
+          PW_API: https://www.leoklemet.com
           ADMIN_TEST_EMAIL: leoklemet.pa@gmail.com
           CI: true
         run: |
@@ -125,3 +125,4 @@ jobs:
           name: playwright-report-admin-staging
           path: playwright-report/
           retention-days: 7
+

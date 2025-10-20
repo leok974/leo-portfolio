@@ -27,7 +27,7 @@ jobs:
       - name: Health check - Metrics Behavior API (Phase 50.8)
         run: |
           echo "Testing production metrics endpoint..."
-          RESPONSE=$(curl -s -w "\n%{http_code}" https://assistant.ledger-mind.org/api/metrics/behavior?limit=10)
+          RESPONSE=$(curl -s -w "\n%{http_code}" https://www.leoklemet.com/api/metrics/behavior?limit=10)
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | head -n-1)
           echo "HTTP Status: $HTTP_CODE"
@@ -40,7 +40,7 @@ jobs:
 
       - name: Run public smoke
         env:
-          PUBLIC_URL: https://assistant.ledger-mind.org
+          PUBLIC_URL: https://www.leoklemet.com
         run: npx playwright test -g "@public-smoke"
 
       - name: Upload traces on failure
@@ -49,3 +49,4 @@ jobs:
         with:
           name: traces-public-smoke
           path: test-results/**/trace.zip
+

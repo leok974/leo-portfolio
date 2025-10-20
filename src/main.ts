@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // SERVICE WORKER REGISTRATION
 // -----------------------------
 const IS_GH_PAGES = location.hostname.endsWith('github.io');
-const API_BASE = IS_GH_PAGES ? 'https://assistant.ledger-mind.org/api' : '/api';
+const API_BASE = IS_GH_PAGES ? 'https://api.leoklemet.com/api' : '/api';
 (window as any).__API_BASE__ = API_BASE;
 
 if ('serviceWorker' in navigator) {

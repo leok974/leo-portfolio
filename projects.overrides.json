@@ -1,0 +1,21 @@
+{
+  "ai-finance-agent-oss": {
+    "title": "LedgerMind",
+    "one_liner": "Private-by-default finances with explainable ML suggestions and NL → SQL analytics.",
+    "thumbnail": "/assets/ledgermind-logo.png",
+    "tags": ["ai", "finance", "ml", "privacy"],
+    "stack": ["Python", "FastAPI", "Postgres", "React"]
+  },
+  "ai-ops-agent-gke": {
+    "title": "DataPipe AI",
+    "one_liner": "AI ops for GKE cluster management and data pipeline optimization.",
+    "tags": ["ai", "analytics", "devops", "kubernetes"],
+    "stack": ["TypeScript", "Kubernetes", "GCP"]
+  },
+  "leo-portfolio": {
+    "title": "Portfolio & AI Assistant",
+    "one_liner": "Personal portfolio with RAG-powered AI assistant and agentic workflows.",
+    "tags": ["portfolio", "ai", "rag", "agents"],
+    "stack": ["TypeScript", "Python", "FastAPI", "Ollama"]
+  }
+}

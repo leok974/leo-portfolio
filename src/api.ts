@@ -4,7 +4,7 @@ export interface StreamMeta { _served_by?: string; [k: string]: any }
 export interface StatusSummary { llm?: { path?: string }; rag?: { ok?: boolean }; openai_configured?: boolean; tooltip?: string }
 
 const isPages = typeof location !== 'undefined' && location.hostname.endsWith('github.io');
-const BASE: string = ((window as any).__API_BASE__ || (window as any).AGENT_BASE_URL || (isPages ? 'https://assistant.ledger-mind.org/api' : '/api')).replace(/\/$/, '');
+const BASE: string = ((window as any).__API_BASE__ || (window as any).AGENT_BASE_URL || (isPages ? 'https://api.leoklemet.com/api' : '/api')).replace(/\/$/, '');
 
 async function http<T=any>(path: string, opts: { method?: string; headers?: Record<string,string>; body?: any; stream?: boolean; signal?: AbortSignal } = {}): Promise<T|Response> {
   const { method='GET', headers={}, body, stream=false, signal } = opts;

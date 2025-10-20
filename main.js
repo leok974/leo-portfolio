@@ -595,7 +595,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 // -----------------------------
 // Dynamic API base selection retained (exposed for potential external scripts)
 const IS_GH_PAGES = location.hostname.endsWith('github.io');
-const API_BASE = IS_GH_PAGES ? 'https://assistant.ledger-mind.org/api' : '/api';
+const API_BASE = IS_GH_PAGES ? 'https://api.leoklemet.com/api' : '/api';
 const windowWithApi = /** @type {typeof window & { __API_BASE__?: string, USE_BOTTOM_RIGHT_ASSISTANT?: boolean }} */ (window);
 windowWithApi.__API_BASE__ = API_BASE;
 

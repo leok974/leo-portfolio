@@ -208,7 +208,7 @@
     "test:eval": "pytest -q tests/test_eval_min.py tests/test_eval_planner.py",
     "test:analytics": "cross-env PLAYWRIGHT_GLOBAL_SETUP_SKIP=1 PW_SKIP_WS=1 BASE_URL=http://127.0.0.1:5173 playwright test -g \"@analytics\" --project=chromium --reporter=line",
     "test:analytics-beacons": "cross-env PLAYWRIGHT_GLOBAL_SETUP_SKIP=1 PW_SKIP_WS=1 BASE_URL=http://127.0.0.1:5173 playwright test tests/e2e/analytics-beacons.spec.ts --project=chromium --reporter=line",
-    "smoke:public": "cross-env PLAYWRIGHT_GLOBAL_SETUP_SKIP=1 PUBLIC_URL=https://assistant.ledger-mind.org playwright test -g \"@public-smoke\"",
+    "smoke:public": "cross-env PLAYWRIGHT_GLOBAL_SETUP_SKIP=1 PUBLIC_URL=https://www.leoklemet.com playwright test -g \"@public-smoke\"",
     "serve": "npx http-server dist -p 5173",
     "e2e:feedback:proxy": "start-server-and-test \"http-server dist -p 5191 -P http://127.0.0.1:8001\" http://127.0.0.1:5191 \"cross-env PLAYWRIGHT_GLOBAL_SETUP_SKIP=1 BASE=http://127.0.0.1:5191 API_BASE=http://127.0.0.1:5191 playwright test tests/e2e/feedback.spec.ts --project=chromium --reporter=line --timeout=120000\"",
     "e2e:guardrails:proxy": "cross-env PLAYWRIGHT_GLOBAL_SETUP_SKIP=1 WS_CMD=\"npx http-server ./dist -p 5186 -P http://127.0.0.1:8001\" BASE=http://127.0.0.1:5186 API_BASE=http://127.0.0.1:5186 playwright test tests/e2e/guardrails-injection.spec.ts --project=chromium --reporter=line --timeout=120000"
@@ -297,3 +297,4 @@
     "*.{json,css,scss,html}": "prettier --write"
   }
 }
+

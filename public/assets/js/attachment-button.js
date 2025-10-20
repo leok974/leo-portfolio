@@ -230,7 +230,7 @@
       const isPages = location.hostname.endsWith('github.io');
       const base = window.__API_BASE__ ||
                   window.AGENT_BASE_URL ||
-                  (isPages ? 'https://assistant.ledger-mind.org/api' : '/api');
+                  (isPages ? 'https://api.leoklemet.com/api' : '/api');
 
       const resp = await fetch(`${base}/uploads`, {
         method: 'POST',
