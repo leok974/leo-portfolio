@@ -294,3 +294,8 @@ def rebuild_fts(conn: sqlite3.Connection) -> None:
         conn.execute(
             "INSERT INTO chunks_fts(rowid, text) SELECT id, COALESCE(text, content) FROM chunks;"
         )
+
+
+def init_db() -> None:
+    """Initialize SQLAlchemy tables (admin_projects, agents_tasks, etc.)."""
+    Base.metadata.create_all(bind=engine)

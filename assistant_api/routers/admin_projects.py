@@ -2,14 +2,15 @@
 Admin Projects Router
 
 Provides endpoints to hide/unhide projects by updating projects.hidden.json.
-Protected by ADMIN_HMAC_KEY environment variable.
+Protected by Cloudflare Access with dev bypass support.
 """
 
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Depends
 from pathlib import Path
 from pydantic import BaseModel
 import json
 import os
+from assistant_api.security.cf_access import require_cf_access
 
 # Configuration
 ROUTE_KEY = os.getenv("ADMIN_HMAC_KEY", "")
@@ -20,17 +21,6 @@ router = APIRouter(prefix="/api/admin/projects", tags=["admin-projects"])
 
 class ProjectSlugPayload(BaseModel):
     slug: str
-
-
-def check_auth(x_admin_key: str | None):
-    """Verify admin key from header"""
-    if not ROUTE_KEY:
-        raise HTTPException(
-            status_code=503,
-            detail="Admin endpoints not configured (ADMIN_HMAC_KEY not set)"
-        )
-    if not x_admin_key or x_admin_key != ROUTE_KEY:
-        raise HTTPException(status_code=401, detail="Unauthorized")
 
 
 def load_hidden_list() -> list[str]:
@@ -53,15 +43,13 @@ def save_hidden_list(items: list[str]) -> None:
 @router.post("/hide")
 def hide_project(
     payload: ProjectSlugPayload,
-    x_admin_key: str | None = Header(default=None)
+    _auth=Depends(require_cf_access)
 ):
     """
     Hide a project by adding its slug to projects.hidden.json
 
-    Requires x-admin-key header matching ADMIN_HMAC_KEY env var.
+    Protected by Cloudflare Access (or dev bypass key).
     """
-    check_auth(x_admin_key)
-
     slug = payload.slug.strip()
     if not slug:
         raise HTTPException(status_code=400, detail="slug required")
@@ -91,15 +79,13 @@ def hide_project(
 @router.post("/unhide")
 def unhide_project(
     payload: ProjectSlugPayload,
-    x_admin_key: str | None = Header(default=None)
+    _auth=Depends(require_cf_access)
 ):
     """
     Unhide a project by removing its slug from projects.hidden.json
 
-    Requires x-admin-key header matching ADMIN_HMAC_KEY env var.
+    Protected by Cloudflare Access (or dev bypass key).
     """
-    check_auth(x_admin_key)
-
     slug = payload.slug.strip()
     if not slug:
         raise HTTPException(status_code=400, detail="slug required")
@@ -128,14 +114,12 @@ def unhide_project(
 
 
 @router.get("/hidden")
-def get_hidden_projects(x_admin_key: str | None = Header(default=None)):
+def get_hidden_projects(_auth=Depends(require_cf_access)):
     """
     Get list of currently hidden projects
 
-    Requires x-admin-key header matching ADMIN_HMAC_KEY env var.
+    Protected by Cloudflare Access (or dev bypass key).
     """
-    check_auth(x_admin_key)
-
     items = load_hidden_list()
     return {
         "ok": True,

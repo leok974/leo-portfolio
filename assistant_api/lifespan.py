@@ -82,6 +82,14 @@ def _log(msg: str) -> None:
 @asynccontextmanager
 async def lifespan(app) -> AsyncIterator[None]:  # type: ignore[override]
     _log("startup: begin")
+    
+    # Initialize SQLAlchemy tables (admin_projects, agents_tasks, etc.)
+    try:
+        from .db import init_db
+        init_db()
+        _log("startup: database tables initialized")
+    except Exception as exc:
+        _log(f"startup: init_db error: {exc!r}")
 
     # Log analytics configuration (no secrets)
     try:

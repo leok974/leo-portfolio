@@ -18,6 +18,9 @@ jobs:
     timeout-minutes: 15
     env:
       PYTHONPATH: ${{ github.workspace }}
+      DEV_HMAC_KEY: test-dev-key-123
+      CF_ACCESS_AUD: test-aud
+      CF_ACCESS_TEAM_DOMAIN: test-team.cloudflareaccess.com
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
