@@ -120,6 +120,7 @@ def list_projects(include_unknown: bool = False):
     """
     con = _connect()
     try:
+        _ensure_schema(con)  # Ensure table exists before querying
         cur = con.cursor()
         if include_unknown:
             rows = cur.execute(
