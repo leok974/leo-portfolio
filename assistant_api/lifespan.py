@@ -82,7 +82,7 @@ def _log(msg: str) -> None:
 @asynccontextmanager
 async def lifespan(app) -> AsyncIterator[None]:  # type: ignore[override]
     _log("startup: begin")
-    
+
     # Initialize SQLAlchemy tables (admin_projects, agents_tasks, etc.)
     try:
         from .db import init_db
@@ -90,6 +90,15 @@ async def lifespan(app) -> AsyncIterator[None]:  # type: ignore[override]
         _log("startup: database tables initialized")
     except Exception as exc:
         _log(f"startup: init_db error: {exc!r}")
+
+    # Initialize RAG database (chunks, docs, vecs, etc.)
+    try:
+        from .db import connect
+        conn = connect()
+        conn.close()
+        _log("startup: RAG database initialized")
+    except Exception as exc:
+        _log(f"startup: RAG db init error: {exc!r}")
 
     # Log analytics configuration (no secrets)
     try:
