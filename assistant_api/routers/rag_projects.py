@@ -64,6 +64,13 @@ ON CONFLICT(id) DO UPDATE SET
 
 
 def _connect() -> sqlite3.Connection:
+    """Connect to RAG database, ensuring parent directory exists."""
+    from pathlib import Path
+    
+    # Ensure parent directory exists
+    db_path = Path(RAG_DB)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    
     return sqlite3.connect(RAG_DB, isolation_level=None)
 
 

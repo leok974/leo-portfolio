@@ -42,6 +42,12 @@ async def ready():
 
     # Vector DB check
     try:
+        from pathlib import Path
+        
+        # Ensure parent directory exists
+        db_path = Path(DB_PATH)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        
         conn = sqlite3.connect(DB_PATH)
         cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' LIMIT 1;")
         checks["rag_db"] = {"ok": True, "detail": cur.fetchone()}
