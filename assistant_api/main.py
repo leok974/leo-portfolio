@@ -191,10 +191,10 @@ from assistant_api.routers import dev_overlay
 
 app.include_router(dev_overlay.router)
 
-# Dev API routes (status, layout stubs)
+# Dev API routes (status, layout stubs) - mounted at /api prefix
 from assistant_api.routers import dev as dev_router
 
-app.include_router(dev_router.router)
+app.include_router(dev_router.router, prefix="/api", tags=["dev"])
 
 # Admin projects routes (hide/unhide projects)
 from assistant_api.routers import admin_projects

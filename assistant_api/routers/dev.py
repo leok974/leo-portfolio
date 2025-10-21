@@ -6,30 +6,51 @@ These endpoints enable the frontend dev overlay to work even when the full backe
 """
 
 import os
+from datetime import datetime, timezone
 from fastapi import APIRouter, Header
 
-router = APIRouter(tags=["dev"])
+router = APIRouter()  # No prefix here - will be added in main.py
 
 # Environment variable for dev overlay authentication
 DEV_OVERLAY_KEY = os.getenv("DEV_OVERLAY_KEY", "")
 
 
-@router.get("/api/dev/status")
+def _now_iso():
+    """Return current UTC timestamp in ISO format."""
+    return datetime.now(timezone.utc).isoformat()
+
+
+@router.get("/dev/status")
 def dev_status(x_dev_key: str | None = Header(default=None)):
     """
     Check if dev overlay is allowed for the current request.
 
     Returns:
+        - ok: true (for compatibility)
         - allowed: true if the x-dev-key header matches DEV_OVERLAY_KEY
         - mode: "token" if authenticated, "denied" otherwise
+        - source: authentication source
+        - ts: current timestamp
     """
     if DEV_OVERLAY_KEY and x_dev_key == DEV_OVERLAY_KEY:
-        return {"allowed": True, "mode": "token"}
+        return {
+            "ok": True,
+            "allowed": True,
+            "mode": "token",
+            "source": "dev_overlay_key",
+            "ts": _now_iso()
+        }
 
-    return {"allowed": False, "mode": "denied"}
+    return {
+        "ok": True,
+        "allowed": False,
+        "mode": "denied",
+        "source": "none",
+        "ts": _now_iso()
+    }
 
 
-@router.get("/api/layout")
+@router.get("/layout")
 def layout_stub():
     """
     Stub endpoint for layout configuration.
