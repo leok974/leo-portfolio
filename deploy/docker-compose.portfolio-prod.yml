@@ -92,6 +92,26 @@ services:
     # volumes (additional):
     #   - ./certs:/etc/nginx/certs:ro
 
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: portfolio-watchtower
+    restart: unless-stopped
+    command:
+      - --label-enable
+      - --cleanup
+      - --interval 300
+      - --http-api-update
+      - --http-api-metrics
+    environment:
+      - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_HTTP_API_TOKEN}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "127.0.0.1:8083:8080"  # bind to localhost only
+    networks:
+      - default
+      - infra_net
+
 volumes:
   portfolio_rag_data:
     driver: local
