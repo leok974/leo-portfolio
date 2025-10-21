@@ -246,6 +246,14 @@ try:
 except Exception as e:
     print("[warn] seo_keywords router not loaded:", e)
 
+# Phase 51 — Figma + MCP Integration (Brand Assets)
+try:
+    from assistant_api.routers import brand
+
+    app.include_router(brand.router)
+except Exception as e:
+    print("[warn] seo_keywords router not loaded:", e)
+
 # SEO Keywords mock route (Phase 50.6.3+ test-only)
 try:
     from assistant_api.routers import seo_keywords_mock

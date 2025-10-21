@@ -3,6 +3,17 @@
 ## [Unreleased]
 
 ### Added
+- **Phase 51: Figma + MCP Integration (Scaffold)**:
+  - Created backend brand router (`assistant_api/routers/brand.py`) with business card generation endpoint
+  - Created MCP Figma tools service (`assistant_api/services/mcp/figma_tools.py`) for Figma REST API integration
+  - Added Brand tab to Dev Overlay with card generation UI
+  - Created artifacts directories: `agent/artifacts/cards/` and `agent/artifacts/brand/`
+  - Added `scripts/brand-tokens-sync.mjs` for design tokens sync (Phase 51.2 TODO)
+  - Added comprehensive integration documentation: `docs/FigmaIntegration.md`
+  - Added unit tests: `assistant_api/tests/test_brand_card.py`
+  - Environment variables: `FIGMA_PAT`, `FIGMA_TEAM_ID`, `FIGMA_TEMPLATE_KEY`
+  - API endpoints: `/agent/brand/card`, `/agent/brand/templates`, `/agent/brand/tokens`, `/agent/brand/audit/{file_key}`
+  - Security: All brand endpoints require CF Access authentication
 - **Portfolio CI/CD Pipeline** (`.github/workflows/portfolio-ci.yml`):
   - Automated nightly builds with project sync + OG generation
   - Docker image build and push to GHCR

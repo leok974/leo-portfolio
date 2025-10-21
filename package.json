@@ -78,6 +78,7 @@
     "og:gen": "node scripts/og-generate.mjs",
     "skills:gen": "node scripts/skills-generate.mjs",
     "content:build": "pnpm projects:sync && pnpm skills:gen && pnpm og:gen && pnpm build:portfolio",
+    "tokens:sync": "node scripts/brand-tokens-sync.mjs",
     "poster": "node scripts/make-video-poster.mjs",
     "postbuild": "npm run build:sri && npm run sitemap:gen && npm run sitemap:lint",
     "dev": "vite",

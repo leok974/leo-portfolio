@@ -39,14 +39,14 @@ def test_hide_with_dev_bypass():
 def test_unhide_with_dev_bypass():
     """Test unhiding a project with dev bypass key"""
     headers = {"x-dev-key": "test-dev-key-123"}
-    
+
     # First hide it
     client.post(
         "/api/admin/projects/hide",
         json={"slug": "test-unhide"},
         headers=headers
     )
-    
+
     # Then unhide it
     r = client.post(
         "/api/admin/projects/unhide",
@@ -62,7 +62,7 @@ def test_unhide_with_dev_bypass():
 def test_get_hidden_with_dev_bypass():
     """Test getting hidden projects list with dev bypass key"""
     headers = {"x-dev-key": "test-dev-key-123"}
-    
+
     r = client.get("/api/admin/projects/hidden", headers=headers)
     assert r.status_code == 200
     data = r.json()
@@ -85,7 +85,7 @@ def test_wrong_dev_key_rejected():
 def test_hide_already_hidden():
     """Test hiding a project that's already hidden"""
     headers = {"x-dev-key": "test-dev-key-123"}
-    
+
     # Hide twice
     client.post(
         "/api/admin/projects/hide",
@@ -97,7 +97,7 @@ def test_hide_already_hidden():
         json={"slug": "duplicate-hide"},
         headers=headers
     )
-    
+
     assert r.status_code == 200
     data = r.json()
     assert "already hidden" in data["message"]
@@ -106,13 +106,13 @@ def test_hide_already_hidden():
 def test_unhide_not_hidden():
     """Test unhiding a project that wasn't hidden"""
     headers = {"x-dev-key": "test-dev-key-123"}
-    
+
     r = client.post(
         "/api/admin/projects/unhide",
         json={"slug": "never-hidden"},
         headers=headers
     )
-    
+
     assert r.status_code == 200
     data = r.json()
     assert "was not hidden" in data["message"]
@@ -121,21 +121,21 @@ def test_unhide_not_hidden():
 def test_case_insensitive_hide_unhide():
     """Test that hide/unhide is case-insensitive"""
     headers = {"x-dev-key": "test-dev-key-123"}
-    
+
     # Hide with lowercase
     client.post(
         "/api/admin/projects/hide",
         json={"slug": "test-case"},
         headers=headers
     )
-    
+
     # Unhide with different case
     r = client.post(
         "/api/admin/projects/unhide",
         json={"slug": "TEST-CASE"},
         headers=headers
     )
-    
+
     assert r.status_code == 200
     data = r.json()
     assert all(s.lower() != "test-case" for s in data["hidden"])

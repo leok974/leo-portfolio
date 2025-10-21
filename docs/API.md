@@ -1432,6 +1432,109 @@ curl -s "http://127.0.0.1:8001/agent/status/open?path=/blog/post/index.html" | j
 
 ---
 
+## Brand Assets (Phase 51)
+
+### POST /agent/brand/card
+Generate a business card from Figma template.
+
+**Auth:** Requires CF Access token or `x-admin-key` header
+
+**Request:**
+```json
+{
+  "name": "Leo Klemet",
+  "role": "Full Stack Developer",
+  "email": "leo@leoklemet.com",
+  "domain": "leoklemet.com",
+  "qr_url": "https://leoklemet.com"
+}
+```
+
+**Response:**
+```json
+{
+  "ok": true,
+  "file_key": "XyZ123AbC456",
+  "export": {
+    "png": ["/agent/artifacts/cards/card-1234567890.png"],
+    "pdf": ["/agent/artifacts/cards/card-1234567890.pdf"]
+  }
+}
+```
+
+**Artifacts:**
+- PNG: `agent/artifacts/cards/card-{timestamp}.png`
+- PDF: `agent/artifacts/cards/card-{timestamp}.pdf`
+- Metadata: `agent/artifacts/cards/card-{timestamp}_meta.json`
+
+**Notes:**
+- Duplicates `FIGMA_TEMPLATE_KEY` file
+- Injects metadata into `{name}`, `{role}`, `{email}`, `{domain}`, `{qr_code}` placeholders
+- Exports `CardFront` and `CardBack` nodes as PNG/PDF
+- Returns Figma file key for "Open in Figma" link
+
+### GET /agent/brand/templates
+List available brand asset templates.
+
+**Response:**
+```json
+{
+  "ok": true,
+  "templates": [
+    {
+      "id": "business_card",
+      "name": "Business Card",
+      "type": "card",
+      "file_key": "AbCdEfGhIjKlMnOp",
+      "preview_url": null
+    }
+  ]
+}
+```
+
+### GET /agent/brand/tokens
+Get design tokens from Figma design system.
+
+**Response:**
+```json
+{
+  "ok": true,
+  "tokens": {
+    "colors": {
+      "primary": "#1e40af",
+      "secondary": "#64748b"
+    },
+    "typography": {
+      "heading": { "family": "Inter", "weight": 600 }
+    },
+    "spacing": {
+      "sm": "0.5rem",
+      "md": "1rem"
+    }
+  }
+}
+```
+
+### GET /agent/brand/audit/{file_key}
+Audit Figma file for design system compliance.
+
+**Response:**
+```json
+{
+  "ok": true,
+  "file_key": "TEST_FILE_KEY",
+  "audit": {
+    "components": 42,
+    "untyped_text": 3,
+    "non_token_colors": 5
+  }
+}
+```
+
+**See also:** `docs/FigmaIntegration.md` for setup, troubleshooting, and Phase 51 roadmap.
+
+---
+
 ## Agent Telemetry & Behavior
 
 ### POST /agent/metrics/ingest
