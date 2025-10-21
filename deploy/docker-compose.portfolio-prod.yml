@@ -36,6 +36,11 @@ services:
       - CF_ACCESS_AUD=${CF_ACCESS_AUD:-}
       - ACCESS_ALLOWED_EMAILS=${ACCESS_ALLOWED_EMAILS:-}
 
+      # Figma MCP Integration (Phase 51)
+      - FIGMA_PAT=${FIGMA_PAT:-}
+      - FIGMA_TEAM_ID=${FIGMA_TEAM_ID:-}
+      - FIGMA_TEMPLATE_KEY=${FIGMA_TEMPLATE_KEY:-}
+
       # Limits
       - MAX_IMAGE_MB=30
       - MAX_VIDEO_MB=200

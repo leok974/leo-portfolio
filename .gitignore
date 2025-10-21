@@ -44,6 +44,11 @@ logs
 .env.test.local
 .env.production.local
 
+# Deploy secrets (Docker Compose production env)
+deploy/.env.production
+deploy/.env.prod
+deploy/.env
+
 # Local backend data files
 data/
 
