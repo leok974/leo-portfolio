@@ -1,0 +1,19 @@
+name: Runner Health (prod)
+on:
+  schedule:
+    - cron: "17 3 * * *"  # daily 03:17 UTC
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  ping:
+    runs-on: [self-hosted, prod, deploy]
+    steps:
+      - name: Check runner
+        run: |
+          echo "Runner hostname: $(hostname)"
+          date -Is
+      
+      - name: Optional: notify if needed
+        if: failure()
+        run: echo "Runner is offline or failed."
