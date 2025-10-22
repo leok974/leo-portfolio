@@ -1,6 +1,6 @@
 # Production Runner Setup - Complete CLI Guide
 
-**Status**: Workflows deployed ✅  
+**Status**: Workflows deployed ✅
 **Next**: Configure secrets and test
 
 ---
@@ -13,7 +13,7 @@
 - ✅ `.github/workflows/redeploy-backend.yml`
 - ✅ `.github/workflows/runner-health.yml` (NEW)
 
-**Committed**: e4fd2a1  
+**Committed**: e4fd2a1
 **Pushed to**: main
 
 ---
@@ -80,6 +80,36 @@ OPENAI_API_KEY             just now
 WATCHTOWER_HTTP_API_TOKEN  just now
 WATCHTOWER_UPDATE_URL      just now
 ```
+
+### Alternative: Migrate from .env Files
+
+If you have secrets in local `.env` files, use the migration scripts:
+
+**PowerShell (Windows)**:
+```powershell
+.\scripts\migrate-env-to-gh-secrets.ps1 -RepoSlug "leok974/leo-portfolio" -EnvName "production"
+```
+
+**Bash (Linux/macOS/WSL)**:
+```bash
+ENV_NAME=production REPO_SLUG=leok974/leo-portfolio bash scripts/migrate-env-to-gh-secrets.sh
+```
+
+**What they do**:
+- Scan `.env` files in this order:
+  - `.env.production`, `.env.prod`
+  - `deploy/.env.production`, `deploy/.env.prod`
+  - `infra/.env.prod`
+  - `apps/portfolio-ui/.env.production`, `apps/portfolio-ui/.env`
+  - `assistant_api/.env.production`, `assistant_api/.env`
+- Extract values for required keys (first match wins)
+- Set them as GitHub environment secrets
+- Strip quotes and handle whitespace automatically
+
+**Safeguards**:
+- Never echo secret values to console
+- Skip keys not found in any file
+- Use temporary files to pass values securely to `gh`
 
 ---
 
@@ -293,7 +323,7 @@ gh pr checks
 gh run list --workflow="Policy — block self-hosted runners on PRs" --limit 1
 ```
 
-**Expected**: 
+**Expected**:
 - ✅ Policy check should **PASS** (no violations)
 - ✅ No prod workflows should attempt to run on PR
 - ✅ All PR checks use `ubuntu-latest`
@@ -532,7 +562,7 @@ curl -sS https://api.leoklemet.com/api/ready | jq .
 
 ---
 
-**Status**: Ready to execute  
-**Time**: 20-30 minutes end-to-end  
-**Next**: Run `.\scripts\setup-prod-secrets.ps1` to configure secrets  
+**Status**: Ready to execute
+**Time**: 20-30 minutes end-to-end
+**Next**: Run `.\scripts\setup-prod-secrets.ps1` to configure secrets
 **Then**: Bootstrap Watchtower with `gh workflow run bootstrap-watchtower.yml`
