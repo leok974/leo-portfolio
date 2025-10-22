@@ -68,6 +68,10 @@ def me(request: Request):
 @router.post("/admin/login")
 def admin_login(response: Response, email: str):
     email = email.strip().lower()
+    
+    # Copilot: log a clear marker when handling admin login, printing email suffix
+    print(f"[auth] admin_login: email={email.split('@')[0]}@*** (suffix: {email.split('@')[1] if '@' in email else 'N/A'})")
+    
     if email not in ADMIN_EMAILS:
         raise HTTPException(403, "not in admin allowlist")
     payload = {
