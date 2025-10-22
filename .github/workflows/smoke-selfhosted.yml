@@ -1,10 +1,37 @@
 name: Smoke Test (Self-Hosted)
+
 'on':
-  workflow_dispatch:
+  workflow_dispatch: {}
+  push:
+    branches: [ main ]
+
+# Least-privileged by default
+permissions:
+  contents: read
+  actions: none
+  checks: none
+  deployments: none
+  id-token: none
+  issues: none
+  packages: none
+  pull-requests: none
+  statuses: none
+
+# Only one smoke test at a time
+concurrency:
+  group: prod-runner-smoke
+  cancel-in-progress: false
 
 jobs:
   ping:
+    # Never run on PR events, ever
+    if: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' }}
+    
+    # Only the prod runner (label-gated)
     runs-on: [self-hosted, prod, deploy]
+    
+    # Require approval via protected environment
+    environment: production
     steps:
       - name: Runner environment check
         run: |
@@ -13,36 +40,36 @@ jobs:
           echo "📂 Working directory: $(pwd)"
           echo "🐧 OS Info:"
           uname -a
-      
+
       - name: Docker version check
         run: |
           echo "🐳 Docker version:"
           docker version | head -n 20 || true
-          
+
           echo ""
           echo "🐳 Docker socket access:"
           ls -l /var/run/docker.sock || true
-      
+
       - name: Docker ps check
         run: |
           echo "📦 Running containers:"
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" || true
-      
+
       - name: Network connectivity
         run: |
           echo "🌐 Testing network connectivity..."
           curl -sS -o /dev/null -w "api.leoklemet.com: %{http_code}\n" https://api.leoklemet.com/api/ready || true
           curl -sS -o /dev/null -w "github.com: %{http_code}\n" https://github.com || true
-      
+
       - name: Workspace check
         run: |
           echo "📁 Workspace structure:"
           ls -la . || true
-          
+
           echo ""
           echo "📁 Deploy folder (if exists):"
           ls -la deploy/ 2>/dev/null || echo "deploy/ not found (will be created on checkout)"
-      
+
       - name: Success
         run: |
           echo "✅ ============================================"

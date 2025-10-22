@@ -1,5 +1,6 @@
 name: Redeploy Backend via Watchtower
-on:
+
+'on':
   workflow_dispatch:
     inputs:
       force:
@@ -7,9 +8,36 @@ on:
         required: false
         default: "true"
 
+# Least-privileged by default - production deployment
+permissions:
+  contents: read
+  actions: none
+  checks: none
+  deployments: none
+  id-token: none
+  issues: none
+  packages: none
+  pull-requests: none
+  statuses: none
+
+# Only one prod deploy at a time
+concurrency:
+  group: prod-deploy
+  cancel-in-progress: false
+
 jobs:
   redeploy:
-    runs-on: ubuntu-latest
+    # Never run on PR events, manual only
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      github.event_name != 'pull_request' && 
+      github.event_name != 'pull_request_target'
+    
+    # Only the prod runner (label-gated)
+    runs-on: [self-hosted, prod, deploy]
+    
+    # Require approval via protected environment
+    environment: production
     steps:
       - name: Trigger Watchtower update
         if: ${{ github.event.inputs.force == 'true' }}
@@ -17,35 +45,35 @@ jobs:
           echo "Triggering Watchtower to pull latest backend image..."
           response=$(curl -sS -w "\n%{http_code}" -X POST "${{ secrets.WATCHTOWER_UPDATE_URL }}" \
             -H "Authorization: Bearer ${{ secrets.WATCHTOWER_HTTP_API_TOKEN }}")
-          
+
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | head -n-1)
-          
+
           echo "HTTP Status: $http_code"
           echo "Response: $body"
-          
+
           if [ "$http_code" != "200" ] && [ "$http_code" != "204" ]; then
             echo "::error::Watchtower update failed with status $http_code"
             exit 1
           fi
-          
+
           echo "✅ Watchtower update triggered successfully"
 
       - name: Wait for backend to be healthy
         run: |
           echo "Waiting for backend to restart and become healthy..."
           sleep 10  # Give watchtower time to pull/restart
-          
+
           for i in {1..30}; do
             code=$(curl -s -o /dev/null -w "%{http_code}" https://api.leoklemet.com/api/ready)
-            if [ "$code" = "200" ]; then 
+            if [ "$code" = "200" ]; then
               echo "✅ Backend is healthy (attempt $i)"
               exit 0
             fi
             echo "Attempt $i/30: Backend returned $code, waiting..."
             sleep 5
           done
-          
+
           echo "::error::Backend not healthy after 2.5 minutes"
           exit 1
 
@@ -55,7 +83,7 @@ jobs:
           routes=$(curl -sS https://api.leoklemet.com/openapi.json | jq -r '.paths | keys[]' | head -20)
           echo "Available routes (first 20):"
           echo "$routes"
-          
+
           # Check for /api/dev/status specifically
           if echo "$routes" | grep -q "/api/dev/status"; then
             echo "✅ /api/dev/status route is available"
@@ -68,7 +96,7 @@ jobs:
           echo "Testing /api/dev/status endpoint..."
           response=$(curl -sS https://api.leoklemet.com/api/dev/status)
           echo "Response: $response"
-          
+
           # Check if response contains expected fields
           if echo "$response" | jq -e '.ok and (.allowed != null) and .mode and .ts' > /dev/null 2>&1; then
             echo "✅ Endpoint returned valid response"
