@@ -1,0 +1,32 @@
+name: Policy — block self-hosted runners on PRs
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail if any workflow uses self-hosted on PRs
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          violations=""
+          for f in .github/workflows/*.yml .github/workflows/*.yaml; do
+            # Heuristic: if the workflow declares pull_request *and*
+            # anywhere uses runs-on: self-hosted
+            if grep -Eq '(^|\s)pull_request\s*:' "$f" && grep -Eq 'runs-on:\s*\[?.*self-hosted' "$f"; then
+              violations+="$f"$'\n'
+            fi
+          done
+          if [[ -n "$violations" ]]; then
+            echo "::error::Self-hosted runner usage detected in workflows that trigger on pull_request:"
+            echo "$violations"
+            echo "Fix: remove self-hosted from PR workflows, or add an 'if: github.event_name != \"pull_request\"' guard on jobs using self-hosted."
+            exit 1
+          fi

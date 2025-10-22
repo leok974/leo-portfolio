@@ -1,190 +1,54 @@
-name: Bootstrap Watchtower (Self-Hosted)
+name: Bootstrap Watchtower on Prod
 
-'on':
-  workflow_dispatch:
-    inputs:
-      confirm:
-        description: 'Type "bootstrap" to confirm deployment'
-        required: true
-        default: ''
+on:
+  workflow_dispatch: {}
   push:
     branches: [ main ]
 
-# Least-privileged by default - production deployment
 permissions:
   contents: read
-  actions: none
-  checks: none
-  deployments: none
-  id-token: none
-  issues: none
-  packages: none
-  pull-requests: none
-  statuses: none
 
-# Only one prod deploy at a time
 concurrency:
   group: prod-deploy
   cancel-in-progress: false
 
 jobs:
   bootstrap:
-    # Never run on PR events, ever
-    if: |
-      github.event_name != 'pull_request' && 
-      github.event_name != 'pull_request_target' &&
-      (github.event.inputs.confirm == 'bootstrap' || github.event_name == 'push')
-    
-    # Only the prod runner (label-gated)
+    # Never on PRs
+    if: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' }}
     runs-on: [self-hosted, prod, deploy]
-    
-    # Require approval via protected environment
     environment: production
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Verify runner environment
+      - name: Write deploy/.env.production from Secrets
         run: |
-          echo "🖥️  Runner hostname: $(hostname)"
-          echo "📂 Working directory: $(pwd)"
-          echo "🐳 Docker version:"
-          docker version | head -n 10
-          echo "🔑 Checking docker socket access..."
-          docker ps | head -n 5
-
-      - name: Create .env.production
-        working-directory: deploy
-        run: |
-          echo "📝 Creating .env.production with secrets..."
+          cd deploy
+          umask 077
           cat > .env.production << 'EOF'
-          # Watchtower HTTP API Authentication
-          WATCHTOWER_HTTP_API_TOKEN=${{ secrets.WATCHTOWER_HTTP_API_TOKEN }}
-
-          # Figma MCP Integration
-          FIGMA_PAT=${{ secrets.FIGMA_PAT }}
-          FIGMA_TEAM_ID=${{ secrets.FIGMA_TEAM_ID }}
-          FIGMA_TEMPLATE_KEY=${{ secrets.FIGMA_TEMPLATE_KEY }}
-
-          # OpenAI Fallback (if configured)
-          FALLBACK_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_HTTP_API_TOKEN}
+          FIGMA_PAT=${FIGMA_PAT}
+          FIGMA_TEMPLATE_KEY=${FIGMA_TEMPLATE_KEY}
+          FIGMA_TEAM_ID=${FIGMA_TEAM_ID}
           EOF
+        env:
+          WATCHTOWER_HTTP_API_TOKEN: ${{ secrets.WATCHTOWER_HTTP_API_TOKEN }}
+          FIGMA_PAT: ${{ secrets.FIGMA_PAT }}
+          FIGMA_TEMPLATE_KEY: ${{ secrets.FIGMA_TEMPLATE_KEY }}
+          FIGMA_TEAM_ID: ${{ secrets.FIGMA_TEAM_ID }}
 
-          echo "✅ .env.production created"
-          echo "🔍 Verifying (masked):"
-          grep -c "WATCHTOWER_HTTP_API_TOKEN" .env.production && echo "  ✓ WATCHTOWER_HTTP_API_TOKEN present"
-          grep -c "FIGMA_PAT" .env.production && echo "  ✓ FIGMA_PAT present"
-
-      - name: Pull latest images
-        working-directory: deploy
+      - name: Compose up (watchtower + stack)
         run: |
-          echo "📥 Pulling latest Docker images..."
+          cd deploy
           docker compose -f docker-compose.portfolio-prod.yml pull
-
-      - name: Deploy services
-        working-directory: deploy
-        run: |
-          echo "🚀 Starting services (Watchtower + Backend + Nginx)..."
           docker compose -f docker-compose.portfolio-prod.yml up -d
+          docker ps
 
-          echo "⏳ Waiting for services to start..."
-          sleep 10
-
-      - name: Verify Watchtower running
+      - name: Verify Watchtower HTTP API proxy
         run: |
-          echo "🔍 Checking Watchtower container..."
-          if docker ps | grep -q watchtower; then
-            echo "✅ Watchtower container is running"
-            docker ps | grep watchtower
-          else
-            echo "❌ Watchtower container not found"
-            exit 1
-          fi
-
-          echo ""
-          echo "📋 Watchtower logs (last 20 lines):"
-          docker logs portfolio-watchtower --tail=20 || docker logs watchtower --tail=20
-
-      - name: Test Watchtower endpoint (local)
-        run: |
-          echo "🧪 Testing Watchtower HTTP API locally..."
-          response=$(curl -sS -w "\n%{http_code}" -X POST http://127.0.0.1:8083/v1/update \
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "${{ secrets.WATCHTOWER_UPDATE_URL }}" \
             -H "Authorization: Bearer ${{ secrets.WATCHTOWER_HTTP_API_TOKEN }}")
-
-          http_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | head -n-1)
-
-          echo "HTTP Status: $http_code"
-          echo "Response: $body"
-
-          if [ "$http_code" = "200" ] || [ "$http_code" = "204" ]; then
-            echo "✅ Watchtower local endpoint working"
-          else
-            echo "⚠️  Unexpected status code from Watchtower"
-          fi
-
-      - name: Test Watchtower endpoint (public)
-        run: |
-          echo "🌐 Testing Watchtower public endpoint..."
-          response=$(curl -sS -w "\n%{http_code}" -X POST https://api.leoklemet.com/ops/watchtower/update \
-            -H "Authorization: Bearer ${{ secrets.WATCHTOWER_HTTP_API_TOKEN }}")
-
-          http_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | head -n-1)
-
-          echo "HTTP Status: $http_code"
-          echo "Response: $body"
-
-          if [ "$http_code" = "200" ] || [ "$http_code" = "204" ]; then
-            echo "✅ Watchtower public endpoint working"
-          else
-            echo "❌ Watchtower public endpoint failed with status $http_code"
-            exit 1
-          fi
-
-      - name: Verify backend health
-        run: |
-          echo "🏥 Checking backend health..."
-          for i in {1..10}; do
-            code=$(curl -sS -o /dev/null -w "%{http_code}" https://api.leoklemet.com/api/ready)
-            if [ "$code" = "200" ]; then
-              echo "✅ Backend is healthy (attempt $i)"
-              curl -sS https://api.leoklemet.com/api/ready
-              exit 0
-            fi
-            echo "⏳ Attempt $i/10: Backend returned $code, waiting..."
-            sleep 5
-          done
-          echo "⚠️  Backend health check timeout"
-          exit 1
-
-      - name: Verify OpenAPI routes
-        run: |
-          echo "📚 Checking OpenAPI routes..."
-          routes=$(curl -sS https://api.leoklemet.com/openapi.json | jq -r '.paths | keys[]' | head -20)
-          echo "Available routes (first 20):"
-          echo "$routes"
-
-          echo ""
-          echo "🔍 Checking for /ops/watchtower/update in nginx routes..."
-          # Note: /ops/watchtower/update is nginx-only, won't appear in backend OpenAPI
-
-      - name: Bootstrap summary
-        if: success()
-        run: |
-          echo "🎉 ============================================"
-          echo "🎉  BOOTSTRAP COMPLETE!"
-          echo "🎉 ============================================"
-          echo ""
-          echo "✅ Watchtower container running"
-          echo "✅ HTTP API endpoint accessible"
-          echo "✅ Backend healthy"
-          echo "✅ .env.production created with secrets"
-          echo ""
-          echo "📋 Next steps:"
-          echo "  1. Run 'Redeploy Backend via Watchtower' workflow"
-          echo "  2. Verify /api/dev/status endpoint works"
-          echo "  3. Test dev overlay at /?dev_overlay=dev"
-          echo ""
-          echo "🚀 One-click deployments now enabled!"
+          echo "HTTP $code"
+          test "$code" = "200" -o "$code" = "204"
