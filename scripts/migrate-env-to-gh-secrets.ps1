@@ -49,10 +49,8 @@ Write-Host "Setting secrets in environment: $EnvName (repo: $RepoSlug)" -Foregro
 foreach ($key in $WantedKeys) {
   $val = Get-Val $key
   if ($val) {
-    $tmp = New-TemporaryFile
-    Set-Content -Path $tmp -Value $val -NoNewline
-    gh secret set $key --env $EnvName --repo $RepoSlug --body-file $tmp | Out-Null
-    Remove-Item $tmp -Force
+    # Use stdin pipe instead of --body-file (not supported in older gh versions)
+    $val | gh secret set $key --env $EnvName --repo $RepoSlug --body - | Out-Null
     Write-Host "✓ $key set" -ForegroundColor Green
   } else {
     Write-Host "• $key not found in any candidate file (skipped)" -ForegroundColor Yellow
