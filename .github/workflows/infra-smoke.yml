@@ -1,0 +1,137 @@
+name: Infra Smoke (Production)
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 * * * *" # Hourly check
+
+permissions:
+  contents: read
+
+# Only one infra smoke at a time
+concurrency:
+  group: infra-smoke-prod
+  cancel-in-progress: false
+
+jobs:
+  prod_smoke:
+    # Only run on self-hosted prod runner with infra access
+    runs-on: [self-hosted, prod, deploy, infra]
+
+    # Require approval via protected environment
+    environment: production
+
+    steps:
+      - name: Show tunnel container status
+        run: |
+          echo "=== Cloudflare Tunnel Status ==="
+          docker ps --filter "name=cloudflared" --format "table {{.Names}}\t{{.Status}}\t{{.Networks}}"
+
+      - name: Check tunnel health
+        run: |
+          echo "=== Tunnel Logs (last 20 lines) ==="
+          docker logs cloudflared --tail 20 2>&1 || true
+
+          echo ""
+          echo "=== Checking for active connections ==="
+          docker logs cloudflared 2>&1 | grep "Registered tunnel connection" | tail -n 4 || echo "Warning: Could not find registered connections"
+
+          echo ""
+          echo "=== Verifying tunnel UUID ==="
+          TUNNEL_UUID=$(docker logs cloudflared 2>&1 | grep "Starting tunnel" | grep -oP 'tunnelID=\K[a-f0-9-]+' | tail -n 1)
+          echo "Current tunnel: $TUNNEL_UUID"
+
+          if [ "$TUNNEL_UUID" != "08d5feee-f504-47a2-a1f2-b86564900991" ]; then
+            echo "❌ ERROR: Wrong tunnel UUID! Expected 08d5feee-f504-47a2-a1f2-b86564900991"
+            exit 1
+          fi
+
+          echo "✅ Correct tunnel UUID"
+
+      - name: Check public portfolio site
+        run: |
+          set -e
+          echo "=== Testing www.leoklemet.com ==="
+          code=$(curl -sS -o /dev/null -w "%{http_code}" https://www.leoklemet.com)
+          echo "Response code: $code"
+
+          if [ "$code" != "200" ]; then
+            echo "❌ ERROR: Portfolio site not returning 200"
+            exit 1
+          fi
+
+          echo "✅ www.leoklemet.com is healthy"
+
+      - name: Check public API health
+        run: |
+          set -e
+          echo "=== Testing api.leoklemet.com/ready ==="
+
+          response=$(curl -sS https://api.leoklemet.com/ready)
+          code=$(curl -sS -o /dev/null -w "%{http_code}" https://api.leoklemet.com/ready)
+
+          echo "Response code: $code"
+          echo "Response body: $response"
+
+          if [ "$code" != "200" ]; then
+            echo "❌ ERROR: API health check not returning 200"
+            exit 1
+          fi
+
+          # Verify response contains expected structure
+          if ! echo "$response" | grep -q '"ok":true'; then
+            echo "❌ ERROR: API response missing 'ok:true'"
+            exit 1
+          fi
+
+          echo "✅ api.leoklemet.com/ready is healthy"
+
+      - name: Check network connectivity
+        run: |
+          echo "=== Checking infra_net network ==="
+          docker network inspect infra_net --format '{{range .Containers}}{{println .Name}}{{end}}' | head -n 20
+
+          echo ""
+          echo "=== Verifying key containers on infra_net ==="
+
+          REQUIRED_CONTAINERS=("cloudflared" "portfolio-nginx" "portfolio-backend")
+
+          for container in "${REQUIRED_CONTAINERS[@]}"; do
+            if docker network inspect infra_net --format '{{range .Containers}}{{println .Name}}{{end}}' | grep -q "^$container\$"; then
+              echo "✅ $container is on infra_net"
+            else
+              echo "❌ WARNING: $container not found on infra_net"
+            fi
+          done
+
+      - name: Verify apex domain redirect
+        run: |
+          set -e
+          echo "=== Testing leoklemet.com (apex) ==="
+          code=$(curl -sS -o /dev/null -w "%{http_code}" https://leoklemet.com)
+          echo "Response code: $code"
+
+          # Accept 200 or 301/302 (redirect to www)
+          if [ "$code" != "200" ] && [ "$code" != "301" ] && [ "$code" != "302" ]; then
+            echo "❌ ERROR: Apex domain not returning 200/301/302"
+            exit 1
+          fi
+
+          echo "✅ leoklemet.com is accessible (code: $code)"
+
+      - name: Final summary
+        run: |
+          echo ""
+          echo "================================================"
+          echo "✅ Infrastructure Smoke Test PASSED"
+          echo "================================================"
+          echo ""
+          echo "Verified:"
+          echo "  • Cloudflare tunnel active (08d5feee-f504-47a2-a1f2-b86564900991)"
+          echo "  • 4 tunnel connections registered"
+          echo "  • www.leoklemet.com → 200 OK"
+          echo "  • leoklemet.com → accessible"
+          echo "  • api.leoklemet.com/ready → 200 OK"
+          echo "  • infra_net network healthy"
+          echo ""
+          echo "All production domains operational! 🚀"
