@@ -86,6 +86,32 @@ jobs:
 
           echo "✅ api.leoklemet.com/ready is healthy"
 
+      - name: debug-api
+        if: always()
+        run: |
+          echo "=== docker ps ==="
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+          echo ""
+          echo "=== portfolio-backend logs (if exists) ==="
+          docker logs portfolio-backend --tail 80 || echo "no portfolio-backend container"
+
+          echo ""
+          echo "=== portfolio-api logs (if exists) ==="
+          docker logs portfolio-api --tail 80 || echo "no portfolio-api container"
+
+          echo ""
+          echo "=== portfolio-nginx logs (if exists) ==="
+          docker logs portfolio-nginx --tail 80 || echo "no portfolio-nginx container"
+
+          echo ""
+          echo "=== internal curl to portfolio-api.int:8000/ready ==="
+          curl -s -o /dev/null -w "internal_api %{http_code}\n" http://portfolio-api.int:8000/ready || echo "internal_api curl failed"
+
+          echo ""
+          echo "=== internal curl to nginx if it fronts the api ==="
+          curl -s -o /dev/null -w "nginx_api %{http_code}\n" http://portfolio-nginx/ready || echo "nginx_api curl failed"
+
       - name: Check network connectivity
         run: |
           echo "=== Checking infra_net network ==="
