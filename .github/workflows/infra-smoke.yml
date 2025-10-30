@@ -112,6 +112,32 @@ jobs:
           echo "=== internal curl to nginx if it fronts the api ==="
           curl -s -o /dev/null -w "nginx_api %{http_code}\n" http://portfolio-nginx/ready || echo "nginx_api curl failed"
 
+      - name: attempt-self-heal
+        if: failure()
+        run: |
+          echo "api.leoklemet.com/ready was NOT healthy. Attempting scoped restart..."
+
+          echo ""
+          echo "=== docker compose ps BEFORE ==="
+          docker compose -f docker-compose.prod.yml ps || echo "docker-compose.prod.yml not found, checking deploy/"
+
+          echo ""
+          echo "=== restarting portfolio-api / portfolio-backend ==="
+          docker compose -f deploy/docker-compose.portfolio-prod.yml restart portfolio-backend || true
+          docker compose -f deploy/docker-compose.portfolio-prod.yml restart portfolio-api || true
+
+          echo ""
+          echo "sleeping 5s before recheck..."
+          sleep 5
+
+          echo ""
+          echo "=== docker compose ps AFTER ==="
+          docker compose -f deploy/docker-compose.portfolio-prod.yml ps || true
+
+          echo ""
+          echo "=== post-restart internal readiness check ==="
+          curl -s -o /dev/null -w "post_restart %{http_code}\n" http://portfolio-api.int:8000/ready || echo "post-restart curl failed"
+
       - name: Check network connectivity
         run: |
           echo "=== Checking infra_net network ==="
