@@ -26,10 +26,10 @@ jobs:
   ping:
     # Never run on PR events, ever
     if: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' }}
-    
+
     # Only the prod runner (label-gated)
     runs-on: [self-hosted, prod, deploy]
-    
+
     # Require approval via protected environment
     environment: production
     steps:

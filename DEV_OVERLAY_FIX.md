@@ -1,8 +1,8 @@
 # Dev Overlay Fix - Deployment Instructions
 
-**Date:** 2025-10-21  
-**Issue:** Dev overlay showing `allowed: false` in production  
-**Root Cause:** Missing `DEV_OVERLAY_KEY` in production environment  
+**Date:** 2025-10-21
+**Issue:** Dev overlay showing `allowed: false` in production
+**Root Cause:** Missing `DEV_OVERLAY_KEY` in production environment
 **Status:** ✅ Backend built and pushed, awaiting production deployment
 
 ---
@@ -182,7 +182,7 @@ If you see CORS errors in browser console:
 
 ### ✅ Completed
 - Added `DEV_OVERLAY_KEY` to production environment
-- Added `ADMIN_HMAC_KEY` to production environment  
+- Added `ADMIN_HMAC_KEY` to production environment
 - Built and pushed Docker image with fix
 - Created deployment documentation
 

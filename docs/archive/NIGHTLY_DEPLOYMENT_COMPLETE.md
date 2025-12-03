@@ -1,6 +1,6 @@
 # ✅ Nightly Deployment - Complete Setup Summary
 
-**Date**: October 21, 2025  
+**Date**: October 21, 2025
 **Status**: ✅ Fully Operational
 
 ---
@@ -284,8 +284,8 @@ You now have:
 
 ---
 
-**Next automatic run**: Tonight at 3 AM UTC  
-**Workflow URL**: https://github.com/leok974/leo-portfolio/actions/workflows/deploy-secrets-nightly.yml  
+**Next automatic run**: Tonight at 3 AM UTC
+**Workflow URL**: https://github.com/leok974/leo-portfolio/actions/workflows/deploy-secrets-nightly.yml
 **Test run**: ✅ Successful (Run #18695277890)
 
 🎯 **Deployment automation is complete and operational!**

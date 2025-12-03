@@ -1,6 +1,6 @@
 # Bootstrap Checklist - Watchtower Deployment
 
-**Purpose**: Verify one-time Watchtower setup completed successfully  
+**Purpose**: Verify one-time Watchtower setup completed successfully
 **When**: After running `BOOTSTRAP_WATCHTOWER.md` steps
 
 ---
@@ -19,11 +19,11 @@
 - [ ] `deploy/docker-compose.portfolio-prod.yml` present on server
   - Contains `watchtower` service definition
   - Backend has label: `com.centurylinklabs.watchtower.enable: "true"`
-  
+
 - [ ] `deploy/nginx/nginx.prod.conf` deployed/used by nginx
   - Contains `location /ops/watchtower/update` block
   - Proxies to `http://127.0.0.1:8083/v1/update`
-  
+
 - [ ] `deploy/.env.production` created with required secrets
   - Has `WATCHTOWER_HTTP_API_TOKEN=<token>`
   - Has `FIGMA_PAT=<token>`
@@ -35,10 +35,10 @@
 
 - [ ] Ran: `docker compose -f docker-compose.portfolio-prod.yml pull`
   - All images pulled successfully
-  
+
 - [ ] Ran: `docker compose -f docker-compose.portfolio-prod.yml up -d`
   - Services started: backend, nginx, watchtower
-  
+
 - [ ] (If nginx on host) Ran: `nginx -t && nginx -s reload`
   - Nginx config test passed
   - Nginx reloaded successfully
@@ -168,13 +168,13 @@ If any verification fails, see:
 
 **All of these must pass**:
 
-✅ Watchtower container running  
-✅ Watchtower logs show "HTTP API enabled"  
-✅ `POST /ops/watchtower/update` returns 200/204  
-✅ `GET /api/ready` returns 200  
-✅ GitHub Action workflow succeeds  
-✅ `/api/dev/status` returns 200 (not 404)  
-✅ OpenAPI includes `/api/dev/status` route  
+✅ Watchtower container running
+✅ Watchtower logs show "HTTP API enabled"
+✅ `POST /ops/watchtower/update` returns 200/204
+✅ `GET /api/ready` returns 200
+✅ GitHub Action workflow succeeds
+✅ `/api/dev/status` returns 200 (not 404)
+✅ OpenAPI includes `/api/dev/status` route
 
 ---
 
@@ -197,8 +197,8 @@ After all checks pass:
 - [ ] `/api/dev/status` endpoint working
 - [ ] Documentation handoff complete
 
-**Deployed by**: _________________  
-**Date**: _________________  
+**Deployed by**: _________________
+**Date**: _________________
 **Notes**: _________________
 
 ---

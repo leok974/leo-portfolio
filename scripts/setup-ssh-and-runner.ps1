@@ -144,7 +144,7 @@ try {
         } `
         -Method Post `
         -Body $dnsBody
-    
+
     Write-Host "✓ DNS record created: $SSH_HOSTNAME → $DNS_TARGET" -ForegroundColor Green
 } catch {
     if ($_.Exception.Response.StatusCode.value__ -eq 409) {
@@ -159,7 +159,7 @@ try {
 # Step 3: Create Access app + policy
 if (-not $SkipAccessApp) {
     Write-Host "`n🔐 Step 3: Creating Cloudflare Access SSH application..." -ForegroundColor Cyan
-    
+
     $appBody = @{
         type = "ssh"
         name = "prod-ssh"
@@ -176,7 +176,7 @@ if (-not $SkipAccessApp) {
             } `
             -Method Post `
             -Body $appBody
-        
+
         $APP_ID = $appResult.result.id
         Write-Host "✓ Access app created: prod-ssh (ID: $APP_ID)" -ForegroundColor Green
 
@@ -202,7 +202,7 @@ if (-not $SkipAccessApp) {
             } `
             -Method Post `
             -Body $policyBody
-        
+
         Write-Host "✓ Policy created: allow-leo (allows $ALLOW_EMAIL)" -ForegroundColor Green
 
     } catch {
@@ -245,7 +245,7 @@ Write-Host "  (First connection opens browser for authentication)" -ForegroundCo
 # Step 6: Runner installation
 if (-not $SkipRunner) {
     Write-Host "`n🤖 Step 6: GitHub Runner Installation..." -ForegroundColor Cyan
-    
+
     if (-not $GH_RUNNER_TOKEN) {
         Write-Host "⚠ GH_RUNNER_TOKEN not set. Getting new token..." -ForegroundColor Yellow
         try {

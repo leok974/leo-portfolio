@@ -19,7 +19,7 @@
 .PARAMETER Service
   Compose service name (default cloudflared)
 .EXAMPLE
-  pwsh ./scripts/cloudflared-gen-creds.ps1 -Uuid db56892d-4879-4263-99bf-202d46b6aff9 -Hostname app.example.com
+  pwsh ./scripts/cloudflared-gen-creds.ps1 -Uuid 08d5feee-f504-47a2-a1f2-b86564900991 -Hostname app.example.com
 #>
 [CmdletBinding()]param(
   [Parameter(Mandatory)] [string]$Uuid,
@@ -30,18 +30,19 @@
 )
 
 $ErrorActionPreference = 'Stop'
-if($Uuid -notmatch '^[0-9a-fA-F-]{36}$'){ throw "Uuid format invalid: $Uuid" }
+if ($Uuid -notmatch '^[0-9a-fA-F-]{36}$') { throw "Uuid format invalid: $Uuid" }
 
 $root = Get-Location
 $dir = Join-Path $root 'cloudflared'
 New-Item -ItemType Directory -Force $dir | Out-Null
 
 $cert = Join-Path $dir 'cert.pem'
-if(-not (Test-Path $cert)){
+if (-not (Test-Path $cert)) {
   Write-Host '[login] cert.pem missing -> launching interactive login...' -ForegroundColor Yellow
   docker run -it --rm -v "${dir}:/etc/cloudflared" $Image tunnel login
-  if(-not (Test-Path $cert)){ throw 'cert.pem still missing after login.' }
-} else {
+  if (-not (Test-Path $cert)) { throw 'cert.pem still missing after login.' }
+}
+else {
   Write-Host '[login] cert.pem present (skipping login)' -ForegroundColor Green
 }
 
@@ -54,14 +55,14 @@ $credJson = Join-Path $dir ("$Uuid.json")
 #  2. If JSON still absent, fetch a token and synthesize a minimal credentials JSON compatible with run.
 
 $legacyOut = docker run --rm -v "${dir}:/etc/cloudflared" $Image tunnel credentials create $Uuid 2>&1 || $null
-if($legacyOut){ Write-Host $legacyOut }
+if ($legacyOut) { Write-Host $legacyOut }
 
-if(-not (Test-Path $credJson)){
+if (-not (Test-Path $credJson)) {
   Write-Host "[creds] Legacy 'credentials create' unsupported or failed -> falling back to token" -ForegroundColor Yellow
   $tokenOut = docker run --rm -v "${dir}:/etc/cloudflared" $Image tunnel token $Uuid 2>&1
-  if($LASTEXITCODE -ne 0){ throw "Failed to obtain tunnel token for $Uuid`:` $tokenOut" }
+  if ($LASTEXITCODE -ne 0) { throw "Failed to obtain tunnel token for $Uuid`:` $tokenOut" }
   $token = ($tokenOut -split "\r?\n")[0].Trim()
-  if(-not $token){ throw 'Empty token received' }
+  if (-not $token) { throw 'Empty token received' }
   # Synthesize a credentials JSON structure used historically by cloudflared. Minimal fields: accountTag (a), tunnelSecret (s), tunnelID (t)
   # Extract pieces from JWT-like token is non-trivial; we leave placeholders where unknown.
   $credObj = [ordered]@{
@@ -71,12 +72,13 @@ if(-not (Test-Path $credJson)){
   }
   ($credObj | ConvertTo-Json -Depth 3) | Set-Content $credJson -Encoding ASCII
   Write-Host "[creds] Synthesized credentials file from token -> $credJson" -ForegroundColor Green
-} else {
+}
+else {
   Write-Host "[creds] Found existing or newly created $credJson" -ForegroundColor Green
 }
 
 $configPath = Join-Path $dir 'config.yml'
-if(Test-Path $configPath){
+if (Test-Path $configPath) {
   Write-Host '[config] Existing config.yml detected -> updating core fields' -ForegroundColor Yellow
   # naive replace of tunnel/credentials/ingress block
   $cfg = Get-Content $configPath -Raw
@@ -90,9 +92,10 @@ if(Test-Path $configPath){
     "  - service: http_status:404"
   ) -join "`n"
   # If ingress exists, strip old core lines; else append
-  if($cfg -match '^tunnel:'){ $cfg = $cfg -replace '(?s)^tunnel:.*?(?=\n[a-zA-Z])', '' }
+  if ($cfg -match '^tunnel:') { $cfg = $cfg -replace '(?s)^tunnel:.*?(?=\n[a-zA-Z])', '' }
   Set-Content $configPath $newCore
-} else {
+}
+else {
   Write-Host '[config] Writing new config.yml' -ForegroundColor Cyan
   @(
     "tunnel: $Uuid",

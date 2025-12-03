@@ -1,7 +1,7 @@
 # Production Runner Security - Policy Guard Complete ✅
 
-**Date**: 2025-10-22  
-**Commit**: 49c01a5  
+**Date**: 2025-10-22
+**Commit**: 49c01a5
 **Status**: Policy enforcement active, UI setup required
 
 ---
@@ -179,11 +179,11 @@ jobs:
 ```
 Policy — block self-hosted runners on PRs: ❌ FAILED
 
-Error: Self-hosted runner usage detected in workflows 
+Error: Self-hosted runner usage detected in workflows
        that trigger on pull_request:
        .github/workflows/test-bad.yml
 
-Fix: remove self-hosted from PR workflows, or add an 
+Fix: remove self-hosted from PR workflows, or add an
      'if: github.event_name != "pull_request"' guard
 ```
 
@@ -367,10 +367,10 @@ curl -sS https://api.leoklemet.com/openapi.json | jq '.paths | keys[]' | head -1
 
 ---
 
-**Status**: ✅ Code complete, policy active, awaiting UI setup  
-**Commit**: 49c01a5  
-**Time to Complete**: 15-20 minutes  
-**Next**: Create "production" environment in GitHub UI  
+**Status**: ✅ Code complete, policy active, awaiting UI setup
+**Commit**: 49c01a5
+**Time to Complete**: 15-20 minutes
+**Next**: Create "production" environment in GitHub UI
 
 ---
 

@@ -31,12 +31,12 @@ services:
         condition: service_healthy
     environment:
       # Provide concrete defaults (avoid host compose interpolation warnings)
-      PRIMARY_MODEL: ${PRIMARY_MODEL:-gpt-oss:20b}
+      PRIMARY_MODEL: ${PRIMARY_MODEL:-qwen2.5:7b-instruct-q4_K_M}
       OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
     entrypoint: ["/bin/sh","-lc"]
     command: >
       set -e;
-      primary="$$PRIMARY_MODEL"; [ -z "$$PRIMARY_MODEL" ] && primary="gpt-oss:20b";
+      primary="$$PRIMARY_MODEL"; [ -z "$$PRIMARY_MODEL" ] && primary="qwen2.5:7b-instruct-q4_K_M";
       url="$$OLLAMA_URL"; [ -z "$$OLLAMA_URL" ] && url="http://ollama:11434";
       echo "[ollama-init] waiting for API at $$url ...";
       for i in $$(seq 1 120); do
@@ -69,8 +69,8 @@ services:
       - ../assistant_api/.env.prod
     environment:
       - OPENAI_BASE_URL=http://ollama:11434/v1
-      - OPENAI_MODEL=gpt-oss:20b
-      - PRIMARY_MODEL=${PRIMARY_MODEL:-gpt-oss:20b}
+      - OPENAI_MODEL=qwen2.5:7b-instruct-q4_K_M
+      - PRIMARY_MODEL=${PRIMARY_MODEL:-qwen2.5:7b-instruct-q4_K_M}
       - PRIMARY_TIMEOUT_S=25
       - RAG_URL=http://localhost:8000/api/rag/query
       - FALLBACK_API_KEY_FILE=/run/secrets/openai_api_key
@@ -142,17 +142,18 @@ services:
       echo "[warmup] done";
     restart: "no"
 
-  warm-primary:
-    image: mcr.microsoft.com/powershell:7.4-nanoserver-ltsc2022
-    depends_on:
-      backend:
-        condition: service_healthy
-    working_dir: /repo
-    entrypoint: ["pwsh","-File","scripts/warm-primary.ps1"]
-    command: ["-Base","http://backend:8000","-Model","gpt-oss:20b"]
-    volumes:
-      - ..:/repo:ro
-    restart: "no"
+  # warm-primary:
+  #   # Using Linux PowerShell image instead of Windows nanoserver
+  #   image: mcr.microsoft.com/powershell:7.4-alpine-3.20
+  #   depends_on:
+  #     backend:
+  #       condition: service_healthy
+  #   working_dir: /repo
+  #   entrypoint: ["pwsh","-File","scripts/warm-primary.ps1"]
+  #   command: ["-Base","http://backend:8000","-Model","gpt-oss:20b"]
+  #   volumes:
+  #     - ..:/repo:ro
+  #   restart: "no"
 
 volumes:
   ollama-data:

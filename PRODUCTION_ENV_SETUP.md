@@ -13,7 +13,7 @@ Create a `.env` file in the same directory as your `docker-compose.yml`:
 ```bash
 # deploy/.env (NOT committed to git)
 
-# Figma MCP Integration  
+# Figma MCP Integration
 FIGMA_PAT=figd_YOUR_FIGMA_TOKEN_HERE
 
 # Add other secrets here...

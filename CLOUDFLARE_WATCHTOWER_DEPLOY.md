@@ -126,11 +126,11 @@ jobs:
           FIGMA_TEAM_ID=${{ secrets.FIGMA_TEAM_ID }}
           FIGMA_TEMPLATE_KEY=${{ secrets.FIGMA_TEMPLATE_KEY }}
           EOF
-          
+
           # Deploy via your method (rsync, scp, Cloudflare API, etc.)
           # Example: rsync -avz .env.production user@server:/path/to/deploy/
           # Or: curl to Cloudflare API to update environment
-          
+
           echo "Secrets deployed! Restart backend container to apply."
 ```
 

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Set up SSH via Cloudflare Access and install GitHub Actions runner
-# 
+#
 # Required environment variables:
 # - CF_API_TOKEN, CF_ACCOUNT_ID (optional), CF_ZONE_ID, TUNNEL_ID
 # - SSH_HOSTNAME, ALLOW_EMAIL, SERVER_USER
@@ -67,7 +67,7 @@ if [[ -z "$CF_ACCOUNT_ID" ]]; then
     echo -e "${CYAN}🔍 Fetching Cloudflare account ID...${NC}"
     CF_ACCOUNT_ID=$(curl -sS "https://api.cloudflare.com/client/v4/accounts" \
         -H "Authorization: Bearer $CF_API_TOKEN" | jq -r '.result[0].id')
-    
+
     if [[ -z "$CF_ACCOUNT_ID" || "$CF_ACCOUNT_ID" == "null" ]]; then
         echo -e "${YELLOW}⚠ Could not fetch account ID${NC}"
         echo -e "${YELLOW}Please set CF_ACCOUNT_ID environment variable${NC}"
@@ -138,7 +138,7 @@ if echo "$APP_CREATE" | jq -e '.success' >/dev/null 2>&1; then
         -H "Authorization: Bearer $CF_API_TOKEN" \
         -H "Content-Type: application/json" \
         -d "{\"name\":\"allow-leo\",\"precedence\":1,\"decision\":\"allow\",\"include\":[{\"email\":{\"email\":\"$ALLOW_EMAIL\"}}]}")
-    
+
     if echo "$POLICY_CREATE" | jq -e '.success' >/dev/null 2>&1; then
         echo -e "${GREEN}✓ Policy created: allow-leo (allows $ALLOW_EMAIL)${NC}"
     else

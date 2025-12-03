@@ -120,9 +120,7 @@ else:
     )
 
 # Admin authentication (HMAC-signed cookies)
-# Copilot: only one router owns /api/auth/* routes (auth_admin.router)
-# No duplicate or overlapping auth routes exist
-from .auth_admin import require_admin
+from .rbac import require_admin
 from .auth_admin import router as auth_router
 
 app.include_router(auth_router)

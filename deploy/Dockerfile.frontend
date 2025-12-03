@@ -7,13 +7,17 @@ FROM node:20-alpine AS vite-build
 ARG FRONTEND_DIR=.
 ARG VITE_BUILD_SHA=local
 WORKDIR /app
-COPY ${FRONTEND_DIR}/package*.json ./
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+COPY ${FRONTEND_DIR}/package.json ./
+COPY ${FRONTEND_DIR}/pnpm-lock.yaml ./
+COPY ${FRONTEND_DIR}/pnpm-workspace.yaml ./
 RUN test -f package.json
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 COPY ${FRONTEND_DIR}/ ./
 ENV VITE_BUILD_SHA=${VITE_BUILD_SHA}
-# Generate favicons (prebuild) and perform production build (will include SRI postbuild)
-RUN npm run build:prod
+# Generate favicons (prebuild) and perform production build
+RUN pnpm run prebuild:prod && pnpm run build:portfolio
 
 # ===========================
 # Static copy stage (no build)
@@ -31,9 +35,9 @@ RUN mkdir -p /out && cp -r . /out
 FROM nginx:1.27-alpine AS frontend-vite-final
 ARG NGINX_CONF=deploy/nginx.conf
 COPY ${NGINX_CONF} /etc/nginx/conf.d/default.conf
-# Copy built SPA
-COPY --from=vite-build /app/dist/ /usr/share/nginx/html/
-# Ensure root-level favicons (generated into public/) are present even if not emitted to dist
+# Copy built SPA from portfolio build output
+COPY --from=vite-build /app/dist-portfolio/ /usr/share/nginx/html/
+# Ensure root-level favicons (generated into public/) are present
 COPY --from=vite-build /app/public/leo-avatar-sm.png /usr/share/nginx/html/leo-avatar-sm.png
 COPY --from=vite-build /app/public/leo-avatar-md.png /usr/share/nginx/html/leo-avatar-md.png
 # Normalize permissions so directories remain traversable and files stay read-only
