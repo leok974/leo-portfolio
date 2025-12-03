@@ -1,7 +1,7 @@
 # Watchtower Production Deployment - Execution Guide
 
-**Date**: October 21, 2025  
-**Purpose**: Deploy Watchtower HTTP API and force-pull backend with `/api/dev/status` fix  
+**Date**: October 21, 2025
+**Purpose**: Deploy Watchtower HTTP API and force-pull backend with `/api/dev/status` fix
 **No SSH Required**: All steps via Cloudflare/console access
 
 ---
@@ -142,8 +142,8 @@ curl -sS -X POST https://api.leoklemet.com/ops/watchtower/update \
 
 **Expected**: Same JSON response as local test
 
-**If 401 Unauthorized**: Token mismatch (see troubleshooting)  
-**If 404 Not Found**: Nginx config not loaded (see troubleshooting)  
+**If 401 Unauthorized**: Token mismatch (see troubleshooting)
+**If 404 Not Found**: Nginx config not loaded (see troubleshooting)
 **If 502 Bad Gateway**: Watchtower not running on 127.0.0.1:8083
 
 ---
@@ -194,7 +194,7 @@ curl -sS https://api.leoklemet.com/api/ready | jq .
 
 **2. Check OpenAPI schema**:
 ```bash
-curl -sS https://api.leoklemet.com/openapi.json | jq '.paths | keys | map(select(test("dev")))' 
+curl -sS https://api.leoklemet.com/openapi.json | jq '.paths | keys | map(select(test("dev")))'
 ```
 
 **Expected** (should now include `/api/dev/status`):
@@ -442,16 +442,16 @@ curl -X POST https://api.leoklemet.com/ops/watchtower/update \
 
 ## 🎉 What This Achieves
 
-✅ **No SSH Required** - All updates via HTTP API  
-✅ **One-Click Deployments** - GitHub Actions button  
-✅ **Immediate Updates** - Force-pull on demand  
-✅ **Automated Updates** - 5-minute check interval  
-✅ **Secure** - Token-based authentication  
-✅ **Monitored** - Logs and health checks  
-✅ **Safe** - Health checks before declaring success  
+✅ **No SSH Required** - All updates via HTTP API
+✅ **One-Click Deployments** - GitHub Actions button
+✅ **Immediate Updates** - Force-pull on demand
+✅ **Automated Updates** - 5-minute check interval
+✅ **Secure** - Token-based authentication
+✅ **Monitored** - Logs and health checks
+✅ **Safe** - Health checks before declaring success
 
 ---
 
-**Current Status**: Ready to deploy  
-**Next Action**: Execute Step 1 (prepare production files)  
+**Current Status**: Ready to deploy
+**Next Action**: Execute Step 1 (prepare production files)
 **Estimated Time**: 10-15 minutes total

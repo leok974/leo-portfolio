@@ -1,4 +1,8 @@
-tunnel: db56892d-4879-4263-99bf-202d46b6aff9
+# DEPRECATED: Use shared tunnel 08d5feee-f504-47a2-a1f2-b86564900991 instead
+# This config references an old tunnel and should not be used
+# See docker-compose.cloudflared.yml for correct configuration
+
+tunnel: DEPRECATED_DO_NOT_USE
 credentials-file: /etc/cloudflared/token
 
 ingress:

@@ -21,7 +21,7 @@ check() {
   local name="$1"
   local expected="$2"
   local actual="$3"
-  
+
   echo -n "   $name: "
   if [ "$expected" = "$actual" ]; then
     echo -e "${GREEN}✓${NC} $actual"

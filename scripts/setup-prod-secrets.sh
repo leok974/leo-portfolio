@@ -15,7 +15,7 @@ gh secret set WATCHTOWER_HTTP_API_TOKEN --env production
 echo "✅ Set"
 echo ""
 
-# WATCHTOWER_UPDATE_URL  
+# WATCHTOWER_UPDATE_URL
 echo "2/6: WATCHTOWER_UPDATE_URL"
 echo "    Value: https://api.leoklemet.com/ops/watchtower/update"
 echo "https://api.leoklemet.com/ops/watchtower/update" | gh secret set WATCHTOWER_UPDATE_URL --env production

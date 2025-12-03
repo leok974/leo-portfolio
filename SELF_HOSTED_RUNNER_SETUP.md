@@ -1,14 +1,14 @@
 # Self-Hosted GitHub Actions Runner Setup
 
-**Purpose**: Enable Watchtower bootstrap and deployments via GitHub Actions on production server  
-**Time**: 10-15 minutes  
+**Purpose**: Enable Watchtower bootstrap and deployments via GitHub Actions on production server
+**Time**: 10-15 minutes
 **Method**: Dockerized runner (auto-updates, persistent)
 
 ---
 
 ## Why Self-Hosted Runner?
 
-**Problem**: Can't execute bootstrap commands remotely without SSH  
+**Problem**: Can't execute bootstrap commands remotely without SSH
 **Solution**: Self-hosted GitHub Actions runner on production box
 
 **Benefits**:
@@ -382,6 +382,6 @@ After successful bootstrap:
 
 ---
 
-**Status**: Ready to execute  
-**Next**: Generate runner token and start container  
+**Status**: Ready to execute
+**Next**: Generate runner token and start container
 **Result**: Full automation via GitHub Actions 🚀

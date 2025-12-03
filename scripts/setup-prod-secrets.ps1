@@ -36,9 +36,9 @@ foreach ($secret in $secretsToCopy) {
     Write-Host "[$count/$total] Setting $($secret.Name)..." -ForegroundColor Cyan
     Write-Host "  Description: $($secret.Description)" -ForegroundColor Gray
     Write-Host "  Copy the value from repo secrets and paste when prompted:" -ForegroundColor Yellow
-    
+
     gh secret set $secret.Name --env production
-    
+
     if ($LASTEXITCODE -eq 0) {
         Write-Host "  ✅ Set successfully`n" -ForegroundColor Green
     } else {

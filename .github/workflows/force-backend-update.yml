@@ -1,0 +1,101 @@
+name: Force Backend Update
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to update (backend, nginx, or all)'
+        required: false
+        default: 'backend'
+        type: choice
+        options:
+          - backend
+          - nginx
+          - all
+
+jobs:
+  trigger-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Watchtower via label
+        run: |
+          echo "🔄 Forcing Watchtower to check for updates..."
+          echo ""
+          echo "Watchtower should detect the new image automatically."
+          echo "If you have Watchtower HTTP API enabled, you can trigger it via:"
+          echo "  curl -H 'Authorization: Bearer <token>' http://<watchtower-host>/v1/update"
+          echo ""
+          echo "Image details:"
+          echo "  Service: ${{ github.event.inputs.service || 'backend' }}"
+          echo "  Image: ghcr.io/leok974/leo-portfolio/backend:latest"
+          echo "  Latest commit: ${{ github.sha }}"
+          echo ""
+          echo "⏳ Watchtower typically checks every 5 minutes by default."
+          echo "   The new image should be pulled and deployed automatically."
+          echo ""
+          echo "To verify update:"
+          echo "  1. Wait 5-10 minutes for Watchtower cycle"
+          echo "  2. Check: curl https://api.leoklemet.com/api/dev/status"
+          echo "  3. Verify OpenAPI: curl https://api.leoklemet.com/openapi.json | jq '.paths | keys | map(select(test(\"/api/dev\")))'"
+
+      - name: Verify image exists in GHCR
+        run: |
+          echo "🔍 Checking if latest image is available in GHCR..."
+
+          # Check if the image exists (this will fail if it doesn't exist)
+          docker manifest inspect ghcr.io/leok974/leo-portfolio/backend:latest > /dev/null 2>&1
+
+          if [ $? -eq 0 ]; then
+            echo "✅ Image found: ghcr.io/leok974/leo-portfolio/backend:latest"
+            docker manifest inspect ghcr.io/leok974/leo-portfolio/backend:latest | jq -r '.manifests[0].digest' || echo "Digest info not available"
+          else
+            echo "❌ Image not found in GHCR"
+            exit 1
+          fi
+
+      - name: Wait for Watchtower (simulation)
+        run: |
+          echo "⏳ Simulating Watchtower wait period..."
+          echo "   (This doesn't actually trigger Watchtower, just provides guidance)"
+          echo ""
+          echo "Manual trigger options:"
+          echo ""
+          echo "Option 1: Use Watchtower HTTP API (if enabled)"
+          echo "  curl -H 'Authorization: Bearer YOUR_TOKEN' \\"
+          echo "       http://your-watchtower-host/v1/update"
+          echo ""
+          echo "Option 2: Send SIGUSR1 to Watchtower container"
+          echo "  docker kill --signal=SIGUSR1 watchtower"
+          echo ""
+          echo "Option 3: Restart the backend container manually"
+          echo "  docker pull ghcr.io/leok974/leo-portfolio/backend:latest"
+          echo "  docker-compose -f docker-compose.portfolio-prod.yml up -d --force-recreate backend"
+          echo ""
+          echo "Option 4: Label-based trigger (if Watchtower watches labels)"
+          echo "  docker service update --force portfolio-backend"
+
+      - name: Deployment instructions
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📋 Manual Deployment Commands"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "If Watchtower hasn't updated yet, run these on your server:"
+          echo ""
+          echo "# Pull latest image"
+          echo "docker pull ghcr.io/leok974/leo-portfolio/backend:latest"
+          echo ""
+          echo "# Restart backend"
+          echo "docker-compose -f deploy/docker-compose.portfolio-prod.yml up -d --force-recreate backend"
+          echo ""
+          echo "# Or if using direct docker command:"
+          echo "docker stop portfolio-backend"
+          echo "docker rm portfolio-backend"
+          echo "docker-compose -f deploy/docker-compose.portfolio-prod.yml up -d backend"
+          echo ""
+          echo "# Verify"
+          echo "docker logs portfolio-backend --tail=20"
+          echo "curl -k https://api.leoklemet.com/api/dev/status"
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

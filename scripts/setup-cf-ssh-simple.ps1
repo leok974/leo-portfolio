@@ -21,7 +21,7 @@ try {
     $response = Invoke-RestMethod -Uri "https://api.cloudflare.com/client/v4/accounts" `
         -Headers @{ "Authorization" = "Bearer $CF_API_TOKEN" } `
         -Method Get
-    
+
     $CF_ACCOUNT_ID = $response.result[0].id
     $ACCOUNT_NAME = $response.result[0].name
     Write-Host "✓ Account: $ACCOUNT_NAME ($CF_ACCOUNT_ID)" -ForegroundColor Green
@@ -51,7 +51,7 @@ try {
         } `
         -Method Post `
         -Body $dnsBody
-    
+
     Write-Host "✓ DNS record created: $SSH_HOSTNAME → $DNS_CONTENT" -ForegroundColor Green
 } catch {
     if ($_.Exception.Response.StatusCode.value__ -eq 409 -or $_.Exception.Message -like "*already exists*") {
@@ -79,14 +79,14 @@ try {
         } `
         -Method Post `
         -Body $appBody
-    
+
     $APP_ID = $appResult.result.id
     Write-Host "✓ App created: prod-ssh ($APP_ID)" -ForegroundColor Green
 } catch {
     Write-Host "⚠ App may exist, fetching..." -ForegroundColor Yellow
     $existingApps = Invoke-RestMethod -Uri "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/access/apps" `
         -Headers @{ "Authorization" = "Bearer $CF_API_TOKEN" }
-    
+
     $existingApp = $existingApps.result | Where-Object { $_.domain -eq $SSH_HOSTNAME }
     if ($existingApp) {
         $APP_ID = $existingApp.id
@@ -120,7 +120,7 @@ try {
         } `
         -Method Post `
         -Body $policyBody
-    
+
     Write-Host "✓ Policy created: allow-leo" -ForegroundColor Green
 } catch {
     Write-Host "⚠ Policy may already exist (OK)" -ForegroundColor Yellow

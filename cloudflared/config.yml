@@ -1,10 +1,22 @@
-# Token mode active (docker-compose supplies --token + UUID). Leaving these commented to avoid cloudflared trying to load missing credentials file.
-# tunnel: db56892d-4879-4263-99bf-202d46b6aff9
-# credentials-file: /etc/cloudflared/db56892d-4879-4263-99bf-202d46b6aff9.json
+# DEPRECATED: Token-based tunnel mode is active.
+# This config file is NOT used when cloudflared runs with --token flag.
+# Ingress rules are managed in Cloudflare Zero Trust dashboard.
+#
+# Shared tunnel UUID: 08d5feee-f504-47a2-a1f2-b86564900991
+# All brands route through this single tunnel (see docker-compose.cloudflared.yml)
+
 metrics: 0.0.0.0:2000
+
+# These ingress rules are for reference only - actual rules in Cloudflare dashboard:
+# - www.leoklemet.com → http://portfolio.int:80
+# - leoklemet.com → http://portfolio.int:80
+# - api.leoklemet.com → http://portfolio-api.int:8000
+# - applylens.app → http://applylens.int:80
+# - www.applylens.app → http://applylens.int:80
+# - api.applylens.app → http://applylens-api.int:8003
+# - siteagents.app → http://siteagent-ui.int:80
+# - www.siteagents.app → http://siteagent-ui.int:80
+# - api.siteagents.app → http://siteagent-api.int:8000
+
 ingress:
-  - hostname: api.leoklemet.com
-    service: http://portfolio-api.int:8000
-  - hostname: app.ledger-mind.org
-    service: http://nginx:80
   - service: http_status:404

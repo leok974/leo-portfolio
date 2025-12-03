@@ -20,7 +20,7 @@ if (-not (Test-Path $envFile)) {
     Write-Host "❌ Error: $envFile not found!" -ForegroundColor Red
     Write-Host ""
     Write-Host "Creating template..." -ForegroundColor Yellow
-    
+
     $template = @"
 # Production Secrets for Docker Compose
 # This file should NOT be committed to git
@@ -38,7 +38,7 @@ FIGMA_TEMPLATE_KEY=
 # CF_ACCESS_AUD=your-aud-value
 # ACCESS_ALLOWED_EMAILS=admin@example.com
 "@
-    
+
     $template | Out-File -FilePath $envFile -Encoding UTF8
     Write-Host "✅ Created template at: $envFile" -ForegroundColor Green
     Write-Host "📝 Please edit the file and fill in your secrets, then re-run this script." -ForegroundColor Yellow
@@ -78,20 +78,20 @@ switch ($DeployMethod) {
         Write-Host ""
         Write-Host "File ready at: $(Resolve-Path $envFile)" -ForegroundColor Green
     }
-    
+
     "cloudflare-api" {
         Write-Host "🔧 Cloudflare API deployment not yet implemented" -ForegroundColor Yellow
         Write-Host "Please use manual deployment or contribute this feature!" -ForegroundColor Yellow
     }
-    
+
     "rsync" {
         if (-not $ServerHost) {
             Write-Host "❌ Error: -ServerHost required for rsync" -ForegroundColor Red
             exit 1
         }
-        
+
         $rsyncCmd = "rsync -avz $envFile ${ServerHost}:${ServerPath}/.env.production"
-        
+
         if ($DryRun) {
             Write-Host "🧪 Dry run - would execute:" -ForegroundColor Yellow
             Write-Host $rsyncCmd -ForegroundColor Gray
@@ -101,15 +101,15 @@ switch ($DeployMethod) {
             Write-Host "✅ Deployed! Remember to restart the backend container." -ForegroundColor Green
         }
     }
-    
+
     "scp" {
         if (-not $ServerHost) {
             Write-Host "❌ Error: -ServerHost required for scp" -ForegroundColor Red
             exit 1
         }
-        
+
         $scpCmd = "scp $envFile ${ServerHost}:${ServerPath}/.env.production"
-        
+
         if ($DryRun) {
             Write-Host "🧪 Dry run - would execute:" -ForegroundColor Yellow
             Write-Host $scpCmd -ForegroundColor Gray
@@ -119,7 +119,7 @@ switch ($DeployMethod) {
             Write-Host "✅ Deployed! Remember to restart the backend container." -ForegroundColor Green
         }
     }
-    
+
     default {
         Write-Host "❌ Unknown deployment method: $DeployMethod" -ForegroundColor Red
         Write-Host "Valid options: manual, cloudflare-api, rsync, scp" -ForegroundColor Yellow

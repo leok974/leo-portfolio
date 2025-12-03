@@ -1,0 +1,93 @@
+{
+  "status": "hardened",
+  "timestamp": "2025-10-30T18:36:59Z",
+  "tunnel": {
+    "activeTunnelId": "08d5feee-f504-47a2-a1f2-b86564900991",
+    "deployment": {
+      "strategy": "single shared tunnel for ALL brands",
+      "tokenSource": ".env.cloudflare -> injected into $CLOUDFLARE_TUNNEL_TOKEN at runtime",
+      "composeCommand": "cloudflared tunnel --no-autoupdate run --token $CLOUDFLARE_TUNNEL_TOKEN"
+    },
+    "health": {
+      "connections": 4,
+      "domains": [
+        "leoklemet.com",
+        "www.leoklemet.com",
+        "api.leoklemet.com",
+        "applylens.app",
+        "www.applylens.app",
+        "api.applylens.app",
+        "siteagents.app",
+        "www.siteagents.app",
+        "api.siteagents.app",
+        "agent.siteagents.app"
+      ],
+      "lastVerifiedHttp200": [
+        "https://www.leoklemet.com",
+        "https://leoklemet.com",
+        "https://api.leoklemet.com/ready"
+      ]
+    }
+  },
+  "networkModel": {
+    "dockerNetwork": "infra_net",
+    "internalAliases": {
+      "portfolio.int": "portfolio-nginx (public site ui)",
+      "portfolio-api.int": "portfolio-backend (FastAPI)",
+      "applylens.int": "applylens-nginx (public site ui)",
+      "applylens-api.int": "applylens-backend (FastAPI)",
+      "siteagent-ui.int": "siteagent-ui (public site ui)",
+      "siteagent-api.int": "siteagent-backend (FastAPI)"
+    },
+    "rule": "each public hostname in Cloudflare ingress must map to an alias on infra_net"
+  },
+  "secretsPolicy": {
+    "tokenStorage": ".env.cloudflare (gitignored)",
+    "noRotationImpact": "rotating token in Cloudflare would affect ALL brands; do not rotate casually",
+    "removedLegacyIds": [
+      "db56892d-4879-4263-99bf-202d46b6aff9"
+    ],
+    "filesPurged": [
+      "cloudflared/config.yml (old tunnel UUID removed)",
+      "cloudflared/config-ssh.yml (old tunnel UUID removed)",
+      "deploy/cloudflared-config.yml (marked DEPRECATED)",
+      "scripts/get-tunnel-connector.ps1 (default UUID updated)",
+      "scripts/cloudflared-gen-creds.ps1 (example UUID updated)"
+    ]
+  },
+  "runbook": {
+    "file": "INFRA_RUNBOOK.md",
+    "contains": [
+      "how to reload tunnel safely (Windows-specific env var loading)",
+      "how to validate correct tunnel UUID",
+      "how to onboard a new brand to the tunnel",
+      "how to debug 502 errors",
+      "network alias requirements",
+      "token management policy"
+    ]
+  },
+  "regressionGuard": [
+    "Old tunnel ID fully purged from repo",
+    "docker-compose.cloudflared.yml fails fast if CLOUDFLARE_TUNNEL_TOKEN missing (compose :? validation)",
+    "env var must be loaded in shell before compose up (Windows-safe workaround)",
+    "Runbook includes executable PowerShell commands (copy-paste ready)",
+    "Clear error message guides user to fix: Run $env:CLOUDFLARE_TUNNEL_TOKEN = ..."
+  ],
+  "finalCheck": {
+    "publicPortfolio": "HTTP 200",
+    "publicAPI": "HTTP 200",
+    "tunnelConnections": 4,
+    "tunnelUUID": "08d5feee-f504-47a2-a1f2-b86564900991",
+    "verifiedAt": "2025-10-30T18:36:59Z"
+  },
+  "documentation": {
+    "changes": [
+      "Added 'How to (re)start cloudflared safely' section to INFRA_RUNBOOK.md",
+      "Added safety assertion in docker-compose.cloudflared.yml (compose :? validation)",
+      "Centralized token in .env.cloudflare with clear warnings",
+      "Updated all scripts to reference correct tunnel UUID",
+      "Created this audit trail for commit/PR reference"
+    ]
+  },
+  "commitMessage": "infra: harden Cloudflare tunnel configuration\n\n- Use shared tunnel (08d5feee) for all brands (ApplyLens, Portfolio, SiteAgents)\n- Purge old tunnel UUID (db56892d) from all config files\n- Add safety validation: compose fails if CLOUDFLARE_TUNNEL_TOKEN missing\n- Document Windows-safe restart procedure in INFRA_RUNBOOK.md\n- Prevent regression with executable runbook commands\n\nAll public domains verified returning HTTP 200 through shared tunnel."
+}

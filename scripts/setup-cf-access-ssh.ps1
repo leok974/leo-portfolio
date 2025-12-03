@@ -75,7 +75,7 @@ try {
         } `
         -Method Post `
         -Body $dnsPayload
-    
+
     Write-Host "✓ DNS record created: $SSHHostname → $TUNNEL_ID.cfargotunnel.com" -ForegroundColor Green
 } catch {
     if ($_.Exception.Response.StatusCode -eq 409) {
@@ -103,7 +103,7 @@ try {
         } `
         -Method Post `
         -Body $appPayload
-    
+
     $APP_ID = $appResponse.result.id
     Write-Host "✓ Access app created: $($appResponse.result.name) (ID: $APP_ID)" -ForegroundColor Green
 } catch {
@@ -112,7 +112,7 @@ try {
     $existingApps = Invoke-RestMethod -Uri "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/access/apps" `
         -Headers @{ "Authorization" = "Bearer $CF_API_TOKEN" } `
         -Method Get
-    
+
     $existingApp = $existingApps.result | Where-Object { $_.domain -eq $SSHHostname }
     if ($existingApp) {
         $APP_ID = $existingApp.id
@@ -146,7 +146,7 @@ try {
         } `
         -Method Post `
         -Body $policyPayload
-    
+
     Write-Host "✓ Policy created: $($policyResponse.result.name)" -ForegroundColor Green
 } catch {
     Write-Host "⚠ Policy may already exist or error occurred: $_" -ForegroundColor Yellow

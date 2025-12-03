@@ -6,8 +6,12 @@ yarn-error.log*
 
 # Build outputs
 dist/
+dist-portfolio/
+dist-siteagent/
 build/
 .tmp/
+.next/
+out/
 
 # Media optimization outputs (generated files)
 # Media optimization outputs (generated files)
@@ -109,3 +113,26 @@ playwright/.auth/
 reports/
 !reports/.gitkeep
 tests/e2e/.auth/
+
+# Agent artifacts (generated outputs, do not commit)
+agent_artifacts/
+outputs/
+artifacts/
+
+# Audit results
+audit/
+
+# Temporary log files
+uvicorn_stdout.log
+uvicorn_stderr.log
+*.log
+
+# Docker runner data
+runner-data/
+
+# Temporary/test HTML files
+*.tmp.html
+root.html
+root2.html
+completed.html
+book.html

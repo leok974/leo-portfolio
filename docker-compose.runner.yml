@@ -14,6 +14,15 @@ services:
       - ./runner-data:/runner
       - ./runner-entrypoint.sh:/entrypoint.sh:ro
 
+    # Add runner to host's docker group (GID varies by system)
+    # Most common GIDs: 999 (Ubuntu/Debian), 998 (RHEL/CentOS), 0 (root - Windows Docker Desktop)
+    group_add:
+      - "0" # Add root group for Docker socket access on Windows/Docker Desktop
+
+    # Connect to infra_net to access portfolio-backend, portfolio-nginx, cloudflared
+    networks:
+      - infra_net
+
     # All environment variables loaded from .env.runner (not committed)
     # No environment: section - env_file takes precedence
 
@@ -26,3 +35,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+# Use existing infra_net network to access production services
+networks:
+  infra_net:
+    external: true

@@ -1,7 +1,7 @@
 # Production Runner Security - UI Configuration Checklist
 
-**Status**: ✅ Code changes committed (7785ef7)  
-**Next**: Complete GitHub UI configuration  
+**Status**: ✅ Code changes committed (7785ef7)
+**Next**: Complete GitHub UI configuration
 **Time**: 15-20 minutes
 
 ---
@@ -218,7 +218,7 @@ git push origin --delete test/runner-security
 
 # Check no PR workflows use self-hosted
 $prWorkflows = Select-String -Path .github/workflows/*.yml -Pattern "pull_request" -List | Select-Object -ExpandProperty Path
-$prWorkflows | ForEach-Object { 
+$prWorkflows | ForEach-Object {
   if ((Get-Content $_) -match "runs-on.*self-hosted" -and (Get-Content $_) -notmatch "github.event_name != 'pull_request'") {
     Write-Host "⚠️  UNSAFE: $_"
   }
@@ -387,7 +387,7 @@ docker logs gh-runner-prod --tail=50
 
 ---
 
-**Estimated Time**: 15-20 minutes  
-**Difficulty**: Easy (mostly UI clicks)  
-**Status**: Ready to execute  
+**Estimated Time**: 15-20 minutes
+**Difficulty**: Easy (mostly UI clicks)
+**Status**: Ready to execute
 **Commit**: 7785ef7

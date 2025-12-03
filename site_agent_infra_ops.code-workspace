@@ -1,0 +1,94 @@
+{
+  "folders": [
+    {
+      "name": "repo-root",
+      "path": "D:\\leo-portfolio"
+    },
+    {
+      "name": "portfolio-ui",
+      "path": "D:\\leo-portfolio\\apps\\portfolio-ui"
+    },
+    {
+      "name": "siteagent-ui",
+      "path": "D:\\leo-portfolio\\apps\\siteagent-ui"
+    },
+    {
+      "name": "assistant_api",
+      "path": "D:\\leo-portfolio\\assistant_api"
+    },
+    {
+      "name": "agent-core",
+      "path": "D:\\leo-portfolio\\agent"
+    },
+    {
+      "name": "analytics-pipeline",
+      "path": "D:\\leo-portfolio\\analytics"
+    },
+    {
+      "name": "scripts",
+      "path": "D:\\leo-portfolio\\scripts"
+    },
+    {
+      "name": "playwright-tests",
+      "path": "D:\\leo-portfolio\\playwright"
+    },
+    {
+      "name": "python-tests",
+      "path": "D:\\leo-portfolio\\tests"
+    }
+  ],
+  "settings": {
+    // JS/TS
+    "typescript.tsdk": "D:\\leo-portfolio\\node_modules\\typescript\\lib",
+    "eslint.workingDirectories": [
+      "D:\\leo-portfolio",
+      "D:\\leo-portfolio\\apps\\portfolio-ui",
+      "D:\\leo-portfolio\\apps\\siteagent-ui"
+    ],
+
+    // Python
+    "python.defaultInterpreterPath": "D:\\leo-portfolio\\.venv\\Scripts\\python.exe",
+    "python.testing.pytestArgs": [
+      "tests"
+    ],
+    "python.testing.pytestEnabled": true,
+    "python.analysis.extraPaths": [
+      "D:\\leo-portfolio",
+      "D:\\leo-portfolio\\assistant_api"
+    ],
+
+    // Playwright / e2e
+    "playwright.env": {
+      "PW_BASE_URL": "http://localhost:5173"
+    },
+
+    // QoL
+    "files.exclude": {
+      "**/.pytest_cache": true,
+      "**/__pycache__": true,
+      "**/.ruff_cache": true,
+      "**/node_modules": false,
+      "**/dist": true,
+      "**/dist-portfolio": true,
+      "**/dist-siteagent": true,
+      "**/playwright-report": true,
+      "**/coverage": true,
+      "**/.venv-temp": true
+    },
+    "search.exclude": {
+      "**/.pytest_cache": true,
+      "**/__pycache__": true,
+      "**/.ruff_cache": true,
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/dist-portfolio": true,
+      "**/dist-siteagent": true,
+      "**/playwright-report": true,
+      "**/coverage": true
+    },
+    // prevent TS server OOM on giant monorepo
+    "typescript.tsserver.maxTsServerMemory": 4096,
+    // formatting
+    "editor.formatOnSave": true
+  }
+}

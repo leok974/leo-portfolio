@@ -1,7 +1,7 @@
 # One-Time Bootstrap: Watchtower + Nginx Endpoint
 
-**Purpose**: Enable force-pull deployments via HTTP API (no SSH needed after this)  
-**Time**: ~5 minutes  
+**Purpose**: Enable force-pull deployments via HTTP API (no SSH needed after this)
+**Time**: ~5 minutes
 **Frequency**: One-time only
 
 ---
@@ -119,7 +119,7 @@ curl -sS -X POST https://api.leoklemet.com/ops/watchtower/update \
   -H "Authorization: Bearer <REDACTED_TOKEN>" | jq .
 ```
 
-**Expected**: JSON response (e.g., `{"status":"success"}`)  
+**Expected**: JSON response (e.g., `{"status":"success"}`)
 **NOT**: `{"detail":"Not Found"}` (404)
 
 **Test backend health**:
@@ -147,11 +147,11 @@ After completing all steps, verify:
 
 **After this bootstrap**:
 
-✅ **One-click deployments**: GitHub Actions → "Redeploy Backend via Watchtower" → Run workflow  
-✅ **Force-pull anytime**: No waiting for 5-minute auto-check  
-✅ **No SSH needed**: All future deployments via HTTPS endpoint  
-✅ **Automated updates**: Watchtower still checks every 5 minutes automatically  
-✅ **Secure**: Token-based authentication, HTTPS only  
+✅ **One-click deployments**: GitHub Actions → "Redeploy Backend via Watchtower" → Run workflow
+✅ **Force-pull anytime**: No waiting for 5-minute auto-check
+✅ **No SSH needed**: All future deployments via HTTPS endpoint
+✅ **Automated updates**: Watchtower still checks every 5 minutes automatically
+✅ **Secure**: Token-based authentication, HTTPS only
 
 ---
 
@@ -245,6 +245,6 @@ docker inspect portfolio-backend | grep -A2 watchtower.enable
 
 ---
 
-**Status After Bootstrap**: ✅ Ready for GitHub Actions deployments  
-**Time Investment**: 5 minutes now, saves hours of SSH work forever  
+**Status After Bootstrap**: ✅ Ready for GitHub Actions deployments
+**Time Investment**: 5 minutes now, saves hours of SSH work forever
 **Result**: One-click deployments enabled

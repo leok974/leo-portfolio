@@ -25,13 +25,13 @@ test.describe('Dev overlay cookie & tools gating @e2e @dev-overlay', () => {
     const res = await request.get('https://api.leoklemet.com/api/dev/status');
     expect(res.status()).toBe(200);
     const json = await res.json();
-    
+
     // Should have required fields
     expect(json).toHaveProperty('ok');
     expect(json).toHaveProperty('allowed');
     expect(json).toHaveProperty('mode');
     expect(json).toHaveProperty('ts');
-    
+
     // Without the x-dev-key header, should be denied
     expect(json.ok).toBe(true);
     expect(json.allowed).toBe(false);

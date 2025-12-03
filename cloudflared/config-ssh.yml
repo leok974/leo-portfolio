@@ -1,5 +1,9 @@
-tunnel: db56892d-4879-4263-99bf-202d46b6aff9
-credentials-file: /etc/cloudflared/db56892d-4879-4263-99bf-202d46b6aff9.json
+# SSH tunnel configuration (SEPARATE from web tunnel)
+# This is for SSH access via Cloudflare Access, not for web routing
+# Web routing uses shared tunnel 08d5feee-f504-47a2-a1f2-b86564900991
+
+tunnel: REPLACE_WITH_SSH_TUNNEL_UUID
+credentials-file: /etc/cloudflared/REPLACE_WITH_SSH_TUNNEL_UUID.json
 
 ingress:
   - hostname: ssh.leoklemet.com

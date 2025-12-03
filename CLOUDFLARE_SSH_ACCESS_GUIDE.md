@@ -1,7 +1,7 @@
 # Cloudflare Access SSH Setup Guide
 
-**Purpose**: Secure SSH access to production server via Cloudflare Zero Trust  
-**Date**: October 22, 2025  
+**Purpose**: Secure SSH access to production server via Cloudflare Zero Trust
+**Date**: October 22, 2025
 **Status**: Configuration ready, awaiting server upload
 
 ---

@@ -1,0 +1,66 @@
+name: Repo Hygiene
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Check for unused exports (knip)
+        run: |
+          pnpm dlx knip --include dev --reporter json > knip-report.json || true
+          if [ -s knip-report.json ]; then
+            echo "::warning ::Found unused exports. Review knip-report.json"
+            cat knip-report.json
+          fi
+      
+      - name: Check for unused dependencies
+        run: |
+          pnpm dlx depcheck --json > depcheck-report.json || true
+          if [ -s depcheck-report.json ]; then
+            echo "::warning ::Found potential unused dependencies"
+            cat depcheck-report.json
+          fi
+      
+      - name: Fail on legacy markers
+        run: |
+          if grep -r --include="*.ts" --include="*.tsx" --include="*.py" --exclude-dir="node_modules" --exclude-dir=".venv" --exclude-dir="docs/archive" -E "DEPRECATED|LEGACY" .; then
+            echo "::error ::Found DEPRECATED or LEGACY markers in active code"
+            exit 1
+          fi
+      
+      - name: Check for large files
+        run: |
+          large_files=$(find . -type f -size +5M ! -path "*/node_modules/*" ! -path "*/.venv/*" ! -path "*/.git/*" || true)
+          if [ -n "$large_files" ]; then
+            echo "::warning ::Found large files (>5MB):"
+            echo "$large_files"
+          fi
+      
+      - name: Verify no secrets in code
+        run: |
+          if grep -r --include="*.ts" --include="*.tsx" --include="*.py" --include="*.js" --exclude-dir="node_modules" --exclude-dir=".venv" -E "(api[_-]?key|secret|password|token)\s*=\s*['\"][a-zA-Z0-9]{20,}" .; then
+            echo "::error ::Found potential hardcoded secrets"
+            exit 1
+          fi

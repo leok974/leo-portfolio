@@ -1,7 +1,7 @@
 # 🔒 Production Runner Security - Quick Reference
 
-**Status**: ✅ Code complete (747ddf6)  
-**Action**: Complete UI setup (15-20 min)  
+**Status**: ✅ Code complete (747ddf6)
+**Action**: Complete UI setup (15-20 min)
 **Guide**: PROD_RUNNER_UI_CHECKLIST.md
 
 ---
@@ -10,7 +10,7 @@
 
 ### 3 Workflows Hardened
 - `bootstrap-watchtower.yml` - Watchtower deployment
-- `smoke-selfhosted.yml` - Runner health check  
+- `smoke-selfhosted.yml` - Runner health check
 - `redeploy-backend.yml` - Backend force-pull
 
 ### 6 Security Controls Per Workflow
@@ -101,11 +101,11 @@ gh workflow run smoke-selfhosted.yml
 ## 🚨 If Something Goes Wrong
 
 ### Workflow Runs Without Approval
-→ Environment not created or named wrong  
+→ Environment not created or named wrong
 → Must be exactly: `production`
 
 ### Secret Not Found
-→ Not in environment secrets  
+→ Not in environment secrets
 → Move from repo → environment
 
 ### Runner Offline
@@ -119,10 +119,10 @@ docker logs gh-runner-prod
 
 ## 📚 Full Docs
 
-**Start Here**: `PROD_RUNNER_UI_CHECKLIST.md`  
-**Commands**: `PROD_RUNNER_SECURITY_COMMANDS.md`  
-**Deep Dive**: `PROD_RUNNER_SECURITY_LOCKDOWN.md`  
-**Summary**: `PROD_RUNNER_LOCKDOWN_COMPLETE.md`  
+**Start Here**: `PROD_RUNNER_UI_CHECKLIST.md`
+**Commands**: `PROD_RUNNER_SECURITY_COMMANDS.md`
+**Deep Dive**: `PROD_RUNNER_SECURITY_LOCKDOWN.md`
+**Summary**: `PROD_RUNNER_LOCKDOWN_COMPLETE.md`
 **Health Check**: `scripts/check-prod-runner-security.sh`
 
 ---
@@ -153,7 +153,7 @@ gh run view <RUN_ID> --log | grep hostname
 
 ---
 
-**Time Required**: 15-20 minutes  
-**Difficulty**: Easy (mostly clicking)  
-**Impact**: High (production security)  
+**Time Required**: 15-20 minutes
+**Difficulty**: Easy (mostly clicking)
+**Impact**: High (production security)
 **Next Step**: Open `PROD_RUNNER_UI_CHECKLIST.md` 🚀

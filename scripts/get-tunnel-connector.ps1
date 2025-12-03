@@ -4,7 +4,7 @@
 param(
     [string]$AccountId = $env:CF_ACCOUNT_ID,
     [string]$ApiToken = $env:CF_API_TOKEN,
-    [string]$TunnelId = "db56892d-4879-4263-99bf-202d46b6aff9"
+    [string]$TunnelId = "08d5feee-f504-47a2-a1f2-b86564900991"  # SHARED production tunnel
 )
 
 if (-not $AccountId) {
@@ -45,7 +45,7 @@ Write-Host ""
 try {
     $headers = @{
         "Authorization" = "Bearer $ApiToken"
-        "Content-Type" = "application/json"
+        "Content-Type"  = "application/json"
     }
 
     $uri = "https://api.cloudflare.com/client/v4/accounts/$AccountId/cfd_tunnel/$TunnelId/connectors"
@@ -67,7 +67,8 @@ try {
             Write-Host "Status:        " -NoNewline -ForegroundColor Yellow
             if ($_.status -eq "connected") {
                 Write-Host $_.status -ForegroundColor Green
-            } else {
+            }
+            else {
                 Write-Host $_.status -ForegroundColor Red
             }
 
@@ -94,12 +95,14 @@ try {
             Write-Host "  ssh root@$($firstConnector.name)" -ForegroundColor Cyan -BackgroundColor Black
         }
 
-    } else {
+    }
+    else {
         Write-Host "❌ API request failed:" -ForegroundColor Red
         Write-Host ($response | ConvertTo-Json -Depth 5) -ForegroundColor Red
     }
 
-} catch {
+}
+catch {
     Write-Host "❌ Error querying Cloudflare API:" -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
     Write-Host ""

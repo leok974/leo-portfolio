@@ -75,7 +75,7 @@
    ```bash
    # Check env var
    docker exec portfolio-backend env | grep FIGMA_PAT
-   
+
    # Test endpoint
    curl https://api.leoklemet.com/api/agent/brand/templates
    ```
